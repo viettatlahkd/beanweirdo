@@ -1,0 +1,42 @@
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: #fdfbf2;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+a {
+  color: #23211a;
+  text-decoration: none;
+}
+
+a:hover {
+  color: #3e7a4e;
+}
+
+::selection {
+  background: #f7cbd0;
+}
+
+/* Headings never go bold — weight is not how this system creates emphasis. */
+h1,
+h2,
+h3,
+h4 {
+  font-weight: 400;
+}
+
+@keyframes riseIn {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

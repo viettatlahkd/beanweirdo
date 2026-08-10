@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,200;0,6..72,300;0,6..72,400;1,6..72,300&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+  html, body { margin:0; padding:0; background:#FDFCF7; }
+  * { box-sizing:border-box; }
+  a { color:#191713; text-decoration:none; }
+  a:hover { color:#8C877C; }
+  ::selection { background:#F2EBD8; }
+</style>
+</helmet>
+
+<div style="min-height:100vh; background:#FDFCF7; color:#191713; font-family:'IBM Plex Sans',system-ui,sans-serif; -webkit-font-smoothing:antialiased;">
+
+  <div style="position:fixed; top:0; left:0; bottom:0; width:64px; background:#FFFEFB; border-right:1px solid #EDE8DC; overflow:hidden; z-index:60; transition:width .3s cubic-bezier(.4,0,.2,1); display:flex; flex-direction:column; padding:24px 0;" style-hover="width:264px; box-shadow:24px 0 60px -34px rgba(25,23,19,.16);">
+    <div style="display:flex; align-items:center; gap:20px; padding:0 22px 26px; white-space:nowrap;">
+      <div style="width:20px; height:20px; border:1px solid #191713; border-radius:50%; flex:none;"></div>
+      <div style="font-family:'Newsreader',serif; font-size:20px; letter-spacing:-.01em;">coffee study</div>
+    </div>
+    <div style="height:1px; background:#EDE8DC; margin:0 0 22px;"></div>
+    <div style="display:flex; flex-direction:column; gap:2px;">
+      <div onClick="{{ goArt }}" style="display:flex; align-items:center; gap:20px; padding:9px 22px; cursor:pointer; white-space:nowrap;" style-hover="background:#F8F5EC;">
+        <div style="width:20px; display:flex; justify-content:center; flex:none;"><div style="width:8px; height:8px; border:1px solid #191713; transform:rotate(45deg);"></div></div>
+        <div style="font-size:13px;">Art direction</div>
+      </div>
+      <div onClick="{{ goHome }}" style="display:flex; align-items:center; gap:20px; padding:9px 22px; cursor:pointer; white-space:nowrap;" style-hover="background:#F8F5EC;">
+        <div style="width:20px; display:flex; justify-content:center; flex:none;"><div style="width:9px; height:1px; background:#191713;"></div></div>
+        <div style="font-size:13px;">Index</div>
+      </div>
+      <sc-for list="{{ modules }}" as="m" hint-placeholder-count="3">
+        <div onClick="{{ m.open }}" style="display:flex; align-items:center; gap:20px; padding:9px 22px; cursor:pointer; white-space:nowrap;" style-hover="background:#F8F5EC;">
+          <div style="width:20px; display:flex; justify-content:center; flex:none;"><div style="width:8px; height:8px; border-radius:50%; background: {{ m.accent }};"></div></div>
+          <div style="font-size:13px; flex:1;">{{ m.title }}</div>
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#ADA795; padding-right:18px;">{{ m.count }}</div>
+        </div>
+      </sc-for>
+      <div onClick="{{ goArchive }}" style="display:flex; align-items:center; gap:20px; padding:9px 22px; cursor:pointer; white-space:nowrap;" style-hover="background:#F8F5EC;">
+        <div style="width:20px; display:flex; justify-content:center; flex:none;"><div style="width:7px; height:7px; border:1px solid #ADA795;"></div></div>
+        <div style="font-size:13px;">Archive</div>
+      </div>
+    </div>
+    <div style="margin-top:auto; padding:0 22px; white-space:nowrap; font-family:'IBM Plex Mono',monospace; font-size:10px; color:#BAB4A2; line-height:1.8;">
+      <div style="width:20px; height:1px; background:#E3DDCD; margin-bottom:14px;"></div>
+      <div>2024 — 2026</div>
+      <div>18 notes / 3 modules</div>
+    </div>
+  </div>
+
+  <div style="margin-left:64px;">
+
+    <sc-if value="{{ isArt }}" hint-placeholder-val="{{ true }}">
+      <div style="padding:88px 60px 140px; max-width:1240px;">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#ADA795; margin-bottom:26px;">Art direction — v2</div>
+        <div style="display:grid; grid-template-columns:minmax(0,1.5fr) minmax(260px,1fr); gap:56px; align-items:end; padding-bottom:34px; border-bottom:1px solid #191713;">
+          <h1 style="font-family:'Newsreader',serif; font-weight:200; font-size:72px; line-height:.98; letter-spacing:-.03em; margin:0;">Ivory paper,<br /><span style="font-style:italic;">one image at a time</span></h1>
+          <div style="font-size:13.5px; line-height:1.8; color:#6B665C;">Nền giấy ngà ấm, chữ là lớp duy nhất. Ảnh xuất hiện thưa và luôn đứng một mình — mỗi màn tối đa một ảnh lớn, không chồng lớp, không đổ bóng, không gradient.</div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:1px; background:#EDE8DC; border:1px solid #EDE8DC; margin-top:44px;">
+          <sc-for list="{{ swatches }}" as="s" hint-placeholder-count="8">
+            <div style="background: {{ s.hex }}; aspect-ratio:2.4; display:flex; flex-direction:column; justify-content:flex-end; padding:12px;">
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#4A463E;">{{ s.name }}</div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; color:#8C877C;">{{ s.hex }}</div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:44px; margin-top:38px; padding-top:38px; border-top:1px solid #EDE8DC;">
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#ADA795; margin-bottom:14px;">Typeface</div>
+            <div style="font-family:'Newsreader',serif; font-weight:200; font-size:44px; line-height:1; letter-spacing:-.02em;">Newsreader</div>
+            <div style="font-size:12.5px; color:#8C877C; margin:6px 0 20px;">Tiêu đề, trích dẫn. Light 200–300, tracking âm.</div>
+            <div style="font-size:19px; line-height:1.4;">IBM Plex Sans</div>
+            <div style="font-size:12.5px; color:#8C877C; margin:6px 0 20px;">Nội dung, mô tả tiếng Việt. 300–400.</div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:14px; letter-spacing:.02em;">IBM Plex Mono</div>
+            <div style="font-size:12.5px; color:#8C877C; margin-top:6px;">Số thứ tự, ngày, nhãn. Chỉ dùng ở cỡ 10–11px.</div>
+          </div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#ADA795; margin-bottom:14px;">Quy tắc hình ảnh</div>
+            <sc-for list="{{ imageRules }}" as="r" hint-placeholder-count="5">
+              <div style="display:flex; gap:12px; padding:11px 0; border-bottom:1px solid #F1EDE2;">
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#BAB4A2; padding-top:3px;">{{ r.n }}</div>
+                <div style="font-size:13.5px; line-height:1.65; color:#4A463E;">{{ r.t }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#ADA795; margin-bottom:14px;">Nhịp trang</div>
+            <sc-for list="{{ layoutRules }}" as="r" hint-placeholder-count="5">
+              <div style="display:flex; gap:12px; padding:11px 0; border-bottom:1px solid #F1EDE2;">
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#BAB4A2; padding-top:3px;">{{ r.n }}</div>
+                <div style="font-size:13.5px; line-height:1.65; color:#4A463E;">{{ r.t }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="margin-top:80px; padding-bottom:20px; border-bottom:1px solid #191713;">
+          <h2 style="font-family:'Newsreader',serif; font-weight:300; font-size:38px; letter-spacing:-.02em; margin:0;">Theme của từng module</h2>
+        </div>
+        <sc-for list="{{ modules }}" as="m" hint-placeholder-count="3">
+          <div style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.35fr); gap:52px; padding:46px 0; border-bottom:1px solid #EDE8DC; align-items:start;">
+            <div>
+              <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+                <div style="width:9px; height:9px; border-radius:50%; background: {{ m.accent }};"></div>
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#ADA795;">{{ m.concept }}</div>
+              </div>
+              <h3 onClick="{{ m.open }}" style="font-family:'Newsreader',serif; font-weight:300; font-size:40px; letter-spacing:-.025em; margin:0 0 16px; cursor:pointer;" style-hover="color:#8C877C;">{{ m.title }}</h3>
+              <div style="font-size:14px; line-height:1.8; color:#4A463E; margin-bottom:22px;">{{ m.long }}</div>
+              <div style="display:flex; gap:0; border:1px solid #EDE8DC; width:fit-content;">
+                <div style="width:56px; height:34px; background: {{ m.tint }};"></div>
+                <div style="width:56px; height:34px; background: {{ m.accent }};"></div>
+                <div style="width:56px; height:34px; background:#FDFCF7;"></div>
+              </div>
+            </div>
+            <div>
+              <div style="display:grid; grid-template-columns:1.6fr 1fr; gap:14px; margin-bottom:14px;">
+                <div style="aspect-ratio:4/3; background: {{ m.tint }}; border:1px solid #EDE8DC; display:flex; align-items:flex-end; padding:14px;">
+                  <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#5C574C; line-height:1.6;">{{ m.shot1 }}</div>
+                </div>
+                <div style="aspect-ratio:3/4; background:#FFFEFB; border:1px solid #EDE8DC; display:flex; align-items:flex-end; padding:14px; align-self:start;">
+                  <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#8C877C; line-height:1.6;">{{ m.shot2 }}</div>
+                </div>
+              </div>
+              <div style="font-size:13px; line-height:1.7; color:#6B665C;"><span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:#ADA795;">treatment — </span>{{ m.treatment }}</div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isHomeA }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:88px 60px 140px; max-width:1200px;">
+        <div style="display:grid; grid-template-columns:minmax(0,1.3fr) minmax(280px,1fr); gap:56px; align-items:end; padding-bottom:26px; border-bottom:1px solid #191713;">
+          <h1 style="font-family:'Newsreader',serif; font-weight:200; font-size:68px; line-height:.98; letter-spacing:-.03em; margin:0;">A coffee study<br /><span style="font-style:italic;">journal</span></h1>
+          <div style="font-size:13.5px; line-height:1.8; color:#6B665C; padding-bottom:8px;">Ghi chép quá trình học về cà phê — chia theo module, mỗi module là một tập bài ngắn. Đọc theo thứ tự hoặc nhặt bất kỳ đâu.</div>
+        </div>
+
+        <sc-if value="{{ showPlates }}" hint-placeholder-val="{{ true }}">
+          <div style="height:300px; margin-top:34px; background:#F6F2E6; border:1px solid #EDE8DC; display:flex; align-items:flex-end; justify-content:space-between; padding:18px 20px;">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#5C574C; line-height:1.6;">ảnh mở đầu — một vật thể đơn, nền ngà<br />16:5, ánh sáng ban ngày, không hậu cảnh</div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#ADA795;">01 / hero</div>
+          </div>
+        </sc-if>
+
+        <sc-for list="{{ modules }}" as="m" hint-placeholder-count="3">
+          <div style="padding-top:58px;">
+            <div style="display:flex; align-items:baseline; gap:16px; padding-bottom:12px;">
+              <div style="width:8px; height:8px; border-radius:50%; background: {{ m.accent }}; transform:translateY(-4px);"></div>
+              <h2 onClick="{{ m.open }}" style="font-family:'Newsreader',serif; font-weight:300; font-size:30px; letter-spacing:-.022em; margin:0; cursor:pointer;" style-hover="color:#8C877C;">{{ m.title }}</h2>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#ADA795;">{{ m.count }} bài</div>
+              <div style="flex:1; height:1px; background:#EDE8DC;"></div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#ADA795; letter-spacing:.12em; text-transform:uppercase;">{{ m.concept }}</div>
+            </div>
+            <div style="font-size:14px; line-height:1.7; color:#6B665C; max-width:620px; margin:0 0 24px 24px;">{{ m.blurb }}</div>
+            <sc-for list="{{ m.entries }}" as="e" hint-placeholder-count="6">
+              <div onClick="{{ openArticle }}" style="display:grid; grid-template-columns:52px minmax(0,1fr) minmax(0,1.15fr) 78px 58px; align-items:baseline; gap:18px; padding:{{ rowPad }} 12px {{ rowPad }} 10px; border-top:1px solid #F1EDE2; cursor:pointer; border-left:2px solid transparent;" style-hover="background:#FFFEFB; border-left:2px solid #191713;">
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#BAB4A2;">{{ e.n }}</div>
+                <div style="font-family:'Newsreader',serif; font-size:19px; letter-spacing:-.012em;">{{ e.en }}</div>
+                <div style="font-size:13px; color:#6B665C; line-height:1.5;">{{ e.vi }}</div>
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#ADA795; letter-spacing:.05em; text-transform:uppercase;">{{ e.kind }}</div>
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#BAB4A2; text-align:right;">{{ e.date }}</div>
+              </div>
+            </sc-for>
+            <div style="border-top:1px solid #F1EDE2;"></div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isHomeB }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:88px 60px 140px; max-width:1320px;">
+        <div style="padding-bottom:60px;">
+          <h1 style="font-family:'Newsreader',serif; font-weight:200; font-size:68px; line-height:1; letter-spacing:-.03em; margin:0 0 16px;">A coffee study <span style="font-style:italic;">journal</span></h1>
+          <div style="max-width:460px; font-size:13.5px; line-height:1.8; color:#6B665C;">Ghi chép quá trình học về cà phê — chia theo module, mỗi module là một tập bài ngắn.</div>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:48px; border-top:1px solid #191713; padding-top:32px;">
+          <sc-for list="{{ modules }}" as="m" hint-placeholder-count="3">
+            <div>
+              <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
+                <div style="width:8px; height:8px; border-radius:50%; background: {{ m.accent }};"></div>
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#ADA795;">{{ m.concept }}</div>
+              </div>
+              <h2 onClick="{{ m.open }}" style="font-family:'Newsreader',serif; font-weight:300; font-size:34px; letter-spacing:-.025em; margin:0 0 12px; cursor:pointer;" style-hover="color:#8C877C;">{{ m.title }}</h2>
+              <div style="font-size:13.5px; line-height:1.7; color:#6B665C; margin-bottom:20px;">{{ m.blurb }}</div>
+              <sc-if value="{{ showPlates }}" hint-placeholder-val="{{ true }}">
+                <div style="aspect-ratio:4/5; margin-bottom:24px; background: {{ m.tint }}; border:1px solid #EDE8DC; display:flex; align-items:flex-end; padding:13px;">
+                  <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#5C574C; line-height:1.6;">{{ m.shot1 }}</div>
+                </div>
+              </sc-if>
+              <sc-for list="{{ m.entries }}" as="e" hint-placeholder-count="6">
+                <div onClick="{{ openArticle }}" style="display:flex; gap:14px; padding:12px 8px 12px 4px; border-top:1px solid #F1EDE2; cursor:pointer;" style-hover="background:#FFFEFB;">
+                  <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#BAB4A2; padding-top:5px;">{{ e.n }}</div>
+                  <div style="flex:1;">
+                    <div style="font-family:'Newsreader',serif; font-size:18px; letter-spacing:-.012em; line-height:1.3;">{{ e.en }}</div>
+                    <div style="font-size:12.5px; color:#8C877C; line-height:1.5; margin-top:3px;">{{ e.vi }}</div>
+                  </div>
+                </div>
+              </sc-for>
+              <div style="border-top:1px solid #F1EDE2;"></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isModule }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:88px 60px 140px; max-width:1200px;">
+        <div onClick="{{ goHome }}" style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:#ADA795; cursor:pointer; margin-bottom:40px;" style-hover="color:#191713;">← index</div>
+        <div style="display:grid; grid-template-columns:minmax(0,1.4fr) minmax(260px,1fr); gap:56px; align-items:start; padding-bottom:36px; border-bottom:1px solid #191713;">
+          <div>
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
+              <div style="width:9px; height:9px; border-radius:50%; background: {{ mod.accent }};"></div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#ADA795;">module — {{ mod.concept }}</div>
+            </div>
+            <h1 style="font-family:'Newsreader',serif; font-weight:200; font-size:72px; line-height:1; letter-spacing:-.035em; margin:0 0 20px;">{{ mod.title }}</h1>
+            <div style="font-size:15px; line-height:1.85; color:#4A463E; max-width:560px;">{{ mod.long }}</div>
+          </div>
+          <sc-if value="{{ showPlates }}" hint-placeholder-val="{{ true }}">
+            <div style="aspect-ratio:3/4; background: {{ mod.tint }}; border:1px solid #EDE8DC; display:flex; align-items:flex-end; padding:14px;">
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#5C574C; line-height:1.6;">{{ mod.shot1 }}</div>
+            </div>
+          </sc-if>
+        </div>
+        <sc-for list="{{ mod.entries }}" as="e" hint-placeholder-count="6">
+          <div onClick="{{ openArticle }}" style="display:grid; grid-template-columns:52px minmax(0,1fr) minmax(0,1.2fr) 78px 58px; align-items:baseline; gap:18px; padding:19px 12px 19px 10px; border-bottom:1px solid #F1EDE2; cursor:pointer; border-left:2px solid transparent;" style-hover="background:#FFFEFB; border-left:2px solid #191713;">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#BAB4A2;">{{ e.n }}</div>
+            <div style="font-family:'Newsreader',serif; font-size:21px; letter-spacing:-.015em;">{{ e.en }}</div>
+            <div style="font-size:13px; color:#6B665C; line-height:1.55;">{{ e.vi }}</div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#ADA795; letter-spacing:.05em; text-transform:uppercase;">{{ e.kind }}</div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#BAB4A2; text-align:right;">{{ e.date }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isArticle }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:88px 60px 160px; max-width:1200px;">
+        <div onClick="{{ goBackModule }}" style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:#ADA795; cursor:pointer; margin-bottom:50px;" style-hover="color:#191713;">← biochemistry 101</div>
+        <div style="display:grid; grid-template-columns:minmax(0,1.9fr) minmax(240px,1fr); gap:56px; align-items:start;">
+          <div>
+            <div style="display:flex; align-items:center; gap:12px; font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:#ADA795; margin-bottom:18px;">
+              <div style="width:8px; height:8px; border-radius:50%; background:oklch(0.74 0.12 150);"></div>
+              <div>03 — essay</div>
+              <div style="width:16px; height:1px; background:#E3DDCD;"></div>
+              <div>2026.02</div>
+            </div>
+            <h1 style="font-family:'Newsreader',serif; font-weight:200; font-size:54px; line-height:1.06; letter-spacing:-.03em; margin:0 0 14px;">Chlorogenic Acids (CGA)</h1>
+            <div style="font-family:'Newsreader',serif; font-style:italic; font-size:21px; line-height:1.5; color:#8C877C; margin-bottom:36px;">Nguồn gốc của vị chát và phần lớn vị chua trong tách cà phê.</div>
+            <sc-if value="{{ showPlates }}" hint-placeholder-val="{{ true }}">
+              <div style="height:260px; background:#EEF3EA; border:1px solid #EDE8DC; display:flex; align-items:flex-end; padding:14px; margin-bottom:40px;">
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#5C574C; line-height:1.6;">ảnh chính — mặt cắt hạt trong lớp nhầy<br />macro, nền xanh nhạt, ánh sáng phẳng</div>
+              </div>
+            </sc-if>
+            <div style="height:1px; background:#191713; margin-bottom:40px;"></div>
+            <sc-for list="{{ article }}" as="s" hint-placeholder-count="5">
+              <div style="margin-bottom:38px;">
+                <h3 style="font-family:'IBM Plex Mono',monospace; font-weight:500; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:#ADA795; margin:0 0 12px;">{{ s.h }}</h3>
+                <div style="font-size:16px; line-height:1.9; color:#2B2822;">{{ s.p }}</div>
+              </div>
+            </sc-for>
+            <div style="border-top:1px solid #EDE8DC; padding-top:20px; font-family:'IBM Plex Mono',monospace; font-size:11px; color:#ADA795; line-height:1.9;">
+              <div>ref — Farah &amp; Donangelo, Braz. J. Plant Physiol. 2006</div>
+              <div>ref — Illy &amp; Viani, Espresso Coffee: The Science of Quality</div>
+            </div>
+          </div>
+          <div style="position:sticky; top:56px; display:flex; flex-direction:column; gap:26px;">
+            <div style="border-left:1px solid #EDE8DC; padding-left:20px;">
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:#BAB4A2; margin-bottom:10px;">Trong module này</div>
+              <sc-for list="{{ related }}" as="r" hint-placeholder-count="5">
+                <div style="font-size:13.5px; line-height:1.5; padding:7px 0; cursor:pointer; color:#6B665C;" style-hover="color:#191713;">{{ r.en }}</div>
+              </sc-for>
+            </div>
+            <div style="border-left:1px solid #EDE8DC; padding-left:20px; font-family:'Newsreader',serif; font-style:italic; font-size:16px; line-height:1.6; color:#6B665C;">Rang càng sâu, CGA càng ít — nhưng vị đắng lại càng nhiều. Cái đắng đó đến từ sản phẩm phân huỷ của chính nó.</div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isArchive }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:88px 60px 140px; max-width:1200px;">
+        <div style="display:flex; align-items:baseline; justify-content:space-between; padding-bottom:20px; border-bottom:1px solid #191713;">
+          <h1 style="font-family:'Newsreader',serif; font-weight:200; font-size:54px; letter-spacing:-.03em; margin:0;">Archive</h1>
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#ADA795;">18 notes — sắp theo thời gian</div>
+        </div>
+        <sc-for list="{{ allPosts }}" as="p" hint-placeholder-count="18">
+          <div onClick="{{ openArticle }}" style="display:grid; grid-template-columns:58px 124px minmax(0,1fr) minmax(0,1fr) 72px; align-items:baseline; gap:18px; padding:13px 10px; border-bottom:1px solid #F4F0E6; cursor:pointer; border-left:2px solid transparent;" style-hover="background:#FFFEFB; border-left:2px solid #191713;">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#BAB4A2;">{{ p.date }}</div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <div style="width:7px; height:7px; border-radius:50%; background: {{ p.accent }};"></div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#8C877C;">{{ p.mod }}</div>
+            </div>
+            <div style="font-family:'Newsreader',serif; font-size:17px;">{{ p.en }}</div>
+            <div style="font-size:12.5px; color:#8C877C;">{{ p.vi }}</div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#BAB4A2; text-align:right; text-transform:uppercase;">{{ p.kind }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+  </div>
+
+  <div style="position:fixed; right:22px; bottom:22px; z-index:80; display:flex; gap:4px; align-items:center; background:#FFFEFB; border:1px solid #EDE8DC; padding:5px; font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.06em;">
+    <div onClick="{{ goArt }}" style="padding:6px 9px; cursor:pointer; color:#6B665C;" style-hover="background:#F6F2E6; color:#191713;">AD</div>
+    <div onClick="{{ goHome }}" style="padding:6px 9px; cursor:pointer; color:#6B665C;" style-hover="background:#F6F2E6; color:#191713;">INDEX</div>
+    <div onClick="{{ goModule }}" style="padding:6px 9px; cursor:pointer; color:#6B665C;" style-hover="background:#F6F2E6; color:#191713;">MODULE</div>
+    <div onClick="{{ openArticle }}" style="padding:6px 9px; cursor:pointer; color:#6B665C;" style-hover="background:#F6F2E6; color:#191713;">POST</div>
+    <div onClick="{{ goArchive }}" style="padding:6px 9px; cursor:pointer; color:#6B665C;" style-hover="background:#F6F2E6; color:#191713;">ARCHIVE</div>
+    <div style="width:1px; height:18px; background:#EDE8DC; margin:0 3px;"></div>
+    <div onClick="{{ toggleVariant }}" style="padding:6px 10px; cursor:pointer; background:#191713; color:#FDFCF7;">INDEX / {{ variantLabel }}</div>
+  </div>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;density&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;compact&quot;,&quot;roomy&quot;],&quot;default&quot;:&quot;roomy&quot;,&quot;tsType&quot;:&quot;'compact' | 'roomy'&quot;,&quot;section&quot;:&quot;Layout&quot;},&quot;showPlates&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Layout&quot;}}">
+class Component extends DCLogic {
+  state = { screen: 'art', variant: 'A', moduleId: 'sensory' };
+
+  data() {
+    return [
+      {
+        id: 'sensory', title: 'sensory', accent: 'oklch(0.76 0.13 45)', tint: '#FBF1E4', concept: 'flavor',
+        blurb: 'Cách con người cảm nhận hương vị, và cách gọi tên nó.',
+        long: 'Từ sinh lý học của vị giác, khứu giác đến bộ từ vựng dùng để mô tả một tách cà phê. Theme hình ảnh: hương vị ở cự ly gần — lát trái cây, tinh thể đường, bề mặt ướt. Vật thể đơn, cắt gọn, nền ngà ấm.',
+        shot1: 'macro hương vị — lát cam cắt ngang\n4:3, nền ngà, ánh sáng xiên nhẹ',
+        shot2: 'một vật thể phụ\ncánh hoa khô / hạt tiêu',
+        treatment: 'Ánh sáng ban ngày, độ tương phản thấp, sắc ấm (cam–hổ phách). Không đổ bóng gắt, không nền tối.',
+        entries: [
+          { n: '01', en: 'Senses of Flavors', vi: 'Năm giác quan cùng tham gia vào một ngụm cà phê', kind: 'note', date: '2026.05' },
+          { n: '02', en: 'Taste Perception', vi: 'Ngưỡng cảm nhận, và cách vị giác đánh lừa ta', kind: 'essay', date: '2026.04' },
+          { n: '03', en: 'Sensory Lexicon', vi: 'Bộ từ vựng mô tả hương vị và giới hạn của nó', kind: 'ref', date: '2026.03' },
+          { n: '04', en: 'Cupping Form', vi: 'Đọc bảng điểm cupping như đọc một biểu đồ', kind: 'note', date: '2026.02' },
+          { n: '05', en: 'Flavor as Human Sense', vi: 'Hương vị là ký ức hay là hoá học', kind: 'essay', date: '2026.01' },
+          { n: '06', en: 'sens.ercise', vi: 'Bài tập rèn khứu giác hằng tuần', kind: 'log', date: '2025.12' }
+        ]
+      },
+      {
+        id: 'biochem', title: 'biochemistry 101', accent: 'oklch(0.74 0.12 150)', tint: '#EEF3EA', concept: 'structure',
+        blurb: 'Hạt cà phê nhìn từ bên trong: cấu trúc, hợp chất, phản ứng.',
+        long: 'Sáu bài ngắn về thành phần hoá học của hạt nhân xanh và những gì xảy ra khi chúng gặp nhiệt. Theme hình ảnh: mặt cắt — quả chín bổ đôi, nhân trong lớp nhầy, thớ tế bào phóng đại. Bố cục đối xứng, gần như tiêu bản.',
+        shot1: 'mặt cắt — quả chín bổ đôi\n4:3, nền xanh nhạt, ánh sáng phẳng',
+        shot2: 'tiêu bản phụ\nnhân xanh, chụp từ trên',
+        treatment: 'Chụp thẳng góc, ánh sáng phẳng đều, sắc lạnh nhẹ (xanh lá – ngà). Vật thể đặt giữa khung, nhiều khoảng trống quanh.',
+        entries: [
+          { n: '01', en: 'Bean Composition', vi: 'Thành phần hoá học của một hạt nhân xanh', kind: 'note', date: '2026.04' },
+          { n: '02', en: 'Cell Wall: Lignin', vi: 'Cấu trúc gỗ hoá quyết định độ giòn khi rang', kind: 'note', date: '2026.03' },
+          { n: '03', en: 'Chlorogenic Acids (CGA)', vi: 'Nguồn gốc của vị chát và phần lớn vị chua', kind: 'essay', date: '2026.02' },
+          { n: '04', en: 'Carbohydrates', vi: 'Đường, polysaccharide và cái ngọt ở hậu vị', kind: 'note', date: '2026.01' },
+          { n: '05', en: 'Lipids in Beans', vi: 'Chất béo, thể chất của nước, và sự ôi hoá', kind: 'note', date: '2025.12' },
+          { n: '06', en: 'Melanoidins', vi: 'Sản phẩm cuối của Maillard và màu nâu của nước', kind: 'ref', date: '2025.11' }
+        ]
+      },
+      {
+        id: 'roasting', title: 'roasting', accent: 'oklch(0.80 0.14 88)', tint: '#FAF4DC', concept: 'process',
+        blurb: 'Nhiệt, thời gian, và những gì đọc được từ một đường cong.',
+        long: 'Nhiệt đi vào hạt bằng cách nào, mỗi giai đoạn làm gì, và cách ghi lại một mẻ rang để lần sau lặp được. Theme hình ảnh: quá trình và biến đổi — dải màu hạt chuyển dần, khói mảnh, mặt đồng hồ nhiệt, trang log viết tay.',
+        shot1: 'quá trình — dải hạt chuyển màu theo mức rang\n4:3, nền vàng nhạt, xếp thành hàng',
+        shot2: 'chi tiết phụ\ntrang log rang viết tay',
+        treatment: 'Nhấn vào chuỗi và trình tự: vật thể xếp hàng hoặc lặp lại. Sắc vàng nắng, tương phản trung bình, được phép có chút chuyển động mờ.',
+        entries: [
+          { n: '01', en: 'Heat Transfer', vi: 'Ba đường nhiệt đi vào hạt: dẫn, đối lưu, bức xạ', kind: 'note', date: '2026.05' },
+          { n: '02', en: 'Drying Phase', vi: 'Giai đoạn thoát ẩm, và vì sao đừng vội', kind: 'note', date: '2026.04' },
+          { n: '03', en: 'Maillard Stage', vi: 'Nơi phần lớn hương thơm được sinh ra', kind: 'essay', date: '2026.03' },
+          { n: '04', en: 'First Crack & Development', vi: 'Đo thời gian phát triển bằng gì cho đúng', kind: 'note', date: '2026.02' },
+          { n: '05', en: 'Roast Defects', vi: 'Baked, scorched, tipping — nhận diện qua ly', kind: 'ref', date: '2026.01' },
+          { n: '06', en: 'Profile Logging', vi: 'Ghi log rang như ghi nhật ký thí nghiệm', kind: 'log', date: '2025.12' }
+        ]
+      }
+    ];
+  }
+
+  renderVals() {
+    const density = this.props.density ?? 'roomy';
+    const modules = this.data().map(m => Object.assign({}, m, {
+      count: m.entries.length,
+      open: () => this.setState({ screen: 'module', moduleId: m.id })
+    }));
+    const mod = modules.find(m => m.id === this.state.moduleId) || modules[0];
+    const allPosts = [];
+    modules.forEach(m => m.entries.forEach(e => allPosts.push({
+      date: e.date, mod: m.title, accent: m.accent, en: e.en, vi: e.vi, kind: e.kind
+    })));
+    allPosts.sort((a, b) => a.date < b.date ? 1 : -1);
+
+    return {
+      modules, mod, allPosts,
+      showPlates: this.props.showPlates ?? true,
+      rowPad: density === 'compact' ? '12px' : '18px',
+      variantLabel: this.state.variant,
+      isArt: this.state.screen === 'art',
+      isHomeA: this.state.screen === 'home' && this.state.variant === 'A',
+      isHomeB: this.state.screen === 'home' && this.state.variant === 'B',
+      isModule: this.state.screen === 'module',
+      isArticle: this.state.screen === 'article',
+      isArchive: this.state.screen === 'archive',
+      related: modules[1].entries.filter(e => e.n !== '03'),
+      swatches: [
+        { name: 'ivory', hex: '#FDFCF7' },
+        { name: 'sunny white', hex: '#FFFEFB' },
+        { name: 'oat', hex: '#F6F2E6' },
+        { name: 'rule', hex: '#EDE8DC' },
+        { name: 'ink', hex: '#191713' },
+        { name: 'apricot / sensory', hex: '#F4C08A' },
+        { name: 'leaf / biochem', hex: '#A8CBA0' },
+        { name: 'sun / roasting', hex: '#EFCB6B' }
+      ],
+      imageRules: [
+        { n: '01', t: 'Một ảnh cho một màn hình. Không bao giờ hai ảnh lớn cạnh nhau.' },
+        { n: '02', t: 'Không chồng layer, không ảnh nằm dưới chữ, không gradient phủ.' },
+        { n: '03', t: 'Ảnh luôn nằm trong khung viền 1px, nền khung là tint của module.' },
+        { n: '04', t: 'Vật thể đơn hoặc chuỗi vật thể lặp lại. Không bối cảnh, không đạo cụ.' },
+        { n: '05', t: 'Ánh sáng ban ngày, tương phản thấp, không đổ bóng gắt.' },
+        { n: '06', t: 'Tỉ lệ dùng lại: 16:5 cho hero, 4:3 cho ảnh module, 3:4 cho ảnh phụ.' }
+      ],
+      layoutRules: [
+        { n: '01', t: 'Nền ngà duy nhất; trắng chỉ dùng cho trạng thái hover và sidebar.' },
+        { n: '02', t: 'Kẻ ngang 1px là công cụ chia chính — không dùng thẻ bo góc, không đổ bóng.' },
+        { n: '03', t: 'Tiêu đề Newsreader Light cỡ lớn, đặt cạnh khối chữ nhỏ để tạo tương phản.' },
+        { n: '04', t: 'Màu accent chỉ xuất hiện ở chấm tròn 8px và nền khung ảnh.' },
+        { n: '05', t: 'Sidebar chìm ở 64px, mở rộng khi rê chuột — không chiếm chỗ đọc.' },
+        { n: '06', t: 'Mỗi module thêm về sau chỉ cần một hue mới cùng độ sáng và một theme ảnh.' }
+      ],
+      article: [
+        { h: 'Nó là gì', p: 'Chlorogenic acid không phải một chất, mà là một họ khoảng hơn hai mươi hợp chất phenolic. Trong hạt arabica nhân xanh, chúng chiếm khoảng 6–8% khối lượng khô; ở robusta con số này cao hơn, thường 8–11%. Đây là nhóm hợp chất phong phú thứ hai trong hạt, chỉ sau carbohydrate.' },
+        { h: 'Vì sao ta quan tâm', p: 'CGA là lý do một tách cà phê có vị chát ở cuối lưỡi và cảm giác khô nhẹ ở vòm miệng. Chúng cũng là tiền chất của nhiều hợp chất đắng sinh ra trong lúc rang, nên phần lớn những gì ta gọi là “vị đắng cà phê” thực ra bắt đầu từ đây chứ không phải từ caffeine.' },
+        { h: 'Chuyện gì xảy ra khi rang', p: 'Nhiệt phá vỡ CGA khá nhanh. Từ nhân xanh đến mức rang vừa, khoảng một nửa lượng CGA biến mất; đến rang đậm có thể mất tới 90%. Nhưng chúng không biến đi đâu cả — chúng tách thành acid quinic và acid caffeic, rồi tiếp tục chuyển thành các lactone và phenylindane. Nhóm đầu cho vị đắng dịu, dễ chịu; nhóm sau cho vị đắng dai và khô, thứ vị đặc trưng của rang đậm.' },
+        { h: 'Đọc điều này trong ly', p: 'Một mẻ rang nhạt giữ nhiều CGA hơn, nên chua và chát rõ hơn, nhưng cũng dễ bị coi là “xanh” nếu giai đoạn phát triển quá ngắn. Kéo dài thời gian sau first crack thêm ba mươi giây thường đủ để chuyển vị chát ấy thành vị ngọt hậu, mà chưa kịp sinh phenylindane.' },
+        { h: 'Ghi chú thí nghiệm', p: 'Rang cùng một lô Sơn La ở ba mức phát triển 15%, 20% và 25%, cupping mù ba mẫu. Mẫu 15% chua sắc và khô ở hậu vị; mẫu 20% cân bằng nhất; mẫu 25% ngọt hơn nhưng mất hết nét trái cây. Ranh giới hẹp hơn tôi tưởng.' }
+      ],
+      goArt: () => this.setState({ screen: 'art' }),
+      goHome: () => this.setState({ screen: 'home' }),
+      goArchive: () => this.setState({ screen: 'archive' }),
+      goModule: () => this.setState({ screen: 'module' }),
+      goBackModule: () => this.setState({ screen: 'module', moduleId: 'biochem' }),
+      openArticle: () => this.setState({ screen: 'article' }),
+      toggleVariant: () => this.setState(s => ({ screen: 'home', variant: s.variant === 'A' ? 'B' : 'A' }))
+    };
+  }
+}
+
+</script>
+</body>
+</html>
