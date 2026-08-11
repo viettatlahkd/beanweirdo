@@ -1,39 +1,64 @@
-export type LogKind = 'đọc' | 'thực hành' | 'viết' | 'quan sát'
-
 export type LogEntry = {
   id: number
   /** ISO-ish `YYYY-MM-DD` */
   date: string
   name: string
-  kind: LogKind
+  kind: string
   mins: number
   /** clock time the activity started, `HH:MM` */
   at: string
+  /**
+   * `false` marks a draft row added via "thêm hoạt động" that hasn't been
+   * ticked yet. Undefined/true both read as done — the seed data omits the
+   * field entirely and still counts.
+   */
+  done?: boolean
 }
 
-export const LOG_KINDS: LogKind[] = ['đọc', 'thực hành', 'viết', 'quan sát']
+/** The four kinds the journal ships with — users can add more from the timer rail. */
+export const KINDS = ['đọc', 'thực hành', 'viết', 'quan sát']
 
-/** Colour codes the kind of work — the only decorative use of colour on Hours. */
-export const kindColor: Record<LogKind, string> = {
-  đọc: '#C9821F',
-  'thực hành': '#2E8C74',
-  viết: '#6E5AA8',
-  'quan sát': '#C25438',
+/**
+ * Kind colour is assigned by position, not by name, so a newly-typed kind
+ * gets a colour for free. Cycles once every 7 kinds.
+ */
+export const KIND_PALETTE = [
+  '#3E7A4E',
+  'oklch(0.50 0.135 14)',
+  '#8A6420',
+  '#102F35',
+  '#5E7F52',
+  'oklch(0.60 0.115 14)',
+  '#6E5A2A',
+]
+
+export function kindColorMap(kinds: string[]): Record<string, string> {
+  const map: Record<string, string> = {}
+  kinds.forEach((k, i) => {
+    map[k] = KIND_PALETTE[i % KIND_PALETTE.length]
+  })
+  return map
 }
+
+export const STORAGE_KEY = 'cs_practice_logs_v1'
+export const KINDS_STORAGE_KEY = 'cs_practice_kinds_v1'
 
 /**
  * The journal is a prototype with a fixed "today" — the seeded streak, the
- * 21-day grid and the stats are all anchored to this date. Move it and the
- * sample data no longer lines up behind the grid.
+ * day grid and the stats are all anchored to this date.
  */
 export const TODAY = '2026-02-14'
 
-export const STORAGE_KEY = 'cs_practice_logs_v1'
-
-/** How far back the day grid and the stats panel reach. */
+/** How far back the streak, stats and month grouping reach. */
 export const SPAN_DAYS = 21
 
-const pool: [string, LogKind, number][] = [
+/** Of that span, only the most recent 7 days are editable/draggable. */
+export const RECENT_DAYS = 7
+
+/** Of that span, only the most recent 12 days render as day rows at all. */
+export const SHOWN_DAYS = 12
+
+const pool: [string, string, number][] = [
   ['Cupping 6 mẫu Sơn La', 'thực hành', 90],
   ['Đọc chương CGA — Illy', 'đọc', 85],
   ['Viết lại ghi chú rang', 'viết', 70],
@@ -46,10 +71,11 @@ const pool: [string, LogKind, number][] = [
   ['Xem lại video rang tuần trước', 'quan sát', 35],
 ]
 
-/** Which activities happened on each of the last 14 days, newest day first. */
+/** Which activities happened on each of the 21 seeded days, newest day first. */
 const plan: number[][] = [
   [0, 1, 2], [3, 4], [5, 6, 7], [8], [1, 3, 5], [0, 2], [6, 9],
   [4, 7, 1], [2, 8], [3, 0], [5], [7, 9, 4], [1, 6], [0, 3, 8],
+  [2, 5], [7, 1], [0, 4, 9], [3, 6], [8, 2], [1, 5, 7], [4, 0],
 ]
 
 export const dateStr = (d: Date) =>
@@ -76,6 +102,7 @@ export function seedLogs(): LogEntry[] {
         name,
         kind,
         mins,
+        done: true,
         at:
           String(Math.floor(clock / 60)).padStart(2, '0') +
           ':' +

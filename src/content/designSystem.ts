@@ -4,7 +4,7 @@ export const swatches = [
   { name: 'cream paper', hex: '#FDFBF2', fg: '#4B463A' },
   { name: 'blush', hex: '#F2A0A5', fg: '#3B2A2B' },
   { name: 'leaf', hex: '#7FB87E', fg: '#1F3323' },
-  { name: 'apricot', hex: '#F0B45C', fg: '#3B2E19' },
+  { name: 'apricot', hex: 'oklch(0.50 0.135 14)', fg: '#3B2E19' },
   { name: 'moss', hex: '#2B4B33', fg: '#E4F0DF' },
   { name: 'petal tint', hex: '#FBE7E5', fg: '#4B463A' },
   { name: 'leaf tint', hex: '#E4F0DF', fg: '#4B463A' },
@@ -20,8 +20,8 @@ export const typeScale = [
   { token: 'h2', family: serif, size: '44px', sample: 'biochemistry', spec: '44 / lh 1 — tên module ở trang index' },
   { token: 'h3', family: serif, size: '24px', sample: 'Bean Composition', spec: '21–25 / lh 1.15 — tên bài trong danh mục' },
   { token: 'lead', family: serif, size: '22px', sample: 'nghiêng, dẫn nhập', spec: 'italic 22–24 / lh 1.4 — sapo dưới tiêu đề' },
-  { token: 'body', family: sans, size: '16px', sample: 'Thân bài tiếng Việt', spec: 'Figtree Light 300 · 16 / lh 1.5 — thân bài; 13.5 / lh 1.4 — mô tả' },
-  { token: 'label', family: sans, size: '11px', sample: 'TREATMENT — 2026.02', spec: 'Figtree Light 300 · 9.5–11 / ls .14em / uppercase — nhãn, số, ngày' },
+  { token: 'body', family: sans, size: '16px', sample: 'Thân bài tiếng Việt', spec: 'Be Vietnam Pro Light 300 · 16 / lh 1.5 — thân bài; 13.5 / lh 1.4 — mô tả' },
+  { token: 'label', family: sans, size: '11px', sample: 'TREATMENT — 2026.02', spec: 'Be Vietnam Pro Light 300 · 9.5–11 / ls .14em / uppercase — nhãn, số, ngày' },
 ]
 
 export const spaceScale = [

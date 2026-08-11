@@ -22,6 +22,11 @@ a:hover {
   background: #f7cbd0;
 }
 
+/* light-on-dark placeholder used by the Ghi timer's inline inputs */
+input::placeholder {
+  color: rgba(244, 244, 239, 0.62);
+}
+
 /* Headings never go bold — weight is not how this system creates emphasis. */
 h1,
 h2,

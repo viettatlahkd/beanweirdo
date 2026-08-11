@@ -7,7 +7,7 @@
  */
 
 export const serif = "'Playfair Display', serif"
-export const sans = "'Figtree', system-ui, sans-serif"
+export const sans = "'Be Vietnam Pro', system-ui, sans-serif"
 
 /** Paper, ink and rules — the shared substrate of every blog screen. */
 export const paper = {

@@ -197,7 +197,18 @@ export function Landing() {
             margin: '0 0 24px',
           }}
         >
-          Học về cà phê
+          be
+          <span
+            style={{
+              display: 'inline-block',
+              transform: 'scale(1.22)',
+              transformOrigin: '50% 88%',
+              color: garden.blush,
+            }}
+          >
+            ӕ
+          </span>
+          n weirdo
           <br />
           <span style={{ fontStyle: 'italic', color: ink.green }}>bằng cách viết ra</span>
         </h1>

@@ -10,7 +10,7 @@
 <helmet>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&amp;family=Figtree:wght@300&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&amp;family=Be+Vietnam+Pro:ital,wght@0,200;0,300;0,400;0,500;0,600;1,200;1,300&amp;display=swap" rel="stylesheet">
 <style>
   html, body { margin:0; padding:0; background:#FDFBF2; }
   * { box-sizing:border-box; }
@@ -18,58 +18,59 @@
   a:hover { color:#3E7A4E; }
   ::selection { background:#F7CBD0; }
   h1, h2, h3, h4 { font-weight:400; }
+  input::placeholder { color: rgba(244,244,239,.62); }
   @keyframes riseIn { from { opacity:0; transform:translateY(28px); } to { opacity:1; transform:none; } }
 </style>
 </helmet>
 
-<div style="min-height:100vh; background:#FDFBF2; color:#23211A; font-family:'Figtree',system-ui,sans-serif; font-weight:300; -webkit-font-smoothing:antialiased;">
+<div style="min-height:100vh; background:#FDFBF2; color:#23211A; font-family:'Be Vietnam Pro',system-ui,sans-serif; font-weight:200; -webkit-font-smoothing:antialiased;">
 
-  <div style="position:fixed; top:0; left:0; bottom:0; width:64px; background:#FDFBF2; color:#23211A; overflow:hidden; z-index:60; transition:width .3s cubic-bezier(.4,0,.2,1); display:flex; flex-direction:column; padding:22px 0;" style-hover="width:268px; background:#FFFFFF; box-shadow:22px 0 50px -34px rgba(35,33,26,.35);">
+  <div style="position:fixed; top:0; left:0; bottom:0; width:64px; background: {{ sideBg }}; color: {{ sideFg }}; overflow:hidden; z-index:60; transition:width .3s cubic-bezier(.4,0,.2,1); display:flex; flex-direction:column; padding:22px 0;" style-hover="width:268px; box-shadow:22px 0 50px -34px rgba(35,33,26,.45);">
     <div style="display:flex; align-items:center; gap:30px; padding:0 22px 24px; white-space:nowrap;">
-      <div style="width:20px; height:20px; border-radius:50%; background:#F2A0A5; flex:none;"></div>
+      <div style="width:20px; height:20px; border-radius:50%; background: {{ sideDot }}; flex:none;"></div>
       <div style="font-family:'Playfair Display',serif; font-size:23px; letter-spacing:-.01em;">coffee study</div>
     </div>
-    <div style="height:1px; background:#EBE5D3; margin:0 0 20px;"></div>
+    <div style="height:1px; background: {{ sideRule }}; margin:0 0 20px;"></div>
     <div style="display:flex; flex-direction:column; gap:1px;">
-      <div onClick="{{ goArt }}" style="display:flex; align-items:center; gap:30px; padding:10px 22px; cursor:pointer; white-space:nowrap; color:#5C5745;" style-hover="background:#F6F2E2; color:#23211A;">
-        <div style="width:20px; display:flex; justify-content:center; flex:none;"><div style="width:8px; height:8px; border:1px solid #8C8674; transform:rotate(45deg);"></div></div>
+      <div onClick="{{ goArt }}" style="display:flex; align-items:center; gap:30px; padding:10px 22px; cursor:pointer; white-space:nowrap; color: {{ sideMuted }};" style-hover="background: {{ sideHover }};">
+        <div style="width:20px; display:flex; justify-content:center; flex:none;"><div style="width:8px; height:8px; border:1px solid currentColor; transform:rotate(45deg);"></div></div>
         <div style="font-size:13px;">Design system</div>
       </div>
-      <div onClick="{{ goLanding }}" style="display:flex; align-items:center; gap:30px; padding:10px 22px; cursor:pointer; white-space:nowrap; color:#5C5745;" style-hover="background:#F6F2E2; color:#23211A;">
-        <div style="width:20px; display:flex; justify-content:center; flex:none;"><div style="width:10px; height:10px; border-radius:50%; border:1px solid #23211A;"></div></div>
+      <div onClick="{{ goLanding }}" style="display:flex; align-items:center; gap:30px; padding:10px 22px; cursor:pointer; white-space:nowrap; color: {{ sideMuted }};" style-hover="background: {{ sideHover }};">
+        <div style="width:20px; display:flex; justify-content:center; flex:none;"><div style="width:10px; height:10px; border-radius:50%; border:1px solid currentColor;"></div></div>
         <div style="font-size:13px;">Trang chủ</div>
       </div>
-      <div onClick="{{ goHome }}" style="display:flex; align-items:center; gap:30px; padding:10px 22px; cursor:pointer; white-space:nowrap; color:#5C5745;" style-hover="background:#F6F2E2; color:#23211A;">
-        <div style="width:20px; display:flex; justify-content:center; flex:none;"><div style="width:10px; height:1px; background:#8C8674;"></div></div>
+      <div onClick="{{ goHome }}" style="display:flex; align-items:center; gap:30px; padding:10px 22px; cursor:pointer; white-space:nowrap; color: {{ sideMuted }};" style-hover="background: {{ sideHover }};">
+        <div style="width:20px; display:flex; justify-content:center; flex:none;"><div style="width:10px; height:1px; background:currentColor;"></div></div>
         <div style="font-size:13px;">Mục lục</div>
       </div>
       <sc-for list="{{ modules }}" as="m" hint-placeholder-count="3">
-        <div onClick="{{ m.open }}" style="display:flex; align-items:center; gap:30px; padding:10px 22px; cursor:pointer; white-space:nowrap; color:#5C5745;" style-hover="background:#F6F2E2; color:#23211A;">
+        <div onClick="{{ m.open }}" style="display:flex; align-items:center; gap:30px; padding:10px 22px; cursor:pointer; white-space:nowrap; color: {{ sideMuted }};" style-hover="background: {{ sideHover }};">
           <div style="width:20px; display:flex; justify-content:center; flex:none;"><div style="width:10px; height:10px; border-radius:50%; background: {{ m.accent }};"></div></div>
           <div style="font-size:13px; flex:1;">{{ m.title }}</div>
-          <div style="font-family:'Figtree',sans-serif; font-size:10px; color:#B5AE99; padding-right:18px;">{{ m.count }}</div>
+          <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; color:#B5AE99; padding-right:18px;">{{ m.count }}</div>
         </div>
       </sc-for>
-      <div onClick="{{ openArticle }}" style="display:flex; align-items:center; gap:30px; padding:10px 22px; cursor:pointer; white-space:nowrap; color:#5C5745;" style-hover="background:#F6F2E2; color:#23211A;">
-        <div style="width:20px; display:flex; justify-content:center; flex:none;"><div style="width:11px; height:7px; border-top:1px solid #8C8674; border-bottom:1px solid #8C8674;"></div></div>
-        <div style="font-size:13px;">Bài mẫu — CGA</div>
-      </div>
-      <div onClick="{{ goArchive }}" style="display:flex; align-items:center; gap:30px; padding:10px 22px; cursor:pointer; white-space:nowrap; color:#5C5745;" style-hover="background:#F6F2E2; color:#23211A;">
-        <div style="width:20px; display:flex; justify-content:center; flex:none;"><div style="width:8px; height:8px; border:1px solid #8CA492;"></div></div>
+        <div onClick="{{ goNotes }}" style="display:flex; align-items:center; gap:30px; padding:10px 22px; cursor:pointer; white-space:nowrap; color: {{ sideMuted }};" style-hover="background: {{ sideHover }};">
+          <div style="width:20px; display:flex; justify-content:center; flex:none;"><div style="width:9px; height:9px; background:#6FA8C0;"></div></div>
+          <div style="font-size:13px;">bite-size</div>
+        </div>
+      <div onClick="{{ goArchive }}" style="display:flex; align-items:center; gap:30px; padding:10px 22px; cursor:pointer; white-space:nowrap; color: {{ sideMuted }};" style-hover="background: {{ sideHover }};">
+        <div style="width:20px; display:flex; justify-content:center; flex:none;"><div style="width:8px; height:8px; border:1px solid currentColor;"></div></div>
         <div style="font-size:13px;">Archive</div>
+      </div>
+      <div onClick="{{ openArticle }}" style="display:flex; align-items:center; gap:30px; padding:10px 22px; cursor:pointer; white-space:nowrap; color: {{ sideMuted }};" style-hover="background: {{ sideHover }};">
+        <div style="width:20px; display:flex; justify-content:center; flex:none;"><div style="width:11px; height:7px; border-top:1px solid currentColor; border-bottom:1px solid currentColor;"></div></div>
+        <div style="font-size:13px;">Bài mẫu — CGA</div>
       </div>
     </div>
     <div style="margin:24px 0 0;">
-      <div style="height:1px; background:#EBE5D3; margin-bottom:14px;"></div>
+      <div style="height:1px; background: {{ sideRule }}; margin-bottom:14px;"></div>
       <div style="padding:0 22px 8px; white-space:nowrap; display:flex; gap:30px;"><div style="width:20px; flex:none;"></div><div style="font-size:9.5px; letter-spacing:.18em; text-transform:uppercase; color:#B5AE99;">Practice</div></div>
       <div style="display:flex; flex-direction:column; gap:1px;">
-        <div onClick="{{ goHours }}" style="display:flex; align-items:center; gap:30px; padding:10px 22px; cursor:pointer; white-space:nowrap; color:#5C5745;" style-hover="background:#F6F2E2; color:#23211A;">
-          <div style="width:20px; display:flex; justify-content:center; flex:none;"><div style="width:9px; height:9px; border:1px solid #16181B; border-radius:50%; position:relative;"><div style="position:absolute; left:3px; top:1px; width:1px; height:3px; background:#16181B;"></div></div></div>
-          <div style="font-size:13px;">Hours — nhật ký giờ</div>
-        </div>
-        <div onClick="{{ goNotes }}" style="display:flex; align-items:center; gap:30px; padding:10px 22px; cursor:pointer; white-space:nowrap; color:#5C5745;" style-hover="background:#F6F2E2; color:#23211A;">
-          <div style="width:20px; display:flex; flex-direction:column; gap:2px; align-items:center; flex:none;"><div style="width:11px; height:1px; background:#16181B;"></div><div style="width:11px; height:1px; background:#16181B;"></div><div style="width:6px; height:1px; background:#16181B;"></div></div>
-          <div style="font-size:13px;">Notes — ghi chép rời</div>
+        <div onClick="{{ goHours }}" style="display:flex; align-items:center; gap:30px; padding:10px 22px; cursor:pointer; white-space:nowrap; color: {{ sideMuted }};" style-hover="background: {{ sideHover }};">
+          <div style="width:20px; display:flex; justify-content:center; flex:none;"><div style="width:9px; height:9px; border:1px solid currentColor; border-radius:50%; position:relative;"><div style="position:absolute; left:3px; top:1px; width:1px; height:3px; background:currentColor;"></div></div></div>
+          <div style="font-size:13px;">Ghi — daily journal</div>
         </div>
       </div>
     </div>
@@ -81,114 +82,73 @@
   <div style="margin-left:64px;">
 
     <sc-if value="{{ isHours }}" hint-placeholder-val="{{ false }}">
-      <div style="background:#E9EBE4; color:#212520; min-height:100vh; padding:44px 56px 96px; font-family:'Figtree',sans-serif; font-weight:300;">
-        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:40px; flex-wrap:wrap;">
-          <div style="flex:1 1 420px;">
-            <div style="font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:#767C70; margin-bottom:18px;">Practice — 01 / Hours</div>
-            <div style="display:flex; align-items:flex-end; gap:22px;">
-              <div style="font-size:132px; line-height:.78; letter-spacing:-.05em; font-variant-numeric:tabular-nums;">{{ streakNum }}</div>
-              <div style="padding-bottom:12px;">
-                <div style="font-size:19px; line-height:1.15;">{{ streakLabel }}</div>
-                <div style="font-size:13px; color:#767C70; margin-top:5px;">Hôm nay đã ghi {{ todayTotal }} · {{ todayCount }}</div>
-              </div>
+      <div style="background:#FCFCFA; color:#172124; min-height:100vh; padding:52px 60px 110px; font-family:'Be Vietnam Pro',sans-serif; font-weight:200;">
+
+        <div style="border-bottom:1px solid #102F35; padding-bottom:22px;">
+          <div style="display:flex; align-items:baseline; justify-content:space-between; gap:56px; flex-wrap:wrap;">
+            <div>
+              <div style="font-size:9.5px; letter-spacing:.34em; text-transform:uppercase; color:#7C7C70; margin-bottom:18px;">beӕn weirdo — 01</div>
+              <h1 style="font-family:'Playfair Display',serif; font-weight:400; font-size:104px; line-height:.8; letter-spacing:-.045em; margin:0; display:flex; align-items:baseline; gap:16px; flex-wrap:wrap;">
+                <span style="color:#102F35;">Ghi</span>
+                <span style="font-family: 'Be Vietnam Pro',sans-serif; font-weight: 500; font-style: italic; font-size: 62px; letter-spacing: -.03em; color: oklch(0.50 0.135 14); font-variant-numeric: tabular-nums">2026</span>
+              </h1>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:9.5px; letter-spacing:.28em; text-transform:uppercase; color:#7C7C70; margin-bottom:8px;">Hôm nay</div>
+              <div style="font-family:'Playfair Display',serif; font-size:84px; line-height:.8; letter-spacing:-.045em; font-variant-numeric:tabular-nums; color:#102F35;">{{ todayTotal }}</div>
             </div>
           </div>
-          <div style="flex:0 1 300px; display:flex; gap:28px; padding-top:34px;">
-            <div>
-              <div style="font-size:9.5px; letter-spacing:.18em; text-transform:uppercase; color:#767C70; margin-bottom:6px;">Tuần này</div>
-              <div style="font-size:28px; line-height:1; font-variant-numeric:tabular-nums;">{{ sum7 }}</div>
+
+          <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:56px; flex-wrap:wrap; margin-top:22px;">
+            <div style="max-width:560px;">
+              <div style="display:flex; align-items:baseline; gap:12px; flex-wrap:wrap;">
+                <div style="width:34px; height:8px; background:#F2A0A5; margin-bottom:5px;"></div>
+                <div style="font-family:'Playfair Display',serif; font-style:italic; font-size:24px; line-height:1.3; color:#3E7A4E;">“We are what we repeatedly do.”</div>
+              </div>
+              <div style="display:flex; align-items:center; gap:10px; margin:6px 0 0 46px;">
+                <div style="width: 15px; height: 1px; background: #A2A296"></div>
+                <div style="font-family:'Playfair Display',serif; font-style:italic; font-size:12px; color:#A2A296;">Will Durant</div>
+              </div>
             </div>
-            <div>
-              <div style="font-size:9.5px; letter-spacing:.18em; text-transform:uppercase; color:#767C70; margin-bottom:6px;">Trung bình / ngày</div>
-              <div style="font-size:28px; line-height:1; font-variant-numeric:tabular-nums;">{{ avg7 }}</div>
+            <div style="display:flex; gap:24px; justify-content:flex-end; align-items:flex-end;">
+              <div style="text-align:right;">
+                <div style="font-family:'Playfair Display',serif; font-size:38px; line-height:1; letter-spacing:-.03em; color:#3E7A4E; font-variant-numeric:tabular-nums;">{{ streakNum }}</div>
+                <div style="font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:#7C7C70; margin-top:5px;">ngày liền</div>
+              </div>
+              <div style="width:5px; height:5px; background:#F2A0A5; margin-bottom:22px;"></div>
+              <div style="text-align:right;">
+                <div style="font-family:'Playfair Display',serif; font-size:38px; line-height:1; letter-spacing:-.03em; color:#8A6420; font-variant-numeric:tabular-nums;">{{ avg7 }}</div>
+                <div style="font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:#7C7C70; margin-top:5px;">mỗi ngày</div>
+              </div>
             </div>
           </div>
         </div>
 
-        <div style="display:flex; flex-wrap:wrap; gap:40px; align-items:flex-start; margin-top:44px;">
-          <div style="flex:3 1 560px; min-width:440px;">
-            <div style="font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:#767C70; margin-bottom:14px;">Ba tuần gần nhất</div>
-            <div style="display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:8px;">
-              <sc-for list="{{ dayCells }}" as="d" hint-placeholder-count="21">
-                <div style="background: {{ d.bg }}; border: {{ d.border }}; padding:10px 10px 11px; min-height:104px; display:flex; flex-direction:column;">
-                  <div style="display:flex; justify-content:space-between; align-items:baseline;">
-                    <div style="font-size:9.5px; letter-spacing:.14em; text-transform:uppercase; color:#767C70;">{{ d.dow }}</div>
-                    <div style="font-size:15px; font-variant-numeric:tabular-nums;">{{ d.num }}</div>
-                  </div>
-                  <div style="display:flex; flex-direction:column; gap:3px; margin-top:10px;">
-                    <sc-for list="{{ d.ticks }}" as="t" hint-placeholder-count="2">
-                      <div title="{{ t.n }}" style="height:5px; background: {{ t.c }};"></div>
-                    </sc-for>
-                  </div>
-                  <div style="margin-top:auto; padding-top:10px; font-size:11px; color:#5E645A; font-variant-numeric:tabular-nums;">{{ d.dur }}</div>
-                </div>
-              </sc-for>
-            </div>
-            <div onClick="{{ toggleStats }}" style="display:inline-block; margin-top:22px; font-size:11px; letter-spacing:.16em; text-transform:uppercase; border-bottom:1px solid #B9BDB0; padding-bottom:4px; cursor:pointer; color:#4A5047;" style-hover="color:#2E8C74; border-color:#2E8C74;">{{ statsLabel }}</div>
-          </div>
-
-          <div style="flex:1 1 280px; min-width:262px; max-width:330px;">
-            <div style="background:#F7F7F2; border:1px solid #D3D6CB; padding:20px;">
-              <div style="font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:#767C70; margin-bottom:16px;">Ghi hoạt động hôm nay</div>
-              <input value="{{ dName }}" onChange="{{ setName }}" placeholder="Làm gì" style="width:100%; box-sizing:border-box; background:transparent; border:0; border-bottom:1px solid #C6CABC; color:#212520; font-family:'Figtree',sans-serif; font-weight:300; font-size:15px; padding:8px 0 9px; outline:none; margin-bottom:16px;" />
-              <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px;">
-                <div>
-                  <div style="font-size:9.5px; letter-spacing:.16em; text-transform:uppercase; color:#767C70; margin-bottom:5px;">Bắt đầu</div>
-                  <input type="time" value="{{ dStart }}" onChange="{{ setStart }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #D3D6CB; color:#212520; font-family:'Figtree',sans-serif; font-weight:300; font-size:14px; padding:7px 8px; outline:none;" />
-                </div>
-                <div>
-                  <div style="font-size:9.5px; letter-spacing:.16em; text-transform:uppercase; color:#767C70; margin-bottom:5px;">Kết thúc</div>
-                  <input type="time" value="{{ dEnd }}" onChange="{{ setEnd }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #D3D6CB; color:#212520; font-family:'Figtree',sans-serif; font-weight:300; font-size:14px; padding:7px 8px; outline:none;" />
-                </div>
-              </div>
-              <div style="font-size:9.5px; letter-spacing:.16em; text-transform:uppercase; color:#767C70; margin-bottom:8px;">Loại</div>
-              <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:18px;">
-                <sc-for list="{{ kinds }}" as="k" hint-placeholder-count="4">
-                  <div onClick="{{ k.pick }}" style="font-size:12px; padding:5px 11px; border:1px solid #D3D6CB; background:#FFFFFF; cursor:pointer; color:#4A5047;" style-hover="border-color:#212520;">{{ k.k }}</div>
-                </sc-for>
-              </div>
-              <div onClick="{{ submitLog }}" style="text-align:center; font-size:12px; letter-spacing:.16em; text-transform:uppercase; padding:12px; background:#212520; color:#F1F2EC; cursor:pointer;" style-hover="background:#2E8C74;">Tick xong</div>
-            </div>
-
-            <div style="margin-top:24px;">
-              <div style="font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:#767C70; margin-bottom:10px;">Đã tick hôm nay</div>
-              <sc-for list="{{ logRows }}" as="r" hint-placeholder-count="3">
-                <div style="border-top:1px solid #D3D6CB; padding:10px 0;">
-                  <div style="display:flex; gap:9px; align-items:baseline;">
-                    <div style="width:6px; height:6px; background: {{ r.color }}; flex:none;"></div>
-                    <div style="font-size:14px; line-height:1.25; flex:1;">{{ r.name }}</div>
-                  </div>
-                  <div style="display:flex; justify-content:space-between; margin-top:5px; padding-left:15px; font-size:11px; color:#767C70; font-variant-numeric:tabular-nums;">
-                    <div>{{ r.at }} · {{ r.kind }}</div>
-                    <div onClick="{{ r.remove }}" style="cursor:pointer;" style-hover="color:#C25438;">{{ r.dur }} ✕</div>
-                  </div>
-                </div>
-              </sc-for>
-            </div>
-          </div>
+        <div onClick="{{ toggleStats }}" style="display:inline-flex; align-items:center; gap:11px; margin-top:26px; font-weight:600; font-size:11.5px; letter-spacing:.2em; text-transform:uppercase; background: {{ statsBtnBg }}; color: {{ statsBtnFg }}; border:1px solid {{ statsBtnEdge }}; padding:13px 20px; cursor:pointer; transition:background .25s ease, color .25s ease;" style-hover="background:#102F35; color:#F4F4EF; border-color:#102F35;">
+          <div style="width:6px; height:6px; background:currentColor;"></div>
+          <div>{{ statsLabel }}</div>
         </div>
-
         <sc-if value="{{ statsOpen }}" hint-placeholder-val="{{ false }}">
-          <div style="margin-top:56px; border-top:2px solid #212520; padding-top:34px;">
-            <div style="display:flex; flex-wrap:wrap; gap:56px; margin-bottom:46px;">
-              <div>
-                <div style="font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:#767C70; margin-bottom:8px;">Tổng 21 ngày</div>
-                <div style="font-size:44px; line-height:1; font-variant-numeric:tabular-nums;">{{ spanTotalTxt }}</div>
+          <div style="margin:30px 0 6px;">
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:12px; margin-bottom:26px;">
+              <div style="background:#102F35; color:#F4F4EF; padding:18px 20px 20px;">
+                <div style="font-weight:500; font-size:9.5px; letter-spacing:.2em; text-transform:uppercase; color:rgba(244,244,239,.72); margin-bottom:8px;">Tổng 21 ngày</div>
+                <div style="font-family:'Playfair Display',serif; font-size:46px; line-height:1; font-variant-numeric:tabular-nums;">{{ spanTotalTxt }}</div>
               </div>
-              <div>
-                <div style="font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:#767C70; margin-bottom:8px;">Ngày có ghi</div>
-                <div style="font-size:44px; line-height:1; font-variant-numeric:tabular-nums;">{{ activeDaysTxt }}</div>
+              <div style="background:oklch(0.50 0.135 14); color:oklch(0.97 0.018 14); padding:18px 20px 20px;">
+                <div style="font-weight:500; font-size:9.5px; letter-spacing:.2em; text-transform:uppercase; color:oklch(0.97 0.018 14 / .8); margin-bottom:8px;">Ngày có ghi</div>
+                <div style="font-family:'Playfair Display',serif; font-size:46px; line-height:1; font-variant-numeric:tabular-nums;">{{ activeDaysTxt }}</div>
               </div>
-              <div>
-                <div style="font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:#767C70; margin-bottom:8px;">Ngày nhiều nhất — {{ bestDay }}</div>
-                <div style="font-size:44px; line-height:1; font-variant-numeric:tabular-nums;">{{ bestTxt }}</div>
+              <div style="background:#F2A0A5; color:#3B2A2B; padding:18px 20px 20px;">
+                <div style="font-weight:500; font-size:9.5px; letter-spacing:.2em; text-transform:uppercase; color:rgba(255,246,236,.75); margin-bottom:8px;">Ngày nhiều nhất — {{ bestDay }}</div>
+                <div style="font-family:'Playfair Display',serif; font-size:46px; line-height:1; font-variant-numeric:tabular-nums;">{{ bestTxt }}</div>
               </div>
             </div>
 
             <div style="display:flex; flex-wrap:wrap; gap:48px; align-items:flex-start;">
-              <div style="flex:2 1 460px; min-width:400px;">
-                <div style="font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:#767C70; margin-bottom:16px;">Giờ theo ngày</div>
-                <div style="display:flex; align-items:flex-end; gap:5px; height:140px; border-bottom:1px solid #C6CABC;">
+              <div style="flex:2 1 440px; min-width:0; background:#F6F6F1; padding:20px 22px 24px;">
+                <div style="font-weight:500; font-size:9.5px; letter-spacing:.2em; text-transform:uppercase; color:#7C7C70; margin-bottom:16px;">Giờ theo ngày</div>
+                <div style="display:flex; align-items:flex-end; gap:5px; height:140px; border-bottom:1px solid #CFCFC4;">
                   <sc-for list="{{ chart }}" as="c" hint-placeholder-count="21">
                     <div style="flex:1; display:flex; flex-direction:column; justify-content:flex-end; height:100%;">
                       <div style="height: {{ c.h }}; background: {{ c.c }};"></div>
@@ -197,34 +157,34 @@
                 </div>
                 <div style="display:flex; gap:5px; margin-top:6px;">
                   <sc-for list="{{ chart }}" as="c" hint-placeholder-count="21">
-                    <div style="flex:1; text-align:center; font-size:9px; color:#8A8F84; font-variant-numeric:tabular-nums;">{{ c.lab }}</div>
+                    <div style="flex:1; text-align:center; font-size:9px; color:#A2A296; font-variant-numeric:tabular-nums;">{{ c.lab }}</div>
                   </sc-for>
                 </div>
 
-                <div style="font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:#767C70; margin:36px 0 14px;">Việc chiếm nhiều thời gian nhất</div>
+                <div style="font-weight:500; font-size:9.5px; letter-spacing:.2em; text-transform:uppercase; color:#7C7C70; margin:36px 0 14px;">Việc chiếm nhiều thời gian nhất</div>
                 <sc-for list="{{ topNames }}" as="t" hint-placeholder-count="5">
-                  <div style="border-top:1px solid #D3D6CB; padding:11px 0;">
+                  <div style="border-top:1px solid #E3E3DB; padding:11px 0;">
                     <div style="display:flex; align-items:baseline; gap:14px;">
-                      <div style="font-size:10px; color:#8A8F84; font-variant-numeric:tabular-nums;">{{ t.rank }}</div>
+                      <div style="font-size:10px; color:#A2A296; font-variant-numeric:tabular-nums;">{{ t.rank }}</div>
                       <div style="font-size:15px; flex:1;">{{ t.n }}</div>
-                      <div style="font-size:13px; color:#5E645A; font-variant-numeric:tabular-nums;">{{ t.dur }}</div>
+                      <div style="font-size:13px; color:#414A42; font-variant-numeric:tabular-nums;">{{ t.dur }}</div>
                     </div>
-                    <div style="height:3px; background:#DDE0D6; margin-top:8px;"><div style="height:3px; width: {{ t.w }}; background:#212520;"></div></div>
+                    <div style="height:3px; background:#E6E6DE; margin-top:8px;"><div style="height:3px; width: {{ t.w }}; background:#102F35;"></div></div>
                   </div>
                 </sc-for>
               </div>
 
-              <div style="flex:1 1 320px; min-width:300px;">
-                <div style="font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:#767C70; margin-bottom:16px;">Thói quen theo loại</div>
+              <div style="flex:1 1 300px; min-width:280px; background:#F6F6F1; padding:20px 22px 24px;">
+                <div style="font-weight:500; font-size:9.5px; letter-spacing:.2em; text-transform:uppercase; color:#7C7C70; margin-bottom:16px;">Thói quen theo loại</div>
                 <sc-for list="{{ byKind }}" as="b" hint-placeholder-count="4">
-                  <div style="border-top:1px solid #D3D6CB; padding:14px 0; opacity: {{ b.dim }};">
+                  <div style="border-top:1px solid #E3E3DB; padding:14px 0; opacity: {{ b.dim }};">
                     <div style="display:flex; align-items:baseline; gap:10px;">
                       <div style="width:8px; height:8px; background: {{ b.color }}; flex:none;"></div>
                       <div style="font-size:16px; flex:1;">{{ b.k }}</div>
                       <div style="font-size:15px; font-variant-numeric:tabular-nums;">{{ b.dur }}</div>
                     </div>
-                    <div style="height:4px; background:#DDE0D6; margin:10px 0 8px;"><div style="height:4px; width: {{ b.w }}; background: {{ b.color }};"></div></div>
-                    <div style="display:flex; justify-content:space-between; font-size:11.5px; color:#767C70;">
+                    <div style="height:4px; background:#E6E6DE; margin:10px 0 8px;"><div style="height:4px; width: {{ b.w }}; background: {{ b.color }};"></div></div>
+                    <div style="display:flex; justify-content:space-between; font-size:11.5px; color:#6A6F63;">
                       <div>{{ b.streak }}</div>
                       <div>{{ b.days }} · {{ b.pct }}</div>
                     </div>
@@ -234,93 +194,249 @@
             </div>
           </div>
         </sc-if>
+        <div style="display:flex; gap:36px; align-items:flex-start; margin-top:38px; flex-wrap:wrap;">
+
+          <div style="flex:1 1 300px; min-width:0;">
+            <sc-for list="{{ months }}" as="mo" hint-placeholder-count="2">
+              <div>
+                <div style="display:flex; align-items:baseline; gap:14px; padding:0 0 10px; border-bottom:2px solid #102F35; margin-top:0;">
+                  <div style="font-family:'Playfair Display',serif; font-size:23px; letter-spacing:-.02em;">{{ mo.label }}</div>
+                  <div style="font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#A2A296;">{{ mo.year }}</div>
+                  <div style="flex:1 1 0;"></div>
+                  <div style="font-size:11.5px; color:#7C7C70;">{{ mo.nDays }}</div>
+                  <div style="font-size:14px; color:#172124; font-variant-numeric:tabular-nums;">{{ mo.total }}</div>
+                  <sc-if value="{{ mo.notCur }}" hint-placeholder-val="{{ true }}">
+                    <div onClick="{{ mo.toggle }}" style="font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#A2A296; cursor:pointer;" style-hover="color:#102F35;">{{ mo.cue }}</div>
+                  </sc-if>
+                </div>
+              </div>
+              <sc-if value="{{ mo.open }}" hint-placeholder-val="{{ true }}">
+                <sc-for list="{{ mo.days }}" as="d" hint-placeholder-count="8">
+                  <div onDragOver="{{ d.overDay }}" onDrop="{{ d.dropDay }}" style="display:grid; grid-template-columns:86px minmax(0,1fr); gap:16px; border-top:1px solid {{ d.edge }}; background: {{ d.bg }}; padding: {{ d.pad }};">
+                <div style="opacity: {{ d.labelOp }};">
+                  <div style="display:flex; align-items:baseline; gap:7px;">
+                    <div style="width:6px; height:6px; border-radius:50%; background: {{ d.dotBg }}; border:1px solid {{ d.dotBorder }}; flex:none; margin-bottom:2px;"></div>
+                    <div style="font-family:'Playfair Display',serif; font-size:31px; line-height:.9; letter-spacing:-.03em; font-variant-numeric:tabular-nums;">{{ d.num }}</div>
+                    <div style="font-size:9.5px; letter-spacing:.14em; text-transform:uppercase; color:#7C7C70;">{{ d.dow }}</div>
+                  </div>
+                  <div style="font-size:12px; color:#414A42; font-variant-numeric:tabular-nums; margin:7px 0 6px 13px;">{{ d.total }}</div>
+                  <div style="height:2px; background:#E6E6DE; margin-left:13px;"><div style="height:2px; width: {{ d.bar }}; background:#102F35;"></div></div>
+                </div>
+
+                <div>
+                  <sc-if value="{{ d.isEmpty }}" hint-placeholder-val="{{ false }}">
+                    <div style="font-size:12.5px; color:#AFAFA2; font-style:italic; padding:6px 0;">chưa ghi gì</div>
+                  </sc-if>
+                  <sc-for list="{{ d.rows }}" as="r" hint-placeholder-count="3">
+                    <div draggable="{{ r.drag }}" onDragStart="{{ r.onDragStart }}" style="padding:6px 0; border-bottom:1px solid #EAE7DA;">
+                      <sc-if value="{{ r.notEditing }}" hint-placeholder-val="{{ true }}">
+                        <div style="display:flex; align-items:flex-start; gap:12px;">
+                          <div onClick="{{ r.toggle }}" style="width:15px; height:15px; flex:none; margin-top:14px; border:1px solid {{ r.tickBorder }}; background: {{ r.tickBg }}; color:#F6F2E6; font-size:10px; display:flex; align-items:center; justify-content:center; cursor: {{ r.cursor }};">{{ r.tickMark }}</div>
+                          <div style="flex:1 1 auto; min-width:120px;">
+                            <div style="display:flex; align-items:baseline; gap:11px; flex-wrap:wrap;">
+                              <div style="font-size:9px; letter-spacing:.18em; text-transform:uppercase; color: {{ r.color }};">{{ r.kind }}</div>
+                              <div onClick="{{ r.editAt }}" style="font-size:12px; color:#414A42; font-variant-numeric:tabular-nums; cursor: {{ r.cursor }}; padding:1px 4px; margin-left:-4px;" style-hover="{{ r.nameHover }}">{{ r.at }}</div>
+                              <sc-if value="{{ r.locked }}" hint-placeholder-val="{{ false }}">
+                                <div style="font-size:10.5px; color:#AFAFA2;">✓ chốt</div>
+                              </sc-if>
+                            </div>
+                            <sc-if value="{{ r.notNaming }}" hint-placeholder-val="{{ true }}">
+                              <div onClick="{{ r.startName }}" style="font-size:15px; line-height:1.3; margin-top:2px; color: {{ r.nameColor }}; font-style: {{ r.nameStyle }}; cursor: {{ r.cursor }};">{{ r.name }}</div>
+                            </sc-if>
+                            <sc-if value="{{ r.naming }}" hint-placeholder-val="{{ false }}">
+                              <input value="{{ eName }}" onChange="{{ setEName }}" onKeyDown="{{ r.keyEdit }}" onBlur="{{ r.saveName }}" autoFocus="{{ true }}" placeholder="Hoạt động gì" style="display:block; width:100%; box-sizing:border-box; background:transparent; border:0; border-bottom:1px solid #102F35; color:#172124; font-family:'Be Vietnam Pro',sans-serif; font-weight:200; font-size:15px; line-height:1.3; margin-top:2px; padding:0 0 3px; outline:none;">
+                            </sc-if>
+                          </div>
+                          <div onClick="{{ r.editDur }}" style="flex:none; margin-top:11px; font-size:16px; color:#172124; font-variant-numeric:tabular-nums; text-align:right; cursor: {{ r.cursor }}; padding:2px 4px;" style-hover="{{ r.nameHover }}">{{ r.dur }}</div>
+                        </div>
+                      </sc-if>
+                      <sc-if value="{{ r.editing }}" hint-placeholder-val="{{ false }}">
+                        <div style="display:flex; align-items:flex-start; gap:12px;">
+                          <div style="width:15px; flex:none;"></div>
+                          <div style="flex:1 1 auto; min-width:120px;">
+                            <div style="background:#F1F4EF; border-left:2px solid #102F35; padding:9px 11px 10px; display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+                              <div style="display:flex; align-items:baseline; gap:7px;">
+                                <div style="font-size:9px; letter-spacing:.16em; text-transform:uppercase; color:#7C7C70;">Từ</div>
+                                <input value="{{ eAt }}" onChange="{{ setEAt }}" onKeyDown="{{ r.keyEdit }}" onBlur="{{ r.saveEdit }}" autoFocus="{{ r.focusAt }}" style="width:52px; background:transparent; border:0; border-bottom:1px solid {{ r.atEdge }}; color:#172124; font-family:'Be Vietnam Pro',sans-serif; font-weight:200; font-size:15px; padding:0 0 2px; outline:none; font-variant-numeric:tabular-nums;">
+                              </div>
+                              <div style="display:flex; align-items:center; gap:8px; background: {{ r.durBg }}; padding:2px 5px; margin:0 -5px;">
+                                <div onClick="{{ r.minus }}" style="width:20px; height:20px; display:flex; align-items:center; justify-content:center; border:1px solid #CFCFC4; font-size:14px; color:#414A42; cursor:pointer;" style-hover="border-color:#102F35; color:#102F35;">−</div>
+                                <div style="display:flex; align-items:baseline; gap:4px;">
+                                  <input value="{{ eMins }}" onChange="{{ setEMins }}" onKeyDown="{{ r.keyEdit }}" onBlur="{{ r.saveEdit }}" autoFocus="{{ r.focusDur }}" style="width:38px; background:transparent; border:0; border-bottom:1px solid {{ r.durEdge }}; color:#172124; font-family:'Be Vietnam Pro',sans-serif; font-weight:200; font-size:15px; padding:0 0 2px; outline:none; text-align:right; font-variant-numeric:tabular-nums;">
+                                  <div style="font-size:11px; color:#7C7C70;">phút</div>
+                                </div>
+                                <div onClick="{{ r.plus }}" style="width:20px; height:20px; display:flex; align-items:center; justify-content:center; border:1px solid #CFCFC4; font-size:14px; color:#414A42; cursor:pointer;" style-hover="border-color:#102F35; color:#102F35;">+</div>
+                              </div>
+                              <div style="flex:1 1 0;"></div>
+                              <div onClick="{{ r.del }}" style="font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:#7C7C70; cursor:pointer;" style-hover="color:#F2A0A5;">Xoá</div>
+                            </div>
+                            <div style="display:flex; align-items:baseline; gap:12px; margin-top:7px; flex-wrap:wrap;">
+                              <div style="font-size:15px; line-height:1.3; color: {{ r.nameColor }}; font-style: {{ r.nameStyle }};">{{ r.name }}</div>
+                              <div onClick="{{ r.startName }}" style="font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#A2A296; cursor:pointer; flex:none;" style-hover="color:#102F35;">sửa tên</div>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:9px; margin-top:7px;">
+                              <div style="font-size:9px; letter-spacing:.16em; text-transform:uppercase; color:#7C7C70;">Loại</div>
+                              <select value="{{ r.kind }}" onChange="{{ r.setKind }}" style="background:#FFFFFF; border:1px solid #CFCFC4; color: {{ r.color }}; font-family:'Be Vietnam Pro',sans-serif; font-weight:200; font-size:12.5px; padding:4px 7px; outline:none; cursor:pointer;">
+                                <sc-for list="{{ kindOpts }}" as="o" hint-placeholder-count="4">
+                                  <option value="{{ o.k }}">{{ o.k }}</option>
+                                </sc-for>
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+                      </sc-if>
+                    </div>
+                  </sc-for>
+                  <sc-if value="{{ d.canAdd }}" hint-placeholder-val="{{ false }}">
+                    <div onClick="{{ d.addRow }}" style="display:flex; align-items:center; gap:12px; padding:7px 0 2px; cursor:pointer; color:#A2A296;" style-hover="color:#102F35;">
+                      <div style="width:15px; height:15px; flex:none; border:1px dashed currentColor; display:flex; align-items:center; justify-content:center; font-size:11px;">+</div>
+                      <div style="font-size:12.5px;">thêm hoạt động</div>
+                    </div>
+                  </sc-if>
+                </div>
+              </div>
+                </sc-for>
+              </sc-if>
+            </sc-for>
+
+          </div>
+
+          <div style="flex:0 1 316px; min-width:262px; position:sticky; top:32px;">
+            <div style="background:linear-gradient(168deg, #143C43 0%, #0D272C 100%); color:#F4F4EF; padding:26px 24px 24px;">
+              <div style="display:flex; gap:18px; margin-bottom:22px; font-weight:500; font-size:9.5px; letter-spacing:.2em; text-transform:uppercase;">
+                <div onClick="{{ tModeUp }}" style="cursor:pointer; padding-bottom:4px; border-bottom:1px solid {{ upEdge }}; color: {{ upFg }};">Bấm giờ</div>
+                <div onClick="{{ tModeDown }}" style="cursor:pointer; padding-bottom:4px; border-bottom:1px solid {{ downEdge }}; color: {{ downFg }};">Hẹn giờ</div>
+              </div>
+
+              <div style="font-family:'Playfair Display',serif; font-size:66px; line-height:.9; letter-spacing:-.04em; font-variant-numeric:tabular-nums;">{{ tClock }}</div>
+              <div style="height:2px; background:rgba(244,244,239,.22); margin:16px 0 20px;"><div style="height:2px; width: {{ tArc }}; background:#F2A0A5;"></div></div>
+
+              <sc-if value="{{ tIsDown }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex; gap:6px; margin-bottom:18px;">
+                  <sc-for list="{{ tPresets }}" as="p" hint-placeholder-count="4">
+                    <div onClick="{{ p.pick }}" style="flex:1; text-align:center; font-size:12px; padding:7px 0; border:1px solid rgba(244,244,239,.35); cursor:pointer; background: {{ p.pbg }}; color: {{ p.pfg }};">{{ p.m }}</div>
+                  </sc-for>
+                </div>
+                <div style="font-size:11px; color:rgba(244,244,239,.6); margin-bottom:18px;">Hết giờ sẽ có tiếng báo.</div>
+              </sc-if>
+
+              <input value="{{ tName }}" onChange="{{ setTName }}" placeholder="Đang làm gì" style="width:100%; box-sizing:border-box; background:transparent; border:0; border-bottom:1px solid rgba(244,244,239,.55); color:#FFFFFF; font-family:'Be Vietnam Pro',sans-serif; font-weight:200; font-size:15px; padding:8px 0 9px; outline:none; margin-bottom:16px;">
+
+              <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:20px;">
+                <sc-for list="{{ kinds }}" as="k" hint-placeholder-count="4">
+                  <div onClick="{{ k.pick }}" style="font-size:12px; padding:5px 11px; border:1px solid rgba(244,244,239,.3); cursor:pointer; background: {{ k.dbg }}; color: {{ k.dfg }};">{{ k.k }}</div>
+                </sc-for>
+                <sc-if value="{{ kindAdding }}" hint-placeholder-val="{{ false }}">
+                  <input value="{{ kindDraft }}" onChange="{{ setKindDraft }}" onKeyDown="{{ kindKey }}" onBlur="{{ commitKind }}" autoFocus="{{ true }}" placeholder="loại mới" style="width:86px; background:transparent; border:1px solid #F2A0A5; color:#FFFFFF; font-family:'Be Vietnam Pro',sans-serif; font-weight:200; font-size:12px; padding:5px 8px; outline:none;">
+                </sc-if>
+                <sc-if value="{{ kindIdle }}" hint-placeholder-val="{{ true }}">
+                  <div onClick="{{ openAddKind }}" style="width:26px; font-size:13px; display:flex; align-items:center; justify-content:center; padding:5px 0; border:1px dashed rgba(244,244,239,.4); cursor:pointer; color:rgba(244,244,239,.8);" style-hover="border-color:#F2A0A5; color:#F2A0A5;">+</div>
+                </sc-if>
+              </div>
+
+              <div style="display:flex; gap:8px;">
+                <div onClick="{{ tToggle }}" style="flex:1; text-align:center; font-size:11px; letter-spacing:.18em; text-transform:uppercase; padding:13px; background:#F2A0A5; color:#3B2A2B; cursor:pointer;" style-hover="background:#F6B4B8;">{{ tRunLabel }}</div>
+                <div onClick="{{ tReset }}" style="flex:none; font-size:11px; letter-spacing:.14em; text-transform:uppercase; padding:13px 15px; border:1px solid rgba(244,244,239,.35); cursor:pointer;" style-hover="border-color:#F4F4EF;">Đặt lại</div>
+              </div>
+
+              <div onClick="{{ tSave }}" style="margin-top:12px; text-align:center; padding:17px 14px 16px; background:#F4F4EF; color:oklch(0.50 0.135 14); cursor:pointer; transition:background .25s ease, color .25s ease;" style-hover="background:#FFFFFF; color:oklch(0.42 0.125 14);">
+                <div style="font-family:'Playfair Display',serif; font-size:25px; line-height:1; letter-spacing:-.02em;">Hoàn thành</div>
+                <div style="font-family: 'Be Vietnam Pro',sans-serif; font-weight: 500; font-size: 11.5px; letter-spacing: .1em; margin-top: 7px; opacity: 1">Ghi vào hoạt động · {{ tUsed }}</div>
+              </div>
+            </div>
+
+            <div style="margin-top:22px; font-size:12.5px; line-height:1.6; color:#6A6F63;">Phiên đếm lên chạy tới khi bạn dừng. Hẹn giờ dùng cho việc cần giới hạn — hết giờ có tiếng báo, rồi bấm tick để ghi vào ngày.</div>
+          </div>
+        </div>
+
       </div>
     </sc-if>
 
     <sc-if value="{{ isNotes }}" hint-placeholder-val="{{ false }}">
-      <div>
-      <div style="background:#FCFCFA; color:#12120F; min-height:100vh; padding:52px 60px 160px; position:relative; overflow:hidden;">
-        <div style="position:absolute; right:-180px; top:-120px; width:620px; height:620px; border:1px solid #E2E2DC; border-radius:50%; pointer-events:none;"></div>
-        <div style="position:absolute; right:-40px; top:180px; width:420px; height:760px; border-left:1px solid #E8E8E2; border-radius:60% 0 0 40%; pointer-events:none;"></div>
-
-        <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:56px; flex-wrap:wrap; position:relative;">
+      <div onClick="{{ closeNotes }}" style="background:#FCFCFA; color:#12120F; min-height:100vh; padding:56px 72px 56px;">
+        <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:56px; flex-wrap:wrap;">
           <div>
-            <div style="font-family:'Figtree',sans-serif; font-size:9.5px; letter-spacing:.34em; text-transform:uppercase; color:#9A9A90; margin-bottom:20px;">Practice — 02</div>
-            <h1 style="font-family:'Playfair Display',serif; font-size:118px; line-height:.82; letter-spacing:-.045em; margin:0; font-weight:400;">Notes<span style="font-style:italic; color:#C0143C;">.</span></h1>
+            <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:9.5px; letter-spacing:.34em; text-transform:uppercase; color:#9A9A90; margin-bottom:20px;">beӕn weirdo — 02</div>
+            <h1 style="font-family:'Playfair Display',serif; font-size:118px; line-height:.82; letter-spacing:-.045em; margin:0; font-weight:400;">Notes<span style="font-style:italic; color:#F2A0A5;">.</span></h1>
             <div style="font-family:'Playfair Display',serif; font-style:italic; font-size:27px; color:#4A4A42; margin-top:12px;">ghi chép rời — không thuộc module nào</div>
           </div>
-          <div style="font-family:'Figtree',sans-serif; font-weight:300; font-size:13.5px; line-height:1.6; color:#5A5A50; max-width:310px; padding-bottom:14px;">Một quan sát vật lý trong bếp, một đoạn video không tiếng, một ý nghĩ bắc cầu giữa hai lĩnh vực.<div style="margin-top:10px; font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:#B0B0A6;">Rê chuột để tách khỏi trang · bấm để đọc</div></div>
+          <div style="font-family:'Be Vietnam Pro',sans-serif; font-weight:200; font-size:13.5px; line-height:1.6; color:#5A5A50; max-width:310px; padding-bottom:14px;">Một quan sát vật lý trong bếp, một đoạn video không tiếng, một ý nghĩ bắc cầu giữa hai lĩnh vực.<div style="margin-top:10px; font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:#B0B0A6;">Bấm vào bài để xổ toàn bộ nội dung · bấm ra ngoài để thu lại</div></div>
         </div>
 
-        <div style="display:flex; gap:26px; flex-wrap:wrap; align-items:center; margin:44px 0 14px; padding-bottom:16px; border-bottom:1px solid #12120F; position:relative;">
+        <div style="display:flex; gap:26px; flex-wrap:wrap; align-items:center; margin:44px 0 14px; padding-bottom:16px; border-bottom:1px solid #12120F;">
           <sc-for list="{{ noteFilters }}" as="f" hint-placeholder-count="5">
-            <div onClick="{{ f.pick }}" style="font-family:'Figtree',sans-serif; font-size:10.5px; letter-spacing:.24em; text-transform:uppercase; cursor:pointer; color:#8A8A80; display:flex; gap:7px; align-items:baseline; transition:color .3s ease;" style-hover="color:#C0143C;">
+            <div onClick="{{ f.pick }}" style="font-family:'Be Vietnam Pro',sans-serif; font-size:10.5px; letter-spacing:.24em; text-transform:uppercase; cursor:pointer; color:#8A8A80; display:flex; gap:7px; align-items:baseline; transition:color .3s ease;" style-hover="color:#B65A3C;">
               <div>{{ f.f }}</div>
               <div style="font-family:'Playfair Display',serif; font-style:italic; letter-spacing:0; font-size:12px; opacity:.6;">{{ f.n }}</div>
             </div>
           </sc-for>
         </div>
 
-        <div style="display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:30px; margin-top:34px; position:relative;">
-          <sc-for list="{{ notes }}" as="n" hint-placeholder-count="6">
-            <div onMouseEnter="{{ n.enter }}" onMouseLeave="{{ n.leave }}" onClick="{{ n.open }}" style="grid-column: {{ n.col }}; margin-top: {{ n.mt }}; opacity: {{ n.opacity }}; transform: {{ n.shift }}; cursor:pointer; transition:opacity .5s ease, transform .6s cubic-bezier(.16,.84,.32,1);">
-              <div style="height:1px; background:#12120F; width: {{ n.ruleW }}; transition:width .7s cubic-bezier(.16,.84,.32,1); margin-bottom:14px;"></div>
-              <div style="display:flex; align-items:baseline; gap:14px; margin-bottom:14px; font-family:'Figtree',sans-serif;">
-                <div style="font-family:'Playfair Display',serif; font-style:italic; font-size:15px; color: {{ n.color }};">{{ n.num }}</div>
-                <div style="font-size:9.5px; letter-spacing:.26em; text-transform:uppercase; color: {{ n.color }};">{{ n.k }}</div>
-                <div style="flex:1;"></div>
-                <div style="font-size:10px; letter-spacing:.16em; color:#B0B0A6; font-variant-numeric:tabular-nums;">{{ n.d }}</div>
-              </div>
-              <sc-if value="{{ n.isMedia }}" hint-placeholder-val="{{ false }}">
-                <div style="aspect-ratio:5/4; background: {{ n.block }}; margin-bottom:18px; display:flex; align-items:flex-end; padding:14px; font-family:'Figtree',sans-serif; font-size:9.5px; letter-spacing:.2em; text-transform:uppercase; color:#5A5A50;">video — thả file vào đây</div>
+        <div onMouseMove="{{ gridMove }}" onMouseLeave="{{ gridLeave }}" style="display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:64px 40px; margin-top:44px; grid-auto-flow:row dense; align-items:start;">
+          <sc-for list="{{ notes }}" as="n" hint-placeholder-count="8">
+            <div data-open-note="{{ n.isOpen }}" ref="{{ n.setRef }}" onMouseEnter="{{ n.enter }}" onMouseLeave="{{ n.leave }}" style="grid-column: {{ n.col }}; margin-top: {{ n.mt }}; margin-left: {{ n.ml }}; position:relative; z-index: {{ n.z }}; opacity: {{ n.opacity }}; transform: {{ n.shift }}; transition:opacity .45s ease, {{ n.ease }};">
+
+              <sc-if value="{{ n.isField }}" hint-placeholder-val="{{ false }}">
+                <div style="background: {{ n.fbg }}; height: {{ n.fh }}; display:flex; align-items:flex-end; padding:14px; padding-left: {{ n.fpl }}; font-family:'Be Vietnam Pro',sans-serif; font-size:9.5px; letter-spacing:.18em; text-transform:uppercase; color:#1F3A38; line-height:1.5;">{{ n.fslot }}</div>
               </sc-if>
-              <div style="position:relative; display:inline-block; margin-bottom:14px;">
-                <div style="position:absolute; left:-10px; right:-10px; top:8%; bottom:8%; background: {{ n.block }}; transform: {{ n.blockScale }}; transform-origin:left center; transition:transform .62s cubic-bezier(.16,.84,.32,1);"></div>
-                <div style="position:relative; font-family:'Playfair Display',serif; font-size: {{ n.size }}; line-height:1.02; letter-spacing:-.035em; color: {{ n.titleColor }}; transition:color .45s ease;">{{ n.t }}</div>
-              </div>
-              <div style="font-family:'Figtree',sans-serif; font-weight:300; font-size:14px; line-height:1.6; color:#5A5A50; opacity: {{ n.bodyOpacity }}; transition:opacity .5s ease; max-width:520px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">{{ n.b }}</div>
+              <sc-if value="{{ n.isQuote }}" hint-placeholder-val="{{ false }}">
+                <div style="border-top:1px solid #12120F; padding-top:20px;">
+                  <div style="font-family:'Playfair Display',serif; font-style:italic; font-size:36px; line-height:1.12; letter-spacing:-.03em; color:#12120F;">{{ n.ftext }}</div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ n.isCount }}" hint-placeholder-val="{{ false }}">
+                <div style="border-top:1px solid #12120F; padding-top:18px;">
+                  <div style="font-family:'Playfair Display',serif; font-size:72px; line-height:.82; letter-spacing:-.05em;">{{ n.countN }}</div>
+                  <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:#9A9A90; margin-top:12px; line-height:1.6;">ghi chép đang hiện</div>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ n.isNote }}" hint-placeholder-val="{{ true }}">
+                <div onClick="{{ n.toggle }}" style="display:flow-root; cursor:pointer; background: {{ n.pop }}; padding: {{ n.popPad }}; box-shadow: {{ n.popShadow }}; transition:padding .5s cubic-bezier(.16,.84,.32,1), box-shadow .5s ease;">
+                  <div style="height:1px; background:#12120F; width: {{ n.ruleW }}; transition:width .7s cubic-bezier(.16,.84,.32,1); margin-bottom:14px;"></div>
+                  <div style="display:flex; align-items:baseline; gap:14px; margin-bottom:16px; font-family:'Be Vietnam Pro',sans-serif;">
+                    <div style="font-family:'Playfair Display',serif; font-style:italic; font-size:15px; color: {{ n.color }};">{{ n.num }}</div>
+                    <div style="font-size:9.5px; letter-spacing:.26em; text-transform:uppercase; color: {{ n.color }};">{{ n.k }}</div>
+                    <div style="flex:1;"></div>
+                    <div style="font-size:10px; letter-spacing:.16em; color:#B0B0A6; font-variant-numeric:tabular-nums;">{{ n.d }}</div>
+                  </div>
+                  <div style="display: {{ n.rowDisplay }}; flex-direction: {{ n.dir }}; gap: {{ n.rowGap }}; align-items:flex-start; margin-bottom:18px;">
+                    <div style="flex:none; float: {{ n.mediaFloat }}; margin-right: {{ n.mediaMr }}; margin-bottom: {{ n.mediaMb }}; aspect-ratio: {{ n.ar }}; width: {{ n.mediaW }}; background: {{ n.block }}; display:flex; align-items:flex-end; padding:14px; font-family:'Be Vietnam Pro',sans-serif; font-weight:500; font-size:9.5px; letter-spacing:.2em; text-transform:uppercase; color:#1F3A38; transition:aspect-ratio .6s cubic-bezier(.16,.84,.32,1);">{{ n.mediaLabel }}</div>
+                    <div style="flex:1; min-width:0;">
+                      <div style="font-family:'Playfair Display',serif; font-size: {{ n.size }}; line-height:1.14; letter-spacing:-.035em; margin-bottom:16px;">
+                        <span style="display:inline; box-decoration-break:clone; WebkitBoxDecorationBreak:clone; padding:.04em .14em; margin-left:-.14em; color: {{ n.titleColor }}; background-image:linear-gradient({{ n.block }}, {{ n.block }}); background-repeat:no-repeat; background-size: {{ n.washSize }}; background-position:left center; transition:background-size .6s cubic-bezier(.16,.84,.32,1);">{{ n.t }}</span>
+                      </div>
+                      <sc-if value="{{ n.isOpen }}" hint-placeholder-val="{{ false }}">
+                        <div style="float:right; clear:left; width:190px; margin:6px 0 18px 30px;">
+                          <div style="aspect-ratio:4/5; background: {{ n.block }}; display:flex; align-items:flex-end; padding:12px; font-family:'Be Vietnam Pro',sans-serif; font-size:9px; letter-spacing:.18em; text-transform:uppercase; color:#1F3A38; line-height:1.5;">{{ n.subSlot }}</div>
+                          <div style="font-family:'Be Vietnam Pro',sans-serif; font-weight:200; font-size:11.5px; line-height:1.5; color:#8A8A80; margin-top:8px;">Ảnh phụ đi kèm — chi tiết nhỏ trong bài.</div>
+                        </div>
+                      </sc-if>
+                      <div style="font-family:'Be Vietnam Pro',sans-serif; font-weight:200; font-size: {{ n.bodySize }}; line-height:1.62; color:#4A4A42; opacity: {{ n.bodyOpacity }}; transition:opacity .5s ease; display: {{ n.bodyDisplay }}; -webkit-line-clamp: {{ n.clamp }}; -webkit-box-orient:vertical; overflow: {{ n.bodyOverflow }};">{{ n.b }}</div>
+                    </div>
+                  </div>
+                  <div style="margin-top:16px; font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.24em; text-transform:uppercase; color: {{ n.color }};">{{ n.cueLabel }}</div>
+                </div>
+              </sc-if>
             </div>
           </sc-for>
         </div>
-      </div>
 
-      <sc-if value="{{ hasOpen }}" hint-placeholder-val="{{ false }}">
-        <div style="position:fixed; inset:0; z-index:200; background:#FCFCFA; overflow-y:auto; padding:60px 72px 120px; animation:riseIn .5s cubic-bezier(.16,.84,.32,1);">
-          <div onClick="{{ closeNote }}" style="position:fixed; right:60px; top:52px; font-family:'Figtree',sans-serif; font-size:10.5px; letter-spacing:.24em; text-transform:uppercase; cursor:pointer; color:#12120F; z-index:210; display:flex; gap:10px; align-items:center;" style-hover="color:#C0143C;">
-            <div style="font-family:'Playfair Display',serif; font-size:20px; letter-spacing:0;">✕</div>
-            <div>Đóng</div>
+        <div style="margin-top:130px; border-top:1px solid #12120F; padding-top:26px; display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:30px; align-items:end;">
+          <div style="grid-column:1 / span 5;">
+            <div style="font-family:'Playfair Display',serif; font-style:italic; font-size:40px; line-height:1.08; letter-spacing:-.03em;">Hết phần đã ghi.</div>
+            <div style="font-family:'Be Vietnam Pro',sans-serif; font-weight:200; font-size:13.5px; line-height:1.6; color:#5A5A50; margin-top:12px; max-width:330px;">Ghi chép mới sẽ chèn lên đầu trang.</div>
           </div>
-          <div style="max-width:1180px; margin:0 auto; display:grid; grid-template-columns:minmax(0,1.15fr) minmax(0,1fr); gap:72px; align-items:start;">
-            <div style="position:relative;">
-              <div style="position:absolute; left:-28px; top:34%; width:300px; height:300px; background: {{ openNote.block }}; border-radius:50%; opacity:.55;"></div>
-              <div style="position:relative;">
-                <div style="display:flex; align-items:baseline; gap:16px; font-family:'Figtree',sans-serif; margin-bottom:26px;">
-                  <div style="font-family:'Playfair Display',serif; font-style:italic; font-size:18px; color: {{ openNote.color }};">{{ openNote.num }}</div>
-                  <div style="font-size:9.5px; letter-spacing:.28em; text-transform:uppercase; color: {{ openNote.color }};">{{ openNote.k }}</div>
-                  <div style="font-size:10px; letter-spacing:.16em; color:#B0B0A6;">{{ openNote.d }}</div>
-                </div>
-                <h2 style="font-family:'Playfair Display',serif; font-weight:400; font-size:78px; line-height:.94; letter-spacing:-.04em; margin:0;">{{ openNote.t }}</h2>
-                <sc-if value="{{ openNote.isMedia }}" hint-placeholder-val="{{ false }}">
-                  <div style="aspect-ratio:4/3; background: {{ openNote.block }}; margin-top:34px; display:flex; align-items:flex-end; padding:16px; font-family:'Figtree',sans-serif; font-size:9.5px; letter-spacing:.2em; text-transform:uppercase; color:#5A5A50;">video — thả file vào đây</div>
-                </sc-if>
-              </div>
-            </div>
-            <div style="padding-top:16px;">
-              <div style="width:56px; height:1px; background:#12120F; margin-bottom:26px;"></div>
-              <sc-for list="{{ openNote.paras }}" as="p" hint-placeholder-count="2">
-                <div style="font-family:'Figtree',sans-serif; font-weight:300; font-size:16.5px; line-height:1.62; color:#33332C; margin-bottom:20px;">{{ p.t }}</div>
-              </sc-for>
-            </div>
-          </div>
+          <div style="grid-column:6 / span 3; height:150px; background:#AFC8BC; display:flex; align-items:flex-end; padding:14px; font-family:'Be Vietnam Pro',sans-serif; font-size:9.5px; letter-spacing:.18em; text-transform:uppercase; color:#1F3A38; line-height:1.5;">ảnh nhỏ — chi tiết lặp lại của theme</div>
+          <div style="grid-column:9 / span 4; height:280px; background:#E9B79C; display:flex; align-items:flex-end; padding:14px; font-family:'Be Vietnam Pro',sans-serif; font-size:9.5px; letter-spacing:.18em; text-transform:uppercase; color:#1F3A38; line-height:1.5;">ảnh ngang — quang cảnh rộng, kết thúc mạch đọc</div>
         </div>
-      </sc-if>
       </div>
     </sc-if>
 
     <sc-if value="{{ isArt }}" hint-placeholder-val="{{ true }}">
       <div>
         <div style="background:#F7DCD3; color:#23211A; padding:70px 56px 56px;">
-          <div style="font-family:'Figtree',sans-serif; font-size:10px; letter-spacing:.18em; text-transform:uppercase; margin-bottom:26px; color:#8A6B62;">Design system — v4 / garden</div>
+          <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.18em; text-transform:uppercase; margin-bottom:26px; color:#8A6B62;">Design system — v4 / garden</div>
           <div style="display:grid; grid-template-columns:minmax(0,1.5fr) minmax(0,1fr); gap:48px; align-items:end;">
             <h1 style="font-family:'Playfair Display',serif; font-size:100px; line-height:.92; letter-spacing:-.03em; margin:0;">Garden colours,<br><span style="font-style:italic; color:#3E7A4E;">quiet paper</span></h1>
             <div style="font-size:14px; line-height:1.45; padding-bottom:0; margin-top:36px; color:#4B463A;">Bảng màu lấy từ vườn hơn là từ màn hình: hồng cánh hoa, xanh lá non, mơ chín, xanh trời nhạt. Đủ tươi để thấy vui, đủ dịu để đọc lâu. Nền kem giữ nhịp; mỗi module sở hữu một mảng màu lớn của riêng nó.</div>
@@ -331,35 +447,35 @@
           <div style="display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:0;">
             <sc-for list="{{ swatches }}" as="s" hint-placeholder-count="10">
               <div style="background: {{ s.hex }}; aspect-ratio:1.5; display:flex; flex-direction:column; justify-content:flex-end; padding:12px;">
-                <div style="font-family:'Figtree',sans-serif; font-size:10px; color: {{ s.fg }};">{{ s.name }}</div>
-                <div style="font-family:'Figtree',sans-serif; font-size:9px; color: {{ s.fg }}; opacity:.7;">{{ s.hex }}</div>
+                <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; color: {{ s.fg }};">{{ s.name }}</div>
+                <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:9px; color: {{ s.fg }}; opacity:.7;">{{ s.hex }}</div>
               </div>
             </sc-for>
           </div>
 
           <div style="display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:40px; margin-top:44px;">
             <div>
-              <div style="font-family:'Figtree',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#8C8674; margin-bottom:16px;">Typeface</div>
+              <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#8C8674; margin-bottom:16px;">Typeface</div>
               <div style="font-family:'Playfair Display',serif; font-size:54px; line-height:.98; letter-spacing:-.02em;">Playfair<br><span style="font-style:italic; color:#3E7A4E;">Display</span></div>
               <div style="font-size:12.5px; color:#8C8674; margin:10px 0 20px;">Chỉ dùng cho tiêu đề. Weight 400, nét thanh đậm rõ, có đủ dấu tiếng Việt. Nghiêng dùng cho vế thứ hai của tiêu đề.</div>
-              <div style="font-size:19px;">Figtree Light 300</div>
+              <div style="font-size:19px;">Be Vietnam Pro Light 300</div>
               <div style="font-size:12.5px; color:#8C8674; margin:6px 0 18px;">Toàn bộ phần chữ không phải tiêu đề: thân bài, mô tả, nhãn, số, ngày. Chỉ nạp duy nhất weight 300 — không đậm, không nhấn bằng độ dày. Hỗ trợ dấu tiếng Việt đầy đủ.</div>
               <div style="font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:#5C5745;">Nhãn — cùng font, chỉ đổi cỡ và giãn chữ</div>
             </div>
             <div>
-              <div style="font-family:'Figtree',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#8C8674; margin-bottom:16px;">Dùng màu</div>
+              <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#8C8674; margin-bottom:16px;">Dùng màu</div>
               <sc-for list="{{ colorRules }}" as="r" hint-placeholder-count="6">
                 <div style="display:flex; gap:12px; padding:11px 0; border-bottom:1px solid #EBE5D3;">
-                  <div style="font-family:'Figtree',sans-serif; font-size:10px; color:#B5AE99; padding-top:3px;">{{ r.n }}</div>
+                  <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; color:#B5AE99; padding-top:3px;">{{ r.n }}</div>
                   <div style="font-size:13.5px; line-height:1.3; color:#3B3729;">{{ r.t }}</div>
                 </div>
               </sc-for>
             </div>
             <div>
-              <div style="font-family:'Figtree',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#8C8674; margin-bottom:16px;">Hình ảnh</div>
+              <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#8C8674; margin-bottom:16px;">Hình ảnh</div>
               <sc-for list="{{ imageRules }}" as="r" hint-placeholder-count="6">
                 <div style="display:flex; gap:12px; padding:11px 0; border-bottom:1px solid #EBE5D3;">
-                  <div style="font-family:'Figtree',sans-serif; font-size:10px; color:#B5AE99; padding-top:3px;">{{ r.n }}</div>
+                  <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; color:#B5AE99; padding-top:3px;">{{ r.n }}</div>
                   <div style="font-size:13.5px; line-height:1.3; color:#3B3729;">{{ r.t }}</div>
                 </div>
               </sc-for>
@@ -367,28 +483,28 @@
           </div>
           <div style="margin-top:56px; padding-top:36px; border-top:2px solid #23211A; display:grid; grid-template-columns:minmax(0,1.25fr) minmax(0,1fr); gap:52px;">
             <div>
-              <div style="font-family:'Figtree',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#8C8674; margin-bottom:18px;">Thang chữ</div>
+              <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#8C8674; margin-bottom:18px;">Thang chữ</div>
               <sc-for list="{{ typeScale }}" as="t" hint-placeholder-count="7">
                 <div style="display:grid; grid-template-columns:88px minmax(0,1fr) 132px; gap:16px; align-items:baseline; padding:12px 0; border-bottom:1px solid #EBE5D3;">
-                  <div style="font-family:'Figtree',sans-serif; font-size:10px; color:#B5AE99;">{{ t.token }}</div>
+                  <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; color:#B5AE99;">{{ t.token }}</div>
                   <div style="font-family: {{ t.family }}; font-size: {{ t.size }}; line-height:1.05; letter-spacing:-.02em; color:#23211A; overflow:hidden;">{{ t.sample }}</div>
-                  <div style="font-family:'Figtree',sans-serif; font-size:9.5px; color:#8C8674; line-height:1.5;">{{ t.spec }}</div>
+                  <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:9.5px; color:#8C8674; line-height:1.5;">{{ t.spec }}</div>
                 </div>
               </sc-for>
             </div>
             <div>
-              <div style="font-family:'Figtree',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#8C8674; margin-bottom:18px;">Nhịp khoảng cách</div>
+              <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#8C8674; margin-bottom:18px;">Nhịp khoảng cách</div>
               <sc-for list="{{ spaceScale }}" as="s" hint-placeholder-count="6">
                 <div style="display:flex; align-items:center; gap:14px; padding:9px 0; border-bottom:1px solid #EBE5D3;">
-                  <div style="font-family:'Figtree',sans-serif; font-size:10px; color:#B5AE99; width:34px;">{{ s.px }}</div>
+                  <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; color:#B5AE99; width:34px;">{{ s.px }}</div>
                   <div style="height:10px; width: {{ s.px }}; background:#F2A0A5; flex:none;"></div>
                   <div style="font-size:12.5px; color:#5C5745; line-height:1.35;">{{ s.use }}</div>
                 </div>
               </sc-for>
-              <div style="font-family:'Figtree',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#8C8674; margin:26px 0 12px;">Lưới &amp; khung</div>
+              <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#8C8674; margin:26px 0 12px;">Lưới &amp; khung</div>
               <sc-for list="{{ gridRules }}" as="g" hint-placeholder-count="5">
                 <div style="display:flex; gap:12px; padding:8px 0; border-bottom:1px solid #EBE5D3;">
-                  <div style="font-family:'Figtree',sans-serif; font-size:10px; color:#B5AE99; width:66px; flex:none;">{{ g.k }}</div>
+                  <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; color:#B5AE99; width:66px; flex:none;">{{ g.k }}</div>
                   <div style="font-size:12.5px; color:#5C5745; line-height:1.35;">{{ g.v }}</div>
                 </div>
               </sc-for>
@@ -396,14 +512,14 @@
           </div>
 
           <div style="margin-top:56px; padding-top:36px; border-top:2px solid #23211A;">
-            <div style="font-family:'Figtree',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#8C8674; margin-bottom:18px;">Theme &amp; dàn trang từng module</div>
+            <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#8C8674; margin-bottom:18px;">Theme &amp; dàn trang từng module</div>
             <sc-for list="{{ modules }}" as="m" hint-placeholder-count="3">
               <div style="display:grid; grid-template-columns:180px minmax(0,1fr) minmax(0,1fr); gap:28px; padding:16px 0; border-bottom:1px solid #EBE5D3;">
                 <div style="display:flex; align-items:flex-start; gap:10px;">
                   <div style="width:9px; height:9px; border-radius:50%; background: {{ m.accent }}; margin-top:5px; flex:none;"></div>
                   <div>
                     <div style="font-family:'Playfair Display',serif; font-size:22px; line-height:1.1;">{{ m.title }}</div>
-                    <div style="font-family:'Figtree',sans-serif; font-size:9.5px; letter-spacing:.12em; text-transform:uppercase; color:#8C8674; margin-top:4px;">{{ m.concept }} / {{ m.layout }}</div>
+                    <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:9.5px; letter-spacing:.12em; text-transform:uppercase; color:#8C8674; margin-top:4px;">{{ m.concept }} / {{ m.layout }}</div>
                   </div>
                 </div>
                 <div style="font-size:13px; line-height:1.4; color:#5C5745;">{{ m.treatment }}</div>
@@ -418,12 +534,12 @@
     <sc-if value="{{ isLanding }}" hint-placeholder-val="{{ true }}">
       <div>
         <div style="padding:80px 56px 64px; max-width:1240px;">
-          <div style="font-family:'Figtree',sans-serif; font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:#8C8674; margin-bottom:28px;">coffee study journal — 2024 / 2026</div>
-          <h1 style="font-family:'Playfair Display',serif; font-size:104px; line-height:.9; letter-spacing:-.035em; margin:0 0 24px;">Học về cà phê<br /><span style="font-style:italic; color:#3E7A4E;">bằng cách viết ra</span></h1>
+          <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:#8C8674; margin-bottom:28px;">coffee study journal — 2024 / 2026</div>
+          <h1 style="font-family:'Playfair Display',serif; font-size:104px; line-height:.92; letter-spacing:-.035em; margin:0 0 24px;">be<span style="display:inline-block; transform:scale(1.22); transform-origin:50% 88%; color:#F2A0A5;">ӕ</span>n weirdo<br><span style="font-style:italic; color:#3E7A4E;">bằng cách viết ra</span></h1>
           <div style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,.8fr); gap:40px; align-items:start;">
             <div style="font-size:15px; line-height:1.5; color:#3B3729;">Mỗi thứ học được đều bị viết lại thành một ghi chú ngắn, xếp vào một module. Ba module đang mở: giác quan, hoá sinh, rang. Bài mới nhất luôn nằm trên cùng của module tương ứng.</div>
             <div style="font-size:13.5px; line-height:1.45; color:#5C5745;">Không có bài nào ở đây là kết luận. Phần lớn là ghi chép giữa đường: đọc được gì, thử gì, sai ở đâu. Mục "còn chưa rõ" ở cuối mỗi bài thường là phần đáng đọc nhất.</div>
-            <div onClick="{{ goHome }}" style="font-family:'Figtree',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#3E7A4E; cursor:pointer; padding-top:4px;" style-hover="color:#23211A;">xem mục lục 18 bài →</div>
+            <div onClick="{{ goHome }}" style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#3E7A4E; cursor:pointer; padding-top:4px;" style-hover="color:#23211A;">xem mục lục 18 bài →</div>
           </div>
         </div>
 
@@ -431,15 +547,15 @@
           <div onClick="{{ m.open }}" style="background: {{ m.accent }}; color: {{ m.on }}; padding:44px 56px 72px; cursor:pointer;">
             <div style="display:grid; grid-template-columns:minmax(0,1.55fr) minmax(0,1fr) minmax(0,.85fr); gap:40px; align-items:start; margin-bottom:64px;">
               <div style="min-width:0; max-width:100%;">
-                <div style="font-family:'Figtree',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; margin-bottom:12px; opacity:.65;">{{ m.concept }} — {{ m.count }} bài</div>
+                <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; margin-bottom:12px; opacity:.65;">{{ m.concept }} — {{ m.count }} bài</div>
                 <h3 lang="en" style="font-family:'Playfair Display',serif; font-size:72px; line-height:.94; letter-spacing:-.035em; margin:0; max-width:100%; hyphens:auto; WebkitHyphens:auto; hyphenateLimitChars:'8 4 4'; overflow-wrap:break-word;">{{ m.title }}</h3>
               </div>
               <div style="font-size:14px; line-height:1.45; margin-top:38px;">{{ m.long }}</div>
               <div style="margin-top:38px;">
-                <div style="font-family:'Figtree',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; opacity:.65; margin-bottom:10px;">Mới nhất</div>
+                <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; opacity:.65; margin-bottom:10px;">Mới nhất</div>
                 <sc-for list="{{ m.top3 }}" as="e" hint-placeholder-count="3">
                   <div style="display:flex; gap:12px; padding:7px 0; border-top:1px solid rgba(35,33,26,.16);">
-                    <div style="font-family:'Figtree',sans-serif; font-size:9.5px; opacity:.6; padding-top:5px;">{{ e.date }}</div>
+                    <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:9.5px; opacity:.6; padding-top:5px;">{{ e.date }}</div>
                     <div style="font-family:'Playfair Display',serif; font-size:19px; line-height:1.2;">{{ e.en }}</div>
                   </div>
                 </sc-for>
@@ -449,13 +565,13 @@
             <sc-if value="{{ m.isBand }}" hint-placeholder-val="{{ true }}">
               <div style="display:grid; grid-template-columns:minmax(0,1.9fr) minmax(0,1fr) 30px; grid-template-rows:1.5fr 1fr; gap:8px; height:310px;">
                 <div data-rise="-34px,0px,0ms" style="grid-column:1; grid-row:1/3; margin:-34px 0 0; background:#FDFBF2; display:flex; align-items:flex-end; padding:14px; opacity:0; transform:translate(-34px,0); transition:opacity .7s ease, transform .85s cubic-bezier(.2,.7,.3,1);">
-                  <div style="font-family:'Figtree',sans-serif; font-size:10px; color:#3B3729;">{{ m.shot1 }}</div>
+                  <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; color:#3B3729;">{{ m.shot1 }}</div>
                 </div>
                 <div data-rise="0px,-22px,90ms" style="grid-column:2; grid-row:1; margin:38px 0 0 -46px; background:#FDFBF2; display:flex; align-items:flex-end; padding:11px; opacity:0; transform:translate(0,-22px); transition:opacity .7s ease, transform .85s cubic-bezier(.2,.7,.3,1);">
-                  <div style="font-family:'Figtree',sans-serif; font-size:9.5px; color:#3B3729;">{{ m.shot2 }}</div>
+                  <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:9.5px; color:#3B3729;">{{ m.shot2 }}</div>
                 </div>
                 <div data-rise="0px,22px,150ms" style="grid-column:2; grid-row:2; margin:0 0 -36px; background:#FBE7E5; display:flex; align-items:flex-end; padding:11px; opacity:0; transform:translate(0,22px); transition:opacity .7s ease, transform .85s cubic-bezier(.2,.7,.3,1);">
-                  <div style="font-family:'Figtree',sans-serif; font-size:9.5px; color:#3B3729;">{{ m.shot3 }}</div>
+                  <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:9.5px; color:#3B3729;">{{ m.shot3 }}</div>
                 </div>
                 <div data-rise="20px,0px,210ms" style="grid-column:3; grid-row:1/3; margin:96px 0 22px; background:#F6D2D4; opacity:0; transform:translate(20px,0); transition:opacity .7s ease, transform .85s cubic-bezier(.2,.7,.3,1);"></div>
               </div>
@@ -464,13 +580,13 @@
             <sc-if value="{{ m.isSpecimen }}" hint-placeholder-val="{{ false }}">
               <div style="display:grid; grid-template-columns:minmax(0,1.7fr) minmax(0,1fr); grid-template-rows:1fr 1.4fr; gap:8px; height:310px;">
                 <div data-rise="-34px,0px,0ms" style="grid-column:1; grid-row:1/3; margin:-22px 0 34px; background:#FDFBF2; display:flex; align-items:flex-end; padding:14px; opacity:0; transform:translate(-34px,0); transition:opacity .7s ease, transform .85s cubic-bezier(.2,.7,.3,1);">
-                  <div style="font-family:'Figtree',sans-serif; font-size:10px; color:#3B3729;">{{ m.shot1 }}</div>
+                  <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; color:#3B3729;">{{ m.shot1 }}</div>
                 </div>
                 <div data-rise="0px,-24px,90ms" style="grid-column:2; grid-row:1; margin:52px -26px 0 -34px; background:#E4F0DF; display:flex; align-items:flex-end; padding:11px; opacity:0; transform:translate(0,-24px); transition:opacity .7s ease, transform .85s cubic-bezier(.2,.7,.3,1);">
-                  <div style="font-family:'Figtree',sans-serif; font-size:9.5px; color:#3B3729;">{{ m.shot2 }}</div>
+                  <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:9.5px; color:#3B3729;">{{ m.shot2 }}</div>
                 </div>
                 <div data-rise="0px,26px,160ms" style="grid-column:2; grid-row:2; margin:24px 34px -40px 22px; background:#FDFBF2; display:flex; align-items:flex-end; padding:11px; opacity:0; transform:translate(0,26px); transition:opacity .7s ease, transform .85s cubic-bezier(.2,.7,.3,1);">
-                  <div style="font-family:'Figtree',sans-serif; font-size:9.5px; color:#3B3729;">{{ m.shot3 }}</div>
+                  <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:9.5px; color:#3B3729;">{{ m.shot3 }}</div>
                 </div>
               </div>
             </sc-if>
@@ -478,13 +594,13 @@
             <sc-if value="{{ m.isSequence }}" hint-placeholder-val="{{ false }}">
               <div style="display:grid; grid-template-columns:minmax(0,2.1fr) minmax(0,1fr); grid-template-rows:1.45fr 1fr; gap:8px; height:310px;">
                 <div data-rise="-34px,0px,0ms" style="grid-column:1; grid-row:1/3; margin:26px 0 -34px; background:#FDFBF2; display:flex; align-items:flex-end; padding:14px; opacity:0; transform:translate(-34px,0); transition:opacity .7s ease, transform .85s cubic-bezier(.2,.7,.3,1);">
-                  <div style="font-family:'Figtree',sans-serif; font-size:10px; color:#3B3729;">{{ m.shot1 }}</div>
+                  <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; color:#3B3729;">{{ m.shot1 }}</div>
                 </div>
                 <div data-rise="0px,-26px,90ms" style="grid-column:2; grid-row:1; margin:-38px 26px 0 -40px; background:#F9EBD2; display:flex; align-items:flex-end; padding:11px; opacity:0; transform:translate(0,-26px); transition:opacity .7s ease, transform .85s cubic-bezier(.2,.7,.3,1);">
-                  <div style="font-family:'Figtree',sans-serif; font-size:9.5px; color:#3B3729;">{{ m.shot2 }}</div>
+                  <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:9.5px; color:#3B3729;">{{ m.shot2 }}</div>
                 </div>
                 <div data-rise="0px,26px,170ms" style="grid-column:2; grid-row:2; margin:38px -18px 0 44px; background:#FDFBF2; display:flex; align-items:flex-end; padding:11px; opacity:0; transform:translate(0,26px); transition:opacity .7s ease, transform .85s cubic-bezier(.2,.7,.3,1);">
-                  <div style="font-family:'Figtree',sans-serif; font-size:9.5px; color:#3B3729;">{{ m.shot3 }}</div>
+                  <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:9.5px; color:#3B3729;">{{ m.shot3 }}</div>
                 </div>
               </div>
             </sc-if>
@@ -507,13 +623,13 @@
         <sc-if value="{{ showPlates }}" hint-placeholder-val="{{ true }}">
           <div style="display:grid; grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1fr); gap:0;">
             <div style="aspect-ratio:16/9; background:#F2A0A5; display:flex; align-items:flex-end; padding:16px;">
-              <div style="font-family:'Figtree',sans-serif; font-size:10px; color:#3B2A2B;">ảnh mở đầu — vật thể đơn</div>
+              <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; color:#3B2A2B;">ảnh mở đầu — vật thể đơn</div>
             </div>
             <div style="aspect-ratio:16/9; background:#7FB87E; display:flex; align-items:flex-end; padding:16px;">
-              <div style="font-family:'Figtree',sans-serif; font-size:10px; color:#1F3323;">mặt cắt</div>
+              <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; color:#1F3323;">mặt cắt</div>
             </div>
-            <div style="aspect-ratio:16/9; background:#F0B45C; display:flex; align-items:flex-end; padding:16px;">
-              <div style="font-family:'Figtree',sans-serif; font-size:10px; color:#3B2E19;">dải rang</div>
+            <div style="aspect-ratio:16/9; background:oklch(0.50 0.135 14); display:flex; align-items:flex-end; padding:16px;">
+              <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; color:#3B2E19;">dải rang</div>
             </div>
           </div>
         </sc-if>
@@ -522,18 +638,18 @@
           <div style="padding:44px 56px 8px; max-width:1240px;">
             <div style="display:flex; align-items:flex-end; gap:18px; padding-bottom:14px;">
               <h2 onClick="{{ m.open }}" style="font-family:'Playfair Display',serif; font-size:44px; line-height:1; letter-spacing:-.028em; margin:0; cursor:pointer; border-bottom:6px solid {{ m.accent }};" style-hover="color:#3E7A4E;">{{ m.title }}</h2>
-              <div style="font-family:'Figtree',sans-serif; font-size:11px; color:#8C8674; padding-bottom:6px;">{{ m.count }} bài</div>
+              <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:11px; color:#8C8674; padding-bottom:6px;">{{ m.count }} bài</div>
               <div style="flex:1; height:1px; background:#EBE5D3; margin-bottom:8px;"></div>
-              <div style="font-family:'Figtree',sans-serif; font-size:10px; color:#8C8674; letter-spacing:.14em; text-transform:uppercase; padding-bottom:6px;">{{ m.concept }}</div>
+              <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; color:#8C8674; letter-spacing:.14em; text-transform:uppercase; padding-bottom:6px;">{{ m.concept }}</div>
             </div>
             <div style="font-size:14px; line-height:1.35; color:#5C5745; max-width:600px; margin:0 0 18px;">{{ m.blurb }}</div>
             <sc-for list="{{ m.entries }}" as="e" hint-placeholder-count="6">
               <div onClick="{{ openArticle }}" style="display:grid; grid-template-columns:44px minmax(0,1fr) minmax(0,1.05fr) 72px 56px; align-items:baseline; gap:18px; padding:{{ rowPad }} 12px {{ rowPad }} 10px; border-top:1px solid #EBE5D3; cursor:pointer; border-left:3px solid transparent;" style-hover="background:#FFFFFF; border-left:3px solid #3E7A4E;">
-                <div style="font-family:'Figtree',sans-serif; font-size:11px; color:#B5AE99;">{{ e.n }}</div>
+                <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:11px; color:#B5AE99;">{{ e.n }}</div>
                 <div style="font-family:'Playfair Display',serif; font-size:23px; letter-spacing:-.015em;">{{ e.en }}</div>
                 <div style="font-size:13px; color:#5C5745; line-height:1.2;">{{ e.vi }}</div>
-                <div style="font-family:'Figtree',sans-serif; font-size:10px; color:#8C8674; letter-spacing:.05em; text-transform:uppercase;">{{ e.kind }}</div>
-                <div style="font-family:'Figtree',sans-serif; font-size:10px; color:#B5AE99; text-align:right;">{{ e.date }}</div>
+                <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; color:#8C8674; letter-spacing:.05em; text-transform:uppercase;">{{ e.kind }}</div>
+                <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; color:#B5AE99; text-align:right;">{{ e.date }}</div>
               </div>
             </sc-for>
             <div style="border-top:1px solid #EBE5D3;"></div>
@@ -551,17 +667,17 @@
         <div style="display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:0;">
           <sc-for list="{{ modules }}" as="m" hint-placeholder-count="3">
             <div style="background: {{ m.accent }}; color: {{ m.on }}; padding:26px 24px 30px;">
-              <div style="font-family:'Figtree',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; opacity:.7; margin-bottom:10px;">{{ m.concept }}</div>
+              <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; opacity:.7; margin-bottom:10px;">{{ m.concept }}</div>
               <h2 onClick="{{ m.open }}" style="font-family:'Playfair Display',serif; font-size:46px; line-height:1; letter-spacing:-.03em; margin:0 0 14px; cursor:pointer;">{{ m.title }}</h2>
               <div style="font-size:13.5px; line-height:1.35; margin-bottom:20px;">{{ m.blurb }}</div>
               <sc-if value="{{ showPlates }}" hint-placeholder-val="{{ true }}">
                 <div style="aspect-ratio:4/3; margin-bottom:20px; background:#FDFBF2; display:flex; align-items:flex-end; padding:12px;">
-                  <div style="font-family:'Figtree',sans-serif; font-size:10px; color:#3B3729; line-height:1.3;">{{ m.shot1 }}</div>
+                  <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; color:#3B3729; line-height:1.3;">{{ m.shot1 }}</div>
                 </div>
               </sc-if>
               <sc-for list="{{ m.entries }}" as="e" hint-placeholder-count="6">
                 <div onClick="{{ openArticle }}" style="display:flex; gap:12px; padding:11px 0; border-top:1px solid rgba(35,33,26,.16); cursor:pointer;">
-                  <div style="font-family:'Figtree',sans-serif; font-size:10px; opacity:.6; padding-top:6px;">{{ e.n }}</div>
+                  <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; opacity:.6; padding-top:6px;">{{ e.n }}</div>
                   <div style="flex:1;">
                     <div style="font-family:'Playfair Display',serif; font-size:21px; line-height:1.2; letter-spacing:-.015em;">{{ e.en }}</div>
                     <div style="font-size:12.5px; line-height:1.2; margin-top:3px; opacity:.82;">{{ e.vi }}</div>
@@ -577,8 +693,8 @@
     <sc-if value="{{ modBand }}" hint-placeholder-val="{{ false }}">
       <div>
         <div style="background: {{ mod.accent }}; color: {{ mod.on }}; padding:52px 56px 44px;">
-          <div onClick="{{ goHome }}" style="font-family:'Figtree',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; cursor:pointer; margin-bottom:28px; opacity:.7;">← index</div>
-          <div style="font-family:'Figtree',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; margin-bottom:10px; opacity:.7;">module 01 — {{ mod.concept }} — band</div>
+          <div onClick="{{ goHome }}" style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; cursor:pointer; margin-bottom:28px; opacity:.7;">← index</div>
+          <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; margin-bottom:10px; opacity:.7;">module 01 — {{ mod.concept }} — band</div>
           <h1 style="font-family:'Playfair Display',serif; font-size:92px; line-height:.94; letter-spacing:-.04em; margin:0 0 20px;">{{ mod.title }}</h1>
           <div style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:44px;">
             <div style="font-size:15px; line-height:1.45;">{{ mod.long }}</div>
@@ -586,8 +702,8 @@
         </div>
         <sc-if value="{{ showPlates }}" hint-placeholder-val="{{ true }}">
           <div style="height: 208px; background: #FBE7E5; display: flex; align-items: flex-end; justify-content: space-between; padding: 16px 18px; width: 1050px">
-            <div style="font-family:'Figtree',sans-serif; font-size:10px; color:#3B3729;">{{ mod.shot1 }}</div>
-            <div style="font-family:'Figtree',sans-serif; font-size:10px; color:#A4908C;">16:5 / hero</div>
+            <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; color:#3B3729;">{{ mod.shot1 }}</div>
+            <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; color:#A4908C;">16:5 / hero</div>
           </div>
         </sc-if>
         <div style="padding:36px 56px 120px; max-width:1240px;">
@@ -598,7 +714,7 @@
                 <div style="flex:1; min-width:0;">
                   <div style="font-family:'Playfair Display',serif; font-size:24px; letter-spacing:-.018em; line-height:1.15;">{{ e.en }}</div>
                   <div style="font-size:13px; color:#5C5745; line-height:1.25; margin:5px 0 8px;">{{ e.vi }}</div>
-                  <div style="display:flex; gap:12px; font-family:'Figtree',sans-serif; font-size:10px; color:#B5AE99; text-transform:uppercase; letter-spacing:.06em;">
+                  <div style="display:flex; gap:12px; font-family:'Be Vietnam Pro',sans-serif; font-size:10px; color:#B5AE99; text-transform:uppercase; letter-spacing:.06em;">
                     <div>{{ e.n }}</div>
                     <div>{{ e.kind }}</div>
                     <div>{{ e.date }}</div>
@@ -615,21 +731,21 @@
       <div>
         <div style="display:grid; grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);">
           <div style="background: {{ mod.accent }}; color: {{ mod.on }}; padding: 52px 48px 48px; width: 571px; height: 373px">
-            <div onClick="{{ goHome }}" style="font-family:'Figtree',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; cursor:pointer; margin-bottom:28px; opacity:.7;">← index</div>
-            <div style="font-family:'Figtree',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; margin-bottom:10px; opacity:.7;">module 02 — {{ mod.concept }} — specimen</div>
+            <div onClick="{{ goHome }}" style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; cursor:pointer; margin-bottom:28px; opacity:.7;">← index</div>
+            <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; margin-bottom:10px; opacity:.7;">module 02 — {{ mod.concept }} — specimen</div>
             <h1 style="font-family:'Playfair Display',serif; font-size:84px; line-height:.94; letter-spacing:-.04em; margin:0 0 18px;">{{ mod.title }}</h1>
             <div style="font-size:15px; line-height:1.45; max-width:520px;">{{ mod.long }}</div>
           </div>
           <sc-if value="{{ showPlates }}" hint-placeholder-val="{{ true }}">
             <div style="display:grid; grid-template-columns:1fr 1fr;">
               <div style="background:#E4F0DF; display:flex; align-items:flex-end; padding:12px; min-height:180px;">
-                <div style="font-family:'Figtree',sans-serif; font-size:9.5px; color:#3B3729; line-height:1.25;">{{ mod.shot1 }}</div>
+                <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:9.5px; color:#3B3729; line-height:1.25;">{{ mod.shot1 }}</div>
               </div>
               <div style="background:#2B4B33; display:flex; align-items:flex-end; padding:12px;">
-                <div style="font-family:'Figtree',sans-serif; font-size:9.5px; color:#C6D6C6; line-height:1.25;">{{ mod.shot2 }}</div>
+                <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:9.5px; color:#C6D6C6; line-height:1.25;">{{ mod.shot2 }}</div>
               </div>
               <div style="background:#F3F7EC; display:flex; align-items:flex-end; padding:12px;">
-                <div style="font-family:'Figtree',sans-serif; font-size:9.5px; color:#3B3729; line-height:1.25;">{{ mod.shot3 }}</div>
+                <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:9.5px; color:#3B3729; line-height:1.25;">{{ mod.shot3 }}</div>
               </div>
               <div style="background:#BBD9A8;"></div>
             </div>
@@ -640,15 +756,15 @@
             <sc-for list="{{ mod.entries }}" as="e" hint-placeholder-count="6">
               <div onClick="{{ openArticle }}" style="background:#FDFBF2; padding:18px 18px 20px; cursor:pointer; display:flex; flex-direction:column; min-height:230px;" style-hover="background:#FFFFFF;">
                 <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:11px;">
-                  <div style="font-family:'Figtree',sans-serif; font-size:10px; color:#B5AE99;">{{ e.n }}</div>
-                  <div style="font-family:'Figtree',sans-serif; font-size:9.5px; color:#8C8674; text-transform:uppercase; letter-spacing:.08em;">{{ e.kind }}</div>
+                  <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; color:#B5AE99;">{{ e.n }}</div>
+                  <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:9.5px; color:#8C8674; text-transform:uppercase; letter-spacing:.08em;">{{ e.kind }}</div>
                 </div>
                 <sc-if value="{{ showPlates }}" hint-placeholder-val="{{ true }}">
                   <div style="aspect-ratio:3/2; background: {{ e.tint }}; margin-bottom:13px;"></div>
                 </sc-if>
                 <div style="font-family:'Playfair Display',serif; font-size:25px; letter-spacing:-.02em; line-height:1.14; margin-bottom:7px;">{{ e.en }}</div>
                 <div style="font-size:13px; color:#5C5745; line-height:1.3;">{{ e.vi }}</div>
-                <div style="margin-top:auto; padding-top:11px; font-family:'Figtree',sans-serif; font-size:10px; color:#B5AE99;">{{ e.date }}</div>
+                <div style="margin-top:auto; padding-top:11px; font-family:'Be Vietnam Pro',sans-serif; font-size:10px; color:#B5AE99;">{{ e.date }}</div>
               </div>
             </sc-for>
           </div>
@@ -659,8 +775,8 @@
     <sc-if value="{{ modSequence }}" hint-placeholder-val="{{ false }}">
       <div>
         <div style="background: {{ mod.accent }}; color: {{ mod.on }}; padding:52px 56px 40px;">
-          <div onClick="{{ goHome }}" style="font-family:'Figtree',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; cursor:pointer; margin-bottom:24px; opacity:.7;">← index</div>
-          <div style="font-family:'Figtree',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; margin-bottom:6px; opacity:.7;">module 03 — {{ mod.concept }} — sequence</div>
+          <div onClick="{{ goHome }}" style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; cursor:pointer; margin-bottom:24px; opacity:.7;">← index</div>
+          <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; margin-bottom:6px; opacity:.7;">module 03 — {{ mod.concept }} — sequence</div>
           <h1 style="font-family:'Playfair Display',serif; font-size:96px; line-height:.94; letter-spacing:-.04em; margin:0 0 22px;">{{ mod.title }}</h1>
           <div style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr); gap:36px;">
             <div style="font-size:15px; line-height:1.45; grid-column:span 2;">{{ mod.long }}</div>
@@ -669,10 +785,10 @@
         </div>
         <sc-if value="{{ showPlates }}" hint-placeholder-val="{{ true }}">
           <div style="display:grid; grid-template-columns:repeat(4,minmax(0,1fr));">
-            <div style="aspect-ratio:3/4; background:#F5F2DC; display:flex; align-items:flex-end; padding:12px;"><div style="font-family:'Figtree',sans-serif; font-size:9.5px; color:#3B3729;">01 — nhân xanh</div></div>
-            <div style="aspect-ratio:3/4; background:#F6E2B0; display:flex; align-items:flex-end; padding:12px;"><div style="font-family:'Figtree',sans-serif; font-size:9.5px; color:#3B3729;">02 — vàng</div></div>
-            <div style="aspect-ratio:3/4; background:#D99C55; display:flex; align-items:flex-end; padding:12px;"><div style="font-family:'Figtree',sans-serif; font-size:9.5px; color:#2E2113;">03 — first crack</div></div>
-            <div style="aspect-ratio:3/4; background:#8A5A33; display:flex; align-items:flex-end; padding:12px;"><div style="font-family:'Figtree',sans-serif; font-size:9.5px; color:#F6E2B0;">04 — phát triển</div></div>
+            <div style="aspect-ratio:3/4; background:#F5F2DC; display:flex; align-items:flex-end; padding:12px;"><div style="font-family:'Be Vietnam Pro',sans-serif; font-size:9.5px; color:#3B3729;">01 — nhân xanh</div></div>
+            <div style="aspect-ratio:3/4; background:#F6E2B0; display:flex; align-items:flex-end; padding:12px;"><div style="font-family:'Be Vietnam Pro',sans-serif; font-size:9.5px; color:#3B3729;">02 — vàng</div></div>
+            <div style="aspect-ratio:3/4; background:#D99C55; display:flex; align-items:flex-end; padding:12px;"><div style="font-family:'Be Vietnam Pro',sans-serif; font-size:9.5px; color:#2E2113;">03 — first crack</div></div>
+            <div style="aspect-ratio:3/4; background:#8A5A33; display:flex; align-items:flex-end; padding:12px;"><div style="font-family:'Be Vietnam Pro',sans-serif; font-size:9.5px; color:#F6E2B0;">04 — phát triển</div></div>
           </div>
         </sc-if>
         <div style="padding:34px 56px 120px; max-width:1240px;">
@@ -681,7 +797,7 @@
               <div style="font-family:'Playfair Display',serif; font-size:38px; color:#D99C55;">{{ e.n }}</div>
               <div style="font-family:'Playfair Display',serif; font-size:27px; letter-spacing:-.02em; line-height:1.15;">{{ e.en }}</div>
               <div style="font-size:13.5px; color:#5C5745; line-height:1.3;">{{ e.vi }}</div>
-              <div style="font-family:'Figtree',sans-serif; font-size:10px; color:#B5AE99; text-align:right; text-transform:uppercase; letter-spacing:.06em;">{{ e.kind }}<br>{{ e.date }}</div>
+              <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; color:#B5AE99; text-align:right; text-transform:uppercase; letter-spacing:.06em;">{{ e.kind }}<br>{{ e.date }}</div>
             </div>
           </sc-for>
         </div>
@@ -691,13 +807,13 @@
     <sc-if value="{{ isArticle }}" hint-placeholder-val="{{ false }}">
       <div>
         <div style="background:#7FB87E; color:#1F3323; padding:46px 56px 124px; position:relative;">
-          <div onClick="{{ goBackModule }}" style="font-family:'Figtree',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; cursor:pointer; margin-bottom:24px; opacity:.7;">← biochemistry 101</div>
-          <div style="font-family:'Figtree',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; opacity:.7; margin-bottom:12px;">03 — essay — 2026.02</div>
+          <div onClick="{{ goBackModule }}" style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; cursor:pointer; margin-bottom:24px; opacity:.7;">← biochemistry 101</div>
+          <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; opacity:.7; margin-bottom:12px;">03 — essay — 2026.02</div>
           <h1 style="font-family:'Playfair Display',serif; font-size:76px; line-height:.94; letter-spacing:-.04em; margin:0 0 12px; max-width:min(660px, 100% - 300px);">Chlorogenic Acids <span style="font-style:italic;">(CGA)</span></h1>
           <div style="font-family:'Playfair Display',serif; font-style:italic; font-size:24px; line-height:1.4; max-width:min(520px, 100% - 300px);">Nguồn gốc của vị chát và phần lớn vị chua trong tách cà phê.</div>
           <sc-if value="{{ showPlates }}" hint-placeholder-val="{{ true }}">
             <div style="position:absolute; right:0; top:0; bottom:0; width:300px; background:#F2A0A5; display:flex; align-items:flex-end; padding:14px;">
-              <div style="font-family:'Figtree',sans-serif; font-size:9.5px; color:#3B2A2B;">quả chín, chụp thẳng</div>
+              <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:9.5px; color:#3B2A2B;">quả chín, chụp thẳng</div>
             </div>
           </sc-if>
         </div>
@@ -707,26 +823,26 @@
               <sc-if value="{{ showPlates }}" hint-placeholder-val="{{ true }}">
                 <div style="display:grid; grid-template-columns:minmax(0,2.1fr) minmax(0,1fr); gap:10px; margin:0 0 46px;">
                   <div style="height:280px; background:#E4F0DF; display:flex; align-items:flex-end; padding:14px;">
-                    <div style="font-family:'Figtree',sans-serif; font-size:10px; color:#3B3729; line-height:1.3;">ảnh chính — mặt cắt hạt trong lớp nhầy</div>
+                    <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; color:#3B3729; line-height:1.3;">ảnh chính — mặt cắt hạt trong lớp nhầy</div>
                   </div>
                   <div style="height:180px; align-self:end; background:#F9EBD2; display:flex; align-items:flex-end; padding:12px;">
-                    <div style="font-family:'Figtree',sans-serif; font-size:9.5px; color:#6B6555; line-height:1.2;">nhân xanh, 3:4</div>
+                    <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:9.5px; color:#6B6555; line-height:1.2;">nhân xanh, 3:4</div>
                   </div>
                 </div>
               </sc-if>
               <sc-for list="{{ article }}" as="s" hint-placeholder-count="5">
                 <div style="margin-bottom:34px;">
-                  <h3 style="font-family:'Figtree',sans-serif; font-weight:400; font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:#3E7A4E; margin:0 0 12px;">{{ s.h }}</h3>
+                  <h3 style="font-family:'Be Vietnam Pro',sans-serif; font-weight:400; font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:#3E7A4E; margin:0 0 12px;">{{ s.h }}</h3>
                   <div style="font-size:16px; line-height:1.2; color:#262319;">{{ s.p }}</div>
                   <sc-if value="{{ s.fig }}" hint-placeholder-val="{{ false }}">
                     <div style="display:flex; gap:24px; align-items:flex-end; margin: {{ s.figMargin }};">
                       <div style="flex:1; min-width:0; padding-bottom:6px;">
-                        <div style="font-family:'Figtree',sans-serif; font-size:9.5px; letter-spacing:.12em; text-transform:uppercase; color:#3E7A4E; margin-bottom:8px;">{{ s.figLabel }}</div>
+                        <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:9.5px; letter-spacing:.12em; text-transform:uppercase; color:#3E7A4E; margin-bottom:8px;">{{ s.figLabel }}</div>
                         <div style="font-size:13.5px; line-height:1.45; color:#5C5745;">{{ s.figNote }}</div>
                       </div>
                       <div style="width: {{ s.figW }}; flex:none;">
                         <div style="height: {{ s.figH }}; background: {{ s.figTint }}; display:flex; align-items:flex-end; padding:12px;">
-                          <div style="font-family:'Figtree',sans-serif; font-size:9.5px; color:#3B3729; line-height:1.3;">{{ s.figCap }}</div>
+                          <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:9.5px; color:#3B3729; line-height:1.3;">{{ s.figCap }}</div>
                         </div>
                       </div>
                     </div>
@@ -737,17 +853,17 @@
             <div style="position:sticky; top:44px; display:flex; flex-direction:column; gap:20px;">
               <div style="background:#2B4B33; color:#F4F2E4; padding:22px 20px; font-family:'Playfair Display',serif; font-style:italic; font-size:18px; line-height:1.2;">Rang càng sâu, CGA càng ít — nhưng vị đắng lại càng nhiều. Cái đắng đó đến từ sản phẩm phân huỷ của chính nó.</div>
               <div style="border-top:2px solid #23211A; padding-top:14px;">
-                <div style="font-family:'Figtree',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#8C8674; margin-bottom:8px;">Trong module này</div>
+                <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#8C8674; margin-bottom:8px;">Trong module này</div>
                 <sc-for list="{{ related }}" as="r" hint-placeholder-count="5">
                   <div style="font-size:13px; line-height:1.4; padding:9px 0; border-bottom:1px solid #EBE5D3; cursor:pointer; color:#5C5745;" style-hover="color:#3E7A4E;">{{ r.en }}</div>
                 </sc-for>
               </div>
               <sc-if value="{{ showPlates }}" hint-placeholder-val="{{ true }}">
                 <div style="aspect-ratio:1; background:#E4F0DF; display:flex; align-items:flex-end; padding:12px;">
-                  <div style="font-family:'Figtree',sans-serif; font-size:9.5px; color:#6B6555;">chi tiết vỏ lụa, 1:1</div>
+                  <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:9.5px; color:#6B6555;">chi tiết vỏ lụa, 1:1</div>
                 </div>
               </sc-if>
-              <div style="font-family:'Figtree',sans-serif; font-size:10px; color:#8C8674; line-height:1.6;">
+              <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; color:#8C8674; line-height:1.6;">
                 <div style="color:#3E7A4E; letter-spacing:.14em; text-transform:uppercase; margin-bottom:6px;">Đọc thêm</div>
                 <div>Farah &amp; Donangelo 2006</div>
                 <div>Illy &amp; Viani, Espresso Coffee</div>
@@ -762,15 +878,15 @@
       <div style="padding:76px 56px 130px; max-width:1200px;">
         <div style="display:flex; align-items:flex-end; justify-content:space-between; padding-bottom:16px; border-bottom:3px solid #23211A;">
           <h1 style="font-family:'Playfair Display',serif; font-size:72px; line-height:.94; letter-spacing:-.04em; margin:0;">Archive</h1>
-          <div style="font-family:'Figtree',sans-serif; font-size:11px; color:#8C8674; padding-bottom:8px;">18 notes — sắp theo thời gian</div>
+          <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:11px; color:#8C8674; padding-bottom:8px;">18 notes — sắp theo thời gian</div>
         </div>
         <sc-for list="{{ allPosts }}" as="p" hint-placeholder-count="18">
           <div onClick="{{ openArticle }}" style="display:grid; grid-template-columns:56px 128px minmax(0,1fr) minmax(0,1fr) 70px; align-items:center; gap:18px; padding:12px 10px; border-bottom:1px solid #EBE5D3; cursor:pointer; border-left:3px solid transparent;" style-hover="background:#FFFFFF; border-left:3px solid #3E7A4E;">
-            <div style="font-family:'Figtree',sans-serif; font-size:10px; color:#B5AE99;">{{ p.date }}</div>
-            <div style="font-family:'Figtree',sans-serif; font-size:9.5px; background: {{ p.accent }}; color: {{ p.on }}; padding:4px 8px; width:fit-content; text-transform:uppercase; letter-spacing:.06em;">{{ p.mod }}</div>
+            <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; color:#B5AE99;">{{ p.date }}</div>
+            <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:9.5px; background: {{ p.accent }}; color: {{ p.on }}; padding:4px 8px; width:fit-content; text-transform:uppercase; letter-spacing:.06em;">{{ p.mod }}</div>
             <div style="font-family:'Playfair Display',serif; font-size:20px; letter-spacing:-.015em;">{{ p.en }}</div>
             <div style="font-size:12.5px; color:#8C8674;">{{ p.vi }}</div>
-            <div style="font-family:'Figtree',sans-serif; font-size:10px; color:#B5AE99; text-align:right; text-transform:uppercase;">{{ p.kind }}</div>
+            <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; color:#B5AE99; text-align:right; text-transform:uppercase;">{{ p.kind }}</div>
           </div>
         </sc-for>
       </div>
@@ -794,7 +910,7 @@ class Component extends DCLogic {
         ['Quan sát quán — cách kéo shot', 'quan sát', 60], ['Nếm mù 4 mẫu robusta', 'thực hành', 75],
         ['Đọc paper về acid quinic', 'đọc', 45], ['Xem lại video rang tuần trước', 'quan sát', 35]
       ];
-      const plan = [[0,1,2],[3,4],[5,6,7],[8],[1,3,5],[0,2],[6,9],[4,7,1],[2,8],[3,0],[5],[7,9,4],[1,6],[0,3,8]];
+      const plan = [[0,1,2],[3,4],[5,6,7],[8],[1,3,5],[0,2],[6,9],[4,7,1],[2,8],[3,0],[5],[7,9,4],[1,6],[0,3,8],[2,5],[7,1],[0,4,9],[3,6],[8,2],[1,5,7],[4,0]];
       const out = []; let id = 1;
       for (let i = 0; i < plan.length; i++) {
         const d = new Date(2026, 1, 14 - i);
@@ -802,35 +918,129 @@ class Component extends DCLogic {
         let clock = 6 * 60 + 30;
         plan[i].forEach(pi => {
           const p = pool[pi];
-          out.push({ id: id++, date: ds, name: p[0], kind: p[1], mins: p[2], at: String(Math.floor(clock / 60)).padStart(2, '0') + ':' + String(clock % 60).padStart(2, '0') });
+          out.push({ id: id++, date: ds, name: p[0], kind: p[1], mins: p[2], done: true, at: String(Math.floor(clock / 60)).padStart(2, '0') + ':' + String(clock % 60).padStart(2, '0') });
           clock += p[2] + 55;
         });
       }
       return out;
     })(),
-    statsOpen: false,
+    statsOpen: false, openMonths: {}, extraKinds: [], kindAdding: false, kindDraft: '', editId: null, newId: null, editFocus: 'dur', eName: '', eMins: '', eAt: '',
+    tMode: 'up', tRunning: false, tSec: 0, tTarget: 1500,
     dName: '', dStart: '', dEnd: '', dKind: 'đọc',
-    hoverNote: null, openNote: null,
+    hoverNote: null, openNote: null, mx: null, my: null,
     noteFilter: 'tất cả'
   };
 
   KINDS = ['đọc', 'thực hành', 'viết', 'quan sát'];
+  KIND_PALETTE = ['#3E7A4E', 'oklch(0.50 0.135 14)', '#8A6420', '#102F35', '#5E7F52', 'oklch(0.60 0.115 14)', '#6E5A2A'];
+
+  allKinds() { return this.KINDS.concat(this.state.extraKinds || []); }
+
+  addKind() {
+    const v = (this.state.kindDraft || '').trim();
+    if (!v || this.allKinds().indexOf(v) >= 0) { this.setState({ kindAdding: false, kindDraft: '' }); return; }
+    const extra = (this.state.extraKinds || []).concat([v]);
+    try { localStorage.setItem('cs_practice_kinds_v1', JSON.stringify(extra)); } catch (e) {}
+    this.setState({ extraKinds: extra, kindAdding: false, kindDraft: '', dKind: v });
+  }
 
   toMin(t) { const p = String(t).split(':'); return (+p[0]) * 60 + (+p[1] || 0); }
   fmt(m) { const h = Math.floor(m / 60), r = m % 60; return h ? (r ? h + 'h ' + r + 'm' : h + 'h') : r + 'm'; }
 
   componentDidMount() {
+    this.watchRise();
+
     try {
       const raw = localStorage.getItem('cs_practice_logs_v1');
       if (raw) this.setState({ logs: JSON.parse(raw) });
+      const rk = localStorage.getItem('cs_practice_kinds_v1');
+      if (rk) this.setState({ extraKinds: JSON.parse(rk) });
     } catch (e) {}
   }
+
+  bump(id, n) {
+    const cur = this.state.logs.find(x => x.id === id);
+    if (!cur) return;
+    const next = Math.max(5, cur.mins + n);
+    const logs = this.state.logs.map(x => x.id === id ? Object.assign({}, x, { mins: next }) : x);
+    this.persist(logs);
+    this.setState({ logs, eMins: String(next) });
+  }
+
+  arm() {
+    if (this._tick) clearInterval(this._tick);
+    this._tick = setInterval(() => {
+      if (this.state.tMode === 'up') { this.setState(st => ({ tSec: st.tSec + 1 })); return; }
+      const next = this.state.tSec - 1;
+      if (next <= 0) { this.disarm(); this.beep(); this.setState({ tSec: 0, tRunning: false }); }
+      else this.setState({ tSec: next });
+    }, 1000);
+  }
+
+  disarm() { if (this._tick) { clearInterval(this._tick); this._tick = null; } }
+
+  beep() {
+    try {
+      const C = window.AudioContext || window.webkitAudioContext;
+      const ctx = new C();
+      [0, .45, .9].forEach(t => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'sine'; o.frequency.value = 660;
+        g.gain.setValueAtTime(0, ctx.currentTime + t);
+        g.gain.linearRampToValueAtTime(.22, ctx.currentTime + t + .03);
+        g.gain.exponentialRampToValueAtTime(.001, ctx.currentTime + t + .34);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(ctx.currentTime + t); o.stop(ctx.currentTime + t + .36);
+      });
+    } catch (e) {}
+  }
+
+  saveTimer(mins) {
+    if (!mins || mins < 1) return;
+    this.disarm();
+    const now = new Date();
+    const at = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+    const logs = this.state.logs.concat([{
+      id: Date.now(), date: this.TODAY, name: this.state.tName.trim() || 'Phiên không tên',
+      kind: this.state.dKind, mins, at, done: true
+    }]);
+    this.persist(logs);
+    this.setState(st => ({ logs, tName: '', tRunning: false, tSec: st.tMode === 'down' ? st.tTarget : 0 }));
+  }
+
+  componentWillUnmount() { this.disarm(); }
 
   persist(logs) {
     try { localStorage.setItem('cs_practice_logs_v1', JSON.stringify(logs)); } catch (e) {}
   }
 
   TODAY = '2026-02-14';
+  _els = {};
+
+  setEl(i, el) { if (el) this._els[i] = el; }
+
+  onGridMove(e) {
+    const x = e.clientX, y = e.clientY;
+    if (this._raf) return;
+    this._raf = requestAnimationFrame(() => { this._raf = null; this.setState({ mx: x, my: y }); });
+  }
+
+  componentDidUpdate(pp, ps) {
+    this.watchRise();
+    if (this._lastOpen === this.state.openNote) return;
+    this._lastOpen = this.state.openNote;
+    if (this.state.openNote) {
+      setTimeout(() => {
+        const el = document.querySelector('[data-open-note="true"]') || this._els[this._openIdx];
+        if (!el) return;
+        const top = Math.max(0, el.getBoundingClientRect().top + window.scrollY - 110);
+        const before = window.scrollY;
+        if (Math.abs(top - before) < 4) return;
+        try { window.scrollTo({ top, behavior: 'smooth' }); } catch (err) { window.scrollTo(0, top); }
+        setTimeout(() => { if (Math.abs(window.scrollY - before) < 2) window.scrollTo(0, top); }, 80);
+      }, 30);
+    }
+  }
 
   addLog() {
     const { dName, dStart, dEnd, dKind } = this.state;
@@ -844,14 +1054,14 @@ class Component extends DCLogic {
 
   notesData() {
     return [
-      { d: '2026.02.14', k: 'quan sát', t: 'Vì sao cháo đun quá lâu thì vữa', b: 'Hạt tinh bột hút nước rồi nở đến lúc vỡ hẳn thành tế bào, amylose thoát ra ngoài và làm cả nồi sánh đều. Đun tiếp thì chuỗi amylose bị cắt ngắn, độ sánh sụp xuống và nước tách khỏi hạt. Đúng cái ngưỡng ấy, cấu trúc chuyển từ "sánh" sang "vữa" — cùng một cơ chế với việc khuấy espresso quá tay.', len: 'dài' },
+      { d: '2026.02.14', k: 'quan sát', t: 'Vì sao cháo đun quá lâu thì vữa', mediaHint: 'ảnh — nồi trên bếp, hơi nước, mặt cháo', b: 'Hạt tinh bột hút nước rồi nở đến lúc vỡ hẳn thành tế bào, amylose thoát ra ngoài và làm cả nồi sánh đều. Đun tiếp thì chuỗi amylose bị cắt ngắn, độ sánh sụp xuống và nước tách khỏi hạt. Đúng cái ngưỡng ấy, cấu trúc chuyển từ "sánh" sang "vữa" — cùng một cơ chế với việc khuấy espresso quá tay.', len: 'dài' },
       { d: '2026.02.11', k: 'video', t: 'Một ngày không lời — 47 giây', b: 'Quay lại toàn bộ lịch trình sáng bằng một cú máy tĩnh đặt trên bàn: cân, nước, phin, sổ. Không tiếng, không nhạc. Xem lại thấy rõ ba khoảng chết mình không nhớ là mình có.', len: 'media' },
-      { d: '2026.02.09', k: 'liên ngành', t: 'Từ tứ niệm xứ tới việc nếm', b: 'Việc quan sát cảm thọ mà không dán nhãn ngay hoá ra là kỹ thuật cupping: ghi nhận vị trước, gọi tên sau. Khi gọi tên quá sớm, mọi thứ đến sau đều bị bẻ cong để khớp với cái tên đã gọi.', len: 'vừa' },
-      { d: '2026.02.06', k: 'quan sát', t: 'Nước cứng và lớp crema', b: 'Cùng máy, cùng hạt, đổi từ nước RO sang nước khoáng nhẹ: crema dày hơn thấy rõ. Ion canxi và magie tham gia chiết, nhiều quá thì đắng, ít quá thì loãng và chua.', len: 'ngắn' },
-      { d: '2026.02.02', k: 'cảm nhận', t: 'Học chậm không phải là học kém', b: 'Ba tuần chỉ để phân biệt được hai loại chua. Nếu tính theo số bài đọc thì đây là ba tuần lãng phí; tính theo cái còn lại trong lưỡi thì không.', len: 'ngắn' },
-      { d: '2026.01.28', k: 'liên ngành', t: 'Nấu ăn dạy gì cho việc rang', b: 'Cả hai đều là bài toán truyền nhiệt: bề mặt chín trước lõi, và mọi tranh cãi về "nhiệt cao hay thấp" thực chất là tranh cãi về khoảng chênh giữa hai chỗ đó.', len: 'vừa' },
-      { d: '2026.01.24', k: 'video', t: 'Đổ nước vòng tròn — 20 giây', b: 'Ba kiểu rót cạnh nhau, cùng một góc máy. Không giải thích gì thêm.', len: 'media' },
-      { d: '2026.01.19', k: 'quan sát', t: 'Bọt trên mặt nồi luộc', b: 'Bọt protein nổi lên rồi tự vỡ khi nhiệt vượt ngưỡng ổn định của màng. Cùng nguyên lý với việc crema tan nhanh trên tách nóng quá.', len: 'ngắn' }
+      { d: '2026.02.09', k: 'liên ngành', t: 'Từ tứ niệm xứ tới việc nếm', mediaHint: 'ảnh — bàn cupping, thìa và bát nếm', b: 'Việc quan sát cảm thọ mà không dán nhãn ngay hoá ra là kỹ thuật cupping: ghi nhận vị trước, gọi tên sau. Khi gọi tên quá sớm, mọi thứ đến sau đều bị bẻ cong để khớp với cái tên đã gọi.', len: 'vừa' },
+      { d: '2026.02.06', k: 'quan sát', t: 'Nước cứng và lớp crema', mediaHint: 'ảnh — cận cảnh lớp crema trên tách', b: 'Cùng máy, cùng hạt, đổi từ nước RO sang nước khoáng nhẹ: crema dày hơn thấy rõ. Ion canxi và magie tham gia chiết, nhiều quá thì đắng, ít quá thì loãng và chua.', len: 'ngắn' },
+      { d: '2026.02.02', k: 'cảm nhận', t: 'Học chậm không phải là học kém', mediaHint: 'ảnh — sổ tay đang viết dở, chữ tay', b: 'Ba tuần chỉ để phân biệt được hai loại chua. Nếu tính theo số bài đọc thì đây là ba tuần lãng phí; tính theo cái còn lại trong lưỡi thì không.', len: 'ngắn' },
+      { d: '2026.01.28', k: 'liên ngành', t: 'Nấu ăn dạy gì cho việc rang', mediaHint: 'ảnh — chảo/máy rang, hạt đang đảo', b: 'Cả hai đều là bài toán truyền nhiệt: bề mặt chín trước lõi, và mọi tranh cãi về "nhiệt cao hay thấp" thực chất là tranh cãi về khoảng chênh giữa hai chỗ đó.', len: 'vừa' },
+      { d: '2026.01.24', k: 'video', portrait: true, t: 'Đổ nước vòng tròn — 20 giây', b: 'Ba kiểu rót cạnh nhau, cùng một góc máy. Không giải thích gì thêm.', len: 'media' },
+      { d: '2026.01.19', k: 'quan sát', t: 'Bọt trên mặt nồi luộc', mediaHint: 'ảnh — mặt nước sôi, bọt nổi', b: 'Bọt protein nổi lên rồi tự vỡ khi nhiệt vượt ngưỡng ổn định của màng. Cùng nguyên lý với việc crema tan nhanh trên tách nóng quá.', len: 'ngắn' }
     ];
   }
 
@@ -915,8 +1125,8 @@ class Component extends DCLogic {
     ];
   }
 
-  componentDidMount() { this.watchRise(); }
-  componentDidUpdate() { this.watchRise(); }
+
+
 
   watchRise() {
     if (!this._io) {
@@ -955,44 +1165,168 @@ class Component extends DCLogic {
     })));
     allPosts.sort((a, b) => a.date < b.date ? 1 : -1);
 
-    const kindColor = { 'đọc': '#C9821F', 'thực hành': '#2E8C74', 'viết': '#6E5AA8', 'quan sát': '#C25438' };
+    const kindList = this.allKinds();
+    const kindColor = {};
+    kindList.forEach((k, i) => { kindColor[k] = this.KIND_PALETTE[i % this.KIND_PALETTE.length]; });
     const DOW = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
     const logs = this.state.logs;
     const dateStr = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
     const byDate = {};
     logs.forEach(l => { (byDate[l.date] = byDate[l.date] || []).push(l); });
     const span = 21;
-    const days = [];
+    const all = [];
     for (let i = span - 1; i >= 0; i--) {
       const d = new Date(2026, 1, 14 - i), ds = dateStr(d), ls = byDate[ds] || [];
-      const mins = ls.reduce((a, l) => a + l.mins, 0);
-      days.push({ ds, d, mins, ls });
+      all.push({ ds, d, ls, mins: ls.filter(l => l.done !== false).reduce((a, l) => a + l.mins, 0), age: i });
     }
-    const maxMins = Math.max(240, ...days.map(x => x.mins));
-    const dayCells = days.map(x => ({
-      dow: DOW[x.d.getDay()], num: String(x.d.getDate()).padStart(2, '0'),
-      done: x.mins > 0, isToday: x.ds === this.TODAY,
-      dur: x.mins ? this.fmt(x.mins) : '',
-      strong: x.mins >= 180,
-      fill: x.mins ? Math.round(x.mins / maxMins * 100) + '%' : '0%',
-      bg: x.mins ? (x.mins >= 180 ? '#DDE3D6' : '#EAEEE4') : '#F4F4EF',
-      border: x.ds === this.TODAY ? '2px solid #212520' : '1px solid #D3D6CB',
-      ticks: x.ls.map(l => ({ c: kindColor[l.kind] || '#C9821F', n: l.name, dur: this.fmt(l.mins) }))
-    }));
+    const maxMins = Math.max(240, ...all.map(x => x.mins));
     let streak = 0;
-    for (let i = days.length - 1; i >= 0; i--) { if (days[i].mins > 0) streak++; else break; }
+    for (let i = all.length - 1; i >= 0; i--) { if (all[i].mins > 0) streak++; else break; }
     const todayLogs = byDate[this.TODAY] || [];
-    const totalMin = todayLogs.reduce((a, l) => a + l.mins, 0);
-    const logRows = todayLogs.slice().sort((a, b) => this.toMin(a.at) - this.toMin(b.at)).map(l => ({
-      name: l.name, kind: l.kind, at: l.at, dur: this.fmt(l.mins), color: kindColor[l.kind] || '#C9821F',
-      remove: () => { const ls = this.state.logs.filter(x => x !== l); this.persist(ls); this.setState({ logs: ls }); }
+    const totalMin = todayLogs.filter(l => l.done !== false).reduce((a, l) => a + l.mins, 0);
+    const eid = this.state.editId;
+
+    const days = all.slice().reverse().slice(0, 12).map(x => {
+      const recent = x.age <= 6;
+      const shown = (recent ? x.ls : x.ls.filter(l => l.done !== false)).slice()
+        .sort((a, b) => this.toMin(a.at) - this.toMin(b.at));
+      return {
+        ds: x.ds,
+        dow: DOW[x.d.getDay()], num: String(x.d.getDate()).padStart(2, '0'),
+        mon: String(x.d.getMonth() + 1).padStart(2, '0'),
+        isToday: x.ds === this.TODAY, notToday: x.ds !== this.TODAY,
+        recent, isEmpty: shown.length === 0, hasRows: shown.length > 0,
+        total: x.mins ? this.fmt(x.mins) : '—',
+        bar: x.mins ? Math.max(3, Math.round(x.mins / maxMins * 100)) + '%' : '0%',
+        dotBg: x.mins ? '#7FB87E' : '#FFFFFF', dotBorder: x.mins ? '#3E7A4E' : '#CFCFC4',
+        pad: x.ds === this.TODAY ? '20px 16px 18px 10px' : '14px 16px 13px 10px',
+        bg: x.ds === this.TODAY ? '#FCFBF7' : 'transparent',
+        edge: x.ds === this.TODAY ? '#F2A0A5' : (x.mins ? '#E3E3DB' : '#EDEDE6'),
+        labelOp: x.mins ? '1' : '.4',
+        canAdd: recent,
+        addRow: () => {
+          const ls2 = (byDate[x.ds] || []);
+          const last = ls2.slice().sort((a, b) => this.toMin(a.at) - this.toMin(b.at))[ls2.length - 1];
+          const startMin = last ? Math.min(23 * 60 + 30, this.toMin(last.at) + last.mins + 15) : 8 * 60;
+          const id = Date.now();
+          const logs2 = this.state.logs.concat([{
+            id, date: x.ds, name: '', kind: this.state.dKind, mins: 30, done: false,
+            at: String(Math.floor(startMin / 60)).padStart(2, '0') + ':' + String(startMin % 60).padStart(2, '0')
+          }]);
+          this.persist(logs2);
+          this.setState({ logs: logs2, newId: id, editId: null, eName: '' });
+        },
+        overDay: e => { e.preventDefault(); },
+        dropDay: e => {
+          e.preventDefault();
+          const id = +e.dataTransfer.getData('text/plain');
+          if (!id) return;
+          const ls = this.state.logs.map(l => l.id === id ? Object.assign({}, l, { date: x.ds }) : l);
+          this.persist(ls); this.setState({ logs: ls });
+        },
+        rows: shown.map(l => {
+          const editing = eid === l.id;
+          return {
+            name: l.name, kind: l.kind, at: l.at, dur: this.fmt(l.mins),
+            color: kindColor[l.kind] || '#163F42',
+            done: l.done !== false, undone: l.done === false,
+            editable: recent, locked: !recent, editing, notEditing: !editing,
+            cursor: recent ? 'pointer' : 'default',
+            drag: recent ? 'true' : 'false',
+            nameStyle: l.done === false ? 'italic' : 'normal',
+            nameColor: l.done === false ? '#8A8A7C' : '#172124',
+            tickBg: l.done !== false ? (kindColor[l.kind] || '#163F42') : 'transparent',
+            tickBorder: l.done !== false ? (kindColor[l.kind] || '#163F42') : '#B9B6A6',
+            tickMark: l.done !== false ? '✓' : '',
+            onDragStart: e => { e.dataTransfer.setData('text/plain', String(l.id)); e.dataTransfer.effectAllowed = 'move'; },
+            toggle: () => {
+              if (!recent) return;
+              const ls = this.state.logs.map(x2 => x2.id === l.id ? Object.assign({}, x2, { done: x2.done === false }) : x2);
+              this.persist(ls); this.setState({ logs: ls });
+            },
+            nameHover: recent ? 'background:#EDE9D6;' : '',
+            naming: this.state.newId === l.id, notNaming: this.state.newId !== l.id,
+            editAt: () => { if (recent) this.setState({ editId: l.id, newId: null, editFocus: 'at', eMins: String(l.mins), eAt: l.at }); },
+            editDur: () => { if (recent) this.setState({ editId: l.id, newId: null, editFocus: 'dur', eMins: String(l.mins), eAt: l.at }); },
+            focusAt: this.state.editFocus === 'at', focusDur: this.state.editFocus === 'dur',
+            durEdge: this.state.editFocus === 'dur' ? '#3E7A4E' : '#CFCFC4',
+            atEdge: this.state.editFocus === 'at' ? '#3E7A4E' : '#CFCFC4',
+            durBg: this.state.editFocus === 'dur' ? '#EFE9D4' : 'transparent',
+            setKind: e => {
+              const v = e.target.value;
+              const ls = this.state.logs.map(x2 => x2.id === l.id ? Object.assign({}, x2, { kind: v }) : x2);
+              this.persist(ls); this.setState({ logs: ls });
+            },
+            startName: () => { if (recent) this.setState({ newId: l.id, editId: null, eName: l.name }); },
+            minus: () => this.bump(l.id, -5),
+            plus: () => this.bump(l.id, 5),
+            saveName: () => {
+              if (this.state.newId !== l.id) return;
+              const nm = this.state.eName.trim();
+              const ls = nm
+                ? this.state.logs.map(x2 => x2.id === l.id ? Object.assign({}, x2, { name: nm }) : x2)
+                : this.state.logs.filter(x2 => x2.id !== l.id);
+              this.persist(ls); this.setState({ logs: ls, newId: null });
+            },
+            keyEdit: e => {
+              if (e.key === 'Enter') { e.target.blur(); }
+              if (e.key === 'Escape') { this.setState({ editId: null, newId: null }); }
+            },
+            del: () => { const ls = this.state.logs.filter(x2 => x2.id !== l.id); this.persist(ls); this.setState({ logs: ls, editId: null }); },
+            saveEdit: () => {
+              if (this.state.editId !== l.id) return;
+              const m = parseInt(this.state.eMins, 10);
+              const at = /^\d{1,2}:\d{2}$/.test(this.state.eAt) ? this.state.eAt : l.at;
+              const ls = this.state.logs.map(x2 => x2.id === l.id ? Object.assign({}, x2, { name: this.state.eName || x2.name, mins: m > 0 ? m : x2.mins, at }) : x2);
+              this.persist(ls); this.setState({ logs: ls, editId: null });
+            },
+            cancelEdit: () => this.setState({ editId: null })
+          };
+        })
+      };
+    });
+
+    const MON = ['01','02','03','04','05','06','07','08','09','10','11','12'];
+    const curKey = '2026-02';
+    const openM = this.state.openMonths || {};
+    const mOrder = [], mMap = {};
+    days.forEach(dd => {
+      const k = dd.ds.slice(0, 7);
+      if (!mMap[k]) { mMap[k] = []; mOrder.push(k); }
+      mMap[k].push(dd);
+    });
+    const months = mOrder.map(k => {
+      const list = mMap[k];
+      const mins = all.filter(x => x.ds.slice(0, 7) === k).reduce((a, x) => a + x.mins, 0);
+      const isCur = k === curKey;
+      const open = isCur || !!openM[k];
+      const inMonth = all.filter(x => x.ds.slice(0, 7) === k);
+      const nDays = inMonth.filter(x => x.mins > 0).length;
+      const daysInMonth = new Date(+k.slice(0, 4), +k.slice(5, 7), 0).getDate();
+      return {
+        key: k, label: 'Tháng ' + String(+k.slice(5, 7)), year: k.slice(0, 4),
+        total: mins ? this.fmt(mins) : '—', nDays: nDays + '/' + daysInMonth + ' ngày có ghi',
+        isCur, notCur: !isCur, open, closed: !open,
+        cue: open ? 'thu gọn ↑' : 'xổ ra ↓',
+        toggle: () => this.setState(st => ({ openMonths: Object.assign({}, st.openMonths, { [k]: !(st.openMonths || {})[k] }) })),
+        days: list
+      };
+    });
+
+    const sum7 = all.slice(-7).reduce((a, x) => a + x.mins, 0);
+    const spanTotal = all.reduce((a, x) => a + x.mins, 0);
+    const activeDays = all.filter(x => x.mins > 0).length;
+    const best = all.slice().sort((a, b) => b.mins - a.mins)[0];
+    const chart = all.map(x => ({
+      h: Math.max(2, Math.round(x.mins / maxMins * 132)) + 'px',
+      c: x.mins >= 180 ? '#3E7A4E' : x.mins ? '#7FB87E' : '#E3E3DB',
+      lab: String(x.d.getDate()).padStart(2, '0')
     }));
-    const spanTotal = days.reduce((a, x) => a + x.mins, 0);
-    const byKind = this.KINDS.map(k => {
-      const m = logs.filter(l => l.kind === k).reduce((a, l) => a + l.mins, 0);
+    const byKind = kindList.map(k => {
+      const m = logs.filter(l => l.kind === k && l.done !== false).reduce((a, l) => a + l.mins, 0);
       let ks = 0;
-      for (let i = days.length - 1; i >= 0; i--) { if (days[i].ls.some(l => l.kind === k)) ks++; else break; }
-      const nd = days.filter(x => x.ls.some(l => l.kind === k)).length;
+      for (let i = all.length - 1; i >= 0; i--) { if (all[i].ls.some(l => l.kind === k)) ks++; else break; }
+      const nd = all.filter(x => x.ls.some(l => l.kind === k)).length;
       return {
         k, dur: m ? this.fmt(m) : '—', color: kindColor[k], dim: m ? 1 : .35,
         w: spanTotal ? Math.round(m / spanTotal * 100) + '%' : '0%',
@@ -1001,64 +1335,114 @@ class Component extends DCLogic {
       };
     }).sort((a, b) => parseInt(b.pct) - parseInt(a.pct));
     const nameTotals = {};
-    logs.forEach(l => { nameTotals[l.name] = (nameTotals[l.name] || 0) + l.mins; });
-    const topNames = Object.keys(nameTotals).sort((a, b) => nameTotals[b] - nameTotals[a]).slice(0, 5).map((n, i) => ({
+    logs.forEach(l => { if (l.done !== false) nameTotals[l.name] = (nameTotals[l.name] || 0) + l.mins; });
+    const ranked = Object.keys(nameTotals).sort((a, b) => nameTotals[b] - nameTotals[a]);
+    const topNames = ranked.slice(0, 5).map((n, i) => ({
       n, dur: this.fmt(nameTotals[n]), rank: String(i + 1).padStart(2, '0'),
-      w: Math.round(nameTotals[n] / nameTotals[Object.keys(nameTotals).sort((a, b) => nameTotals[b] - nameTotals[a])[0]] * 100) + '%'
+      w: Math.round(nameTotals[n] / nameTotals[ranked[0]] * 100) + '%'
     }));
-    const last7 = days.slice(-7), sum7 = last7.reduce((a, x) => a + x.mins, 0);
-    const activeDays = days.filter(x => x.mins > 0).length;
-    const best = days.slice().sort((a, b) => b.mins - a.mins)[0];
-    const chart = days.map(x => ({
-      h: Math.max(2, Math.round(x.mins / maxMins * 132)) + 'px',
-      c: x.mins >= 180 ? '#2E8C74' : x.mins ? '#9DBFAF' : '#D3D6CB',
-      lab: String(x.d.getDate()).padStart(2, '0')
-    }));
+
+    const tUsedSec = this.state.tMode === 'up' ? this.state.tSec : Math.max(0, this.state.tTarget - this.state.tSec);
+    const clock = s => [Math.floor(s / 3600), Math.floor(s % 3600 / 60), s % 60]
+      .map(v => String(v).padStart(2, '0')).join(':');
+
     const allNotes = this.notesData();
     const nf = this.state.noteFilter;
     const noteFilters = ['tất cả'].concat(['quan sát', 'video', 'cảm nhận', 'liên ngành']).map(f => ({
       f, on: f === nf, n: f === 'tất cả' ? allNotes.length : allNotes.filter(x => x.k === f).length,
       pick: () => this.setState({ noteFilter: f })
     }));
-    const noteColor = { 'quan sát': '#C0143C', 'video': '#12120F', 'cảm nhận': '#8E2A66', 'liên ngành': '#6B7A11' };
-    const noteBlock = { 'quan sát': '#F3D9DE', 'video': '#D9E27A', 'cảm nhận': '#EDD4E2', 'liên ngành': '#CFE04A' };
+    const noteColor = { 'quan sát': '#B65A3C', 'video': '#172124', 'cảm nhận': '#285E5B', 'liên ngành': '#163F42' };
+    const noteBlock = { 'quan sát': '#E9B79C', 'video': '#8CBAB4', 'cảm nhận': '#AFC8BC', 'liên ngành': '#9DBBD4' };
     const place = [
-      { c: '1 / span 7', mt: '0px' }, { c: '9 / span 4', mt: '116px' },
-      { c: '2 / span 5', mt: '72px' }, { c: '8 / span 5', mt: '10px' },
-      { c: '1 / span 4', mt: '54px' }, { c: '6 / span 6', mt: '96px' },
-      { c: '2 / span 4', mt: '40px' }, { c: '7 / span 5', mt: '0px' }
+      { c: 'span 5', mt: '0px', ar: '4/3', mw: '78%' }, { c: 'span 4', mt: '104px', ar: '5/4', mw: '86%' },
+      { c: 'span 4', mt: '18px', ar: '4/3', mw: '92%' }, { c: 'span 5', mt: '132px', ar: '3/2', mw: '72%' },
+      { c: 'span 5', mt: '34px', ar: '5/4', mw: '80%' }, { c: 'span 4', mt: '150px', ar: '4/3', mw: '88%' },
+      { c: 'span 4', mt: '26px', ar: '5/4', mw: '94%' }, { c: 'span 4', mt: '116px', ar: '4/3', mw: '84%' }
     ];
-    const hv = this.state.hoverNote;
+    const fillers = [
+      { after: 1, c: 'span 3', mt: '250px', kind: 'slot', bg: '#9DBBD4', h: '330px', t: 'ảnh dọc — bàn làm việc, dụng cụ bày ra', ml: '-52px', z: '1', pl: '80px' },
+      { after: 2, c: 'span 3', mt: '54px', kind: 'quote', bg: '', h: '', t: 'Ghi lại thì mới thấy mình đã nghĩ gì.', ml: '0px', z: '1', pl: '14px' },
+      { after: 4, c: 'span 3', mt: '86px', kind: 'slot', bg: '#E9B79C', h: '210px', t: 'ảnh vụn — mảnh cắt nhỏ, chèn đè lên bài bên cạnh', ml: '-64px', z: '1', pl: '92px' },
+      { after: 5, c: 'span 3', mt: '190px', kind: 'count', bg: '', h: '', t: '', ml: '0px', z: '1', pl: '14px' },
+      { after: 6, c: 'span 4', mt: '68px', kind: 'slot', bg: '#AFC8BC', h: '268px', t: 'ảnh cận cảnh — kết cấu, bề mặt, chất liệu', ml: '0px', z: '1', pl: '14px' },
+      { after: 5, c: 'span 3', mt: '46px', kind: 'slot', bg: '#9DBBD4', h: '242px', t: 'ảnh dọc hẹp — một vật thể đơn lẻ', ml: '0px', z: '1', pl: '14px' },
+      { after: 7, c: 'span 3', mt: '200px', kind: 'slot', bg: '#E9B79C', h: '176px', t: 'ảnh vụn — chi tiết nhỏ lặp lại', ml: '0px', z: '1', pl: '14px' }
+    ];
+    const hv = this.state.hoverNote, opn = this.state.openNote;
     const filtered = allNotes.filter(n => nf === 'tất cả' || n.k === nf);
-    const notes = filtered.map((n, i) => {
+    const notes = [];
+    filtered.forEach((n, i) => {
       const p = place[i % place.length];
-      const isHv = hv === i, other = hv !== null && hv !== i;
-      return Object.assign({}, n, {
-        color: noteColor[n.k], block: noteBlock[n.k], isMedia: n.len === 'media',
+      const isHv = hv === i, isOpen = opn === n.t;
+      const openIdx = filtered.findIndex(x => x.t === opn);
+      if (isOpen) this._openIdx = i;
+      let prox = 0;
+      if (opn === null && this.state.mx !== null) {
+        const el = this._els[i];
+        if (el) {
+          const r = el.getBoundingClientRect();
+          const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+          const d = Math.hypot(this.state.mx - cx, this.state.my - cy);
+          prox = Math.max(0, 1 - d / 620);
+        }
+      }
+      const sc = 1 + prox * prox * 0.05;
+      const lift = -(prox * prox * 12);
+      const other = (hv !== null && hv !== i && opn === null) || (opn !== null && !isOpen);
+      notes.push(Object.assign({}, n, {
+        isNote: true, color: noteColor[n.k], block: noteBlock[n.k],
         num: String(allNotes.length - allNotes.indexOf(n)).padStart(2, '0'),
-        col: p.c, mt: p.mt,
-        size: n.len === 'dài' ? '62px' : n.len === 'vừa' ? '46px' : n.len === 'media' ? '40px' : '36px',
-        titleColor: isHv ? noteColor[n.k] : '#12120F',
-        opacity: other ? '.22' : '1',
-        shift: isHv ? 'translateY(-8px)' : 'translateY(0)',
-        blockScale: isHv ? 'scaleX(1)' : 'scaleX(0)',
-        bodyOpacity: isHv ? '1' : '.55',
-        ruleW: isHv ? '100%' : '34px',
+        col: isOpen ? '1 / -1' : (n.portrait ? 'span 7' : p.c), mt: isOpen ? '40px' : p.mt, ml: '0px', z: isOpen ? '6' : '3', ar: isOpen ? (n.portrait ? '9/16' : '4/3') : (n.portrait ? '3/4' : p.ar),
+        mediaW: isOpen ? (n.portrait ? '250px' : '300px') : (n.portrait ? '40%' : p.mw),
+        mediaLabel: n.len === 'media' ? (n.portrait ? 'video dọc — clip quay dọc' : 'video ngang — clip ngắn không tiếng') : (n.mediaHint || 'ảnh — cận cảnh chủ thể'),
+        size: isOpen ? '52px' : (n.portrait ? '23px' : n.len === 'dài' ? '40px' : n.len === 'vừa' ? '34px' : '27px'),
+        titleColor: '#12120F',
+        opacity: other ? '.18' : (opn === null && this.state.mx !== null ? String(0.62 + prox * 0.38) : '1'),
+        shift: isOpen ? 'none' : (opn !== null ? (i < openIdx ? 'translateX(-30px) scale(.96)' : 'translateX(30px) scale(.96)') : 'translateY(' + lift.toFixed(1) + 'px) scale(' + sc.toFixed(3) + ')'),
+        ease: opn !== null ? 'transform .7s cubic-bezier(.16,.84,.32,1)' : 'transform .42s cubic-bezier(.22,.8,.3,1)',
+        setRef: el => this.setEl(i, el),
+        washSize: (isHv || isOpen) ? '100% 100%' : '0% 100%',
+        ruleW: (isHv || isOpen) ? '100%' : '34px',
+        clamp: isOpen ? 'none' : '2',
+        pop: isOpen ? '#FFFFFF' : 'transparent',
+        popPad: isOpen ? '36px 40px 40px' : '0',
+        popShadow: isOpen ? '0 40px 80px -50px rgba(18,18,15,.55), 0 2px 0 rgba(18,18,15,.06)' : 'none',
+        bodyOpacity: (isHv || isOpen) ? '1' : '.5',
+        mediaMax: isOpen ? '340px' : '208px',
+        bodySize: isOpen ? '15.5px' : '14px',
+        bodyCols: 'auto', bodyMax: isOpen ? '100%' : '520px',
+        rowDisplay: isOpen ? 'block' : 'flex',
+        mediaFloat: isOpen ? 'left' : 'none',
+        mediaMr: isOpen ? '34px' : '0',
+        mediaMb: isOpen ? '22px' : '0',
+        dir: n.portrait ? 'row' : 'column',
+        bodyMax: '100%',
+        rowGap: (isOpen || n.portrait) ? '30px' : '20px',
+        bodyDisplay: isOpen ? 'block' : '-webkit-box',
+        isOpen, notOpen: !isOpen,
+        subSlot: n.portrait ? 'ảnh phụ — khung hình cắt ra từ clip' : 'ảnh phụ — chi tiết bổ trợ cho bài',
+        subTop: isOpen ? (n.portrait ? '340px' : '260px') : '0px',
+        cueLabel: isOpen ? 'Bấm ra ngoài để thu lại' : 'Bấm để mở',
         enter: () => this.setState({ hoverNote: i }),
-        leave: () => this.setState({ hoverNote: null }),
-        open: () => this.setState({ openNote: n.t })
-      });
+        leave: () => { clearTimeout(this._hoverT); this.setState({ hoverNote: null }); },
+        toggle: e => { if (e && e.stopPropagation) e.stopPropagation(); this.setState(s => ({ openNote: s.openNote === n.t ? null : n.t })); }
+      }));
+      fillers.filter(x => x.after === i).forEach(x => notes.push({
+        isNote: false, isField: x.kind === 'slot', isQuote: x.kind === 'quote', isCount: x.kind === 'count',
+        col: x.c, mt: x.mt, ml: x.ml, z: x.z, fpl: x.pl || '14px', opacity: opn !== null ? '.18' : '1',
+        fbg: x.bg, fh: x.h, ftext: x.t, fslot: x.t,
+        countN: String(filtered.length).padStart(2, '0'),
+        t: '', b: '', k: '', d: '', num: '', color: '#12120F', block: '#EDEDE7',
+        ar: '1/1', mediaLabel: '', size: '16px', titleColor: '#12120F', shift: 'none',
+        washSize: '0% 100%', ruleW: '0px', clamp: '2', bodyOpacity: '1', bodySize: '14px',
+        bodyOverflow: 'hidden', bodyDisplay: '-webkit-box', isOpen: false, notOpen: true, cueLabel: '',
+        enter: () => {}, leave: () => {}, toggle: () => {}, dx: 'none',
+        ease: 'transform .5s ease', setRef: () => {}, mediaMax: '260px', fpl: '14px', mediaW: '100%',
+        dir: 'column', rowGap: '0', subSlot: '', rowDisplay: 'flex', mediaFloat: 'none', mediaMr: '0', mediaMb: '0',
+        pop: 'transparent', popPad: '0', popShadow: 'none'
+      }));
     });
-    const on = filtered.find(x => x.t === this.state.openNote) || null;
-    const openNote = on ? Object.assign({}, on, {
-      color: noteColor[on.k], block: noteBlock[on.k], isMedia: on.len === 'media',
-      num: String(allNotes.length - allNotes.indexOf(on)).padStart(2, '0'),
-      paras: on.b.split('. ').reduce((acc, s, i2, arr) => {
-        const t = s + (i2 < arr.length - 1 ? '.' : '');
-        if (i2 % 2 === 0) acc.push(t); else acc[acc.length - 1] += ' ' + t;
-        return acc;
-      }, []).map(t => ({ t }))
-    }) : null;
 
     return {
       modules, mod, allPosts,
@@ -1079,7 +1463,7 @@ class Component extends DCLogic {
         { name: 'cream paper', hex: '#FDFBF2', fg: '#4B463A' },
         { name: 'blush', hex: '#F2A0A5', fg: '#3B2A2B' },
         { name: 'leaf', hex: '#7FB87E', fg: '#1F3323' },
-        { name: 'apricot', hex: '#F0B45C', fg: '#3B2E19' },
+        { name: 'apricot', hex: 'oklch(0.50 0.135 14)', fg: '#3B2E19' },
         { name: 'moss', hex: '#2B4B33', fg: '#E4F0DF' },
         { name: 'petal tint', hex: '#FBE7E5', fg: '#4B463A' },
         { name: 'leaf tint', hex: '#E4F0DF', fg: '#4B463A' },
@@ -1093,8 +1477,8 @@ class Component extends DCLogic {
         { token: 'h2', family: "'Playfair Display',serif", size: '44px', sample: 'biochemistry', spec: '44 / lh 1 — tên module ở trang index' },
         { token: 'h3', family: "'Playfair Display',serif", size: '24px', sample: 'Bean Composition', spec: '21–25 / lh 1.15 — tên bài trong danh mục' },
         { token: 'lead', family: "'Playfair Display',serif", size: '22px', sample: 'nghiêng, dẫn nhập', spec: 'italic 22–24 / lh 1.4 — sapo dưới tiêu đề' },
-        { token: 'body', family: "'Figtree',sans-serif", size: '16px', sample: 'Thân bài tiếng Việt', spec: 'Figtree Light 300 · 16 / lh 1.5 — thân bài; 13.5 / lh 1.4 — mô tả' },
-        { token: 'label', family: "'Figtree',sans-serif", size: '11px', sample: 'TREATMENT — 2026.02', spec: 'Figtree Light 300 · 9.5–11 / ls .14em / uppercase — nhãn, số, ngày' }
+        { token: 'body', family: "'Be Vietnam Pro',sans-serif", size: '16px', sample: 'Thân bài tiếng Việt', spec: 'Be Vietnam Pro Light 300 · 16 / lh 1.5 — thân bài; 13.5 / lh 1.4 — mô tả' },
+        { token: 'label', family: "'Be Vietnam Pro',sans-serif", size: '11px', sample: 'TREATMENT — 2026.02', spec: 'Be Vietnam Pro Light 300 · 9.5–11 / ls .14em / uppercase — nhãn, số, ngày' }
       ],
       spaceScale: [
         { px: '8px', use: 'khe giữa các ô ảnh trong một dải' },
@@ -1141,24 +1525,71 @@ class Component extends DCLogic {
       isNotes: this.state.screen === 'notes',
       goHours: () => this.setState({ screen: 'hours' }),
       goNotes: () => this.setState({ screen: 'notes' }),
-      dayCells, chart, topNames, byKind, logRows,
+      sideBg: (this.state.screen === 'notes' || this.state.screen === 'hours') ? '#102F35' : '#FDFBF2',
+      sideFg: (this.state.screen === 'notes' || this.state.screen === 'hours') ? '#F4F4EF' : '#23211A',
+      sideMuted: (this.state.screen === 'notes' || this.state.screen === 'hours') ? '#9BB0AE' : '#5C5745',
+      sideHover: this.state.screen === 'notes' ? 'rgba(255,255,255,.08)' : '#F6F2E2',
+      sideRule: this.state.screen === 'notes' ? '#1E464A' : '#EBE5D3',
+      sideDot: '#F2A0A5',
+      days, months, chart, topNames, byKind,
       todayTotal: totalMin ? this.fmt(totalMin) : '0m',
-      todayCount: todayLogs.length + ' hoạt động',
-      streakNum: String(streak), streakLabel: 'ngày liên tiếp có ghi',
-      avg7: this.fmt(Math.round(sum7 / 7)), sum7: this.fmt(sum7),
+      todayCount: todayLogs.length + ' hoạt động đã tick',
+      streakNum: String(streak), avg7: this.fmt(Math.round(sum7 / 7)), sum7: this.fmt(sum7),
       spanTotalTxt: this.fmt(spanTotal), activeDaysTxt: activeDays + '/' + span + ' ngày',
       bestTxt: this.fmt(best.mins), bestDay: String(best.d.getDate()).padStart(2, '0') + '.' + String(best.d.getMonth() + 1).padStart(2, '0'),
       statsOpen: this.state.statsOpen,
       toggleStats: () => this.setState(s => ({ statsOpen: !s.statsOpen })),
-      statsLabel: this.state.statsOpen ? 'Thu gọn ↑' : 'Mở thống kê chi tiết ↓',
-      dName: this.state.dName, dStart: this.state.dStart, dEnd: this.state.dEnd, dKind: this.state.dKind,
-      kinds: this.KINDS.map(k => ({ k, on: k === this.state.dKind, pick: () => this.setState({ dKind: k }) })),
-      setName: e => this.setState({ dName: e.target.value }),
-      setStart: e => this.setState({ dStart: e.target.value }),
-      setEnd: e => this.setState({ dEnd: e.target.value }),
-      submitLog: () => this.addLog(),
-      noteFilters, notes, openNote, hasOpen: !!openNote,
-      closeNote: () => this.setState({ openNote: null }),
+      statsLabel: this.state.statsOpen ? 'Thu gọn thống kê' : 'Mở thống kê chi tiết',
+      statsBtnBg: this.state.statsOpen ? 'oklch(0.50 0.135 14)' : '#F2A0A5',
+      statsBtnEdge: this.state.statsOpen ? 'oklch(0.50 0.135 14)' : '#F2A0A5',
+      statsBtnFg: this.state.statsOpen ? '#FFFFFF' : '#3B2A2B',
+      eName: this.state.eName, eMins: this.state.eMins, eAt: this.state.eAt,
+      newId: this.state.newId,
+      kindOpts: kindList.map(k => ({ k })),
+      setEName: e => this.setState({ eName: e.target.value }),
+      setEMins: e => this.setState({ eMins: e.target.value }),
+      setEAt: e => this.setState({ eAt: e.target.value }),
+      tClock: clock(this.state.tMode === 'up' ? this.state.tSec : this.state.tSec),
+      tUsed: this.fmt(Math.round(tUsedSec / 60)),
+      tIsUp: this.state.tMode === 'up', tIsDown: this.state.tMode === 'down',
+      upEdge: this.state.tMode === 'up' ? '#F2A0A5' : 'transparent',
+      upFg: this.state.tMode === 'up' ? '#EDE9DC' : 'rgba(244,244,239,.55)',
+      downEdge: this.state.tMode === 'down' ? '#F2A0A5' : 'transparent',
+      downFg: this.state.tMode === 'down' ? '#EDE9DC' : 'rgba(244,244,239,.55)',
+      tRunning: this.state.tRunning, tIdle: !this.state.tRunning,
+      tRunLabel: this.state.tRunning ? 'Tạm dừng' : (this.state.tSec ? 'Tiếp tục' : 'Bắt đầu'),
+      tCanSave: tUsedSec >= 60, tArc: this.state.tMode === 'down' && this.state.tTarget ? Math.round((1 - this.state.tSec / this.state.tTarget) * 100) + '%' : (this.state.tSec ? Math.min(100, Math.round(this.state.tSec / 3600 * 100)) + '%' : '0%'),
+      tModeUp: () => { this.disarm(); this.setState({ tMode: 'up', tRunning: false, tSec: 0 }); },
+      tModeDown: () => { this.disarm(); this.setState({ tMode: 'down', tRunning: false, tSec: this.state.tTarget }); },
+      tPresets: [15, 25, 45, 60].map(m => ({
+        m: m + '′',
+        pbg: this.state.tTarget === m * 60 ? '#F2A0A5' : 'transparent',
+        pfg: this.state.tTarget === m * 60 ? '#1F3323' : 'rgba(247,244,233,.82)',
+        pick: () => { this.disarm(); this.setState({ tTarget: m * 60, tSec: m * 60, tMode: 'down', tRunning: false }); }
+      })),
+      tToggle: () => {
+        const run = !this.state.tRunning;
+        if (run) this.arm(); else this.disarm();
+        this.setState({ tRunning: run });
+      },
+      tReset: () => { this.disarm(); this.setState(s => ({ tRunning: false, tSec: s.tMode === 'down' ? s.tTarget : 0 })); },
+      tSave: () => this.saveTimer(Math.round(tUsedSec / 60)),
+      tName: this.state.tName, setTName: e => this.setState({ tName: e.target.value }),
+      kindAdding: this.state.kindAdding, kindIdle: !this.state.kindAdding, kindDraft: this.state.kindDraft,
+      setKindDraft: e => this.setState({ kindDraft: e.target.value }),
+      openAddKind: () => this.setState({ kindAdding: true, kindDraft: '' }),
+      commitKind: () => this.addKind(),
+      kindKey: e => { if (e.key === 'Enter') this.addKind(); if (e.key === 'Escape') this.setState({ kindAdding: false, kindDraft: '' }); },
+      kinds: kindList.map(k => ({
+        k, on: k === this.state.dKind,
+        dbg: k === this.state.dKind ? '#F2A0A5' : 'transparent',
+        dfg: k === this.state.dKind ? '#1F3323' : 'rgba(247,244,233,.82)',
+        pick: () => this.setState({ dKind: k })
+      })),
+      noteFilters, notes,
+      gridMove: e => this.onGridMove(e),
+      gridLeave: () => this.setState({ mx: null, my: null }),
+      closeNotes: () => { clearTimeout(this._hoverT); this.setState({ openNote: null, hoverNote: null }); },
       goArt: () => this.setState({ screen: 'art' }),
       goLanding: () => this.setState({ screen: 'landing' }),
       goHome: () => this.setState({ screen: 'home' }),

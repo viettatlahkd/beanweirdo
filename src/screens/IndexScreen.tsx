@@ -24,7 +24,7 @@ const switcher: CSSProperties = {
 const plates = [
   { bg: garden.blush, fg: '#3B2A2B', caption: 'ảnh mở đầu — vật thể đơn' },
   { bg: garden.leaf, fg: '#1F3323', caption: 'mặt cắt' },
-  { bg: garden.apricot, fg: '#3B2E19', caption: 'dải rang' },
+  { bg: 'oklch(0.50 0.135 14)', fg: '#3B2E19', caption: 'dải rang' },
 ]
 
 /** A — the ledger. Reads top to bottom like the contents page of a notebook. */

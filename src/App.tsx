@@ -60,7 +60,7 @@ export function App() {
             background: paper.cream,
             color: ink.base,
             fontFamily: sans,
-            fontWeight: 300,
+            fontWeight: 200,
             WebkitFontSmoothing: 'antialiased',
           }}
         >

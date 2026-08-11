@@ -124,7 +124,7 @@ export function DesignSystem() {
               Chỉ dùng cho tiêu đề. Weight 400, nét thanh đậm rõ, có đủ dấu tiếng Việt. Nghiêng dùng
               cho vế thứ hai của tiêu đề.
             </div>
-            <div style={{ fontSize: 19 }}>Figtree Light 300</div>
+            <div style={{ fontSize: 19 }}>Be Vietnam Pro Light 300</div>
             <div style={{ fontSize: 12.5, color: ink.muted, margin: '6px 0 18px' }}>
               Toàn bộ phần chữ không phải tiêu đề: thân bài, mô tả, nhãn, số, ngày. Chỉ nạp duy nhất
               weight 300 — không đậm, không nhấn bằng độ dày. Hỗ trợ dấu tiếng Việt đầy đủ.

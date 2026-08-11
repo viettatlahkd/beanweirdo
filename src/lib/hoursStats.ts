@@ -1,13 +1,4 @@
-import {
-  LOG_KINDS,
-  SPAN_DAYS,
-  TODAY,
-  dateStr,
-  dayBefore,
-  kindColor,
-  type LogEntry,
-} from '../content/hours'
-import { hoursTheme } from '../design/tokens'
+import { SPAN_DAYS, TODAY, dateStr, dayBefore, type LogEntry } from '../content/hours'
 
 export const toMin = (t: string) => {
   const p = String(t).split(':')
@@ -22,131 +13,122 @@ export function fmt(m: number) {
   return r ? h + 'h ' + r + 'm' : h + 'h'
 }
 
-const DOW = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']
+export type DayBucket = {
+  ds: string
+  d: Date
+  /** every log on the day, including undone drafts */
+  ls: LogEntry[]
+  /** minutes from done logs only */
+  mins: number
+  /** 0 = today, `SPAN_DAYS - 1` = oldest day in the span */
+  age: number
+}
 
-/**
- * Everything the Hours screen shows is derived from the flat log list: the
- * streak that headlines the page, the 21-day grid, today's rows, and the
- * stats panel. Kept as one pure pass so the two views can never disagree.
- */
-export function hoursStats(logs: LogEntry[]) {
+/** 21 days, oldest first — the same order the seeded log plan was built in. */
+export function buildAllDays(logs: LogEntry[]): DayBucket[] {
   const byDate: Record<string, LogEntry[]> = {}
   for (const l of logs) (byDate[l.date] ||= []).push(l)
 
-  const days: { ds: string; d: Date; ls: LogEntry[]; mins: number }[] = []
+  const all: DayBucket[] = []
   for (let i = SPAN_DAYS - 1; i >= 0; i--) {
     const d = dayBefore(i)
     const ds = dateStr(d)
     const ls = byDate[ds] || []
-    days.push({ ds, d, ls, mins: ls.reduce((a, l) => a + l.mins, 0) })
+    all.push({
+      ds,
+      d,
+      ls,
+      mins: ls.filter((l) => l.done !== false).reduce((a, l) => a + l.mins, 0),
+      age: i,
+    })
   }
+  return all
+}
 
-  // Floor of 240 keeps a light week from inflating its own bars to full height.
-  const maxMins = Math.max(240, ...days.map((x) => x.mins))
+export const maxMins = (all: DayBucket[]) => Math.max(240, ...all.map((x) => x.mins))
 
-  const dayCells = days.map((x) => ({
-    key: x.ds,
-    dow: DOW[x.d.getDay()],
-    num: String(x.d.getDate()).padStart(2, '0'),
-    dur: x.mins ? fmt(x.mins) : '',
-    bg: x.mins
-      ? x.mins >= 180
-        ? hoursTheme.cellStrong
-        : hoursTheme.cellDone
-      : hoursTheme.cellIdle,
-    border: x.ds === TODAY ? `2px solid ${hoursTheme.ink}` : `1px solid ${hoursTheme.border}`,
-    ticks: x.ls.map((l) => ({ c: kindColor[l.kind] ?? '#C9821F', n: l.name })),
-  }))
-
-  let streak = 0
-  for (let i = days.length - 1; i >= 0; i--) {
-    if (days[i].mins > 0) streak++
+/** Consecutive logged days counting back from today. */
+export function streak(all: DayBucket[]) {
+  let n = 0
+  for (let i = all.length - 1; i >= 0; i--) {
+    if (all[i].mins > 0) n++
     else break
   }
+  return n
+}
 
-  const todayLogs = byDate[TODAY] || []
-  const todayTotal = todayLogs.reduce((a, l) => a + l.mins, 0)
-  const logRows = todayLogs
-    .slice()
-    .sort((a, b) => toMin(a.at) - toMin(b.at))
-    .map((l) => ({
-      id: l.id,
-      name: l.name,
-      kind: l.kind,
-      at: l.at,
-      dur: fmt(l.mins),
-      color: kindColor[l.kind] ?? '#C9821F',
-    }))
-
-  const spanTotal = days.reduce((a, x) => a + x.mins, 0)
-
-  const byKind = LOG_KINDS.map((k) => {
-    const m = logs.filter((l) => l.kind === k).reduce((a, l) => a + l.mins, 0)
-    let ks = 0
-    for (let i = days.length - 1; i >= 0; i--) {
-      if (days[i].ls.some((l) => l.kind === k)) ks++
-      else break
-    }
-    const nd = days.filter((x) => x.ls.some((l) => l.kind === k)).length
-    const pct = spanTotal ? Math.round((m / spanTotal) * 100) : 0
-    return {
-      k,
-      dur: m ? fmt(m) : '—',
-      color: kindColor[k],
-      dim: m ? 1 : 0.35,
-      w: pct + '%',
-      pct: pct + '%',
-      streak: ks ? ks + ' ngày liên tiếp' : 'đứt chuỗi',
-      days: nd + '/' + SPAN_DAYS + ' ngày',
-      _sort: pct,
-    }
-  }).sort((a, b) => b._sort - a._sort)
-
-  const nameTotals: Record<string, number> = {}
-  for (const l of logs) nameTotals[l.name] = (nameTotals[l.name] || 0) + l.mins
-  const ranked = Object.keys(nameTotals).sort((a, b) => nameTotals[b] - nameTotals[a])
-  const top = nameTotals[ranked[0]] || 1
-  const topNames = ranked.slice(0, 5).map((n, i) => ({
-    n,
-    dur: fmt(nameTotals[n]),
-    rank: String(i + 1).padStart(2, '0'),
-    w: Math.round((nameTotals[n] / top) * 100) + '%',
-  }))
-
-  const last7 = days.slice(-7)
-  const sum7 = last7.reduce((a, x) => a + x.mins, 0)
-  const activeDays = days.filter((x) => x.mins > 0).length
-  const best = days.slice().sort((a, b) => b.mins - a.mins)[0]
-
-  const chart = days.map((x) => ({
+export function chart(all: DayBucket[]) {
+  const m = maxMins(all)
+  return all.map((x) => ({
     key: x.ds,
-    h: Math.max(2, Math.round((x.mins / maxMins) * 132)) + 'px',
-    c:
-      x.mins >= 180
-        ? hoursTheme.accent
-        : x.mins
-          ? hoursTheme.chartMid
-          : hoursTheme.chartIdle,
+    h: Math.max(2, Math.round((x.mins / m) * 132)) + 'px',
+    c: x.mins >= 180 ? '#3E7A4E' : x.mins ? '#7FB87E' : '#E3E3DB',
     lab: String(x.d.getDate()).padStart(2, '0'),
   }))
+}
 
+export function topNames(logs: LogEntry[]) {
+  const totals: Record<string, number> = {}
+  for (const l of logs) if (l.done !== false) totals[l.name] = (totals[l.name] || 0) + l.mins
+  const ranked = Object.keys(totals).sort((a, b) => totals[b] - totals[a])
+  const top = totals[ranked[0]] || 1
+  return ranked.slice(0, 5).map((n, i) => ({
+    n,
+    dur: fmt(totals[n]),
+    rank: String(i + 1).padStart(2, '0'),
+    w: Math.round((totals[n] / top) * 100) + '%',
+  }))
+}
+
+export function byKind(
+  logs: LogEntry[],
+  all: DayBucket[],
+  kindList: string[],
+  kindColor: Record<string, string>,
+) {
+  const spanTotal = all.reduce((a, x) => a + x.mins, 0)
+  return kindList
+    .map((k) => {
+      const m = logs.filter((l) => l.kind === k && l.done !== false).reduce((a, l) => a + l.mins, 0)
+      let ks = 0
+      for (let i = all.length - 1; i >= 0; i--) {
+        if (all[i].ls.some((l) => l.kind === k)) ks++
+        else break
+      }
+      const nd = all.filter((x) => x.ls.some((l) => l.kind === k)).length
+      const pct = spanTotal ? Math.round((m / spanTotal) * 100) : 0
+      return {
+        k,
+        dur: m ? fmt(m) : '—',
+        color: kindColor[k],
+        dim: m ? 1 : 0.35,
+        w: pct + '%',
+        pct: pct + '%',
+        streak: ks ? ks + ' ngày liên tiếp' : 'đứt chuỗi',
+        days: nd + '/' + SPAN_DAYS + ' ngày',
+        _sort: pct,
+      }
+    })
+    .sort((a, b) => b._sort - a._sort)
+}
+
+export function spanStats(all: DayBucket[]) {
+  const last7 = all.slice(-7)
+  const sum7 = last7.reduce((a, x) => a + x.mins, 0)
+  const spanTotal = all.reduce((a, x) => a + x.mins, 0)
+  const activeDays = all.filter((x) => x.mins > 0).length
+  const best = all.slice().sort((a, b) => b.mins - a.mins)[0]
   return {
-    dayCells,
-    chart,
-    topNames,
-    byKind,
-    logRows,
-    streakNum: String(streak),
-    todayTotal: todayTotal ? fmt(todayTotal) : '0m',
-    todayCount: todayLogs.length + ' hoạt động',
     sum7: fmt(sum7),
     avg7: fmt(Math.round(sum7 / 7)),
     spanTotalTxt: fmt(spanTotal),
     activeDaysTxt: activeDays + '/' + SPAN_DAYS + ' ngày',
     bestTxt: fmt(best.mins),
     bestDay:
-      String(best.d.getDate()).padStart(2, '0') +
-      '.' +
-      String(best.d.getMonth() + 1).padStart(2, '0'),
+      String(best.d.getDate()).padStart(2, '0') + '.' + String(best.d.getMonth() + 1).padStart(2, '0'),
   }
+}
+
+export function todayLogs(logs: LogEntry[]) {
+  return logs.filter((l) => l.date === TODAY)
 }
