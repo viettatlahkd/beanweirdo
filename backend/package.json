@@ -1,0 +1,15 @@
+{
+  "name": "beanweirdo-backend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "db:start": "supabase start",
+    "db:stop": "supabase stop",
+    "db:reset": "supabase db reset",
+    "test": "node scripts/verify-schema.mjs"
+  },
+  "devDependencies": {
+    "supabase": "^1.226.4",
+    "pg": "^8.13.1"
+  }
+}
