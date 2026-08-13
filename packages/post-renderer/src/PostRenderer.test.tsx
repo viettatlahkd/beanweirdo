@@ -40,3 +40,26 @@ it('renders a sequence-layout post with an oversized title block', () => {
   render(<PostRenderer template={sequenceTemplate} post={post} />)
   expect(screen.getByTestId('post-hero-sequence')).toBeInTheDocument()
 })
+
+it('uses renderTitle override instead of the default heading when provided', () => {
+  render(
+    <PostRenderer
+      template={bandTemplate}
+      post={post}
+      renderTitle={(title) => <input defaultValue={title} aria-label="edit title" />}
+    />,
+  )
+  expect(screen.getByLabelText('edit title')).toHaveValue('Senses of Flavors')
+  expect(screen.queryByRole('heading', { level: 1 })).not.toBeInTheDocument()
+})
+
+it('uses renderSectionBody override for section paragraphs when provided', () => {
+  render(
+    <PostRenderer
+      template={bandTemplate}
+      post={post}
+      renderSectionBody={(p, i) => <textarea aria-label={`section-${i}-body`} defaultValue={p} />}
+    />,
+  )
+  expect(screen.getByLabelText('section-0-body')).toHaveValue(post.sections[0].p)
+})
