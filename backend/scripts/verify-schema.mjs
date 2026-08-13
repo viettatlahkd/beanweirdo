@@ -31,7 +31,7 @@ async function assertColumnExists(table, column) {
 }
 
 await assertTableExists('templates')
-for (const col of ['status', 'template_id', 'hero_image_url', 'published_at', 'deleted_at', 'previous_status']) {
+for (const col of ['status', 'template_id', 'hero_image_url', 'published_at', 'deleted_at', 'previous_status', 'updated_at']) {
   await assertColumnExists('posts', col)
 }
 
@@ -45,8 +45,14 @@ if (!namesOk) failed = true
 const { rows: policyRows } = await client.query(
   `select qual from pg_policies where tablename = 'posts' and policyname = 'posts are publicly readable'`,
 )
-const policyOk = policyRows.length === 1 && /status\s*=\s*'published'/.test(policyRows[0].qual ?? '')
-console.log(`${policyOk ? 'PASS' : 'FAIL'} — posts public-read policy scoped to status='published'`)
+// Postgres rewrites `status in ('published', 'archived')` into an ANY(ARRAY[...])
+// form, e.g. (status = ANY (ARRAY['published'::text, 'archived'::text])) — assert
+// on the two status literals actually being present rather than the original
+// `in (...)` syntax.
+const policyQual = policyRows[0]?.qual ?? ''
+const policyOk =
+  policyRows.length === 1 && policyQual.includes(`'published'`) && policyQual.includes(`'archived'`)
+console.log(`${policyOk ? 'PASS' : 'FAIL'} — posts public-read policy covers status in ('published', 'archived'): ${policyQual}`)
 if (!policyOk) failed = true
 
 const { rows: bucketRows } = await client.query(
@@ -55,6 +61,37 @@ const { rows: bucketRows } = await client.query(
 const bucketOk = bucketRows.length === 1 && bucketRows[0].public === true
 console.log(`${bucketOk ? 'PASS' : 'FAIL'} — storage bucket "post-images" exists and is public`)
 if (!bucketOk) failed = true
+
+// Behavioral regression guard: a draft post must be genuinely invisible to the
+// anon role, not just "we never query for it". Insert a throwaway draft as the
+// superuser connection (bypasses RLS), switch the session to anon inside the same
+// transaction, confirm it doesn't come back, then roll back so nothing persists.
+await client.query('begin')
+try {
+  const { rows: draftRows } = await client.query(
+    `insert into posts (module_id, n, en, vi, kind, date_label, status)
+     values ('sensory', '99', 'verify-schema throwaway draft', 'qa', 'note', '2026.08', 'draft')
+     returning id`,
+  )
+  const draftId = draftRows[0].id
+  await client.query('set local role anon')
+  const { rows: anonRows } = await client.query('select id from posts where id = $1', [draftId])
+  const draftHiddenOk = anonRows.length === 0
+  console.log(`${draftHiddenOk ? 'PASS' : 'FAIL'} — draft post is invisible to the anon role`)
+  if (!draftHiddenOk) failed = true
+} finally {
+  await client.query('rollback')
+}
+
+const { rows: storagePolicyRows } = await client.query(
+  `select cmd from pg_policies where tablename = 'objects' and schemaname = 'storage'`,
+)
+const storagePolicyOk =
+  storagePolicyRows.length > 0 && storagePolicyRows.every((r) => r.cmd === 'SELECT')
+console.log(
+  `${storagePolicyOk ? 'PASS' : 'FAIL'} — storage.objects has read-only public access (no INSERT/UPDATE/DELETE policy): ${storagePolicyRows.map((r) => r.cmd).join(', ')}`,
+)
+if (!storagePolicyOk) failed = true
 
 await client.end()
 if (failed) {
