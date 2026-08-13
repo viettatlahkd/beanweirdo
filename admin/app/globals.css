@@ -1,0 +1,137 @@
+/* Base substrate shared by every admin screen — mirrors the approved
+   mockup's <style> block (fonts, paper/ink palette, heading typography).
+   Screen-level layout/spacing lives in each component's inline styles via
+   admin/lib/theme.ts; this file only carries what has to be real CSS
+   (webfonts, box-sizing reset, and h1/h2/h3 so components that render
+   through post-renderer's plain <h1>/<h3> — e.g. the public preview —
+   inherit serif styling without post-renderer itself needing to know
+   about admin's theme). */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  background: #fdfbf2;
+  color: #262319;
+  font-family: 'Be Vietnam Pro', system-ui, sans-serif;
+  font-weight: 300;
+}
+
+h1,
+h2,
+h3 {
+  font-family: 'Playfair Display', serif;
+  font-weight: 600;
+  color: #23211a;
+  margin: 0;
+}
+
+a {
+  color: inherit;
+}
+
+button {
+  font-family: inherit;
+}
+
+/* Small set of interactive-state classes — colors mirror admin/lib/theme.ts
+   verbatim, kept as real CSS only because inline styles can't express
+   :hover. Everything static (layout, spacing, one-off colors) stays as
+   inline styles driven by theme.ts in the components themselves. */
+
+.admin-btn {
+  font-family: 'Be Vietnam Pro', system-ui, sans-serif;
+  font-weight: 500;
+  font-size: 12.5px;
+  border: none;
+  border-radius: 6px;
+  padding: 9px 16px;
+  cursor: pointer;
+  background: #23211a;
+  color: #fdfbf2;
+}
+.admin-btn:hover {
+  background: #3b3729;
+}
+.admin-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.admin-btn-ghost {
+  font-family: 'Be Vietnam Pro', system-ui, sans-serif;
+  font-weight: 500;
+  font-size: 12.5px;
+  border: 1px solid #ebe5d3;
+  border-radius: 6px;
+  padding: 9px 16px;
+  cursor: pointer;
+  background: transparent;
+  color: #3b3729;
+}
+.admin-btn-ghost:hover {
+  background: #f6f2e2;
+}
+
+.admin-tab {
+  font-family: 'Be Vietnam Pro', system-ui, sans-serif;
+  font-size: 12px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid #ebe5d3;
+  color: #8c8674;
+  cursor: pointer;
+  background: transparent;
+}
+.admin-tab[aria-pressed='true'] {
+  background: #23211a;
+  color: #fdfbf2;
+  border-color: #23211a;
+}
+
+.admin-link-action {
+  color: #3e7a4e;
+  text-decoration: none;
+  margin-right: 12px;
+  cursor: pointer;
+  font-size: 11.5px;
+}
+.admin-link-action:hover {
+  text-decoration: underline;
+}
+
+.admin-tpl-card {
+  border: 1px solid #ebe5d3;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(35, 33, 26, 0.04);
+}
+.admin-tpl-card:hover {
+  border-color: #b5ae99;
+}
+.admin-tpl-card.sel {
+  border: 2px solid #23211a;
+}
+
+.admin-field {
+  font-family: 'Be Vietnam Pro', system-ui, sans-serif;
+  font-weight: 300;
+  font-size: 14px;
+  color: #23211a;
+  border: 1px solid #ebe5d3;
+  border-radius: 6px;
+  padding: 9px 10px;
+  width: 100%;
+  background: #ffffff;
+}
+.admin-field:focus {
+  outline: none;
+  border-color: #8c8674;
+}

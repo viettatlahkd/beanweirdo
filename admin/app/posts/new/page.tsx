@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { AuthGate } from '../../../components/AuthGate'
+import { Stepper } from '../../../components/Stepper'
 import { createPost, updatePost } from '../../../lib/apiClient'
 import { MetadataStep, type Metadata } from './MetadataStep'
 import { TemplateStep } from './TemplateStep'
@@ -25,7 +26,8 @@ export default function NewPostPage() {
 
   return (
     <AuthGate>
-      <div style={{ padding: 32 }}>
+      <div style={{ padding: '32px 40px' }}>
+        <Stepper current={step} />
         {step === 'metadata' && <MetadataStep onContinue={handleMetadata} />}
         {step === 'template' && <TemplateStep onContinue={handleTemplate} />}
       </div>
