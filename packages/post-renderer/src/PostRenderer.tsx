@@ -24,12 +24,9 @@ function Title(
     margin?: string
   },
 ) {
-  if (renderTitle) return <>{renderTitle(post.title)}</>
-  return (
-    <h1 style={{ fontSize, ...(lineHeight !== undefined ? { lineHeight } : {}), margin: margin ?? '0 0 12px' }}>
-      {post.title}
-    </h1>
-  )
+  const style = { fontSize, ...(lineHeight !== undefined ? { lineHeight } : {}), margin: margin ?? '0 0 12px' }
+  if (renderTitle) return <div style={style}>{renderTitle(post.title)}</div>
+  return <h1 style={style}>{post.title}</h1>
 }
 
 function Sections({ post, renderSectionHeading, renderSectionBody, renderFigure }: PostRendererProps) {
@@ -44,6 +41,12 @@ function Sections({ post, renderSectionHeading, renderSectionBody, renderFigure 
       ))}
     </>
   )
+}
+
+function Hero({ heroImageUrl, renderHero }: { heroImageUrl: string | null | undefined; renderHero?: PostRendererProps['renderHero'] }) {
+  if (renderHero) return <>{renderHero(heroImageUrl)}</>
+  if (!heroImageUrl) return null
+  return <img src={heroImageUrl} alt="" style={{ width: '100%', display: 'block' }} />
 }
 
 function FigureBlock({ fig }: { fig: FigureData }) {
@@ -62,7 +65,7 @@ function BandPost(props: PostRendererProps) {
       <header data-testid="post-hero" style={{ background: template.accent, color: template.onColor, padding: '46px 56px' }}>
         <Title post={post} renderTitle={props.renderTitle} fontSize={56} margin="0 0 12px" />
         {post.lead && <p style={{ fontStyle: 'italic', fontSize: 20 }}>{post.lead}</p>}
-        {props.renderHero && props.renderHero(post.heroImageUrl)}
+        <Hero heroImageUrl={post.heroImageUrl} renderHero={props.renderHero} />
       </header>
       <div style={{ padding: '40px 56px', maxWidth: 720 }}>
         <Sections {...props} />
@@ -81,7 +84,7 @@ function SpecimenPost(props: PostRendererProps) {
           {post.lead && <p style={{ fontStyle: 'italic' }}>{post.lead}</p>}
         </div>
         <div style={{ background: template.tint }}>
-          {props.renderHero && props.renderHero(post.heroImageUrl)}
+          <Hero heroImageUrl={post.heroImageUrl} renderHero={props.renderHero} />
         </div>
       </header>
       <div style={{ padding: '40px 56px', maxWidth: 720 }}>
@@ -98,7 +101,7 @@ function SequencePost(props: PostRendererProps) {
       <header data-testid="post-hero-sequence" style={{ background: template.accent, color: template.onColor, padding: '52px 56px' }}>
         <Title post={post} renderTitle={props.renderTitle} fontSize={88} lineHeight={0.95} margin="0 0 16px" />
         {post.lead && <p style={{ fontStyle: 'italic', fontSize: 18 }}>{post.lead}</p>}
-        {props.renderHero && props.renderHero(post.heroImageUrl)}
+        <Hero heroImageUrl={post.heroImageUrl} renderHero={props.renderHero} />
       </header>
       <div style={{ padding: '40px 56px', maxWidth: 720 }}>
         <Sections {...props} />

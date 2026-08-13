@@ -28,7 +28,7 @@ export default function EditPostPage() {
         <a href={`/posts/${id}/preview`} target="_blank" rel="noreferrer">Xem trước ↗</a>
         <EditorCanvas
           template={template}
-          post={{ title: post.en, sections }}
+          post={{ title: post.en, sections, heroImageUrl: post.heroImageUrl }}
           onTitleChange={(en) => updatePost(id, { en })}
           onSectionBodyChange={(index, p) => {
             const nextBody = post.body.map((s, i) => (i === index ? { ...s, p } : s))
@@ -37,7 +37,7 @@ export default function EditPostPage() {
           }}
           onHeroDrop={async (file) => {
             const { url } = await uploadImage(file)
-            setPost({ ...post, heroImageUrl: url })
+            setPost((prev) => (prev ? { ...prev, heroImageUrl: url } : prev))
             updatePost(id, { heroImageUrl: url })
           }}
         />

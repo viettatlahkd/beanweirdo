@@ -3,7 +3,7 @@ import { PostRenderer, type PostRenderData, type Template } from 'post-renderer'
 
 type Props = {
   template: Template
-  post: Pick<PostRenderData, 'title' | 'sections'>
+  post: Pick<PostRenderData, 'title' | 'sections' | 'heroImageUrl'>
   onTitleChange: (title: string) => void
   onSectionBodyChange: (index: number, p: string) => void
   onHeroDrop: (file: File) => void

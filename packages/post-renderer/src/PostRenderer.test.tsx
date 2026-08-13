@@ -151,3 +151,44 @@ describe.each([
     expect(screen.getByTestId('hero-override')).toHaveTextContent('https://example.com/hero.png')
   })
 })
+
+describe('renderTitle override inherits real layout typography', () => {
+  it('wraps the sequence-layout override in a container carrying the real 88px/0.95 title style', () => {
+    render(
+      <PostRenderer
+        template={sequenceTemplate}
+        post={post}
+        renderTitle={(title) => <input data-testid="title-input" defaultValue={title} style={{ font: 'inherit' }} />}
+      />,
+    )
+    const input = screen.getByTestId('title-input')
+    const wrapper = input.parentElement as HTMLElement
+    expect(wrapper).toHaveStyle({ fontSize: '88px', lineHeight: '0.95' })
+  })
+
+  it('wraps the band-layout override in a container carrying the real 56px title style', () => {
+    render(
+      <PostRenderer
+        template={bandTemplate}
+        post={post}
+        renderTitle={(title) => <input data-testid="title-input" defaultValue={title} style={{ font: 'inherit' }} />}
+      />,
+    )
+    const input = screen.getByTestId('title-input')
+    const wrapper = input.parentElement as HTMLElement
+    expect(wrapper).toHaveStyle({ fontSize: '56px' })
+  })
+})
+
+describe('default hero rendering (no renderHero override)', () => {
+  it('renders an <img> for the hero when heroImageUrl is set', () => {
+    render(<PostRenderer template={bandTemplate} post={{ ...post, heroImageUrl: 'https://example.com/hero.png' }} />)
+    // hero <img> has alt="" (decorative), so it has role "presentation" not "img" — query by tag instead.
+    expect(document.querySelector('img')).toHaveAttribute('src', 'https://example.com/hero.png')
+  })
+
+  it('renders nothing extra for the hero when heroImageUrl is not set', () => {
+    render(<PostRenderer template={bandTemplate} post={post} />)
+    expect(document.querySelector('img')).not.toBeInTheDocument()
+  })
+})
