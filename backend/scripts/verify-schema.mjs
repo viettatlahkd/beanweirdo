@@ -49,6 +49,13 @@ const policyOk = policyRows.length === 1 && /status\s*=\s*'published'/.test(poli
 console.log(`${policyOk ? 'PASS' : 'FAIL'} — posts public-read policy scoped to status='published'`)
 if (!policyOk) failed = true
 
+const { rows: bucketRows } = await client.query(
+  `select public from storage.buckets where id = 'post-images'`,
+)
+const bucketOk = bucketRows.length === 1 && bucketRows[0].public === true
+console.log(`${bucketOk ? 'PASS' : 'FAIL'} — storage bucket "post-images" exists and is public`)
+if (!bucketOk) failed = true
+
 await client.end()
 if (failed) {
   console.error('\nverify-schema: FAILED')
