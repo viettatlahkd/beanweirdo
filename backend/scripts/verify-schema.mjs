@@ -42,6 +42,13 @@ const namesOk = JSON.stringify(gotNames) === JSON.stringify(wantNames)
 console.log(`${namesOk ? 'PASS' : 'FAIL'} — seeded templates: ${gotNames.join(', ')}`)
 if (!namesOk) failed = true
 
+const { rows: policyRows } = await client.query(
+  `select qual from pg_policies where tablename = 'posts' and policyname = 'posts are publicly readable'`,
+)
+const policyOk = policyRows.length === 1 && /status\s*=\s*'published'/.test(policyRows[0].qual ?? '')
+console.log(`${policyOk ? 'PASS' : 'FAIL'} — posts public-read policy scoped to status='published'`)
+if (!policyOk) failed = true
+
 await client.end()
 if (failed) {
   console.error('\nverify-schema: FAILED')
