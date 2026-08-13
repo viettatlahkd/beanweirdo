@@ -25,7 +25,11 @@ function Title(
   },
 ) {
   if (renderTitle) return <>{renderTitle(post.title)}</>
-  return <h1 style={{ fontSize, lineHeight: lineHeight ?? 0.95, margin: margin ?? '0 0 12px' }}>{post.title}</h1>
+  return (
+    <h1 style={{ fontSize, ...(lineHeight !== undefined ? { lineHeight } : {}), margin: margin ?? '0 0 12px' }}>
+      {post.title}
+    </h1>
+  )
 }
 
 function Sections({ post, renderSectionHeading, renderSectionBody, renderFigure }: PostRendererProps) {

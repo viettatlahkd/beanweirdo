@@ -86,20 +86,26 @@ it('uses renderSectionBody override for section paragraphs when provided', () =>
   expect(screen.getByLabelText('section-0-body')).toHaveValue(post.sections[0].p)
 })
 
-describe('default title font size per layout', () => {
-  it('band layout renders a 56px title', () => {
+describe('default title style per layout', () => {
+  it('band layout renders a 56px title with no line-height set', () => {
     render(<PostRenderer template={bandTemplate} post={post} />)
-    expect(screen.getByRole('heading', { level: 1 })).toHaveStyle({ fontSize: '56px' })
+    const heading = screen.getByRole('heading', { level: 1 })
+    expect(heading).toHaveStyle({ fontSize: '56px' })
+    expect(heading.style.lineHeight).toBe('')
   })
 
-  it('specimen layout renders a 48px title', () => {
+  it('specimen layout renders a 48px title with no line-height set', () => {
     render(<PostRenderer template={specimenTemplate} post={post} />)
-    expect(screen.getByRole('heading', { level: 1 })).toHaveStyle({ fontSize: '48px' })
+    const heading = screen.getByRole('heading', { level: 1 })
+    expect(heading).toHaveStyle({ fontSize: '48px' })
+    expect(heading.style.lineHeight).toBe('')
   })
 
-  it('sequence layout renders an 88px title', () => {
+  it('sequence layout renders an 88px title with line-height 0.95', () => {
     render(<PostRenderer template={sequenceTemplate} post={post} />)
-    expect(screen.getByRole('heading', { level: 1 })).toHaveStyle({ fontSize: '88px' })
+    const heading = screen.getByRole('heading', { level: 1 })
+    expect(heading).toHaveStyle({ fontSize: '88px' })
+    expect(heading).toHaveStyle({ lineHeight: '0.95' })
   })
 })
 
