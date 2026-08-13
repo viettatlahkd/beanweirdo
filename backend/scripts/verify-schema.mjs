@@ -20,6 +20,28 @@ for (const table of ['modules', 'posts', 'activity_kinds', 'hour_logs', 'notes']
   await assertTableExists(table)
 }
 
+async function assertColumnExists(table, column) {
+  const { rows } = await client.query(
+    `select column_name from information_schema.columns where table_schema = 'public' and table_name = $1 and column_name = $2`,
+    [table, column],
+  )
+  const ok = rows.length === 1
+  console.log(`${ok ? 'PASS' : 'FAIL'} — column "${table}.${column}" exists`)
+  if (!ok) failed = true
+}
+
+await assertTableExists('templates')
+for (const col of ['status', 'template_id', 'hero_image_url', 'published_at', 'deleted_at', 'previous_status']) {
+  await assertColumnExists('posts', col)
+}
+
+const { rows: templateRows } = await client.query('select name from templates order by name')
+const gotNames = templateRows.map((r) => r.name).sort()
+const wantNames = ['Band · Blush', 'Sequence · Apricot', 'Specimen · Leaf'].sort()
+const namesOk = JSON.stringify(gotNames) === JSON.stringify(wantNames)
+console.log(`${namesOk ? 'PASS' : 'FAIL'} — seeded templates: ${gotNames.join(', ')}`)
+if (!namesOk) failed = true
+
 await client.end()
 if (failed) {
   console.error('\nverify-schema: FAILED')

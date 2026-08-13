@@ -35,6 +35,13 @@ values
   )
 on conflict (id) do nothing;
 
+insert into templates (name, layout, accent, on_color, tint, tint2)
+values
+  ('Band · Blush', 'band', '#F2A0A5', '#3B2A2B', '#FBE7E5', '#F6D2D4'),
+  ('Specimen · Leaf', 'specimen', '#7FB87E', '#1F3323', '#E4F0DF', '#CFE6C8'),
+  ('Sequence · Apricot', 'sequence', '#F0B45C', '#3B2E19', '#F9EBD2', '#F3DCAE')
+on conflict do nothing;
+
 insert into posts (module_id, n, en, vi, kind, date_label, sort_order)
 values
   ('sensory', '01', 'Senses of Flavors', 'Năm giác quan cùng tham gia vào một ngụm cà phê', 'note', '2026.05', 1),
@@ -115,3 +122,9 @@ values (
   ]
   $body$::jsonb
 );
+
+update posts set
+  status = 'published',
+  published_at = created_at,
+  template_id = (select id from templates where name = 'Sequence · Apricot')
+where template_id is null;
