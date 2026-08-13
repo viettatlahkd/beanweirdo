@@ -28,3 +28,15 @@ describe('PostRenderer — band layout', () => {
     expect(screen.getByTestId('post-hero')).toHaveStyle({ background: bandTemplate.accent })
   })
 })
+
+it('renders a specimen-layout post with a split hero', () => {
+  const specimenTemplate: Template = { ...bandTemplate, id: 't2', layout: 'specimen' }
+  render(<PostRenderer template={specimenTemplate} post={post} />)
+  expect(screen.getByTestId('post-hero-specimen')).toBeInTheDocument()
+})
+
+it('renders a sequence-layout post with an oversized title block', () => {
+  const sequenceTemplate: Template = { ...bandTemplate, id: 't3', layout: 'sequence' }
+  render(<PostRenderer template={sequenceTemplate} post={post} />)
+  expect(screen.getByTestId('post-hero-sequence')).toBeInTheDocument()
+})
