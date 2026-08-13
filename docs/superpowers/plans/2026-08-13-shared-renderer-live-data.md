@@ -19,7 +19,7 @@
 
 ---
 
-### Task B1: npm workspaces + Vitest + `PostRenderer` (band layout, read-only)
+### Task 1: npm workspaces + Vitest + `PostRenderer` (band layout, read-only)
 
 **Files:**
 - Create: `package.json` (repo root — doesn't exist yet)
@@ -251,7 +251,7 @@ git commit -m "feat(post-renderer): scaffold package with band layout"
 
 ---
 
-### Task B2: `specimen` and `sequence` layout variants
+### Task 2: `specimen` and `sequence` layout variants
 
 **Files:**
 - Modify: `packages/post-renderer/src/PostRenderer.tsx`
@@ -357,7 +357,7 @@ git commit -m "feat(post-renderer): add specimen and sequence layout variants"
 
 ---
 
-### Task B3: Render-prop overrides (the hook Track C-FE's editor uses)
+### Task 3: Render-prop overrides (the hook Track C-FE's editor uses)
 
 **Files:**
 - Modify: `packages/post-renderer/src/PostRenderer.tsx`
@@ -515,7 +515,7 @@ git commit -m "feat(post-renderer): add render-prop overrides for editable consu
 
 ---
 
-### Task B4: Supabase data hooks for the public frontend
+### Task 4: Supabase data hooks for the public frontend
 
 **Files:**
 - Create: `frontend/src/data/useModules.ts`
@@ -770,7 +770,7 @@ git commit -m "feat(frontend): add Supabase data hooks for modules and posts"
 
 ---
 
-### Task B5: Rewrite `Article.tsx` around `PostRenderer` + slug-based routing
+### Task 5: Rewrite `Article.tsx` around `PostRenderer` + slug-based routing
 
 **Files:**
 - Modify: `frontend/src/lib/nav.tsx`
@@ -904,7 +904,7 @@ git commit -m "feat(frontend): rewrite Article screen around PostRenderer and li
 
 ---
 
-### Task B6: Wire `Landing`, `IndexScreen`, `ModuleScreen`, `Archive` to live data; delete `content/modules.ts`
+### Task 6: Wire `Landing`, `IndexScreen`, `ModuleScreen`, `Archive` to live data; delete `content/modules.ts`
 
 **Files:**
 - Modify: `frontend/src/screens/Landing.tsx`

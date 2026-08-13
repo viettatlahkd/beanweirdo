@@ -18,7 +18,7 @@
 
 ---
 
-### Task C-FE-1: Login page + browser Supabase client + auth gate
+### Task 1: Login page + browser Supabase client + auth gate
 
 **Files:**
 - Create: `admin/lib/supabaseClient.ts`
@@ -143,7 +143,7 @@ git commit -m "feat(admin): login page and auth gate"
 
 ---
 
-### Task C-FE-2: Typed API client + Dashboard (list, status tabs, row actions)
+### Task 2: Typed API client + Dashboard (list, status tabs, row actions)
 
 **Files:**
 - Create: `admin/lib/apiClient.ts`
@@ -406,7 +406,7 @@ git commit -m "feat(admin): apiClient and dashboard with status tabs and row act
 
 ---
 
-### Task C-FE-3: New Post wizard — Step 1 Metadata + Step 2 Template picker
+### Task 3: New Post wizard — Step 1 Metadata + Step 2 Template picker
 
 **Files:**
 - Create: `admin/app/posts/new/page.tsx`
@@ -606,7 +606,7 @@ git commit -m "feat(admin): new-post wizard steps 1-2 (metadata, template picker
 
 ---
 
-### Task C-FE-4: Editor step (WYSIWYG) + Preview page
+### Task 4: Editor step (WYSIWYG) + Preview page
 
 **Files:**
 - Create: `admin/app/posts/[id]/edit/page.tsx`
