@@ -1,7 +1,13 @@
 -- beanweirdo — Supabase schema
 --
--- Run this in the Supabase project's SQL editor (Dashboard → SQL Editor → New query),
--- then run seed.sql to load the current prototype content.
+-- The first CLI-managed migration. Apply it with the Supabase CLI, not by pasting
+-- into the dashboard SQL editor: `supabase db reset` runs it (plus every later
+-- migration and then seed.sql) against the local Docker Postgres, and
+-- `supabase db push` applies it to the linked hosted project. Table/index creation
+-- below is idempotent (`if not exists`); the `create policy` statements are each
+-- preceded by a matching `drop policy if exists` so this migration can also be
+-- pushed safely against a hosted project that already has this schema applied by
+-- hand from the pre-CLI workflow.
 --
 -- Two kinds of data live here:
 --   - modules / posts: editorial content. Public to read, write-protected so it can
@@ -107,18 +113,25 @@ alter table notes enable row level security;
 -- Editorial content: readable by anyone (including signed-out visitors), no
 -- insert/update/delete policy for anon or authenticated — edit from the Table
 -- Editor (which uses the privileged service_role connection and bypasses RLS).
+drop policy if exists "modules are publicly readable" on modules;
 create policy "modules are publicly readable" on modules
   for select using (true);
 
+-- Replaced again by migration 0003 to narrow this to specific statuses — still
+-- guarded here so this migration stays push-safe on its own.
+drop policy if exists "posts are publicly readable" on posts;
 create policy "posts are publicly readable" on posts
   for select using (true);
 
 -- Personal journal: every operation is scoped to the row's own user_id.
+drop policy if exists "users manage their own activity kinds" on activity_kinds;
 create policy "users manage their own activity kinds" on activity_kinds
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
+drop policy if exists "users manage their own hour logs" on hour_logs;
 create policy "users manage their own hour logs" on hour_logs
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
+drop policy if exists "users manage their own notes" on notes;
 create policy "users manage their own notes" on notes
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);

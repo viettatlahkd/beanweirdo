@@ -108,10 +108,14 @@ alter table posts
 | deleted | chỉ admin (màn Trash) | không |
 
 `posts` policy public-read đổi từ `for select using (true)` thành
-`for select using (status = 'published')`; truy cập `draft`/`archived`/`deleted` đi qua
-API route của `admin/` (dùng service_role, tự kiểm tra status phù hợp với ngữ cảnh:
-trang public gọi `/api/posts/[slug]` cho phép `published` hoặc `archived`, không cho
-`draft`/`deleted`).
+`for select using (status in ('published', 'archived'))` — anon key đọc thẳng được cả
+`published` lẫn `archived` (khớp yêu cầu "archived vẫn xem được qua link thẳng" ở trên),
+nhưng trang danh sách/trang chủ tự lọc thêm `status = 'published'` ở tầng query nên
+`archived` không bao giờ lọt vào listing dù RLS cho phép đọc. Cách này giữ nguyên kiến
+trúc "public frontend gọi thẳng Supabase bằng anon key, không qua `admin/`" — nếu route
+qua API của `admin/` thay vào đó sẽ phải giải quyết CORS giữa 2 origin, đúng thứ kiến
+trúc 1-Next.js-app đã chọn để tránh. `draft`/`deleted` không có policy đọc cho anon —
+chỉ đọc được qua API của `admin/` (service_role).
 
 ## Status lifecycle
 
