@@ -52,7 +52,7 @@ export function EditorCanvas({ template, post, onTitleChange, onSectionBodyChang
             }}
           />
         )}
-        renderHero={() => (
+        renderHero={(heroImageUrl) => (
           <div
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => {
@@ -74,9 +74,20 @@ export function EditorCanvas({ template, post, onTitleChange, onSectionBodyChang
               background: 'rgba(255,255,255,.25)',
               cursor: 'pointer',
               textAlign: 'center',
+              position: 'relative',
+              overflow: 'hidden',
             }}
           >
-            ⬇ kéo ảnh hero thả vào đây, hoặc bấm để chọn file
+            {heroImageUrl && (
+              <img
+                src={heroImageUrl}
+                alt=""
+                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.6 }}
+              />
+            )}
+            <span style={{ position: 'relative' }}>
+              {heroImageUrl ? '⬇ kéo ảnh mới vào để thay' : '⬇ kéo ảnh hero thả vào đây, hoặc bấm để chọn file'}
+            </span>
           </div>
         )}
       />

@@ -27,4 +27,32 @@ describe('EditorCanvas', () => {
     await userEvent.type(bodyInput, '!')
     expect(onSectionBodyChange).toHaveBeenCalledWith(0, expect.stringContaining('nội dung cũ'))
   })
+
+  it('shows the existing hero image when heroImageUrl is set', () => {
+    render(
+      <EditorCanvas
+        template={template}
+        post={{ ...post, heroImageUrl: 'https://example.com/hero.png' }}
+        onTitleChange={vi.fn()}
+        onSectionBodyChange={vi.fn()}
+        onHeroDrop={vi.fn()}
+      />,
+    )
+    expect(document.querySelector('img')).toHaveAttribute('src', 'https://example.com/hero.png')
+    expect(screen.queryByText(/kéo ảnh hero thả vào đây/)).not.toBeInTheDocument()
+  })
+
+  it('shows the placeholder prompt when there is no hero image yet', () => {
+    render(
+      <EditorCanvas
+        template={template}
+        post={post}
+        onTitleChange={vi.fn()}
+        onSectionBodyChange={vi.fn()}
+        onHeroDrop={vi.fn()}
+      />,
+    )
+    expect(document.querySelector('img')).not.toBeInTheDocument()
+    expect(screen.getByText(/kéo ảnh hero thả vào đây/)).toBeInTheDocument()
+  })
 })
