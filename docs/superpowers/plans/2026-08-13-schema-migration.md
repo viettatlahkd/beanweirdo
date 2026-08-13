@@ -18,7 +18,7 @@
 
 ---
 
-### Task A1: Supabase CLI local dev + move existing schema into migration 0001
+### Task 1: Supabase CLI local dev + move existing schema into migration 0001
 
 **Files:**
 - Create: `backend/package.json`
@@ -60,7 +60,7 @@ Run: `cd backend && npx supabase init`
 
 This creates `supabase/config.toml` and an empty `supabase/migrations/` directory. It does not touch the existing `supabase/schema.sql` or `supabase/seed.sql`.
 
-- [ ] **Step 3: Move `schema.sql` into migration `0001`, write the verify script (currently failing — nothing has been reset yet)**
+- [ ] **Step 3: Move `schema.sql` into migration `0001`, write the verify script**
 
 ```bash
 mkdir -p backend/supabase/migrations
@@ -68,57 +68,6 @@ git mv backend/supabase/schema.sql backend/supabase/migrations/0001_initial_sche
 ```
 
 Create `backend/scripts/verify-schema.mjs`:
-
-```js
-import pg from 'pg'
-
-const DB_URL = process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@127.0.0.1:54322/postgres'
-const client = new pg.Client({ connectionString: DB_URL })
-await client.connect()
-
-let failed = false
-async function assertTrue(label, sql, check) {
-  const { rows } = await client.query(sql)
-  const ok = check(rows)
-  console.log(`${ok ? 'PASS' : 'FAIL'} — ${label}`)
-  if (!ok) failed = true
-}
-
-async function assertTableExists(table) {
-  await assertTrue(
-    `table "${table}" exists`,
-    `select table_name from information_schema.tables where table_schema = 'public' and table_name = $1`,
-    (rows) => rows.length === 1,
-  )
-}
-// bound the query param manually since assertTrue's sql has no params support above
-async function assertTableExistsFixed(table) {
-  const { rows } = await client.query(
-    `select table_name from information_schema.tables where table_schema = 'public' and table_name = $1`,
-    [table],
-  )
-  const ok = rows.length === 1
-  console.log(`${ok ? 'PASS' : 'FAIL'} — table "${table}" exists`)
-  if (!ok) failed = true
-}
-
-for (const table of ['modules', 'posts', 'activity_kinds', 'hour_logs', 'notes']) {
-  await assertTableExistsFixed(table)
-}
-
-await client.end()
-if (failed) {
-  console.error('\nverify-schema: FAILED')
-  process.exit(1)
-}
-console.log('\nverify-schema: PASS')
-```
-
-(The unused `assertTableExists`/`assertTrue` helper is dead — replace it: keep only `assertTableExistsFixed`, rename it to `assertTableExists`, and delete the first broken version. Later steps append more assertion helpers to this same file.)
-
-- [ ] **Step 4: Clean up the script, start the DB, run it — expect PASS**
-
-Rewrite `backend/scripts/verify-schema.mjs` to the clean version (drop the dead `assertTrue`/first `assertTableExists`):
 
 ```js
 import pg from 'pg'
@@ -150,6 +99,12 @@ if (failed) {
 }
 console.log('\nverify-schema: PASS')
 ```
+
+Later tasks in this track append more `assert*` helpers and calls to this same file, always before the `await client.end()` line.
+
+- [ ] **Step 4: Start the local DB and run the script — expect PASS**
+
+No code changes this step — just running what Step 3 wrote.
 
 Run:
 ```bash
@@ -189,7 +144,7 @@ git commit -m "chore: move backend to Supabase-CLI-managed migrations"
 
 ---
 
-### Task A2: `templates` table + `posts` status/template columns + seed data
+### Task 2: `templates` table + `posts` status/template columns + seed data
 
 **Files:**
 - Create: `backend/supabase/migrations/0002_templates_and_post_status.sql`
@@ -304,7 +259,7 @@ git commit -m "feat(schema): add templates table and post status lifecycle colum
 
 ---
 
-### Task A3: RLS — public read limited to `status = 'published'`
+### Task 3: RLS — public read limited to `status = 'published'`
 
 **Files:**
 - Create: `backend/supabase/migrations/0003_posts_public_read_published_only.sql`
@@ -356,7 +311,7 @@ git commit -m "feat(schema): scope public posts read policy to published status"
 
 ---
 
-### Task A4: `post-images` storage bucket
+### Task 4: `post-images` storage bucket
 
 **Files:**
 - Create: `backend/supabase/migrations/0004_post_images_bucket.sql`
