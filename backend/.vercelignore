@@ -1,0 +1,10 @@
+# Vercel treats every file under api/ as its own Serverless Function,
+# including *.test.ts — which pushed us over the Hobby plan's 12-function
+# limit (6 real handlers + 7 test files = 13). Test files never need to be
+# deployed anyway, so exclude them here.
+**/*.test.ts
+
+# Not needed at runtime, no reason to upload them either.
+supabase
+scripts
+README.md
