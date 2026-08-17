@@ -1,9 +1,8 @@
-import { defineConfig, loadEnv } from 'vitest/config'
+import { defineConfig } from 'vitest/config'
 
-export default defineConfig(({ mode }) => ({
+export default defineConfig({
   test: {
     environment: 'node',
     include: ['api/**/*.test.ts', 'lib/**/*.test.ts'],
-    env: loadEnv(mode, process.cwd(), ''),
   },
-}))
+})
