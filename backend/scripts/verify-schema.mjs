@@ -30,17 +30,22 @@ async function assertColumnExists(table, column) {
   if (!ok) failed = true
 }
 
-await assertTableExists('templates')
-for (const col of ['status', 'template_id', 'hero_image_url', 'published_at', 'deleted_at', 'previous_status', 'updated_at']) {
+for (const col of ['status', 'template', 'hero_image_url', 'published_at', 'deleted_at', 'previous_status', 'updated_at']) {
   await assertColumnExists('posts', col)
 }
 
-const { rows: templateRows } = await client.query('select name from templates order by name')
-const gotNames = templateRows.map((r) => r.name).sort()
-const wantNames = ['Band · Blush', 'Sequence · Apricot', 'Specimen · Leaf'].sort()
-const namesOk = JSON.stringify(gotNames) === JSON.stringify(wantNames)
-console.log(`${namesOk ? 'PASS' : 'FAIL'} — seeded templates: ${gotNames.join(', ')}`)
-if (!namesOk) failed = true
+const { rows: dropped } = await client.query(
+  `select table_name from information_schema.tables where table_schema = 'public' and table_name = 'templates'`,
+)
+const templatesDropped = dropped.length === 0
+console.log(`${templatesDropped ? 'PASS' : 'FAIL'} — templates table no longer exists (replaced by posts.template enum)`)
+if (!templatesDropped) failed = true
+
+const { rows: templateVals } = await client.query('select distinct template from posts order by template')
+const gotTemplates = templateVals.map((r) => r.template)
+const templatesOk = gotTemplates.every((t) => ['article', 'cards', 'report'].includes(t))
+console.log(`${templatesOk ? 'PASS' : 'FAIL'} — posts.template values are within ('article','cards','report'): ${gotTemplates.join(', ')}`)
+if (!templatesOk) failed = true
 
 const { rows: policyRows } = await client.query(
   `select qual from pg_policies where tablename = 'posts' and policyname = 'posts are publicly readable'`,
