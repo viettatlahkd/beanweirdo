@@ -1,4 +1,4 @@
-import { ink, paper } from '../lib/theme'
+import { ink, paper } from '../../design/tokens'
 
 export type StepId = 'metadata' | 'template' | 'editor'
 

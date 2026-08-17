@@ -1,7 +1,6 @@
-'use client'
 import { useEffect, useState } from 'react'
-import { listModules, type Module, type PostKind } from '../../../lib/apiClient'
-import { ink, paper } from '../../../lib/theme'
+import { listModules, type Module, type PostKind } from '../lib/apiClient'
+import { ink, paper } from '../../design/tokens'
 
 export type Metadata = { moduleId: string; kind: PostKind; en: string; vi: string }
 const KINDS: PostKind[] = ['note', 'essay', 'ref', 'log']

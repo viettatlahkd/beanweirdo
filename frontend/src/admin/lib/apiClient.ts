@@ -1,7 +1,7 @@
 /**
  * Client for the standalone `admin-api` backend (a separate deployment, not
- * part of this Next.js app — see backend/admin-api/). Every call is
- * a plain `fetch` against NEXT_PUBLIC_ADMIN_API_URL; auth is a bearer token
+ * part of this Vite app — see backend/admin-api/). Every call is
+ * a plain `fetch` against VITE_ADMIN_API_URL; auth is a bearer token
  * (opaque to this client) issued by POST /api/login and stored in
  * localStorage, sent back as `Authorization: Bearer <token>` on every
  * authenticated call.
@@ -71,7 +71,7 @@ export type Module = {
 }
 
 const DEFAULT_API_BASE = 'http://localhost:3001'
-const API_BASE = (process.env.NEXT_PUBLIC_ADMIN_API_URL ?? DEFAULT_API_BASE).replace(/\/$/, '')
+const API_BASE = ((import.meta.env.VITE_ADMIN_API_URL as string | undefined) ?? DEFAULT_API_BASE).replace(/\/$/, '')
 
 /** localStorage key holding the bearer token issued by POST /api/login. */
 export const TOKEN_KEY = 'admin_token'

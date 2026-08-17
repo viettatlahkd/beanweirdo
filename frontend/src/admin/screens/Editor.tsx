@@ -1,4 +1,3 @@
-'use client'
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { PostRenderer } from 'post-renderer'
 import type {
@@ -10,15 +9,27 @@ import type {
   ReportTable,
   SectionData,
 } from 'post-renderer'
-import { uploadImage, type Module, type PostDetail, type PostTemplate } from '../../../../lib/apiClient'
-import { ink, paper, serif } from '../../../../lib/theme'
-import { blankReportBlock, getBody, toArticleData, toCardsData } from '../postData'
+import { PasswordGate } from '../PasswordGate'
+import { Stepper } from '../components/Stepper'
+import {
+  getPost,
+  listModules,
+  transitionStatus,
+  updatePost,
+  uploadImage,
+  type Module,
+  type PostDetail,
+  type PostTemplate,
+} from '../lib/apiClient'
+import { useAdminNav } from '../lib/nav'
+import { ink, paper, serif } from '../../design/tokens'
+import { blankReportBlock, getBody, resolveTemplate, toArticleData, toCardsData } from '../lib/postData'
 
 /**
  * The patch shape every editable field ultimately produces — a subset of
  * apiClient.updatePost's PATCH body. `body` is left `unknown` here (rather
  * than the API client's convenience `SectionData[]` narrowing) because it
- * holds a different real shape per template; see postData.ts.
+ * holds a different real shape per template; see lib/postData.ts.
  */
 export type EditPatch = Partial<{
   en: string
@@ -29,7 +40,7 @@ export type EditPatch = Partial<{
   heroImageUrl: string
 }>
 
-type Props = {
+type CanvasProps = {
   template: PostTemplate
   post: PostDetail
   module?: Module
@@ -38,8 +49,105 @@ type Props = {
 }
 
 const REPORT_BLUE = '#6FA8C0'
+const TEMPLATE_LABEL: Record<string, string> = { article: 'Article', cards: 'Cards', report: 'Report' }
 
-export function EditorCanvas({ template, post, module, onChange, onHeroDrop }: Props) {
+/**
+ * The outer edit screen — fetches the post + modules by id, wires the
+ * publish/save/preview footer, and hands the real editing surface to
+ * EditorCanvas below. Port of the standalone admin app's
+ * app/posts/[id]/edit/page.tsx, adapted to take `postId` as a prop (no
+ * next/navigation `useParams`) and to navigate via the admin nav context.
+ */
+export function Editor({ postId }: { postId: string }) {
+  return (
+    <PasswordGate>
+      <EditorContent postId={postId} />
+    </PasswordGate>
+  )
+}
+
+function EditorContent({ postId }: { postId: string }) {
+  const nav = useAdminNav()
+  const [post, setPost] = useState<PostDetail | null>(null)
+  const [modules, setModules] = useState<Module[]>([])
+
+  useEffect(() => {
+    Promise.all([getPost(postId), listModules()]).then(([p, mods]) => {
+      setPost(p)
+      setModules(mods)
+    })
+  }, [postId])
+
+  if (!post) return <div style={{ padding: 32, color: ink.muted, fontSize: 13 }}>Đang tải...</div>
+
+  const template = resolveTemplate(post)
+  const activeModule = modules.find((m) => m.id === post.moduleId)
+
+  // Optimistic local update + fire-and-forget remote save. Functional
+  // setState keeps this safe against the stale-closure bug this screen used
+  // to have around hero uploads: every callback below reads the latest
+  // `post` via the updater function's `prev`, never via a captured `post`
+  // from the render that created the closure.
+  function applyPatch(patch: EditPatch) {
+    setPost((prev) => (prev ? { ...prev, ...(patch as Partial<PostDetail>) } : prev))
+    updatePost(postId, patch as Parameters<typeof updatePost>[1])
+  }
+
+  return (
+    <div style={{ padding: '32px 40px' }}>
+      <Stepper current="editor" />
+      <div style={{ fontSize: 12, color: ink.muted, marginBottom: 14 }}>
+        Template: <b style={{ color: ink.strong, fontWeight: 500 }}>{TEMPLATE_LABEL[template]}</b>
+      </div>
+      <EditorCanvas
+        template={template}
+        post={post}
+        module={activeModule}
+        onChange={applyPatch}
+        onHeroDrop={async (file) => {
+          const { url } = await uploadImage(file)
+          setPost((prev) => (prev ? { ...prev, heroImageUrl: url } : prev))
+          updatePost(postId, { heroImageUrl: url })
+        }}
+      />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 20, maxWidth: 1320 }}>
+        <span style={{ fontSize: 11, color: ink.muted }}>Tự lưu khi rời khỏi ô soạn · trạng thái hiện tại: {post.status}</span>
+        <div>
+          {/* Opens the preview screen in a new tab via the ?preview= deep
+              link AdminApp reads on initial mount — this app has no
+              per-screen URL otherwise, so this query param is the one place
+              a real link (rather than an in-app nav() call) is used. */}
+          <a href={`/admin?preview=${postId}`} target="_blank" rel="noreferrer" className="admin-btn-ghost" style={{ textDecoration: 'none', display: 'inline-block' }}>
+            Xem trước ↗
+          </a>
+          <button onClick={() => nav.goDashboard()} className="admin-btn-ghost" style={{ marginLeft: 8 }}>
+            Lưu nháp
+          </button>
+          <button
+            onClick={async () => {
+              await transitionStatus(postId, 'publish')
+              nav.goDashboard()
+            }}
+            className="admin-btn"
+            style={{ marginLeft: 8 }}
+          >
+            Publish
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// EditorCanvas — the actual WYSIWYG editing surface. Every editable field is
+// wired through post-renderer's own render-prop overrides, so what's on
+// screen while editing is exactly the public render. Port of the standalone
+// admin app's app/posts/[id]/edit/EditorCanvas.tsx, verbatim apart from
+// import paths.
+// ---------------------------------------------------------------------------
+
+export function EditorCanvas({ template, post, module, onChange, onHeroDrop }: CanvasProps) {
   return (
     <div style={{ maxWidth: 1320 }}>
       <EditorStyles />
@@ -381,7 +489,7 @@ function CardPartBodyEditor({
 // this is a purpose-built admin editor styled to match the same block
 // typography and the approved mockup's "+ thêm khối" pattern, operating
 // directly on the ReportBlock[] array that PostRenderer's Report will later
-// render read-only, byte for byte, on the preview page.
+// render read-only, byte for byte, on the preview screen.
 // ---------------------------------------------------------------------------
 
 const BLOCK_TYPES: { type: ReportBlock['type']; label: string }[] = [

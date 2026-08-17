@@ -241,7 +241,7 @@ export function Cards({ post, ...overrides }: CardsProps) {
           >
             Mục lục trong bài
           </div>
-          {post.cards.map((c, i) => (
+          {post.cards.map((c) => (
             <div key={c.n} style={{ position: 'relative', padding: '9px 0 10px', borderBottom: `1px solid #F0EBDB` }}>
               <div style={{ display: 'flex', gap: 10, alignItems: 'baseline', cursor: 'pointer', paddingRight: 26 }}>
                 <div style={{ width: 7, height: 7, flex: 'none', borderRadius: '50%', background: c.hue, marginTop: 6 }} />

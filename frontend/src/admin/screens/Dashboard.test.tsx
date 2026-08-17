@@ -2,7 +2,18 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
-vi.mock('../../components/AuthGate', () => ({ AuthGate: ({ children }: { children: React.ReactNode }) => children }))
+vi.mock('../PasswordGate', () => ({ PasswordGate: ({ children }: { children: React.ReactNode }) => children }))
+vi.mock('../lib/nav', () => ({
+  useAdminNav: () => ({
+    screen: 'dashboard',
+    postId: null,
+    goLogin: vi.fn(),
+    goDashboard: vi.fn(),
+    goNew: vi.fn(),
+    goEdit: vi.fn(),
+    goPreview: vi.fn(),
+  }),
+}))
 
 const transitionStatus = vi.fn().mockResolvedValue({ id: 'p1', status: 'published' })
 const listPosts = vi.fn().mockResolvedValue([
@@ -24,16 +35,16 @@ const listPosts = vi.fn().mockResolvedValue([
   },
 ])
 
-vi.mock('../../lib/apiClient', () => ({
+vi.mock('../lib/apiClient', () => ({
   listPosts: (...args: unknown[]) => listPosts(...args),
   transitionStatus: (...args: unknown[]) => transitionStatus(...args),
 }))
 
-const { default: PostsPage } = await import('./page')
+const { Dashboard } = await import('./Dashboard')
 
-describe('PostsPage', () => {
+describe('Dashboard', () => {
   it('lists posts with template, meta and preview, and publishes one on click', async () => {
-    render(<PostsPage />)
+    render(<Dashboard />)
     expect(await screen.findByText('Senses of Flavors')).toBeInTheDocument()
     // Real template name (not the old band/specimen/sequence naming).
     expect(screen.getByText('Article')).toBeInTheDocument()
@@ -51,7 +62,7 @@ describe('PostsPage', () => {
   })
 
   it('fetches posts for the selected status tab', async () => {
-    render(<PostsPage />)
+    render(<Dashboard />)
     await screen.findByText('Senses of Flavors')
     listPosts.mockClear()
 
@@ -83,7 +94,7 @@ describe('PostsPage', () => {
         publishedAt: '2026-05-02T00:00:00Z',
       },
     ])
-    render(<PostsPage />)
+    render(<Dashboard />)
     await screen.findByText('First Crack Field Notes')
 
     expect(screen.getByRole('button', { name: 'Bỏ đăng' })).toBeInTheDocument()
@@ -115,7 +126,7 @@ describe('PostsPage', () => {
         publishedAt: null,
       },
     ])
-    render(<PostsPage />)
+    render(<Dashboard />)
     await screen.findByText('Chlorogenic Acids (CGA)')
 
     await userEvent.click(screen.getByRole('button', { name: 'Khôi phục' }))

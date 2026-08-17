@@ -1,11 +1,10 @@
-'use client'
 import { useState, type FormEvent } from 'react'
-import { useRouter } from 'next/navigation'
-import { ApiError, login } from '../../lib/apiClient'
-import { garden, ink, paper, sans, serif } from '../../lib/theme'
+import { ApiError, login } from '../lib/apiClient'
+import { useAdminNav } from '../lib/nav'
+import { garden, ink, paper, sans, serif } from '../../design/tokens'
 
-export default function LoginPage() {
-  const router = useRouter()
+export function Login() {
+  const nav = useAdminNav()
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
@@ -16,7 +15,7 @@ export default function LoginPage() {
     setPending(true)
     try {
       await login(password)
-      router.push('/posts')
+      nav.goDashboard()
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Không thể đăng nhập. Vui lòng thử lại.')
       setPending(false)

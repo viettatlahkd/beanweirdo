@@ -2,11 +2,11 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { CardData, ReportBlock } from 'post-renderer'
 import { describe, expect, it, vi } from 'vitest'
-import type { PostDetail } from '../../../../lib/apiClient'
-import { EditorCanvas } from './EditorCanvas'
+import type { PostDetail } from '../lib/apiClient'
+import { EditorCanvas } from './Editor'
 
-// `body` is jsonb end to end (see postData.ts) — its real shape depends on
-// `template`, even though apiClient's PostDetail type narrows it to
+// `body` is jsonb end to end (see lib/postData.ts) — its real shape depends
+// on `template`, even though apiClient's PostDetail type narrows it to
 // `SectionData[] | null` for convenience. Fixtures below intentionally pass
 // CardData[]/ReportBlock[] through this `unknown`-typed override slot.
 function basePost(overrides: Partial<Omit<PostDetail, 'body'>> & { body?: unknown } = {}): PostDetail {

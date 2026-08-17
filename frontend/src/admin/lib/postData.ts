@@ -30,7 +30,7 @@ import type {
   ReportTable,
   SectionData,
 } from 'post-renderer'
-import type { Module, PostDetail, PostTemplate } from '../../../lib/apiClient'
+import type { Module, PostDetail, PostTemplate } from './apiClient'
 
 /** `posts.template` can be null on old/incomplete rows; the site's real default is 'article'. */
 export function resolveTemplate(post: Pick<PostDetail, 'template'>): PostTemplate {

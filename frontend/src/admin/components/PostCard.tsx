@@ -1,7 +1,6 @@
-'use client'
 import { useState } from 'react'
 import type { PostStatus, PostSummary, PostTemplate, StatusAction } from '../lib/apiClient'
-import { garden, ink, paper, sans, serif } from '../lib/theme'
+import { garden, ink, paper, sans, serif } from '../../design/tokens'
 import { StatusBadge } from './StatusBadge'
 
 // Real template names (article/cards/report) — the old band/specimen/sequence
@@ -39,7 +38,15 @@ function thumbColor(id: string) {
   return THUMB_COLORS[hash % THUMB_COLORS.length]
 }
 
-export function PostCard({ post, onAction }: { post: PostSummary; onAction: (id: string, action: StatusAction) => void }) {
+export function PostCard({
+  post,
+  onAction,
+  onEdit,
+}: {
+  post: PostSummary
+  onAction: (id: string, action: StatusAction) => void
+  onEdit: (id: string) => void
+}) {
   const [hover, setHover] = useState(false)
   const actions = ACTIONS_BY_STATUS[post.status]
 
@@ -59,7 +66,6 @@ export function PostCard({ post, onAction }: { post: PostSummary; onAction: (id:
       }}
     >
       {post.heroImageUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
         <img
           src={post.heroImageUrl}
           alt=""
@@ -76,9 +82,13 @@ export function PostCard({ post, onAction }: { post: PostSummary; onAction: (id:
         </div>
         <div style={{ fontFamily: sans, fontSize: 12.5, color: ink.soft, marginTop: 5, lineHeight: 1.5 }}>{post.vi}</div>
         <div style={{ fontSize: 11, marginTop: 8 }}>
-          <a href={`/posts/${post.id}/edit`} className="admin-link-action">
+          <button
+            onClick={() => onEdit(post.id)}
+            className="admin-link-action"
+            style={{ background: 'none', border: 'none', padding: 0, font: 'inherit' }}
+          >
             Sửa
-          </a>
+          </button>
           {actions.map((a) => (
             <button
               key={a.action}

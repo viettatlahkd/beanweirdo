@@ -1,5 +1,5 @@
 import type { PostStatus } from '../lib/apiClient'
-import { garden, ink, paper, sans } from '../lib/theme'
+import { garden, ink, paper, sans } from '../../design/tokens'
 
 // Vietnamese labels match the approved mockup's "01 Dashboard" status pills
 // (Nháp / Đã đăng / Lưu trữ) plus a fourth state for the trash tab.

@@ -1,7 +1,6 @@
-'use client'
 import { useState } from 'react'
-import { TEMPLATES, type PostTemplate } from '../../../lib/apiClient'
-import { garden, ink, paper } from '../../../lib/theme'
+import { TEMPLATES, type PostTemplate } from '../lib/apiClient'
+import { garden, ink, paper } from '../../design/tokens'
 
 /**
  * The 3 real post templates are a fixed, non-extensible choice now — the old

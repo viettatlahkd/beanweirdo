@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { MetadataStep } from './MetadataStep'
 
-vi.mock('../../../lib/apiClient', () => ({
+vi.mock('../lib/apiClient', () => ({
   listModules: vi.fn().mockResolvedValue([
     { id: 'sensory', title: 'Sensory' },
     { id: 'roasting', title: 'Roasting' },

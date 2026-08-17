@@ -1,48 +1,20 @@
-/* Base substrate shared by every admin screen — mirrors the approved
-   mockup's <style> block (fonts, paper/ink palette, heading typography).
-   Screen-level layout/spacing lives in each component's inline styles via
-   admin/lib/theme.ts; this file only carries what has to be real CSS
-   (webfonts, box-sizing reset, and h1/h2/h3 so components that render
-   through post-renderer's plain <h1>/<h3> — e.g. the public preview —
-   inherit serif styling without post-renderer itself needing to know
-   about admin's theme). */
-
-*, *::before, *::after {
-  box-sizing: border-box;
-}
-
-html,
-body {
-  margin: 0;
-  padding: 0;
-  min-height: 100%;
-  background: #fdfbf2;
-  color: #262319;
-  font-family: 'Be Vietnam Pro', system-ui, sans-serif;
-  font-weight: 300;
-}
-
-h1,
-h2,
-h3 {
-  font-family: 'Playfair Display', serif;
-  font-weight: 600;
-  color: #23211a;
-  margin: 0;
-}
-
-a {
-  color: inherit;
-}
-
-button {
-  font-family: inherit;
-}
-
-/* Small set of interactive-state classes — colors mirror admin/lib/theme.ts
+/* Interactive-state classes for the /admin screens — ported from the
+   standalone admin app's globals.css. Colors mirror frontend/src/design/tokens.ts
    verbatim, kept as real CSS only because inline styles can't express
-   :hover. Everything static (layout, spacing, one-off colors) stays as
-   inline styles driven by theme.ts in the components themselves. */
+   :hover/:disabled/[aria-pressed]. Everything static (layout, spacing,
+   one-off colors) stays as inline styles driven by design/tokens.ts in the
+   components themselves, same as the rest of this app.
+
+   Deliberately NOT ported from the standalone app's globals.css: the
+   `h1,h2,h3{font-family:Playfair Display;font-weight:600}` rule and the
+   `box-sizing`/html,body reset — frontend/src/global.css already resets
+   box-sizing and sets the paper background, and post-renderer's own h1/h3
+   elements already set `fontFamily: serif` inline. Reintroducing a global
+   font-weight:600 on bare h1/h2/h3 would make the admin's read-only preview
+   (which renders through the exact same post-renderer components as the
+   public site) render bolder headings than production — the public site's
+   global.css intentionally forces heading weight to 400. Admin's own few
+   bare <h1> usages already set fontWeight inline where they need to. */
 
 .admin-btn {
   font-family: 'Be Vietnam Pro', system-ui, sans-serif;
