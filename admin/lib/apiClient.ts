@@ -1,62 +1,201 @@
-import type { SectionData, Template } from 'post-renderer'
-import { supabase } from './supabaseClient'
+/**
+ * Client for the standalone `admin-api` backend (a separate deployment, not
+ * part of this Next.js app — see admin-api/ at the repo root). Every call is
+ * a plain `fetch` against NEXT_PUBLIC_ADMIN_API_URL; auth is a bearer token
+ * (opaque to this client) issued by POST /api/login and stored in
+ * localStorage, sent back as `Authorization: Bearer <token>` on every
+ * authenticated call.
+ */
+import type { SectionData } from 'post-renderer'
 
+/** The 3 real post templates (the old `templates` table is gone). */
+export const TEMPLATES = ['article', 'cards', 'report'] as const
+export type PostTemplate = (typeof TEMPLATES)[number]
+
+export type PostKind = 'note' | 'essay' | 'ref' | 'log'
 export type PostStatus = 'draft' | 'published' | 'archived' | 'deleted'
-export type PostSummary = { id: string; slug: string; en: string; vi: string; moduleId: string; kind: string; status: PostStatus; heroImageUrl: string | null; publishedAt: string | null; updatedAt: string }
-export type PostDetail = { id: string; slug: string; en: string; vi: string; moduleId: string; kind: string; status: PostStatus; templateId: string | null; heroImageUrl: string | null; body: SectionData[] }
-export type { Template }
-export type StatusAction = 'publish' | 'unpublish' | 'archive' | 'restore' | 'delete' | 'restore-trash' | 'permanently-delete'
+export type StatusAction =
+  | 'publish'
+  | 'unpublish'
+  | 'archive'
+  | 'restore'
+  | 'delete'
+  | 'restore-trash'
+  | 'permanently-delete'
 
-async function authedFetch(path: string, init: RequestInit = {}) {
-  const { data } = await supabase.auth.getSession()
-  const token = data.session?.access_token
-  const res = await fetch(path, {
-    ...init,
-    headers: { ...init.headers, Authorization: `Bearer ${token}`, ...(init.body ? { 'Content-Type': 'application/json' } : {}) },
+export type PostSummary = {
+  id: string
+  moduleId: string
+  n: number
+  en: string
+  vi: string
+  kind: PostKind
+  dateLabel: string
+  status: PostStatus
+  template: PostTemplate | null
+  heroImageUrl: string | null
+  sortOrder: number
+  createdAt: string
+  updatedAt: string
+  publishedAt: string | null
+}
+
+export type PostDetail = PostSummary & {
+  slug: string
+  body: SectionData[] | null
+  heroCaption: string | null
+  lead: string | null
+  pullQuote: string | null
+  furtherReading: string[] | null
+  deletedAt: string | null
+  previousStatus: PostStatus | null
+}
+
+export type Module = {
+  id: string
+  title: string
+  accent: string
+  onColor: string
+  tint: string
+  tint2: string
+  layout: string
+  concept: string
+  blurb: string
+  longDesc: string
+  treatment: string
+  layoutNote: string
+  shot1: string | null
+  shot2: string | null
+  shot3: string | null
+  sortOrder: number
+}
+
+const DEFAULT_API_BASE = 'http://localhost:3001'
+const API_BASE = (process.env.NEXT_PUBLIC_ADMIN_API_URL ?? DEFAULT_API_BASE).replace(/\/$/, '')
+
+/** localStorage key holding the bearer token issued by POST /api/login. */
+export const TOKEN_KEY = 'admin_token'
+
+export class ApiError extends Error {
+  status: number
+  constructor(message: string, status: number) {
+    super(message)
+    this.name = 'ApiError'
+    this.status = status
+  }
+}
+
+export function getToken(): string | null {
+  if (typeof window === 'undefined') return null
+  return window.localStorage.getItem(TOKEN_KEY)
+}
+
+export function setToken(token: string): void {
+  window.localStorage.setItem(TOKEN_KEY, token)
+}
+
+export function clearToken(): void {
+  window.localStorage.removeItem(TOKEN_KEY)
+}
+
+async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const token = getToken()
+  const isFormData = typeof FormData !== 'undefined' && init.body instanceof FormData
+  const headers: Record<string, string> = { ...(init.headers as Record<string, string> | undefined) }
+  if (token) headers.Authorization = `Bearer ${token}`
+  if (init.body != null && !isFormData) headers['Content-Type'] = 'application/json'
+
+  const res = await fetch(`${API_BASE}${path}`, { ...init, headers })
+
+  const text = await res.text()
+  const data = text ? JSON.parse(text) : {}
+
+  if (!res.ok) {
+    const message = typeof data?.error === 'string' ? data.error : `Request failed (${res.status})`
+    throw new ApiError(message, res.status)
+  }
+  return data as T
+}
+
+/** POST /api/login — static-password login (no username). Stores the token on success. */
+export async function login(password: string): Promise<{ token: string }> {
+  const result = await request<{ token: string }>('/api/login', {
+    method: 'POST',
+    body: JSON.stringify({ password }),
   })
-  return res
+  setToken(result.token)
+  return result
 }
 
+/** GET /api/posts?status=... — defaults to 'all'. */
 export async function listPosts(status: PostStatus | 'all' = 'all'): Promise<PostSummary[]> {
-  const res = await authedFetch(`/api/posts?status=${status}`)
-  return res.json()
+  const result = await request<{ posts: PostSummary[] }>(`/api/posts?status=${status}`)
+  return result.posts
 }
 
-export async function createPost(input: { moduleId: string; kind: string; en: string; vi: string }): Promise<{ id: string }> {
-  const res = await authedFetch('/api/posts', { method: 'POST', body: JSON.stringify(input) })
-  return res.json()
+/** POST /api/posts — create a draft. Server derives n and dateLabel; status defaults to 'draft'. */
+export async function createPost(input: {
+  moduleId: string
+  kind: PostKind
+  en: string
+  vi: string
+  template?: PostTemplate
+}): Promise<{ id: string }> {
+  return request<{ id: string }>('/api/posts', { method: 'POST', body: JSON.stringify(input) })
 }
 
+/** GET /api/posts/:id — full post detail. */
 export async function getPost(id: string): Promise<PostDetail> {
-  const res = await authedFetch(`/api/posts/${id}`)
-  return res.json()
+  const result = await request<{ post: PostDetail }>(`/api/posts/${id}`)
+  return result.post
 }
 
-export async function updatePost(id: string, patch: Partial<{ templateId: string; en: string; vi: string; body: unknown; heroImageUrl: string }>): Promise<{ id: string }> {
-  const res = await authedFetch(`/api/posts/${id}`, { method: 'PATCH', body: JSON.stringify(patch) })
-  return res.json()
+/** PATCH /api/posts/:id — partial update of editable fields; returns the full updated detail. */
+export async function updatePost(
+  id: string,
+  patch: Partial<{
+    en: string
+    vi: string
+    body: SectionData[]
+    heroImageUrl: string
+    heroCaption: string
+    lead: string
+    pullQuote: string
+    furtherReading: string[]
+  }>,
+): Promise<PostDetail> {
+  const result = await request<{ post: PostDetail }>(`/api/posts/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(patch),
+  })
+  return result.post
 }
 
-export async function transitionStatus(id: string, action: StatusAction): Promise<{ id: string; status: PostStatus } | null> {
-  const res = await authedFetch(`/api/posts/${id}/status`, { method: 'POST', body: JSON.stringify({ action }) })
-  if (res.status === 204) return null
-  return res.json()
+/**
+ * POST /api/posts/:id/status — applies one lifecycle transition. Returns the
+ * full updated detail, except for 'permanently-delete' which hard-deletes
+ * the row and returns `{ deleted: true }` instead.
+ */
+export async function transitionStatus(
+  id: string,
+  action: StatusAction,
+): Promise<PostDetail | { deleted: true }> {
+  const result = await request<{ post: PostDetail } | { deleted: true }>(`/api/posts/${id}/status`, {
+    method: 'POST',
+    body: JSON.stringify({ action }),
+  })
+  return 'deleted' in result ? result : result.post
 }
 
-export async function listTemplates(): Promise<Template[]> {
-  const res = await authedFetch('/api/templates')
-  return res.json()
-}
-
-export async function createTemplate(input: Omit<Template, 'id'>): Promise<Template> {
-  const res = await authedFetch('/api/templates', { method: 'POST', body: JSON.stringify(input) })
-  return res.json()
-}
-
+/** POST /api/upload — multipart upload, field name 'file'. */
 export async function uploadImage(file: File): Promise<{ url: string }> {
   const form = new FormData()
   form.set('file', file)
-  const { data } = await supabase.auth.getSession()
-  const res = await fetch('/api/upload', { method: 'POST', body: form, headers: { Authorization: `Bearer ${data.session?.access_token}` } })
-  return res.json()
+  return request<{ url: string }>('/api/upload', { method: 'POST', body: form })
+}
+
+/** GET /api/modules — for the admin's module-select dropdown. */
+export async function listModules(): Promise<Module[]> {
+  const result = await request<{ modules: Module[] }>('/api/modules')
+  return result.modules
 }
