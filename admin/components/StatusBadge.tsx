@@ -1,13 +1,15 @@
 import type { PostStatus } from '../lib/apiClient'
 import { garden, ink, paper, sans } from '../lib/theme'
 
-const LABEL: Record<PostStatus, string> = { draft: 'Draft', published: 'Published', archived: 'Archived', deleted: 'Deleted' }
+// Vietnamese labels match the approved mockup's "01 Dashboard" status pills
+// (Nháp / Đã đăng / Lưu trữ) plus a fourth state for the trash tab.
+const LABEL: Record<PostStatus, string> = { draft: 'Nháp', published: 'Đã đăng', archived: 'Lưu trữ', deleted: 'Đã xoá' }
 
-const STYLE: Record<PostStatus, { background: string; borderColor: string; color: string }> = {
-  draft: { background: paper.rule, borderColor: paper.rule, color: ink.muted },
-  published: { background: garden.leafTint, borderColor: garden.leaf, color: garden.moss },
-  archived: { background: garden.honeyTint, borderColor: garden.apricot, color: garden.cinnamon },
-  deleted: { background: paper.rule, borderColor: paper.rule, color: ink.muted },
+const STYLE: Record<PostStatus, { background: string; color: string }> = {
+  draft: { background: paper.rule, color: ink.soft },
+  published: { background: garden.leafTint, color: garden.moss },
+  archived: { background: garden.honeyTint, color: garden.cinnamon },
+  deleted: { background: garden.petalTint, color: '#8A3B41' },
 }
 
 export function StatusBadge({ status }: { status: PostStatus }) {
@@ -17,14 +19,14 @@ export function StatusBadge({ status }: { status: PostStatus }) {
       data-testid="status-badge"
       style={{
         fontFamily: sans,
-        fontSize: 10,
+        fontSize: 9.5,
         fontWeight: 500,
-        padding: '3px 10px',
+        padding: '4px 10px',
         borderRadius: 999,
-        border: `1px solid ${s.borderColor}`,
         background: s.background,
         color: s.color,
         flex: 'none',
+        width: 'fit-content',
         whiteSpace: 'nowrap',
       }}
     >

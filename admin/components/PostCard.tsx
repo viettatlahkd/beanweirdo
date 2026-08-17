@@ -1,16 +1,37 @@
-import type { PostStatus, PostSummary, StatusAction } from '../lib/apiClient'
-import { garden, ink, paper, serif } from '../lib/theme'
+'use client'
+import { useState } from 'react'
+import type { PostStatus, PostSummary, PostTemplate, StatusAction } from '../lib/apiClient'
+import { garden, ink, paper, sans, serif } from '../lib/theme'
 import { StatusBadge } from './StatusBadge'
 
+// Real template names (article/cards/report) — the old band/specimen/sequence
+// naming is gone along with the invented DB-shaped templates table.
+const TEMPLATE_LABEL: Record<PostTemplate, string> = { article: 'Article', cards: 'Cards', report: 'Report' }
+
 const ACTIONS_BY_STATUS: Record<PostStatus, { label: string; action: StatusAction }[]> = {
-  draft: [{ label: 'Publish', action: 'publish' }, { label: 'Xoá', action: 'delete' }],
-  published: [{ label: 'Archive', action: 'archive' }, { label: 'Xoá', action: 'delete' }],
-  archived: [{ label: 'Restore', action: 'restore' }, { label: 'Xoá', action: 'delete' }],
-  deleted: [{ label: 'Restore', action: 'restore-trash' }, { label: 'Xoá vĩnh viễn', action: 'permanently-delete' }],
+  draft: [
+    { label: 'Đăng', action: 'publish' },
+    { label: 'Lưu trữ', action: 'archive' },
+    { label: 'Xoá', action: 'delete' },
+  ],
+  published: [
+    { label: 'Bỏ đăng', action: 'unpublish' },
+    { label: 'Lưu trữ', action: 'archive' },
+    { label: 'Xoá', action: 'delete' },
+  ],
+  archived: [
+    { label: 'Khôi phục', action: 'restore' },
+    { label: 'Xoá', action: 'delete' },
+  ],
+  deleted: [
+    { label: 'Khôi phục', action: 'restore-trash' },
+    { label: 'Xoá vĩnh viễn', action: 'permanently-delete' },
+  ],
 }
 
 // No color field on PostSummary — pick a stable garden tint per card from
-// the post id so the dashboard reads like the mockup without a schema change.
+// the post id so the thumbnail fallback reads like the mockup without a
+// schema change. Used only when the post has no real heroImageUrl yet.
 const THUMB_COLORS = [garden.blush, garden.petalTint2, garden.leafTint2, garden.apricot, garden.honeyTint2]
 function thumbColor(id: string) {
   let hash = 0
@@ -19,23 +40,46 @@ function thumbColor(id: string) {
 }
 
 export function PostCard({ post, onAction }: { post: PostSummary; onAction: (id: string, action: StatusAction) => void }) {
+  const [hover, setHover] = useState(false)
+  const actions = ACTIONS_BY_STATUS[post.status]
+
   return (
-    <div style={{ display: 'flex', gap: 14, padding: 12, border: `1px solid ${paper.rule}`, borderRadius: 10, background: paper.white }}>
-      <div style={{ width: 68, height: 68, background: thumbColor(post.id), borderRadius: 8, flex: 'none' }} />
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-          <span style={{ fontFamily: serif, fontSize: 15, color: ink.base }}>{post.en}</span>
-          <StatusBadge status={post.status} />
+    <div
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        display: 'grid',
+        gridTemplateColumns: '52px minmax(0,1fr) 84px 96px auto',
+        alignItems: 'center',
+        gap: 16,
+        padding: '14px 40px',
+        borderBottom: `1px solid ${paper.rule}`,
+        borderLeft: `3px solid ${hover ? ink.green : 'transparent'}`,
+        background: hover ? paper.hover : paper.white,
+      }}
+    >
+      {post.heroImageUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={post.heroImageUrl}
+          alt=""
+          style={{ width: 44, height: 44, objectFit: 'cover', borderRadius: 6, flex: 'none' }}
+        />
+      ) : (
+        <div style={{ width: 44, height: 44, background: thumbColor(post.id), borderRadius: 6, flex: 'none' }} />
+      )}
+
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontFamily: serif, fontSize: 16, letterSpacing: '-0.01em', color: ink.base }}>{post.en}</div>
+        <div style={{ fontFamily: sans, fontSize: 11, color: ink.muted, marginTop: 3 }}>
+          {post.moduleId} · {post.kind} · {post.dateLabel}
         </div>
-        <div style={{ fontSize: 11, color: ink.muted, marginTop: 3 }}>
-          {post.moduleId} · {post.kind} · {post.updatedAt}
-        </div>
-        <div style={{ fontSize: 12.5, color: ink.soft, marginTop: 6, lineHeight: 1.5 }}>{post.vi}</div>
-        <div style={{ fontSize: 11.5, marginTop: 8 }}>
+        <div style={{ fontFamily: sans, fontSize: 12.5, color: ink.soft, marginTop: 5, lineHeight: 1.5 }}>{post.vi}</div>
+        <div style={{ fontSize: 11, marginTop: 8 }}>
           <a href={`/posts/${post.id}/edit`} className="admin-link-action">
             Sửa
           </a>
-          {ACTIONS_BY_STATUS[post.status].map((a) => (
+          {actions.map((a) => (
             <button
               key={a.action}
               onClick={() => onAction(post.id, a.action)}
@@ -47,6 +91,12 @@ export function PostCard({ post, onAction }: { post: PostSummary; onAction: (id:
           ))}
         </div>
       </div>
+
+      <div style={{ fontFamily: sans, fontSize: 10, color: ink.muted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+        {post.template ? TEMPLATE_LABEL[post.template] : '—'}
+      </div>
+
+      <StatusBadge status={post.status} />
     </div>
   )
 }
