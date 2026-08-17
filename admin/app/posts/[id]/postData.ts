@@ -7,7 +7,7 @@
  * arbitrary `body` jsonb column whose real shape depends on `posts.template`
  * (SectionData[] for article, CardData[] for cards, ReportBlock[] for
  * report) — even though apiClient's TS type narrows `body` to
- * `SectionData[] | null` purely for convenience (see admin-api/lib/posts.ts,
+ * `SectionData[] | null` purely for convenience (see backend/admin-api/lib/posts.ts,
  * where the column is `unknown` end to end). These adapters bridge that gap
  * so the editor/preview can hand the real post-renderer components data
  * shaped exactly the way they expect.

@@ -1,7 +1,7 @@
 {
   "name": "beanweirdo",
   "private": true,
-  "workspaces": ["frontend", "admin", "admin-api", "packages/*"],
+  "workspaces": ["frontend", "admin", "backend/admin-api", "packages/*"],
   "devDependencies": {
     "vitest": "^2.1.8",
     "@testing-library/react": "^16.1.0",

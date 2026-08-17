@@ -1,6 +1,6 @@
 /**
  * Client for the standalone `admin-api` backend (a separate deployment, not
- * part of this Next.js app — see admin-api/ at the repo root). Every call is
+ * part of this Next.js app — see backend/admin-api/). Every call is
  * a plain `fetch` against NEXT_PUBLIC_ADMIN_API_URL; auth is a bearer token
  * (opaque to this client) issued by POST /api/login and stored in
  * localStorage, sent back as `Authorization: Bearer <token>` on every
