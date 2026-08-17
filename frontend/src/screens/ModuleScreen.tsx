@@ -1,5 +1,8 @@
 import type { CSSProperties } from 'react'
-import { modules, withTints, type Module } from '../content/modules'
+import type { ModuleRow } from '../data/useModules'
+import { useModules } from '../data/useModules'
+import type { PostRow } from '../data/usePublishedPosts'
+import { usePublishedPosts } from '../data/usePublishedPosts'
 import { ink, paper, sans, serif } from '../design/tokens'
 import { Hover } from '../lib/Hover'
 import { useNav, useSettings } from '../lib/nav'
@@ -31,22 +34,28 @@ const meta: CSSProperties = {
 
 const rowHover: CSSProperties = { background: paper.white }
 
+const statusLabel: CSSProperties = { ...kicker, padding: '120px 56px' }
+
 /** `01`, `02`, `03` — position of the module in the running order. */
-const moduleNumber = (m: Module) =>
-  String(modules.findIndex((x) => x.id === m.id) + 1).padStart(2, '0')
+const moduleNumber = (m: ModuleRow) => String(m.sort_order).padStart(2, '0')
+
+/** Alternate the two tints down a list so consecutive thumbnails differ. */
+type TintedPost = PostRow & { tint: string }
+const withTints = (posts: PostRow[], m: ModuleRow): TintedPost[] =>
+  posts.map((p, i) => ({ ...p, tint: i % 2 === 0 ? m.tint : m.tint2 }))
 
 /**
  * Band — a colour block across the head, one wide hero, then the contents in
  * two columns with a thumbnail apiece.
  */
-function Band({ m }: { m: Module }) {
+function Band({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
   const nav = useNav()
   const { showPlates } = useSettings()
-  const entries = withTints(m)
+  const entries = withTints(posts, m)
 
   return (
     <div>
-      <div style={{ background: m.accent, color: m.on, padding: '52px 56px 44px' }}>
+      <div style={{ background: m.accent, color: m.on_color, padding: '52px 56px 44px' }}>
         <div onClick={nav.goHome} style={{ ...back, marginBottom: 28 }}>
           ← index
         </div>
@@ -71,7 +80,7 @@ function Band({ m }: { m: Module }) {
             gap: 44,
           }}
         >
-          <div style={{ fontSize: 15, lineHeight: 1.45 }}>{m.long}</div>
+          <div style={{ fontSize: 15, lineHeight: 1.45 }}>{m.long_desc}</div>
         </div>
       </div>
 
@@ -102,8 +111,8 @@ function Band({ m }: { m: Module }) {
         >
           {entries.map((e) => (
             <Hover
-              key={e.n}
-              onClick={nav.openArticle}
+              key={e.id}
+              onClick={() => nav.openArticle(e.id)}
               style={{
                 display: 'flex',
                 gap: 16,
@@ -139,7 +148,7 @@ function Band({ m }: { m: Module }) {
                 <div style={{ display: 'flex', gap: 12, ...meta }}>
                   <div>{e.n}</div>
                   <div>{e.kind}</div>
-                  <div>{e.date}</div>
+                  <div>{e.date_label}</div>
                 </div>
               </div>
             </Hover>
@@ -154,10 +163,10 @@ function Band({ m }: { m: Module }) {
  * Specimen — the colour block takes the left half, a tray of square plates the
  * right; the contents below sit in a three-column grid like a specimen drawer.
  */
-function Specimen({ m }: { m: Module }) {
+function Specimen({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
   const nav = useNav()
   const { showPlates } = useSettings()
-  const entries = withTints(m)
+  const entries = withTints(posts, m)
 
   return (
     <div>
@@ -165,7 +174,7 @@ function Specimen({ m }: { m: Module }) {
         <div
           style={{
             background: m.accent,
-            color: m.on,
+            color: m.on_color,
             padding: '52px 48px 48px',
             width: 571,
             height: 373,
@@ -188,7 +197,7 @@ function Specimen({ m }: { m: Module }) {
           >
             {m.title}
           </h1>
-          <div style={{ fontSize: 15, lineHeight: 1.45, maxWidth: 520 }}>{m.long}</div>
+          <div style={{ fontSize: 15, lineHeight: 1.45, maxWidth: 520 }}>{m.long_desc}</div>
         </div>
 
         {showPlates && (
@@ -254,8 +263,8 @@ function Specimen({ m }: { m: Module }) {
         >
           {entries.map((e) => (
             <Hover
-              key={e.n}
-              onClick={nav.openArticle}
+              key={e.id}
+              onClick={() => nav.openArticle(e.id)}
               style={{
                 background: paper.cream,
                 padding: '18px 18px 20px',
@@ -311,7 +320,7 @@ function Specimen({ m }: { m: Module }) {
                   color: ink.faint,
                 }}
               >
-                {e.date}
+                {e.date_label}
               </div>
             </Hover>
           ))}
@@ -333,13 +342,13 @@ const roastStrip = [
  * Sequence — an oversized title on the apricot block, the roast strip shifting
  * cream → yellow → earth → cinnamon, then the contents as big numbered rows.
  */
-function Sequence({ m }: { m: Module }) {
+function Sequence({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
   const nav = useNav()
   const { showPlates } = useSettings()
 
   return (
     <div>
-      <div style={{ background: m.accent, color: m.on, padding: '52px 56px 40px' }}>
+      <div style={{ background: m.accent, color: m.on_color, padding: '52px 56px 40px' }}>
         <div onClick={nav.goHome} style={{ ...back, marginBottom: 24 }}>
           ← index
         </div>
@@ -364,7 +373,7 @@ function Sequence({ m }: { m: Module }) {
             gap: 36,
           }}
         >
-          <div style={{ fontSize: 15, lineHeight: 1.45, gridColumn: 'span 2' }}>{m.long}</div>
+          <div style={{ fontSize: 15, lineHeight: 1.45, gridColumn: 'span 2' }}>{m.long_desc}</div>
         </div>
       </div>
 
@@ -388,10 +397,10 @@ function Sequence({ m }: { m: Module }) {
       )}
 
       <div style={{ padding: '34px 56px 120px', maxWidth: 1240 }}>
-        {m.entries.map((e) => (
+        {posts.map((e) => (
           <Hover
-            key={e.n}
-            onClick={nav.openArticle}
+            key={e.id}
+            onClick={() => nav.openArticle(e.id)}
             style={{
               display: 'grid',
               gridTemplateColumns: '70px minmax(0,1.1fr) minmax(0,1.3fr) 88px',
@@ -418,7 +427,7 @@ function Sequence({ m }: { m: Module }) {
             <div style={{ ...meta, textAlign: 'right' }}>
               {e.kind}
               <br />
-              {e.date}
+              {e.date_label}
             </div>
           </Hover>
         ))}
@@ -430,9 +439,21 @@ function Sequence({ m }: { m: Module }) {
 /** Picks the layout the module declares — band, specimen or sequence. */
 export function ModuleScreen() {
   const { moduleId } = useNav()
+  const { data: modules, loading: modulesLoading } = useModules()
   const m = modules.find((x) => x.id === moduleId) ?? modules[0]
+  const { data: posts, loading: postsLoading } = usePublishedPosts({
+    moduleId: m?.id,
+    enabled: Boolean(m),
+  })
 
-  if (m.layout === 'band') return <Band m={m} />
-  if (m.layout === 'specimen') return <Specimen m={m} />
-  return <Sequence m={m} />
+  if (modulesLoading || !m) {
+    return <div style={statusLabel}>Đang tải…</div>
+  }
+  if (postsLoading) {
+    return <div style={statusLabel}>Đang tải…</div>
+  }
+
+  if (m.layout === 'band') return <Band m={m} posts={posts} />
+  if (m.layout === 'specimen') return <Specimen m={m} posts={posts} />
+  return <Sequence m={m} posts={posts} />
 }

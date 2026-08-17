@@ -1,5 +1,9 @@
 import type { CSSProperties } from 'react'
-import { modules, type Module } from '../content/modules'
+import { useMemo } from 'react'
+import type { ModuleRow } from '../data/useModules'
+import { useModules } from '../data/useModules'
+import type { PostRow } from '../data/usePublishedPosts'
+import { usePublishedPosts } from '../data/usePublishedPosts'
 import { garden, ink, layout, paper, sans, serif } from '../design/tokens'
 import { Hover } from '../lib/Hover'
 import { Rise } from '../lib/Rise'
@@ -30,12 +34,23 @@ const bandGrid = (columns: string, rows: string): CSSProperties => ({
   height: layout.band,
 })
 
+/** Groups posts by `module_id`, preserving each module's `sort_order`. */
+function groupByModule(posts: PostRow[]): Map<string, PostRow[]> {
+  const map = new Map<string, PostRow[]>()
+  for (const p of posts) {
+    const list = map.get(p.module_id)
+    if (list) list.push(p)
+    else map.set(p.module_id, [p])
+  }
+  return map
+}
+
 /**
  * Each module gets its own image arrangement, and every tile breaks its grid
  * cell by a different amount — the band's top and bottom edges are deliberately
  * ragged so scrolling past three modules doesn't read as three identical rows.
  */
-function ImageBand({ m }: { m: Module }) {
+function ImageBand({ m }: { m: ModuleRow }) {
   if (m.layout === 'band') {
     return (
       <div style={bandGrid('minmax(0,1.9fr) minmax(0,1fr) 30px', '1.5fr 1fr')}>
@@ -181,6 +196,9 @@ function ImageBand({ m }: { m: Module }) {
  */
 export function Landing() {
   const nav = useNav()
+  const { data: modules } = useModules()
+  const { data: posts } = usePublishedPosts({ orderBy: 'sort_order', ascending: true })
+  const postsByModule = useMemo(() => groupByModule(posts), [posts])
 
   return (
     <div>
@@ -239,86 +257,89 @@ export function Landing() {
             }}
             hoverStyle={{ color: ink.base }}
           >
-            xem mục lục 18 bài →
+            xem mục lục {posts.length} bài →
           </Hover>
         </div>
       </div>
 
-      {modules.map((m) => (
-        <div
-          key={m.id}
-          onClick={() => nav.openModule(m.id)}
-          style={{
-            background: m.accent,
-            color: m.on,
-            padding: '44px 56px 72px',
-            cursor: 'pointer',
-          }}
-        >
+      {modules.map((m) => {
+        const entries = postsByModule.get(m.id) ?? []
+        return (
           <div
+            key={m.id}
+            onClick={() => nav.openModule(m.id)}
             style={{
-              display: 'grid',
-              gridTemplateColumns: 'minmax(0,1.55fr) minmax(0,1fr) minmax(0,.85fr)',
-              gap: 40,
-              alignItems: 'start',
-              marginBottom: 64,
+              background: m.accent,
+              color: m.on_color,
+              padding: '44px 56px 72px',
+              cursor: 'pointer',
             }}
           >
-            <div style={{ minWidth: 0, maxWidth: '100%' }}>
-              <div style={{ ...eyebrow, letterSpacing: '.16em', marginBottom: 12, opacity: 0.65 }}>
-                {m.concept} — {m.entries.length} bài
-              </div>
-              {/* `lang="en"` + hyphenation so "biochemistry 101" breaks on a real
-                  syllable boundary instead of overflowing into the next column. */}
-              <h3
-                lang="en"
-                style={
-                  {
-                    fontFamily: serif,
-                    fontSize: 72,
-                    lineHeight: 0.94,
-                    letterSpacing: '-.035em',
-                    margin: 0,
-                    maxWidth: '100%',
-                    hyphens: 'auto',
-                    WebkitHyphens: 'auto',
-                    hyphenateLimitChars: '8 4 4',
-                    overflowWrap: 'break-word',
-                  } as CSSProperties
-                }
-              >
-                {m.title}
-              </h3>
-            </div>
-
-            <div style={{ fontSize: 14, lineHeight: 1.45, marginTop: 38 }}>{m.long}</div>
-
-            <div style={{ marginTop: 38 }}>
-              <div style={{ ...eyebrow, letterSpacing: '.14em', opacity: 0.65, marginBottom: 10 }}>
-                Mới nhất
-              </div>
-              {m.entries.slice(0, 3).map((e) => (
-                <div
-                  key={e.n}
-                  style={{
-                    display: 'flex',
-                    gap: 12,
-                    padding: '7px 0',
-                    borderTop: '1px solid rgba(35,33,26,.16)',
-                  }}
-                >
-                  <div style={{ fontFamily: sans, fontSize: 9.5, opacity: 0.6, paddingTop: 5 }}>
-                    {e.date}
-                  </div>
-                  <div style={{ fontFamily: serif, fontSize: 19, lineHeight: 1.2 }}>{e.en}</div>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'minmax(0,1.55fr) minmax(0,1fr) minmax(0,.85fr)',
+                gap: 40,
+                alignItems: 'start',
+                marginBottom: 64,
+              }}
+            >
+              <div style={{ minWidth: 0, maxWidth: '100%' }}>
+                <div style={{ ...eyebrow, letterSpacing: '.16em', marginBottom: 12, opacity: 0.65 }}>
+                  {m.concept} — {entries.length} bài
                 </div>
-              ))}
-            </div>
-          </div>
+                {/* `lang="en"` + hyphenation so "biochemistry 101" breaks on a real
+                    syllable boundary instead of overflowing into the next column. */}
+                <h3
+                  lang="en"
+                  style={
+                    {
+                      fontFamily: serif,
+                      fontSize: 72,
+                      lineHeight: 0.94,
+                      letterSpacing: '-.035em',
+                      margin: 0,
+                      maxWidth: '100%',
+                      hyphens: 'auto',
+                      WebkitHyphens: 'auto',
+                      hyphenateLimitChars: '8 4 4',
+                      overflowWrap: 'break-word',
+                    } as CSSProperties
+                  }
+                >
+                  {m.title}
+                </h3>
+              </div>
 
-          <ImageBand m={m} />
-        </div>
-      ))}
+              <div style={{ fontSize: 14, lineHeight: 1.45, marginTop: 38 }}>{m.long_desc}</div>
+
+              <div style={{ marginTop: 38 }}>
+                <div style={{ ...eyebrow, letterSpacing: '.14em', opacity: 0.65, marginBottom: 10 }}>
+                  Mới nhất
+                </div>
+                {entries.slice(0, 3).map((e) => (
+                  <div
+                    key={e.id}
+                    style={{
+                      display: 'flex',
+                      gap: 12,
+                      padding: '7px 0',
+                      borderTop: '1px solid rgba(35,33,26,.16)',
+                    }}
+                  >
+                    <div style={{ fontFamily: sans, fontSize: 9.5, opacity: 0.6, paddingTop: 5 }}>
+                      {e.date_label}
+                    </div>
+                    <div style={{ fontFamily: serif, fontSize: 19, lineHeight: 1.2 }}>{e.en}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <ImageBand m={m} />
+          </div>
+        )
+      })}
     </div>
   )
 }

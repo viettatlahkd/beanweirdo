@@ -24,10 +24,16 @@ export function App() {
   const [screen, setScreen] = useState<Screen>('landing')
   const [variant, setVariant] = useState<Variant>('A')
   const [moduleId, setModuleId] = useState('sensory')
+  const [postId, setPostId] = useState<string | null>(null)
 
   const openModule = useCallback((id: string) => {
     setModuleId(id)
     setScreen('module')
+  }, [])
+
+  const openArticle = useCallback((id?: string) => {
+    setPostId(id ?? null)
+    setScreen('article')
   }, [])
 
   const nav = useMemo<Nav>(
@@ -35,6 +41,7 @@ export function App() {
       screen,
       variant,
       moduleId,
+      postId,
       goArt: () => setScreen('art'),
       goLanding: () => setScreen('landing'),
       goHome: () => setScreen('home'),
@@ -42,13 +49,13 @@ export function App() {
       goHours: () => setScreen('hours'),
       goNotes: () => setScreen('notes'),
       openModule,
-      openArticle: () => setScreen('article'),
+      openArticle,
       toggleVariant: () => {
         setScreen('home')
         setVariant((v) => (v === 'A' ? 'B' : 'A'))
       },
     }),
-    [screen, variant, moduleId, openModule],
+    [screen, variant, moduleId, postId, openModule, openArticle],
   )
 
   return (

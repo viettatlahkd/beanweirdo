@@ -1,295 +1,159 @@
-import type { CSSProperties } from 'react'
-import { article, articleMeta } from '../content/article'
-import { modules } from '../content/modules'
-import { garden, ink, layout, paper, sans, serif } from '../design/tokens'
-import { Hover } from '../lib/Hover'
-import { useNav, useSettings } from '../lib/nav'
+import { PostRenderer } from 'post-renderer'
+import type { ArticlePostData, CardData, CardsPostData, ReportBlock, ReportPostData, SectionData } from 'post-renderer'
+import { usePost } from '../data/usePost'
+import type { PostRow } from '../data/usePublishedPosts'
+import { usePublishedPosts } from '../data/usePublishedPosts'
+import { useModules } from '../data/useModules'
+import { garden, ink, sans } from '../design/tokens'
+import { useNav } from '../lib/nav'
 
-const label: CSSProperties = {
+const status = {
   fontFamily: sans,
-  fontSize: 10,
-  letterSpacing: '.14em',
-  textTransform: 'uppercase',
+  fontSize: 11,
+  letterSpacing: '.1em',
+  textTransform: 'uppercase' as const,
+  color: ink.muted,
+  padding: '140px 56px',
 }
 
-/** Other pieces in the same module — this one excluded. */
-const related = modules
-  .find((m) => m.id === articleMeta.moduleId)!
-  .entries.filter((e) => e.n !== '03')
+/**
+ * The site's decorative "no real photo yet" swatches. `posts` only carries
+ * one photo/caption pair (`hero_image_url` / `hero_caption`) — there's no DB
+ * field for the article template's other three plates, so those fall back to
+ * the same tints the static prototype used, with a generic caption instead
+ * of the old hardcoded (CGA-specific) one.
+ */
+const PLATE_FALLBACK = {
+  hero: { tint: garden.blush, caption: 'ảnh mở đầu — chưa có ảnh' },
+  primary: { tint: garden.leafTint, caption: 'ảnh chính — chưa có ảnh' },
+  secondary: { tint: garden.honeyTint, caption: 'ảnh phụ — chưa có ảnh' },
+  detail: { tint: garden.leafTint, caption: 'chi tiết — chưa có ảnh' },
+} as const
+
+const EMPTY_SECTIONS: SectionData[] = [
+  { h: 'Chưa có nội dung', p: 'Bài viết này đang được biên soạn — quay lại sau nhé.' },
+]
+
+const EMPTY_REPORT_BLOCKS: ReportBlock[] = [
+  { type: 'paragraph', text: 'Bài viết này đang được biên soạn — quay lại sau nhé.' },
+]
+
+/** "Chlorogenic Acids (CGA)" → title "Chlorogenic Acids ", italic "(CGA)" — same split the static version used. */
+function splitTitle(en: string): { title: string; titleItalic?: string } {
+  const match = en.match(/^(.*\S)\s+(\([^)]+\))$/)
+  if (match) return { title: `${match[1]} `, titleItalic: match[2] }
+  return { title: en }
+}
+
+function toArticleData(post: PostRow, moduleTitle: string, related: PostRow[]): ArticlePostData {
+  const { title, titleItalic } = splitTitle(post.en)
+  const sections = Array.isArray(post.body) && post.body.length > 0 ? (post.body as SectionData[]) : EMPTY_SECTIONS
+
+  return {
+    eyebrow: `${post.n} — ${post.kind} — ${post.date_label}`,
+    moduleTitle,
+    title,
+    titleItalic,
+    lead: post.lead ?? post.vi,
+    platePrimary: { ...PLATE_FALLBACK.primary, imageUrl: null },
+    plateSecondary: { ...PLATE_FALLBACK.secondary, imageUrl: null },
+    heroPlate: {
+      tint: PLATE_FALLBACK.hero.tint,
+      caption: post.hero_caption ?? PLATE_FALLBACK.hero.caption,
+      imageUrl: post.hero_image_url ?? null,
+    },
+    sections,
+    pull: post.pull_quote ?? post.vi,
+    relatedHeading: 'Trong module này',
+    related: related.map((r) => ({ label: r.en })),
+    detailPlate: { ...PLATE_FALLBACK.detail, imageUrl: null },
+    furtherReadingHeading: 'Đọc thêm',
+    furtherReading: post.further_reading ?? [],
+  }
+}
+
+/** No real "cards" content is seeded yet — structurally wired so it can't crash. */
+function toCardsData(post: PostRow): CardsPostData {
+  const cards = Array.isArray(post.body) ? (post.body as CardData[]) : []
+  return {
+    title: post.en,
+    intro: cards.length > 0 ? [post.vi] : [post.vi, 'Chưa có mục nào trong glossary này.'],
+    cards,
+  }
+}
+
+/** No real "report" content is seeded yet — structurally wired so it can't crash. */
+function toReportData(post: PostRow): ReportPostData {
+  const blocks = Array.isArray(post.body) && post.body.length > 0 ? (post.body as ReportBlock[]) : EMPTY_REPORT_BLOCKS
+  return { title: post.en, blurb: post.vi, blocks }
+}
 
 /**
- * A post. Colour block up top with the title kept clear of the hero plate, one
- * body column at a comfortable measure, and a sticky rail that runs the length
- * of the piece so the right side never empties out.
+ * A post, in whichever of the 3 real templates it's stored as. Data comes
+ * from Supabase (`posts` + its module + its siblings), the actual rendering
+ * goes entirely through `post-renderer` for true WYSIWYG parity with the
+ * admin app's preview.
  */
 export function Article() {
   const nav = useNav()
-  const { showPlates } = useSettings()
+  const { data: modules } = useModules()
+
+  // The sidebar's static "sample post" link has no id to hand over — fall
+  // back to the one post with a full essay written (biochem / 03 / CGA).
+  const needsFallback = !nav.postId
+  const fallback = usePublishedPosts({ moduleId: 'biochem', enabled: needsFallback })
+  const fallbackId = fallback.data.find((p) => p.n === '03')?.id ?? null
+  const effectivePostId = nav.postId ?? fallbackId
+
+  const { data: post, loading, error } = usePost(effectivePostId)
+  const siblings = usePublishedPosts({ moduleId: post?.module_id, enabled: Boolean(post?.module_id) })
+
+  if (needsFallback && fallback.loading) {
+    return <div style={status}>Đang tải…</div>
+  }
+  if (!effectivePostId) {
+    return <div style={status}>Không tìm thấy bài viết.</div>
+  }
+  if (loading) {
+    return <div style={status}>Đang tải…</div>
+  }
+  if (error) {
+    return <div style={status}>Không tải được bài viết.</div>
+  }
+  if (!post) {
+    return <div style={status}>Không tìm thấy bài viết.</div>
+  }
+
+  if (post.template === 'cards') {
+    return <PostRenderer template="cards" post={toCardsData(post)} />
+  }
+  if (post.template === 'report') {
+    return <PostRenderer template="report" post={toReportData(post)} />
+  }
+
+  const moduleTitle = modules.find((m) => m.id === post.module_id)?.title ?? post.module_id
+  const related = siblings.data.filter((p) => p.id !== post.id)
 
   return (
-    <div>
-      <div
-        style={{
-          background: garden.leaf,
-          color: '#1F3323',
-          padding: '46px 56px 124px',
-          position: 'relative',
-        }}
-      >
-        <div
-          onClick={() => nav.openModule(articleMeta.moduleId)}
-          style={{ ...label, cursor: 'pointer', marginBottom: 24, opacity: 0.7 }}
-        >
-          ← {articleMeta.moduleTitle}
-        </div>
-        <div style={{ ...label, opacity: 0.7, marginBottom: 12 }}>{articleMeta.eyebrow}</div>
-        {/* the measure subtracts the hero plate's 300px so the two never collide */}
-        <h1
-          style={{
-            fontFamily: serif,
-            fontSize: 76,
-            lineHeight: 0.94,
-            letterSpacing: '-.04em',
-            margin: '0 0 12px',
-            maxWidth: 'min(660px, 100% - 300px)',
-          }}
-        >
-          {articleMeta.title}
-          <span style={{ fontStyle: 'italic' }}>{articleMeta.titleItalic}</span>
-        </h1>
-        <div
-          style={{
-            fontFamily: serif,
-            fontStyle: 'italic',
-            fontSize: 24,
-            lineHeight: 1.4,
-            maxWidth: 'min(520px, 100% - 300px)',
-          }}
-        >
-          {articleMeta.lead}
-        </div>
-
-        {showPlates && (
-          <div
-            style={{
-              position: 'absolute',
-              right: 0,
-              top: 0,
-              bottom: 0,
-              width: 300,
-              background: garden.blush,
-              display: 'flex',
-              alignItems: 'flex-end',
-              padding: 14,
-            }}
+    <PostRenderer
+      template="article"
+      post={toArticleData(post, moduleTitle, related)}
+      renderEyebrow={(eyebrowModuleTitle) => (
+        <span onClick={() => nav.openModule(post.module_id)} style={{ cursor: 'pointer' }}>
+          ← {eyebrowModuleTitle}
+        </span>
+      )}
+      renderRelatedItem={(label, i) => {
+        const sibling = related[i]
+        return (
+          <span
+            onClick={sibling ? () => nav.openArticle(sibling.id) : undefined}
+            style={{ cursor: sibling ? 'pointer' : 'default' }}
           >
-            <div style={{ fontFamily: sans, fontSize: 9.5, color: '#3B2A2B' }}>
-              {articleMeta.heroCaption}
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div style={{ padding: '56px 56px 140px', maxWidth: layout.measure }}>
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: `minmax(0,1fr) minmax(${layout.railMin}px,${layout.railMax}px)`,
-            gap: 48,
-            alignItems: 'start',
-          }}
-        >
-          <div>
-            {showPlates && (
-              // two plates of unequal height, bottom-aligned to a common edge
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'minmax(0,2.1fr) minmax(0,1fr)',
-                  gap: 10,
-                  margin: '0 0 46px',
-                }}
-              >
-                <div
-                  style={{
-                    height: 280,
-                    background: garden.leafTint,
-                    display: 'flex',
-                    alignItems: 'flex-end',
-                    padding: 14,
-                  }}
-                >
-                  <div
-                    style={{
-                      fontFamily: sans,
-                      fontSize: 10,
-                      color: ink.strong,
-                      lineHeight: 1.3,
-                    }}
-                  >
-                    ảnh chính — mặt cắt hạt trong lớp nhầy
-                  </div>
-                </div>
-                <div
-                  style={{
-                    height: 180,
-                    alignSelf: 'end',
-                    background: garden.honeyTint,
-                    display: 'flex',
-                    alignItems: 'flex-end',
-                    padding: 12,
-                  }}
-                >
-                  <div
-                    style={{ fontFamily: sans, fontSize: 9.5, color: '#6B6555', lineHeight: 1.2 }}
-                  >
-                    nhân xanh, 3:4
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {article.map((s) => (
-              <div key={s.h} style={{ marginBottom: 34 }}>
-                <h3
-                  style={{
-                    fontFamily: sans,
-                    fontWeight: 400,
-                    fontSize: 11,
-                    letterSpacing: '.16em',
-                    textTransform: 'uppercase',
-                    color: ink.green,
-                    margin: '0 0 12px',
-                  }}
-                >
-                  {s.h}
-                </h3>
-                <div style={{ fontSize: 16, lineHeight: 1.2, color: ink.body }}>{s.p}</div>
-
-                {s.fig && (
-                  // the plate sits off to one side; its marginal note takes the
-                  // space that would otherwise be a gap in the reading column
-                  <div
-                    style={{
-                      display: 'flex',
-                      gap: 24,
-                      alignItems: 'flex-end',
-                      margin: s.fig.margin,
-                    }}
-                  >
-                    <div style={{ flex: 1, minWidth: 0, paddingBottom: 6 }}>
-                      <div
-                        style={{
-                          fontFamily: sans,
-                          fontSize: 9.5,
-                          letterSpacing: '.12em',
-                          textTransform: 'uppercase',
-                          color: ink.green,
-                          marginBottom: 8,
-                        }}
-                      >
-                        {s.fig.label}
-                      </div>
-                      <div style={{ fontSize: 13.5, lineHeight: 1.45, color: ink.soft }}>
-                        {s.fig.note}
-                      </div>
-                    </div>
-                    <div style={{ width: s.fig.w, flex: 'none' }}>
-                      <div
-                        style={{
-                          height: s.fig.h,
-                          background: s.fig.tint,
-                          display: 'flex',
-                          alignItems: 'flex-end',
-                          padding: 12,
-                        }}
-                      >
-                        <div
-                          style={{
-                            fontFamily: sans,
-                            fontSize: 9.5,
-                            color: ink.strong,
-                            lineHeight: 1.3,
-                          }}
-                        >
-                          {s.fig.caption}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-
-          <div
-            style={{
-              position: 'sticky',
-              top: 44,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 20,
-            }}
-          >
-            <div
-              style={{
-                background: ink.moss,
-                color: '#F4F2E4',
-                padding: '22px 20px',
-                fontFamily: serif,
-                fontStyle: 'italic',
-                fontSize: 18,
-                lineHeight: 1.2,
-              }}
-            >
-              {articleMeta.pull}
-            </div>
-
-            <div style={{ borderTop: `2px solid ${ink.base}`, paddingTop: 14 }}>
-              <div style={{ ...label, color: ink.muted, marginBottom: 8 }}>Trong module này</div>
-              {related.map((r) => (
-                <Hover
-                  key={r.n}
-                  style={{
-                    fontSize: 13,
-                    lineHeight: 1.4,
-                    padding: '9px 0',
-                    borderBottom: `1px solid ${paper.rule}`,
-                    cursor: 'pointer',
-                    color: ink.soft,
-                  }}
-                  hoverStyle={{ color: ink.green }}
-                >
-                  {r.en}
-                </Hover>
-              ))}
-            </div>
-
-            {showPlates && (
-              <div
-                style={{
-                  aspectRatio: '1',
-                  background: garden.leafTint,
-                  display: 'flex',
-                  alignItems: 'flex-end',
-                  padding: 12,
-                }}
-              >
-                <div style={{ fontFamily: sans, fontSize: 9.5, color: '#6B6555' }}>
-                  chi tiết vỏ lụa, 1:1
-                </div>
-              </div>
-            )}
-
-            <div style={{ fontFamily: sans, fontSize: 10, color: ink.muted, lineHeight: 1.6 }}>
-              <div style={{ ...label, color: ink.green, marginBottom: 6 }}>Đọc thêm</div>
-              {articleMeta.furtherReading.map((r) => (
-                <div key={r}>{r}</div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+            {label}
+          </span>
+        )
+      }}
+    />
   )
 }

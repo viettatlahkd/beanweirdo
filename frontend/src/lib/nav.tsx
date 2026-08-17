@@ -17,6 +17,8 @@ export type Nav = {
   screen: Screen
   variant: Variant
   moduleId: string
+  /** The post currently open on the article screen — null until one is picked. */
+  postId: string | null
   goArt(): void
   goLanding(): void
   goHome(): void
@@ -24,7 +26,12 @@ export type Nav = {
   goHours(): void
   goNotes(): void
   openModule(id: string): void
-  openArticle(): void
+  /**
+   * Optional id: some call sites (the sidebar's static "sample post" link)
+   * don't have a real post to hand over — the article screen falls back to
+   * the one post that has a full essay written when none is given.
+   */
+  openArticle(id?: string): void
   toggleVariant(): void
 }
 

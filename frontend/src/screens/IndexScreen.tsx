@@ -1,5 +1,9 @@
 import type { CSSProperties } from 'react'
-import { modules } from '../content/modules'
+import { useMemo } from 'react'
+import type { ModuleRow } from '../data/useModules'
+import { useModules } from '../data/useModules'
+import type { PostRow } from '../data/usePublishedPosts'
+import { usePublishedPosts } from '../data/usePublishedPosts'
 import { garden, ink, paper, sans, serif } from '../design/tokens'
 import { Hover } from '../lib/Hover'
 import { rowPad, useNav, useSettings } from '../lib/nav'
@@ -27,8 +31,21 @@ const plates = [
   { bg: 'oklch(0.50 0.135 14)', fg: '#3B2E19', caption: 'dải rang' },
 ]
 
+/** Groups posts by `module_id`, preserving each module's `sort_order`. */
+function groupByModule(posts: PostRow[]): Map<string, PostRow[]> {
+  const map = new Map<string, PostRow[]>()
+  for (const p of posts) {
+    const list = map.get(p.module_id)
+    if (list) list.push(p)
+    else map.set(p.module_id, [p])
+  }
+  return map
+}
+
+type ModulesProps = { modules: ModuleRow[]; postsByModule: Map<string, PostRow[]> }
+
 /** A — the ledger. Reads top to bottom like the contents page of a notebook. */
-function Ledger() {
+function Ledger({ modules, postsByModule }: ModulesProps) {
   const nav = useNav()
   const { density, showPlates } = useSettings()
   const pad = rowPad(density)
@@ -98,91 +115,94 @@ function Ledger() {
         </div>
       )}
 
-      {modules.map((m) => (
-        <div key={m.id} style={{ padding: '44px 56px 8px', maxWidth: 1240 }}>
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 18, paddingBottom: 14 }}>
-            <Hover
-              as="h2"
-              onClick={() => nav.openModule(m.id)}
-              style={{
-                fontFamily: serif,
-                fontSize: 44,
-                lineHeight: 1,
-                letterSpacing: '-.028em',
-                margin: 0,
-                cursor: 'pointer',
-                borderBottom: `6px solid ${m.accent}`,
-              }}
-              hoverStyle={{ color: ink.green }}
-            >
-              {m.title}
-            </Hover>
-            <div style={{ fontFamily: sans, fontSize: 11, color: ink.muted, paddingBottom: 6 }}>
-              {m.entries.length} bài
-            </div>
-            <div style={{ flex: 1, height: 1, background: paper.rule, marginBottom: 8 }} />
-            <div style={{ ...label, paddingBottom: 6 }}>{m.concept}</div>
-          </div>
-
-          <div
-            style={{
-              fontSize: 14,
-              lineHeight: 1.35,
-              color: ink.soft,
-              maxWidth: 600,
-              margin: '0 0 18px',
-            }}
-          >
-            {m.blurb}
-          </div>
-
-          {m.entries.map((e) => (
-            <Hover
-              key={e.n}
-              onClick={nav.openArticle}
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '44px minmax(0,1fr) minmax(0,1.05fr) 72px 56px',
-                alignItems: 'baseline',
-                gap: 18,
-                padding: `${pad} 12px ${pad} 10px`,
-                borderTop: `1px solid ${paper.rule}`,
-                cursor: 'pointer',
-                borderLeft: '3px solid transparent',
-              }}
-              hoverStyle={{ background: paper.white, borderLeft: `3px solid ${ink.green}` }}
-            >
-              <div style={{ fontFamily: sans, fontSize: 11, color: ink.faint }}>{e.n}</div>
-              <div style={{ fontFamily: serif, fontSize: 23, letterSpacing: '-.015em' }}>{e.en}</div>
-              <div style={{ fontSize: 13, color: ink.soft, lineHeight: 1.2 }}>{e.vi}</div>
-              <div
+      {modules.map((m) => {
+        const entries = postsByModule.get(m.id) ?? []
+        return (
+          <div key={m.id} style={{ padding: '44px 56px 8px', maxWidth: 1240 }}>
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 18, paddingBottom: 14 }}>
+              <Hover
+                as="h2"
+                onClick={() => nav.openModule(m.id)}
                 style={{
-                  fontFamily: sans,
-                  fontSize: 10,
-                  color: ink.muted,
-                  letterSpacing: '.05em',
-                  textTransform: 'uppercase',
+                  fontFamily: serif,
+                  fontSize: 44,
+                  lineHeight: 1,
+                  letterSpacing: '-.028em',
+                  margin: 0,
+                  cursor: 'pointer',
+                  borderBottom: `6px solid ${m.accent}`,
                 }}
+                hoverStyle={{ color: ink.green }}
               >
-                {e.kind}
+                {m.title}
+              </Hover>
+              <div style={{ fontFamily: sans, fontSize: 11, color: ink.muted, paddingBottom: 6 }}>
+                {entries.length} bài
               </div>
-              <div
-                style={{ fontFamily: sans, fontSize: 10, color: ink.faint, textAlign: 'right' }}
+              <div style={{ flex: 1, height: 1, background: paper.rule, marginBottom: 8 }} />
+              <div style={{ ...label, paddingBottom: 6 }}>{m.concept}</div>
+            </div>
+
+            <div
+              style={{
+                fontSize: 14,
+                lineHeight: 1.35,
+                color: ink.soft,
+                maxWidth: 600,
+                margin: '0 0 18px',
+              }}
+            >
+              {m.blurb}
+            </div>
+
+            {entries.map((e) => (
+              <Hover
+                key={e.id}
+                onClick={() => nav.openArticle(e.id)}
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '44px minmax(0,1fr) minmax(0,1.05fr) 72px 56px',
+                  alignItems: 'baseline',
+                  gap: 18,
+                  padding: `${pad} 12px ${pad} 10px`,
+                  borderTop: `1px solid ${paper.rule}`,
+                  cursor: 'pointer',
+                  borderLeft: '3px solid transparent',
+                }}
+                hoverStyle={{ background: paper.white, borderLeft: `3px solid ${ink.green}` }}
               >
-                {e.date}
-              </div>
-            </Hover>
-          ))}
-          <div style={{ borderTop: `1px solid ${paper.rule}` }} />
-        </div>
-      ))}
+                <div style={{ fontFamily: sans, fontSize: 11, color: ink.faint }}>{e.n}</div>
+                <div style={{ fontFamily: serif, fontSize: 23, letterSpacing: '-.015em' }}>{e.en}</div>
+                <div style={{ fontSize: 13, color: ink.soft, lineHeight: 1.2 }}>{e.vi}</div>
+                <div
+                  style={{
+                    fontFamily: sans,
+                    fontSize: 10,
+                    color: ink.muted,
+                    letterSpacing: '.05em',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  {e.kind}
+                </div>
+                <div
+                  style={{ fontFamily: sans, fontSize: 10, color: ink.faint, textAlign: 'right' }}
+                >
+                  {e.date_label}
+                </div>
+              </Hover>
+            ))}
+            <div style={{ borderTop: `1px solid ${paper.rule}` }} />
+          </div>
+        )
+      })}
       <div style={{ height: 80 }} />
     </div>
   )
 }
 
 /** B — three parallel columns. Easier to compare modules side by side. */
-function Columns() {
+function Columns({ modules, postsByModule }: ModulesProps) {
   const nav = useNav()
   const { showPlates } = useSettings()
 
@@ -219,93 +239,96 @@ function Columns() {
       </Hover>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: 0 }}>
-        {modules.map((m) => (
-          <div
-            key={m.id}
-            style={{ background: m.accent, color: m.on, padding: '26px 24px 30px' }}
-          >
+        {modules.map((m) => {
+          const entries = postsByModule.get(m.id) ?? []
+          return (
             <div
-              style={{
-                fontFamily: sans,
-                fontSize: 10,
-                letterSpacing: '.16em',
-                textTransform: 'uppercase',
-                opacity: 0.7,
-                marginBottom: 10,
-              }}
+              key={m.id}
+              style={{ background: m.accent, color: m.on_color, padding: '26px 24px 30px' }}
             >
-              {m.concept}
-            </div>
-            <h2
-              onClick={() => nav.openModule(m.id)}
-              style={{
-                fontFamily: serif,
-                fontSize: 46,
-                lineHeight: 1,
-                letterSpacing: '-.03em',
-                margin: '0 0 14px',
-                cursor: 'pointer',
-              }}
-            >
-              {m.title}
-            </h2>
-            <div style={{ fontSize: 13.5, lineHeight: 1.35, marginBottom: 20 }}>{m.blurb}</div>
-
-            {showPlates && (
               <div
                 style={{
-                  aspectRatio: '4/3',
-                  marginBottom: 20,
-                  background: paper.cream,
-                  display: 'flex',
-                  alignItems: 'flex-end',
-                  padding: 12,
+                  fontFamily: sans,
+                  fontSize: 10,
+                  letterSpacing: '.16em',
+                  textTransform: 'uppercase',
+                  opacity: 0.7,
+                  marginBottom: 10,
                 }}
               >
-                <div
-                  style={{ fontFamily: sans, fontSize: 10, color: ink.strong, lineHeight: 1.3 }}
-                >
-                  {m.shot1}
-                </div>
+                {m.concept}
               </div>
-            )}
-
-            {m.entries.map((e) => (
-              <div
-                key={e.n}
-                onClick={nav.openArticle}
+              <h2
+                onClick={() => nav.openModule(m.id)}
                 style={{
-                  display: 'flex',
-                  gap: 12,
-                  padding: '11px 0',
-                  borderTop: '1px solid rgba(35,33,26,.16)',
+                  fontFamily: serif,
+                  fontSize: 46,
+                  lineHeight: 1,
+                  letterSpacing: '-.03em',
+                  margin: '0 0 14px',
                   cursor: 'pointer',
                 }}
               >
-                <div style={{ fontFamily: sans, fontSize: 10, opacity: 0.6, paddingTop: 6 }}>
-                  {e.n}
-                </div>
-                <div style={{ flex: 1 }}>
+                {m.title}
+              </h2>
+              <div style={{ fontSize: 13.5, lineHeight: 1.35, marginBottom: 20 }}>{m.blurb}</div>
+
+              {showPlates && (
+                <div
+                  style={{
+                    aspectRatio: '4/3',
+                    marginBottom: 20,
+                    background: paper.cream,
+                    display: 'flex',
+                    alignItems: 'flex-end',
+                    padding: 12,
+                  }}
+                >
                   <div
-                    style={{
-                      fontFamily: serif,
-                      fontSize: 21,
-                      lineHeight: 1.2,
-                      letterSpacing: '-.015em',
-                    }}
+                    style={{ fontFamily: sans, fontSize: 10, color: ink.strong, lineHeight: 1.3 }}
                   >
-                    {e.en}
-                  </div>
-                  <div
-                    style={{ fontSize: 12.5, lineHeight: 1.2, marginTop: 3, opacity: 0.82 }}
-                  >
-                    {e.vi}
+                    {m.shot1}
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        ))}
+              )}
+
+              {entries.map((e) => (
+                <div
+                  key={e.id}
+                  onClick={() => nav.openArticle(e.id)}
+                  style={{
+                    display: 'flex',
+                    gap: 12,
+                    padding: '11px 0',
+                    borderTop: '1px solid rgba(35,33,26,.16)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <div style={{ fontFamily: sans, fontSize: 10, opacity: 0.6, paddingTop: 6 }}>
+                    {e.n}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div
+                      style={{
+                        fontFamily: serif,
+                        fontSize: 21,
+                        lineHeight: 1.2,
+                        letterSpacing: '-.015em',
+                      }}
+                    >
+                      {e.en}
+                    </div>
+                    <div
+                      style={{ fontSize: 12.5, lineHeight: 1.2, marginTop: 3, opacity: 0.82 }}
+                    >
+                      {e.vi}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
+        })}
       </div>
     </div>
   )
@@ -314,5 +337,13 @@ function Columns() {
 /** Mục lục — the table of contents, in whichever shape is selected. */
 export function IndexScreen() {
   const { variant } = useNav()
-  return variant === 'A' ? <Ledger /> : <Columns />
+  const { data: modules } = useModules()
+  const { data: posts } = usePublishedPosts({ orderBy: 'sort_order', ascending: true })
+  const postsByModule = useMemo(() => groupByModule(posts), [posts])
+
+  return variant === 'A' ? (
+    <Ledger modules={modules} postsByModule={postsByModule} />
+  ) : (
+    <Columns modules={modules} postsByModule={postsByModule} />
+  )
 }
