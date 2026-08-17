@@ -1,18 +1,28 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { listModules, type Module, type PostKind } from '../../../lib/apiClient'
 import { ink, paper } from '../../../lib/theme'
 
-export type Metadata = { moduleId: string; kind: string; en: string; vi: string }
-const MODULES = ['sensory', 'biochem', 'roasting']
-const KINDS = ['note', 'essay', 'ref', 'log']
+export type Metadata = { moduleId: string; kind: PostKind; en: string; vi: string }
+const KINDS: PostKind[] = ['note', 'essay', 'ref', 'log']
 
 const fieldLabelStyle = { fontSize: 11, textTransform: 'uppercase' as const, letterSpacing: '.05em', color: ink.muted, margin: '16px 0 6px', display: 'block' }
 
 export function MetadataStep({ onContinue }: { onContinue: (m: Metadata) => void }) {
-  const [moduleId, setModuleId] = useState(MODULES[0])
-  const [kind, setKind] = useState(KINDS[0])
+  const [modules, setModules] = useState<Module[]>([])
+  const [moduleId, setModuleId] = useState('')
+  const [kind, setKind] = useState<PostKind>(KINDS[0])
   const [en, setEn] = useState('')
   const [vi, setVi] = useState('')
+
+  useEffect(() => {
+    listModules().then((mods) => {
+      setModules(mods)
+      if (mods.length > 0) setModuleId(mods[0].id)
+    })
+  }, [])
+
+  const canContinue = moduleId !== '' && en.trim() !== '' && vi.trim() !== ''
 
   return (
     <div style={{ maxWidth: 560, background: paper.white, border: `1px solid ${paper.rule}`, borderRadius: 10, padding: 24 }}>
@@ -20,14 +30,23 @@ export function MetadataStep({ onContinue }: { onContinue: (m: Metadata) => void
         Module
       </label>
       <select id="module" aria-label="Module" value={moduleId} onChange={(e) => setModuleId(e.target.value)} className="admin-field">
-        {MODULES.map((m) => <option key={m} value={m}>{m}</option>)}
+        {modules.length === 0 && <option value="">Đang tải module…</option>}
+        {modules.map((m) => (
+          <option key={m.id} value={m.id}>
+            {m.title}
+          </option>
+        ))}
       </select>
 
       <label htmlFor="kind" style={fieldLabelStyle}>
         Loại bài (kind)
       </label>
-      <select id="kind" aria-label="Loại bài" value={kind} onChange={(e) => setKind(e.target.value)} className="admin-field">
-        {KINDS.map((k) => <option key={k} value={k}>{k}</option>)}
+      <select id="kind" aria-label="Loại bài" value={kind} onChange={(e) => setKind(e.target.value as PostKind)} className="admin-field">
+        {KINDS.map((k) => (
+          <option key={k} value={k}>
+            {k}
+          </option>
+        ))}
       </select>
 
       <label htmlFor="en" style={fieldLabelStyle}>
@@ -48,7 +67,7 @@ export function MetadataStep({ onContinue }: { onContinue: (m: Metadata) => void
       />
 
       <div style={{ marginTop: 20 }}>
-        <button onClick={() => onContinue({ moduleId, kind, en, vi })} className="admin-btn">
+        <button disabled={!canContinue} onClick={() => onContinue({ moduleId, kind, en, vi })} className="admin-btn">
           Tiếp tục →
         </button>
       </div>
