@@ -8,6 +8,8 @@
  */
 import type { SectionData } from 'post-renderer'
 import type { SiteOverrides } from '../../content/site'
+import type { LogEntry } from '../../content/hours'
+import type { Note } from '../../content/notes'
 
 /** The 3 real post templates (the old `templates` table is gone). */
 export const TEMPLATES = ['article', 'cards', 'report'] as const
@@ -265,4 +267,69 @@ export async function updateSite(patch: SiteOverrides): Promise<SiteOverrides> {
     body: JSON.stringify(patch),
   })
   return result.site
+}
+
+// ── Ghi 02 — practice log ───────────────────────────────────────────────────
+
+/** GET /api/hours — the span's logs plus every kind, in one round trip. */
+export async function listHours(from?: string): Promise<{ logs: LogEntry[]; kinds: string[] }> {
+  const query = from ? `?from=${encodeURIComponent(from)}` : ''
+  return request<{ logs: LogEntry[]; kinds: string[] }>(`/api/hours${query}`)
+}
+
+/** POST /api/hours — add one activity. */
+export async function createLog(entry: Omit<LogEntry, 'id'>): Promise<LogEntry> {
+  const result = await request<{ log: LogEntry }>('/api/hours', {
+    method: 'POST',
+    body: JSON.stringify(entry),
+  })
+  return result.log
+}
+
+/** PATCH /api/hours?id= — edit one field or several. */
+export async function patchLog(id: string, patch: Partial<Omit<LogEntry, 'id'>>): Promise<LogEntry> {
+  const result = await request<{ log: LogEntry }>(`/api/hours?id=${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(patch),
+  })
+  return result.log
+}
+
+/** DELETE /api/hours?id= */
+export async function deleteLog(id: string): Promise<void> {
+  await request<Record<string, never>>(`/api/hours?id=${id}`, { method: 'DELETE' })
+}
+
+/** POST /api/hours?resource=kinds — add a kind; returns the full list back. */
+export async function addKind(name: string): Promise<string[]> {
+  const result = await request<{ kinds: string[] }>('/api/hours?resource=kinds', {
+    method: 'POST',
+    body: JSON.stringify({ name }),
+  })
+  return result.kinds
+}
+
+// ── Ghi 01 — loose notes ────────────────────────────────────────────────────
+
+/** POST /api/notes — a blank note, dated today, ready to be typed into. */
+export async function createNote(partial: Partial<Omit<Note, 'id'>> = {}): Promise<Note> {
+  const result = await request<{ note: Note }>('/api/notes', {
+    method: 'POST',
+    body: JSON.stringify(partial),
+  })
+  return result.note
+}
+
+/** PATCH /api/notes?id= */
+export async function patchNote(id: string, patch: Partial<Omit<Note, 'id'>>): Promise<Note> {
+  const result = await request<{ note: Note }>(`/api/notes?id=${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(patch),
+  })
+  return result.note
+}
+
+/** DELETE /api/notes?id= */
+export async function deleteNote(id: string): Promise<void> {
+  await request<Record<string, never>>(`/api/notes?id=${id}`, { method: 'DELETE' })
 }

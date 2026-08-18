@@ -1,16 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { Breadcrumbs } from '../components/Breadcrumbs'
-import {
-  KINDS,
-  KINDS_STORAGE_KEY,
-  RECENT_DAYS,
-  STORAGE_KEY,
-  TODAY,
-  kindColorMap,
-  quoteOfTheDay,
-  seedLogs,
-  type LogEntry,
-} from '../content/hours'
+import { RECENT_DAYS, kindColorMap, quoteOfTheDay, todayStr } from '../content/hours'
+import { useHours } from '../data/useHours'
 import { serif } from '../design/tokens'
 import { Hover } from '../lib/Hover'
 import {
@@ -36,34 +27,6 @@ const clockFmt = (s: number) =>
   [Math.floor(s / 3600), Math.floor((s % 3600) / 60), s % 60]
     .map((v) => String(v).padStart(2, '0'))
     .join(':')
-
-function loadLogs(): LogEntry[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) return JSON.parse(raw)
-  } catch {
-    /* ignore */
-  }
-  return seedLogs()
-}
-
-function loadExtraKinds(): string[] {
-  try {
-    const raw = localStorage.getItem(KINDS_STORAGE_KEY)
-    if (raw) return JSON.parse(raw)
-  } catch {
-    /* ignore */
-  }
-  return []
-}
-
-function persistLogs(logs: LogEntry[]) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(logs))
-  } catch {
-    /* ignore */
-  }
-}
 
 function beep() {
   try {
@@ -94,21 +57,23 @@ function beep() {
  * drag between days — while everything older is a locked record.
  */
 export function Hours() {
-  const [logs, setLogsState] = useState<LogEntry[]>(loadLogs)
-  const [extraKinds, setExtraKinds] = useState<string[]>(loadExtraKinds)
+  const { logs, kinds: allKinds, loading, error, add, patch, remove, addKind: saveKind } = useHours()
+  // A fresh "today" each render would drift across midnight mid-session; one
+  // per mount is what the rest of the screen compares against.
+  const today = useMemo(() => todayStr(), [])
   const [statsOpen, setStatsOpen] = useState(false)
   const [openMonths, setOpenMonths] = useState<Record<string, boolean>>({})
   const [kindAdding, setKindAdding] = useState(false)
   const [kindDraft, setKindDraft] = useState('')
   /** Kind chip picked in the filter bar — null shows every kind. */
   const [kindFilter, setKindFilter] = useState<string | null>(null)
-  const [editId, setEditId] = useState<number | null>(null)
-  const [newId, setNewId] = useState<number | null>(null)
+  const [editId, setEditId] = useState<string | null>(null)
+  const [newId, setNewId] = useState<string | null>(null)
   const [editFocus, setEditFocus] = useState<'at' | 'dur'>('dur')
   const [eName, setEName] = useState('')
   const [eMins, setEMins] = useState('')
   const [eAt, setEAt] = useState('')
-  const [dKind, setDKind] = useState<string>(KINDS[0])
+  const [dKind, setDKind] = useState<string>('đọc')
   const [tMode, setTMode] = useState<'up' | 'down'>('up')
   const [tRunning, setTRunning] = useState(false)
   const [tSec, setTSec] = useState(0)
@@ -146,51 +111,39 @@ export function Hours() {
   }
   useEffect(() => disarm, [])
 
-  function persist(next: LogEntry[]) {
-    persistLogs(next)
-    setLogsState(next)
-  }
-
-  const allKinds = useMemo(() => KINDS.concat(extraKinds), [extraKinds])
   const kindColor = useMemo(() => kindColorMap(allKinds), [allKinds])
   // One quote per calendar day, same for every visit that day.
   const quote = useMemo(() => quoteOfTheDay(), [])
 
   function addKind() {
     const v = kindDraft.trim()
-    if (!v || allKinds.includes(v)) {
-      setKindAdding(false)
-      setKindDraft('')
-      return
-    }
-    const extra = extraKinds.concat([v])
-    try {
-      localStorage.setItem(KINDS_STORAGE_KEY, JSON.stringify(extra))
-    } catch {
-      /* ignore */
-    }
-    setExtraKinds(extra)
     setKindAdding(false)
     setKindDraft('')
+    if (!v || allKinds.includes(v)) return
+    void saveKind(v)
     setDKind(v)
   }
 
-  function bump(id: number, n: number) {
+  function bump(id: string, n: number) {
     const cur = logs.find((x) => x.id === id)
     if (!cur) return
     const next = Math.max(5, cur.mins + n)
-    persist(logs.map((x) => (x.id === id ? { ...x, mins: next } : x)))
+    void patch(id, { mins: next })
     setEMins(String(next))
   }
 
-  function addRow(ds: string) {
+  /**
+   * Add an empty row and put the cursor in it — the name is typed in place,
+   * and an unnamed row that loses focus deletes itself (rule 08).
+   */
+  async function addRow(ds: string) {
     const onDay = logs.filter((l) => l.date === ds)
     const last = onDay.slice().sort((a, b) => toMin(a.at) - toMin(b.at)).slice(-1)[0]
     const startMin = last ? Math.min(23 * 60 + 30, toMin(last.at) + last.mins + 15) : 8 * 60
-    const id = Date.now()
     const at = String(Math.floor(startMin / 60)).padStart(2, '0') + ':' + String(startMin % 60).padStart(2, '0')
-    persist(logs.concat([{ id, date: ds, name: '', kind: dKind, mins: 30, done: false, at }]))
-    setNewId(id)
+    const saved = await add({ date: ds, name: '', kind: dKind, mins: 30, done: false, at })
+    if (!saved) return
+    setNewId(saved.id)
     setEditId(null)
     setEName('')
   }
@@ -200,11 +153,7 @@ export function Hours() {
     disarm()
     const now = new Date()
     const at = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0')
-    persist(
-      logs.concat([
-        { id: Date.now(), date: TODAY, name: tName.trim() || 'Phiên không tên', kind: dKind, mins, at, done: true },
-      ]),
-    )
+    void add({ date: today, name: tName.trim() || 'Phiên không tên', kind: dKind, mins, at, done: true })
     setTName('')
     setTRunning(false)
     setTSec(tMode === 'down' ? tTarget : 0)
@@ -213,7 +162,7 @@ export function Hours() {
   const all = useMemo(() => buildAllDays(logs), [logs])
   const maxMins = Math.max(240, ...all.map((x) => x.mins))
   const streak = computeStreak(all)
-  const todayList = logs.filter((l) => l.date === TODAY)
+  const todayList = logs.filter((l) => l.date === today)
   const todayTotal = todayList.filter((l) => l.done !== false).reduce((a, l) => a + l.mins, 0)
   const { avg7, spanTotalTxt, activeDaysTxt, bestTxt, bestDay } = spanStats(all)
   const chart = computeChart(all)
@@ -239,7 +188,7 @@ export function Hours() {
       .filter((l) => !kindFilter || l.kind === kindFilter)
       .slice()
       .sort((a, b) => toMin(a.at) - toMin(b.at))
-    const isToday = x.ds === TODAY
+    const isToday = x.ds === today
     return {
       ds: x.ds,
       dow: ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'][x.d.getDay()],
@@ -274,7 +223,8 @@ export function Hours() {
     const mins = inMonth.reduce((a, x) => a + x.mins, 0)
     const nDays = inMonth.filter((x) => x.mins > 0).length
     const daysInMonth = new Date(Number(k.slice(0, 4)), Number(k.slice(5, 7)), 0).getDate()
-    const isCur = k === '2026-02'
+    // The month you're in stays open; older ones collapse until asked for.
+    const isCur = k === today.slice(0, 7)
     const open = isCur || !!openMonths[k]
     return {
       key: k,
@@ -299,9 +249,9 @@ export function Hours() {
 
   function onDropDay(e: React.DragEvent, ds: string) {
     e.preventDefault()
-    const id = Number(e.dataTransfer.getData('text/plain'))
+    const id = e.dataTransfer.getData('text/plain')
     if (!id) return
-    persist(logs.map((l) => (l.id === id ? { ...l, date: ds } : l)))
+    void patch(id, { date: ds })
   }
 
   return (
@@ -314,6 +264,24 @@ export function Hours() {
       }}
     >
       <Breadcrumbs color="#7C7C70" />
+
+      {/* A journal that drops an entry silently is worse than one that won't
+          save at all — say so, and the hook refetches so what's on screen is
+          what's actually stored. */}
+      {error && (
+        <div
+          role="alert"
+          style={{
+            background: '#FBE7E5',
+            color: '#8E1E42',
+            fontSize: 12.5,
+            padding: '10px 14px',
+            marginBottom: 18,
+          }}
+        >
+          Không lưu được: {error}
+        </div>
+      )}
 
       <div style={{ borderBottom: '1px solid #102F35', paddingBottom: 22 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 56, flexWrap: 'wrap' }}>
@@ -654,7 +622,9 @@ export function Hours() {
 
                     <div>
                       {d.rows.length === 0 && (
-                        <div style={{ fontSize: 12.5, color: '#AFAFA2', fontStyle: 'italic', padding: '6px 0' }}>chưa ghi gì</div>
+                        <div style={{ fontSize: 12.5, color: '#AFAFA2', fontStyle: 'italic', padding: '6px 0' }}>
+                          {loading ? 'đang tải…' : 'chưa ghi gì'}
+                        </div>
                       )}
                       {d.rows.map((l) => {
                         const editing = editId === l.id
@@ -677,7 +647,7 @@ export function Hours() {
                                 <div
                                   onClick={() => {
                                     if (!d.recent) return
-                                    persist(logs.map((x) => (x.id === l.id ? { ...x, done: x.done === false } : x)))
+                                    void patch(l.id, { done: l.done === false })
                                   }}
                                   style={{
                                     width: 15,
@@ -747,11 +717,8 @@ export function Hours() {
                                       onBlur={() => {
                                         if (newId !== l.id) return
                                         const nm = eName.trim()
-                                        persist(
-                                          nm
-                                            ? logs.map((x) => (x.id === l.id ? { ...x, name: nm } : x))
-                                            : logs.filter((x) => x.id !== l.id),
-                                        )
+                                        if (nm) void patch(l.id, { name: nm })
+                                        else void remove(l.id)
                                         setNewId(null)
                                       }}
                                       placeholder="Hoạt động gì"
@@ -809,11 +776,11 @@ export function Hours() {
                                           if (editId !== l.id) return
                                           const m = parseInt(eMins, 10)
                                           const at = /^\d{1,2}:\d{2}$/.test(eAt) ? eAt : l.at
-                                          persist(
-                                            logs.map((x) =>
-                                              x.id === l.id ? { ...x, name: eName || x.name, mins: m > 0 ? m : x.mins, at } : x,
-                                            ),
-                                          )
+                                          void patch(l.id, {
+                                            name: eName || l.name,
+                                            mins: m > 0 ? m : l.mins,
+                                            at,
+                                          })
                                           setEditId(null)
                                         }}
                                         style={{
@@ -852,11 +819,11 @@ export function Hours() {
                                             if (editId !== l.id) return
                                             const m = parseInt(eMins, 10)
                                             const at = /^\d{1,2}:\d{2}$/.test(eAt) ? eAt : l.at
-                                            persist(
-                                              logs.map((x) =>
-                                                x.id === l.id ? { ...x, name: eName || x.name, mins: m > 0 ? m : x.mins, at } : x,
-                                              ),
-                                            )
+                                            void patch(l.id, {
+                                              name: eName || l.name,
+                                              mins: m > 0 ? m : l.mins,
+                                              at,
+                                            })
                                             setEditId(null)
                                           }}
                                           style={{
@@ -887,7 +854,7 @@ export function Hours() {
                                     <div style={{ flex: '1 1 0' }} />
                                     <Hover
                                       onClick={() => {
-                                        persist(logs.filter((x) => x.id !== l.id))
+                                        void remove(l.id)
                                         setEditId(null)
                                       }}
                                       style={{ fontSize: 10.5, letterSpacing: '.14em', textTransform: 'uppercase', color: '#7C7C70', cursor: 'pointer' }}
@@ -916,7 +883,7 @@ export function Hours() {
                                     <div style={{ fontSize: 9, letterSpacing: '.16em', textTransform: 'uppercase', color: '#7C7C70' }}>Loại</div>
                                     <select
                                       value={l.kind}
-                                      onChange={(e) => persist(logs.map((x) => (x.id === l.id ? { ...x, kind: e.target.value } : x)))}
+                                      onChange={(e) => void patch(l.id, { kind: e.target.value })}
                                       style={{
                                         background: '#FFFFFF',
                                         border: '1px solid #CFCFC4',

@@ -3,83 +3,42 @@ export type NoteKind = 'quan sát' | 'video' | 'cảm nhận' | 'liên ngành'
 /** Content length drives the title size — a long note gets a bigger headline. */
 export type NoteLength = 'dài' | 'vừa' | 'ngắn' | 'media'
 
+/**
+ * A note, as it comes out of the `notes` table.
+ *
+ * Written and edited in place on the Ghi 01 page itself when signed in — there
+ * is no separate form (System conventions, rule 08).
+ */
 export type Note = {
+  /** uuid */
+  id: string
+  /** date, `YYYY-MM-DD` */
   d: string
   k: NoteKind
+  /** title */
   t: string
+  /** body */
   b: string
   len: NoteLength
   /** custom caption for the media placeholder — falls back to a generic hint */
-  mediaHint?: string
+  mediaHint?: string | null
   /** vertical clip format — narrower media block, taller aspect ratio */
   portrait?: boolean
 }
 
-export const notes: Note[] = [
-  {
-    d: '2026.02.14',
-    k: 'quan sát',
-    t: 'Vì sao cháo đun quá lâu thì vữa',
-    mediaHint: 'ảnh — nồi trên bếp, hơi nước, mặt cháo',
-    b: 'Hạt tinh bột hút nước rồi nở đến lúc vỡ hẳn thành tế bào, amylose thoát ra ngoài và làm cả nồi sánh đều. Đun tiếp thì chuỗi amylose bị cắt ngắn, độ sánh sụp xuống và nước tách khỏi hạt. Đúng cái ngưỡng ấy, cấu trúc chuyển từ "sánh" sang "vữa" — cùng một cơ chế với việc khuấy espresso quá tay.',
-    len: 'dài',
-  },
-  {
-    d: '2026.02.11',
-    k: 'video',
-    t: 'Một ngày không lời — 47 giây',
-    b: 'Quay lại toàn bộ lịch trình sáng bằng một cú máy tĩnh đặt trên bàn: cân, nước, phin, sổ. Không tiếng, không nhạc. Xem lại thấy rõ ba khoảng chết mình không nhớ là mình có.',
-    len: 'media',
-  },
-  {
-    d: '2026.02.09',
-    k: 'liên ngành',
-    t: 'Từ tứ niệm xứ tới việc nếm',
-    mediaHint: 'ảnh — bàn cupping, thìa và bát nếm',
-    b: 'Việc quan sát cảm thọ mà không dán nhãn ngay hoá ra là kỹ thuật cupping: ghi nhận vị trước, gọi tên sau. Khi gọi tên quá sớm, mọi thứ đến sau đều bị bẻ cong để khớp với cái tên đã gọi.',
-    len: 'vừa',
-  },
-  {
-    d: '2026.02.06',
-    k: 'quan sát',
-    t: 'Nước cứng và lớp crema',
-    mediaHint: 'ảnh — cận cảnh lớp crema trên tách',
-    b: 'Cùng máy, cùng hạt, đổi từ nước RO sang nước khoáng nhẹ: crema dày hơn thấy rõ. Ion canxi và magie tham gia chiết, nhiều quá thì đắng, ít quá thì loãng và chua.',
-    len: 'ngắn',
-  },
-  {
-    d: '2026.02.02',
-    k: 'cảm nhận',
-    t: 'Học chậm không phải là học kém',
-    mediaHint: 'ảnh — sổ tay đang viết dở, chữ tay',
-    b: 'Ba tuần chỉ để phân biệt được hai loại chua. Nếu tính theo số bài đọc thì đây là ba tuần lãng phí; tính theo cái còn lại trong lưỡi thì không.',
-    len: 'ngắn',
-  },
-  {
-    d: '2026.01.28',
-    k: 'liên ngành',
-    t: 'Nấu ăn dạy gì cho việc rang',
-    mediaHint: 'ảnh — chảo/máy rang, hạt đang đảo',
-    b: 'Cả hai đều là bài toán truyền nhiệt: bề mặt chín trước lõi, và mọi tranh cãi về "nhiệt cao hay thấp" thực chất là tranh cãi về khoảng chênh giữa hai chỗ đó.',
-    len: 'vừa',
-  },
-  {
-    d: '2026.01.24',
-    k: 'video',
-    portrait: true,
-    t: 'Đổ nước vòng tròn — 20 giây',
-    b: 'Ba kiểu rót cạnh nhau, cùng một góc máy. Không giải thích gì thêm.',
-    len: 'media',
-  },
-  {
-    d: '2026.01.19',
-    k: 'quan sát',
-    t: 'Bọt trên mặt nồi luộc',
-    mediaHint: 'ảnh — mặt nước sôi, bọt nổi',
-    b: 'Bọt protein nổi lên rồi tự vỡ khi nhiệt vượt ngưỡng ổn định của màng. Cùng nguyên lý với việc crema tan nhanh trên tách nóng quá.',
-    len: 'ngắn',
-  },
-]
+/** What a fresh note starts as before the writer types into it. */
+export const BLANK_NOTE: Omit<Note, 'id'> = {
+  d: '',
+  k: 'quan sát',
+  t: '',
+  b: '',
+  len: 'ngắn',
+  mediaHint: null,
+  portrait: false,
+}
+
+/** Length options, in the order the picker offers them. */
+export const noteLengths: NoteLength[] = ['ngắn', 'vừa', 'dài', 'media']
 
 export const noteKinds: NoteKind[] = ['quan sát', 'video', 'cảm nhận', 'liên ngành']
 

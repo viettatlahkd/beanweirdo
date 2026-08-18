@@ -1,4 +1,4 @@
-import { SPAN_DAYS, TODAY, dateStr, dayBefore, type LogEntry } from '../content/hours'
+import { SPAN_DAYS, dateStr, dayBefore, todayStr, type LogEntry } from '../content/hours'
 
 export const toMin = (t: string) => {
   const p = String(t).split(':')
@@ -24,7 +24,7 @@ export type DayBucket = {
   age: number
 }
 
-/** 21 days, oldest first — the same order the seeded log plan was built in. */
+/** The rolling span the screen draws, oldest day first. */
 export function buildAllDays(logs: LogEntry[]): DayBucket[] {
   const byDate: Record<string, LogEntry[]> = {}
   for (const l of logs) (byDate[l.date] ||= []).push(l)
@@ -129,6 +129,6 @@ export function spanStats(all: DayBucket[]) {
   }
 }
 
-export function todayLogs(logs: LogEntry[]) {
-  return logs.filter((l) => l.date === TODAY)
+export function todayLogs(logs: LogEntry[], today: string = todayStr()) {
+  return logs.filter((l) => l.date === today)
 }

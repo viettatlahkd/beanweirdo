@@ -1,0 +1,123 @@
+// Row/JSON mapping for the personal journal — Ghi 02 (hour_logs +
+// activity_kinds) and Ghi 01 (notes).
+//
+// Schema source of truth: backend/supabase/migrations/0001_initial_schema.sql
+// and 0008_single_author_journal.sql, which dropped the per-user coupling.
+
+// ── Ghi 02 — practice log ───────────────────────────────────────────────────
+
+export interface HourLogRow {
+  id: string
+  date: string
+  name: string
+  kind: string
+  mins: number
+  /** `HH:MM:SS` out of Postgres, `HH:MM` going in. */
+  at: string
+  done: boolean
+  created_at: string
+}
+
+export interface HourLog {
+  id: string
+  date: string
+  name: string
+  kind: string
+  mins: number
+  at: string
+  done: boolean
+}
+
+/** Postgres hands back `HH:MM:SS`; the journal only ever shows `HH:MM`. */
+const trimSeconds = (at: string) => at.slice(0, 5)
+
+export function toHourLog(row: HourLogRow): HourLog {
+  return {
+    id: row.id,
+    date: row.date,
+    name: row.name,
+    kind: row.kind,
+    mins: row.mins,
+    at: trimSeconds(row.at),
+    done: row.done,
+  }
+}
+
+export const HOUR_LOG_WRITABLE = ['date', 'name', 'kind', 'mins', 'at', 'done'] as const
+
+export interface ActivityKindRow {
+  id: string
+  name: string
+  sort_order: number
+}
+
+// ── Ghi 01 — loose notes ────────────────────────────────────────────────────
+
+export const NOTE_KINDS = ['quan sát', 'video', 'cảm nhận', 'liên ngành'] as const
+export const NOTE_LENGTHS = ['dài', 'vừa', 'ngắn', 'media'] as const
+
+export type NoteKind = (typeof NOTE_KINDS)[number]
+export type NoteLength = (typeof NOTE_LENGTHS)[number]
+
+export interface NoteRow {
+  id: string
+  d: string
+  k: NoteKind
+  t: string
+  b: string
+  len: NoteLength
+  media_hint: string | null
+  portrait: boolean
+  created_at: string
+}
+
+export interface Note {
+  id: string
+  /** date, `YYYY-MM-DD` */
+  d: string
+  /** kind */
+  k: NoteKind
+  /** title */
+  t: string
+  /** body */
+  b: string
+  /** how much room it takes in the grid */
+  len: NoteLength
+  mediaHint: string | null
+  portrait: boolean
+}
+
+export function toNote(row: NoteRow): Note {
+  return {
+    id: row.id,
+    d: row.d,
+    k: row.k,
+    t: row.t,
+    b: row.b,
+    len: row.len,
+    mediaHint: row.media_hint,
+    portrait: row.portrait,
+  }
+}
+
+/** Body keys the editor may write, and the column each lands in. */
+export const NOTE_WRITABLE: Array<{ jsonKey: string; column: keyof NoteRow }> = [
+  { jsonKey: 'd', column: 'd' },
+  { jsonKey: 'k', column: 'k' },
+  { jsonKey: 't', column: 't' },
+  { jsonKey: 'b', column: 'b' },
+  { jsonKey: 'len', column: 'len' },
+  { jsonKey: 'mediaHint', column: 'media_hint' },
+  { jsonKey: 'portrait', column: 'portrait' },
+]
+
+/** Guards the two CHECK constraints before Postgres has to. */
+export function validateNote(patch: Record<string, unknown>): string | null {
+  if ('k' in patch && !(NOTE_KINDS as readonly string[]).includes(patch.k as string)) {
+    return `k must be one of: ${NOTE_KINDS.join(', ')}`
+  }
+  if ('len' in patch && !(NOTE_LENGTHS as readonly string[]).includes(patch.len as string)) {
+    return `len must be one of: ${NOTE_LENGTHS.join(', ')}`
+  }
+  return null
+}

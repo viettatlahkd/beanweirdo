@@ -51,3 +51,14 @@ h4 {
     transform: none;
   }
 }
+
+/*
+ * A contentEditable has no `placeholder`. Rendering the hint as its children
+ * would make it real content — it saves itself the moment the cursor leaves.
+ * Draw it instead, and only while the element is genuinely empty.
+ */
+[data-placeholder]:empty::before {
+  content: attr(data-placeholder);
+  color: #b0b0a6;
+  pointer-events: none;
+}

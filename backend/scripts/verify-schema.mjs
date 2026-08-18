@@ -39,6 +39,24 @@ for (const col of ['img1', 'img2', 'img3']) {
   await assertColumnExists('modules', col)
 }
 
+// 0008 — the journal tables dropped their auth.users coupling; a leftover
+// user_id would mean inserts fail on a NOT NULL column nothing can fill.
+for (const table of ['hour_logs', 'activity_kinds', 'notes']) {
+  const { rows } = await client.query(
+    `select column_name from information_schema.columns where table_schema = 'public' and table_name = $1 and column_name = 'user_id'`,
+    [table],
+  )
+  const gone = rows.length === 0
+  console.log(`${gone ? 'PASS' : 'FAIL'} — "${table}.user_id" is gone (single-author journal)`)
+  if (!gone) failed = true
+}
+
+// 0008 — the four kinds the journal ships with.
+const { rows: kindRows } = await client.query('select count(*)::int as n from activity_kinds')
+const seededKinds = kindRows[0]?.n >= 4
+console.log(`${seededKinds ? 'PASS' : 'FAIL'} — activity_kinds seeded (got ${kindRows[0]?.n})`)
+if (!seededKinds) failed = true
+
 // 0007 — site copy lives in exactly one row, enforced by the boolean PK.
 const { rows: siteRows } = await client.query('select count(*)::int as n from site_settings')
 const oneSiteRow = siteRows[0]?.n === 1
