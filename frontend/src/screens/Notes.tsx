@@ -5,27 +5,14 @@ import {
   noteBlock,
   noteColor,
   noteKinds,
-  noteLengths,
   notePlacement,
   noteTitleSize,
   type Note,
 } from '../content/notes'
 import { useNotes } from '../data/useNotes'
 import { useNav } from '../lib/nav'
-import { useAuth } from '../lib/auth'
 import { serif } from '../design/tokens'
 import { Hover } from '../lib/Hover'
-
-/** Shared look for the small pickers on an open, editable note. */
-const editControl: CSSProperties = {
-  background: '#FFFFFF',
-  border: '1px solid #DCDCD4',
-  color: '#4A4A42',
-  fontFamily: "'Be Vietnam Pro',sans-serif",
-  fontSize: 11,
-  padding: '5px 8px',
-  outline: 'none',
-}
 
 const label: CSSProperties = {
   fontFamily: "'Be Vietnam Pro',sans-serif",
@@ -124,10 +111,7 @@ function NoteCard({
   my,
   setEl,
   el,
-  editable,
   total,
-  onPatch,
-  onRemove,
   onOpenMemo,
 }: {
   n: Note
@@ -142,10 +126,7 @@ function NoteCard({
   setEl: (el: HTMLDivElement | null) => void
   el: HTMLDivElement | null
   /** Signed in — the note is written straight into the page. */
-  editable: boolean
   total: number
-  onPatch: (patch: Partial<Omit<Note, 'id'>>) => void
-  onRemove: () => void
   onOpenMemo: (id: string) => void
 }) {
   const isHv = hoverNote === i
@@ -270,23 +251,7 @@ function NoteCard({
                   transition: 'background-size .6s cubic-bezier(.16,.84,.32,1)',
                 }}
               >
-                <span
-                  // Only once the card is open: while it's closed, clicking the
-                  // title has to open the card, not drop a cursor into it.
-                  contentEditable={editable && isOpen}
-                  suppressContentEditableWarning
-                  onClick={(e) => editable && isOpen && e.stopPropagation()}
-                  onBlur={(e) => {
-                    const t = e.currentTarget.innerText.trim()
-                    if (t !== n.t) onPatch({ t })
-                  }}
-                  // Shown whether open or closed: an untitled note would
-                  // otherwise be an invisible card with nothing to click.
-                  data-placeholder={editable ? 'Tiêu đề…' : undefined}
-                  style={{ outline: 'none' }}
-                >
-                  {n.t}
-                </span>
+                <span>{n.t}</span>
               </span>
             </div>
 
@@ -329,76 +294,10 @@ function NoteCard({
                 WebkitBoxOrient: isOpen ? undefined : 'vertical',
                 overflow: isOpen ? undefined : 'hidden',
               }}
-              contentEditable={editable && isOpen}
-              suppressContentEditableWarning
-              onClick={(e) => editable && isOpen && e.stopPropagation()}
-              onBlur={(e) => {
-                const b = e.currentTarget.innerText.trim()
-                if (b !== n.b) onPatch({ b })
-              }}
-              data-placeholder={editable && isOpen ? 'Viết vào đây…' : undefined}
             >
               {n.b}
             </div>
 
-            {/* The rest of the note's shape — date, kind, how much room it
-                takes — only worth showing once it's open and yours to change. */}
-            {editable && isOpen && (
-              <div
-                onClick={(e) => e.stopPropagation()}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 14,
-                  flexWrap: 'wrap',
-                  marginTop: 22,
-                  paddingTop: 14,
-                  borderTop: '1px solid #E8E8E0',
-                  fontFamily: "'Be Vietnam Pro',sans-serif",
-                  fontSize: 11,
-                }}
-              >
-                <input
-                  type="date"
-                  value={n.d}
-                  onChange={(e) => onPatch({ d: e.target.value })}
-                  style={{ ...editControl, width: 140 }}
-                />
-                <select value={n.k} onChange={(e) => onPatch({ k: e.target.value as Note['k'] })} style={editControl}>
-                  {noteKinds.map((k) => (
-                    <option key={k} value={k}>
-                      {k}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  value={n.len}
-                  onChange={(e) => onPatch({ len: e.target.value as Note['len'] })}
-                  style={editControl}
-                  title="Độ dài — quyết định cỡ tiêu đề và chỗ note chiếm trong lưới"
-                >
-                  {noteLengths.map((l) => (
-                    <option key={l} value={l}>
-                      {l}
-                    </option>
-                  ))}
-                </select>
-                <Hover
-                  onClick={onRemove}
-                  style={{
-                    marginLeft: 'auto',
-                    fontSize: 10.5,
-                    letterSpacing: '.14em',
-                    textTransform: 'uppercase',
-                    color: '#A0A096',
-                    cursor: 'pointer',
-                  }}
-                  hoverStyle={{ color: '#C0143C' }}
-                >
-                  Xoá ghi chú
-                </Hover>
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -461,8 +360,7 @@ function FillerCell({ f, dimmed }: { f: (typeof fillers)[number]; dimmed: boolea
  */
 export function Notes() {
   const nav = useNav()
-  const { notes, loading, error, add, patch, remove } = useNotes()
-  const { authed } = useAuth()
+  const { notes, loading, error } = useNotes()
   const [noteFilter, setNoteFilter] = useState<'tất cả' | Note['k']>('tất cả')
   const [hoverNote, setHoverNote] = useState<number | null>(null)
   const [openNote, setOpenNoteState] = useState<string | null>(null)
@@ -523,12 +421,6 @@ export function Notes() {
       n: f === 'tất cả' ? notes.length : notes.filter((x) => x.k === f).length,
     }))
 
-  /** New notes open straight away — there's nothing to read yet, only to write. */
-  async function addNote() {
-    const saved = await add()
-    if (saved) setOpenNote(saved.id)
-  }
-
   return (
     <div
       onClick={() => {
@@ -551,33 +443,8 @@ export function Notes() {
         <div style={{ fontFamily: "'Be Vietnam Pro',sans-serif", fontWeight: 200, fontSize: 13.5, lineHeight: 1.6, color: '#5A5A50', maxWidth: 310, paddingBottom: 14 }}>
           Một quan sát vật lý trong bếp, một đoạn video không tiếng, một ý nghĩ bắc cầu giữa hai lĩnh vực.
           <div style={{ marginTop: 10, fontSize: 10, letterSpacing: '.2em', textTransform: 'uppercase', color: '#B0B0A6' }}>
-            {authed
-              ? 'Bấm vào bài để mở và sửa ngay tại chỗ · lưu theo từng thay đổi'
-              : 'Bấm vào bài để xổ toàn bộ nội dung · bấm ra ngoài để thu lại'}
+            Bấm vào bài để xổ toàn bộ nội dung · bấm ra ngoài để thu lại
           </div>
-          {authed && (
-            <Hover
-              onClick={(e) => {
-                e.stopPropagation()
-                void addNote()
-              }}
-              style={{
-                display: 'inline-block',
-                marginTop: 16,
-                fontFamily: "'Be Vietnam Pro',sans-serif",
-                fontSize: 10.5,
-                letterSpacing: '.16em',
-                textTransform: 'uppercase',
-                color: '#12120F',
-                border: '1px solid #12120F',
-                padding: '9px 16px',
-                cursor: 'pointer',
-              }}
-              hoverStyle={{ background: '#12120F', color: '#FCFCFA' }}
-            >
-              + Ghi chú mới
-            </Hover>
-          )}
         </div>
       </div>
 
@@ -640,9 +507,7 @@ export function Notes() {
               padding: '60px 0',
             }}
           >
-            {authed
-              ? 'Chưa có ghi chú nào — bấm “+ Ghi chú mới” để viết cái đầu tiên.'
-              : 'Chưa có ghi chú nào.'}
+            Chưa có ghi chú nào.
           </div>
         )}
 
@@ -660,14 +525,8 @@ export function Notes() {
               mx={mx}
               my={my}
               el={elRefs.current[i] ?? null}
-              editable={authed}
               total={notes.length}
               onOpenMemo={nav.openMemo}
-              onPatch={(p) => void patch(n.id, p)}
-              onRemove={() => {
-                setOpenNoteState(null)
-                void remove(n.id)
-              }}
               setEl={(el) => {
                 elRefs.current[i] = el
               }}
