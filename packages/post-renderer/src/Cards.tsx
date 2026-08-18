@@ -107,19 +107,6 @@ export function Cards({ post, ...overrides }: CardsProps) {
           flexWrap: 'wrap',
         }}
       >
-        <div
-          style={{
-            fontFamily: sans,
-            fontSize: 9.5,
-            fontWeight: 500,
-            letterSpacing: '.2em',
-            textTransform: 'uppercase',
-            color: '#8A8A7C',
-            marginRight: 8,
-          }}
-        >
-          Nhóm hương đã nếm
-        </div>
         {groups.map((g) => (
           <div
             key={g.group}
