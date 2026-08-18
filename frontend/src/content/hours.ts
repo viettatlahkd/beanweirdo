@@ -1,6 +1,8 @@
 export type LogEntry = {
   /** uuid from `hour_logs` */
   id: string
+  /** The project this hour was for — null when it belongs to none. */
+  project?: string | null
   /** ISO-ish `YYYY-MM-DD` */
   date: string
   name: string
@@ -18,6 +20,34 @@ export type LogEntry = {
 
 /** The four kinds the journal ships with — users can add more from the timer rail. */
 export const KINDS = ['đọc', 'thực hành', 'viết', 'quan sát']
+
+/**
+ * Project tags read as hashtags — `#Sao đâu` — but the `#` is punctuation, not
+ * part of the name, so it is added when drawn and never stored.
+ */
+export const hashtag = (name: string) => '#' + name
+
+/**
+ * Projects get a filled chip with a pale dot; tasks keep the outlined chip with
+ * a saturated dot. Two systems sitting side by side have to be told apart at a
+ * glance, and colour alone won't do it — the shape has to differ too.
+ */
+export const PROJECT_PALETTE = [
+  '#102F35',
+  '#C25C7C',
+  '#3E7A4E',
+  '#8A6420',
+  '#5E4B8B',
+  '#B3543A',
+]
+
+export function projectColorMap(projects: string[]): Record<string, string> {
+  const map: Record<string, string> = {}
+  projects.forEach((p, i) => {
+    map[p] = PROJECT_PALETTE[i % PROJECT_PALETTE.length]
+  })
+  return map
+}
 
 /**
  * Kind colour is assigned by position, not by name, so a newly-typed kind

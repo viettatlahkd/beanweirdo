@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { ActivityRow } from '../components/ActivityRow'
+import { TagBar, TimerAddTag, type TagFilter } from '../components/TagBar'
 import { Breadcrumbs } from '../components/Breadcrumbs'
-import { RECENT_DAYS, kindColorMap, quoteOfTheDay, todayStr } from '../content/hours'
+import { RECENT_DAYS, kindColorMap, projectColorMap, quoteOfTheDay, todayStr } from '../content/hours'
 import { useHours } from '../data/useHours'
 import { serif } from '../design/tokens'
 import { Hover } from '../lib/Hover'
@@ -57,22 +59,15 @@ function beep() {
  * drag between days — while everything older is a locked record.
  */
 export function Hours() {
-  const { logs, kinds: allKinds, loading, error, add, patch, remove, addKind: saveKind } = useHours()
+  const { logs, kinds: allKinds, projects, loading, error, add, patch, remove, addTag } = useHours()
   // A fresh "today" each render would drift across midnight mid-session; one
   // per mount is what the rest of the screen compares against.
   const today = useMemo(() => todayStr(), [])
   const [statsOpen, setStatsOpen] = useState(false)
   const [openMonths, setOpenMonths] = useState<Record<string, boolean>>({})
-  const [kindAdding, setKindAdding] = useState(false)
-  const [kindDraft, setKindDraft] = useState('')
-  /** Kind chip picked in the filter bar — null shows every kind. */
-  const [kindFilter, setKindFilter] = useState<string | null>(null)
-  const [editId, setEditId] = useState<string | null>(null)
+  /** Tag picked in the bar, from either system — null shows everything. */
+  const [tagFilter, setTagFilter] = useState<TagFilter>(null)
   const [newId, setNewId] = useState<string | null>(null)
-  const [editFocus, setEditFocus] = useState<'at' | 'dur'>('dur')
-  const [eName, setEName] = useState('')
-  const [eMins, setEMins] = useState('')
-  const [eAt, setEAt] = useState('')
   const [dKind, setDKind] = useState<string>('đọc')
   const [tMode, setTMode] = useState<'up' | 'down'>('up')
   const [tRunning, setTRunning] = useState(false)
@@ -112,25 +107,9 @@ export function Hours() {
   useEffect(() => disarm, [])
 
   const kindColor = useMemo(() => kindColorMap(allKinds), [allKinds])
+  const projectColor = useMemo(() => projectColorMap(projects), [projects])
   // One quote per calendar day, same for every visit that day.
   const quote = useMemo(() => quoteOfTheDay(), [])
-
-  function addKind() {
-    const v = kindDraft.trim()
-    setKindAdding(false)
-    setKindDraft('')
-    if (!v || allKinds.includes(v)) return
-    void saveKind(v)
-    setDKind(v)
-  }
-
-  function bump(id: string, n: number) {
-    const cur = logs.find((x) => x.id === id)
-    if (!cur) return
-    const next = Math.max(5, cur.mins + n)
-    void patch(id, { mins: next })
-    setEMins(String(next))
-  }
 
   /**
    * Add an empty row and put the cursor in it — the name is typed in place,
@@ -144,8 +123,6 @@ export function Hours() {
     const saved = await add({ date: ds, name: '', kind: dKind, mins: 30, done: false, at })
     if (!saved) return
     setNewId(saved.id)
-    setEditId(null)
-    setEName('')
   }
 
   function saveTimer(mins: number) {
@@ -169,23 +146,16 @@ export function Hours() {
   const topNames = computeTopNames(logs)
   const byKind = computeByKind(logs, all, allKinds, kindColor)
 
-  const atInputRef = useRef<HTMLInputElement>(null)
-  const durInputRef = useRef<HTMLInputElement>(null)
-  const nameInputRef = useRef<HTMLInputElement>(null)
-  useEffect(() => {
-    if (editId !== null) (editFocus === 'at' ? atInputRef : durInputRef).current?.focus()
-  }, [editId, editFocus])
-  useEffect(() => {
-    if (newId !== null) nameInputRef.current?.focus()
-  }, [newId])
-
   // Most recent 12 days, newest first — the window this screen renders.
   const shownDays = all.slice().reverse().slice(0, 12)
 
   const dayViews = shownDays.map((x) => {
     const recent = x.age < RECENT_DAYS
     const rows = (recent ? x.ls : x.ls.filter((l) => l.done !== false))
-      .filter((l) => !kindFilter || l.kind === kindFilter)
+      .filter((l) =>
+        !tagFilter ||
+        (tagFilter.system === 'task' ? l.kind === tagFilter.name : l.project === tagFilter.name),
+      )
       .slice()
       .sort((a, b) => toMin(a.at) - toMin(b.at))
     const isToday = x.ds === today
@@ -197,12 +167,13 @@ export function Hours() {
       recent,
       total: x.mins ? fmt(x.mins) : '—',
       bar: x.mins ? Math.max(3, Math.round((x.mins / maxMins) * 100)) + '%' : '0%',
-      dotBg: x.mins ? '#7FB87E' : '#FFFFFF',
-      dotBorder: x.mins ? '#3E7A4E' : '#CFCFC4',
+      // Lit as soon as the day holds anything — see DayBucket.hasAny.
+      dotBg: x.hasAny ? '#7FB87E' : '#FFFFFF',
+      dotBorder: x.hasAny ? '#3E7A4E' : '#CFCFC4',
       pad: isToday ? '20px 16px 18px 10px' : '14px 16px 13px 10px',
       bg: isToday ? '#FCFBF7' : 'transparent',
-      edge: isToday ? '#F2A0A5' : x.mins ? '#E3E3DB' : '#EDEDE6',
-      labelOp: x.mins ? 1 : 0.4,
+      edge: isToday ? '#F2A0A5' : x.hasAny ? '#E3E3DB' : '#EDEDE6',
+      labelOp: x.hasAny ? 1 : 0.4,
       rows,
     }
   })
@@ -383,115 +354,18 @@ export function Hours() {
         <div style={{ width: 6, height: 6, background: 'currentColor' }} />
         <div>{statsOpen ? 'Thu gọn thống kê' : 'Mở thống kê chi tiết'}</div>
       </Hover>
-
-      {/* Kind filter — also the fastest place to add a kind. */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 9,
-          flexWrap: 'wrap',
-          marginTop: 30,
-          padding: '14px 0 15px',
-          borderTop: '1px solid #E3E3DB',
-          borderBottom: '1px solid #E3E3DB',
-        }}
-      >
-        {allKinds.map((k) => {
-          const on = kindFilter === k
-          const n = logs.filter((l) => l.kind === k && l.done !== false).length
-          return (
-            <div
-              key={k}
-              onClick={() => setKindFilter(on ? null : k)}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 8,
-                background: on ? kindColor[k] : 'transparent',
-                border: `1px solid ${on ? kindColor[k] : '#DEDED6'}`,
-                padding: '6px 12px',
-                cursor: 'pointer',
-              }}
-            >
-              <div
-                style={{ width: 8, height: 8, borderRadius: '50%', background: kindColor[k], flex: 'none' }}
-              />
-              <div style={{ fontSize: 12.5, color: on ? '#FFFFFF' : '#414A42' }}>{k}</div>
-              <div
-                style={{
-                  fontSize: 11,
-                  color: on ? '#FFFFFF' : '#414A42',
-                  opacity: 0.55,
-                  fontVariantNumeric: 'tabular-nums',
-                }}
-              >
-                {n}
-              </div>
-            </div>
-          )
-        })}
-        {kindAdding ? (
-          <input
-            value={kindDraft}
-            onChange={(e) => setKindDraft(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') addKind()
-              if (e.key === 'Escape') {
-                setKindAdding(false)
-                setKindDraft('')
-              }
-            }}
-            onBlur={addKind}
-            autoFocus
-            placeholder="loại mới"
-            style={{
-              width: 112,
-              background: '#FFFFFF',
-              border: '1px solid #3E7A4E',
-              color: '#172124',
-              fontFamily: "'Be Vietnam Pro',sans-serif",
-              fontWeight: 300,
-              fontSize: 12.5,
-              padding: '6px 10px',
-              outline: 'none',
-            }}
-          />
-        ) : (
-          <Hover
-            onClick={() => {
-              setKindAdding(true)
-              setKindDraft('')
-            }}
-            style={{
-              fontSize: 12.5,
-              color: '#A2A296',
-              border: '1px dashed #CFCFC4',
-              padding: '6px 12px',
-              cursor: 'pointer',
-            }}
-            hoverStyle={{ color: '#3E7A4E', borderColor: '#3E7A4E' }}
-          >
-            + loại
-          </Hover>
-        )}
-        {kindFilter && (
-          <Hover
-            onClick={() => setKindFilter(null)}
-            style={{
-              fontSize: 11,
-              letterSpacing: '.14em',
-              textTransform: 'uppercase',
-              color: '#A2A296',
-              cursor: 'pointer',
-              marginLeft: 4,
-            }}
-            hoverStyle={{ color: '#C25C7C' }}
-          >
-            bỏ lọc ✕
-          </Hover>
-        )}
-      </div>
+      {/* Tag bar. Project first, then Task — the same order the rows use, so
+          the eye learns one sequence and reads it everywhere. */}
+      <TagBar
+        projects={projects}
+        kinds={allKinds}
+        logs={logs}
+        kindColor={kindColor}
+        projectColor={projectColor}
+        filter={tagFilter}
+        onFilter={setTagFilter}
+        onAdd={(name, system) => void addTag(name, system)}
+      />
 
       {statsOpen && (
         <div style={{ margin: '30px 0 6px' }}>
@@ -626,289 +500,31 @@ export function Hours() {
                           {loading ? 'đang tải…' : 'chưa ghi gì'}
                         </div>
                       )}
-                      {d.rows.map((l) => {
-                        const editing = editId === l.id
-                        const naming = newId === l.id
-                        const color = kindColor[l.kind] || '#163F42'
-                        const done = l.done !== false
-                        const cursor = d.recent ? 'pointer' : 'default'
-                        return (
-                          <div
-                            key={l.id}
-                            draggable={d.recent}
-                            onDragStart={(e) => {
-                              e.dataTransfer.setData('text/plain', String(l.id))
-                              e.dataTransfer.effectAllowed = 'move'
-                            }}
-                            style={{ padding: '6px 0', borderBottom: '1px solid #EAE7DA' }}
-                          >
-                            {!editing && (
-                              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                                <div
-                                  onClick={() => {
-                                    if (!d.recent) return
-                                    void patch(l.id, { done: l.done === false })
-                                  }}
-                                  style={{
-                                    width: 15,
-                                    height: 15,
-                                    flex: 'none',
-                                    marginTop: 14,
-                                    border: `1px solid ${done ? color : '#B9B6A6'}`,
-                                    background: done ? color : 'transparent',
-                                    color: '#F6F2E6',
-                                    fontSize: 10,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    cursor,
-                                  }}
-                                >
-                                  {done ? '✓' : ''}
-                                </div>
-                                <div style={{ flex: '1 1 auto', minWidth: 120 }}>
-                                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 11, flexWrap: 'wrap' }}>
-                                    <div style={{ fontSize: 9, letterSpacing: '.18em', textTransform: 'uppercase', color }}>{l.kind}</div>
-                                    <Hover
-                                      onClick={() => {
-                                        if (!d.recent) return
-                                        setEditId(l.id)
-                                        setNewId(null)
-                                        setEditFocus('at')
-                                        setEMins(String(l.mins))
-                                        setEAt(l.at)
-                                      }}
-                                      style={{ fontSize: 12, color: '#414A42', fontVariantNumeric: 'tabular-nums', cursor, padding: '1px 4px', marginLeft: -4 }}
-                                      hoverStyle={d.recent ? { background: '#EDE9D6' } : undefined}
-                                    >
-                                      {l.at}
-                                    </Hover>
-                                    {!d.recent && <div style={{ fontSize: 10.5, color: '#AFAFA2' }}>✓ chốt</div>}
-                                  </div>
-                                  {!naming && (
-                                    <div
-                                      onClick={() => {
-                                        if (!d.recent) return
-                                        setNewId(l.id)
-                                        setEditId(null)
-                                        setEName(l.name)
-                                      }}
-                                      style={{
-                                        fontSize: 15,
-                                        lineHeight: 1.3,
-                                        marginTop: 2,
-                                        color: l.done === false ? '#8A8A7C' : '#172124',
-                                        fontStyle: l.done === false ? 'italic' : 'normal',
-                                        cursor,
-                                      }}
-                                    >
-                                      {l.name || '(chưa đặt tên)'}
-                                    </div>
-                                  )}
-                                  {naming && (
-                                    <input
-                                      ref={nameInputRef}
-                                      value={eName}
-                                      onChange={(e) => setEName(e.target.value)}
-                                      onKeyDown={(e) => {
-                                        if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
-                                        if (e.key === 'Escape') setNewId(null)
-                                      }}
-                                      onBlur={() => {
-                                        if (newId !== l.id) return
-                                        const nm = eName.trim()
-                                        if (nm) void patch(l.id, { name: nm })
-                                        else void remove(l.id)
-                                        setNewId(null)
-                                      }}
-                                      placeholder="Hoạt động gì"
-                                      style={{
-                                        display: 'block',
-                                        width: '100%',
-                                        boxSizing: 'border-box',
-                                        background: 'transparent',
-                                        border: 0,
-                                        borderBottom: '1px solid #102F35',
-                                        color: '#172124',
-                                        fontFamily: "'Be Vietnam Pro',sans-serif",
-                                        fontWeight: 200,
-                                        fontSize: 15,
-                                        lineHeight: 1.3,
-                                        marginTop: 2,
-                                        padding: '0 0 3px',
-                                        outline: 'none',
-                                      }}
-                                    />
-                                  )}
-                                </div>
-                                <Hover
-                                  onClick={() => {
-                                    if (!d.recent) return
-                                    setEditId(l.id)
-                                    setNewId(null)
-                                    setEditFocus('dur')
-                                    setEMins(String(l.mins))
-                                    setEAt(l.at)
-                                  }}
-                                  style={{ flex: 'none', marginTop: 11, fontSize: 16, color: '#172124', fontVariantNumeric: 'tabular-nums', textAlign: 'right', cursor, padding: '2px 4px' }}
-                                  hoverStyle={d.recent ? { background: '#EDE9D6' } : undefined}
-                                >
-                                  {fmt(l.mins)}
-                                </Hover>
-                              </div>
-                            )}
-                            {editing && (
-                              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                                <div style={{ width: 15, flex: 'none' }} />
-                                <div style={{ flex: '1 1 auto', minWidth: 120 }}>
-                                  <div style={{ background: '#F1F4EF', borderLeft: '2px solid #102F35', padding: '9px 11px 10px', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-                                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 7 }}>
-                                      <div style={{ fontSize: 9, letterSpacing: '.16em', textTransform: 'uppercase', color: '#7C7C70' }}>Từ</div>
-                                      <input
-                                        ref={atInputRef}
-                                        value={eAt}
-                                        onChange={(e) => setEAt(e.target.value)}
-                                        onKeyDown={(e) => {
-                                          if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
-                                          if (e.key === 'Escape') setEditId(null)
-                                        }}
-                                        onBlur={() => {
-                                          if (editId !== l.id) return
-                                          const m = parseInt(eMins, 10)
-                                          const at = /^\d{1,2}:\d{2}$/.test(eAt) ? eAt : l.at
-                                          void patch(l.id, {
-                                            name: eName || l.name,
-                                            mins: m > 0 ? m : l.mins,
-                                            at,
-                                          })
-                                          setEditId(null)
-                                        }}
-                                        style={{
-                                          width: 52,
-                                          background: 'transparent',
-                                          border: 0,
-                                          borderBottom: `1px solid ${editFocus === 'at' ? '#3E7A4E' : '#CFCFC4'}`,
-                                          color: '#172124',
-                                          fontFamily: "'Be Vietnam Pro',sans-serif",
-                                          fontWeight: 200,
-                                          fontSize: 15,
-                                          padding: '0 0 2px',
-                                          outline: 'none',
-                                          fontVariantNumeric: 'tabular-nums',
-                                        }}
-                                      />
-                                    </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: editFocus === 'dur' ? '#EFE9D4' : 'transparent', padding: '2px 5px', margin: '0 -5px' }}>
-                                      <Hover
-                                        onClick={() => bump(l.id, -5)}
-                                        style={{ width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #CFCFC4', fontSize: 14, color: '#414A42', cursor: 'pointer' }}
-                                        hoverStyle={{ border: '1px solid #102F35', color: '#102F35' }}
-                                      >
-                                        −
-                                      </Hover>
-                                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
-                                        <input
-                                          ref={durInputRef}
-                                          value={eMins}
-                                          onChange={(e) => setEMins(e.target.value)}
-                                          onKeyDown={(e) => {
-                                            if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
-                                            if (e.key === 'Escape') setEditId(null)
-                                          }}
-                                          onBlur={() => {
-                                            if (editId !== l.id) return
-                                            const m = parseInt(eMins, 10)
-                                            const at = /^\d{1,2}:\d{2}$/.test(eAt) ? eAt : l.at
-                                            void patch(l.id, {
-                                              name: eName || l.name,
-                                              mins: m > 0 ? m : l.mins,
-                                              at,
-                                            })
-                                            setEditId(null)
-                                          }}
-                                          style={{
-                                            width: 38,
-                                            background: 'transparent',
-                                            border: 0,
-                                            borderBottom: `1px solid ${editFocus === 'dur' ? '#3E7A4E' : '#CFCFC4'}`,
-                                            color: '#172124',
-                                            fontFamily: "'Be Vietnam Pro',sans-serif",
-                                            fontWeight: 200,
-                                            fontSize: 15,
-                                            padding: '0 0 2px',
-                                            outline: 'none',
-                                            textAlign: 'right',
-                                            fontVariantNumeric: 'tabular-nums',
-                                          }}
-                                        />
-                                        <div style={{ fontSize: 11, color: '#7C7C70' }}>phút</div>
-                                      </div>
-                                      <Hover
-                                        onClick={() => bump(l.id, 5)}
-                                        style={{ width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #CFCFC4', fontSize: 14, color: '#414A42', cursor: 'pointer' }}
-                                        hoverStyle={{ border: '1px solid #102F35', color: '#102F35' }}
-                                      >
-                                        +
-                                      </Hover>
-                                    </div>
-                                    <div style={{ flex: '1 1 0' }} />
-                                    <Hover
-                                      onClick={() => {
-                                        void remove(l.id)
-                                        setEditId(null)
-                                      }}
-                                      style={{ fontSize: 10.5, letterSpacing: '.14em', textTransform: 'uppercase', color: '#7C7C70', cursor: 'pointer' }}
-                                      hoverStyle={{ color: '#F2A0A5' }}
-                                    >
-                                      Xoá
-                                    </Hover>
-                                  </div>
-                                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginTop: 7, flexWrap: 'wrap' }}>
-                                    <div style={{ fontSize: 15, lineHeight: 1.3, color: l.done === false ? '#8A8A7C' : '#172124', fontStyle: l.done === false ? 'italic' : 'normal' }}>
-                                      {l.name || '(chưa đặt tên)'}
-                                    </div>
-                                    <Hover
-                                      onClick={() => {
-                                        setNewId(l.id)
-                                        setEditId(null)
-                                        setEName(l.name)
-                                      }}
-                                      style={{ fontSize: 10, letterSpacing: '.14em', textTransform: 'uppercase', color: '#A2A296', cursor: 'pointer', flex: 'none' }}
-                                      hoverStyle={{ color: '#102F35' }}
-                                    >
-                                      sửa tên
-                                    </Hover>
-                                  </div>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginTop: 7 }}>
-                                    <div style={{ fontSize: 9, letterSpacing: '.16em', textTransform: 'uppercase', color: '#7C7C70' }}>Loại</div>
-                                    <select
-                                      value={l.kind}
-                                      onChange={(e) => void patch(l.id, { kind: e.target.value })}
-                                      style={{
-                                        background: '#FFFFFF',
-                                        border: '1px solid #CFCFC4',
-                                        color,
-                                        fontFamily: "'Be Vietnam Pro',sans-serif",
-                                        fontWeight: 200,
-                                        fontSize: 12.5,
-                                        padding: '4px 7px',
-                                        outline: 'none',
-                                        cursor: 'pointer',
-                                      }}
-                                    >
-                                      {allKinds.map((k) => (
-                                        <option key={k} value={k}>
-                                          {k}
-                                        </option>
-                                      ))}
-                                    </select>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        )
-                      })}
+                      {d.rows.map((l) => (
+                        <ActivityRow
+                          key={l.id}
+                          log={l}
+                          editable={d.recent}
+                          kinds={allKinds}
+                          projects={projects}
+                          kindColor={kindColor}
+                          projectColor={projectColor}
+                          naming={newId === l.id}
+                          onStartNaming={() => setNewId(l.id)}
+                          onName={(nm) => {
+                            // An unnamed row that loses focus was abandoned.
+                            if (nm) void patch(l.id, { name: nm })
+                            else void remove(l.id)
+                            setNewId(null)
+                          }}
+                          onAbandon={() => {
+                            setNewId(null)
+                            if (!l.name) void remove(l.id)
+                          }}
+                          onPatch={(p) => void patch(l.id, p)}
+                          onRemove={() => void remove(l.id)}
+                        />
+                      ))}
                       {d.recent && (
                         <Hover
                           onClick={() => addRow(d.ds)}
@@ -1045,55 +661,7 @@ export function Hours() {
                   </div>
                 )
               })}
-              {kindAdding && (
-                <input
-                  autoFocus
-                  value={kindDraft}
-                  onChange={(e) => setKindDraft(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') addKind()
-                    if (e.key === 'Escape') {
-                      setKindAdding(false)
-                      setKindDraft('')
-                    }
-                  }}
-                  onBlur={addKind}
-                  placeholder="loại mới"
-                  style={{
-                    width: 86,
-                    background: 'transparent',
-                    border: '1px solid #F2A0A5',
-                    color: '#FFFFFF',
-                    fontFamily: "'Be Vietnam Pro',sans-serif",
-                    fontWeight: 200,
-                    fontSize: 12,
-                    padding: '5px 8px',
-                    outline: 'none',
-                  }}
-                />
-              )}
-              {!kindAdding && (
-                <Hover
-                  onClick={() => {
-                    setKindAdding(true)
-                    setKindDraft('')
-                  }}
-                  style={{
-                    width: 26,
-                    fontSize: 13,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '5px 0',
-                    border: '1px dashed rgba(244,244,239,.4)',
-                    cursor: 'pointer',
-                    color: 'rgba(244,244,239,.8)',
-                  }}
-                  hoverStyle={{ border: '1px dashed #F2A0A5', color: '#F2A0A5' }}
-                >
-                  +
-                </Hover>
-              )}
+              <TimerAddTag onAdd={(name) => void addTag(name, 'task')} />
             </div>
 
             <div style={{ display: 'flex', gap: 8 }}>

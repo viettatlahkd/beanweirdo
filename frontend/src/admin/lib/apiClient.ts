@@ -272,9 +272,11 @@ export async function updateSite(patch: SiteOverrides): Promise<SiteOverrides> {
 // ── Ghi 02 — practice log ───────────────────────────────────────────────────
 
 /** GET /api/hours — the span's logs plus every kind, in one round trip. */
-export async function listHours(from?: string): Promise<{ logs: LogEntry[]; kinds: string[] }> {
+export async function listHours(
+  from?: string,
+): Promise<{ logs: LogEntry[]; kinds: string[]; projects: string[] }> {
   const query = from ? `?from=${encodeURIComponent(from)}` : ''
-  return request<{ logs: LogEntry[]; kinds: string[] }>(`/api/hours${query}`)
+  return request<{ logs: LogEntry[]; kinds: string[]; projects: string[] }>(`/api/hours${query}`)
 }
 
 /** POST /api/hours — add one activity. */
@@ -300,13 +302,15 @@ export async function deleteLog(id: string): Promise<void> {
   await request<Record<string, never>>(`/api/hours?id=${id}`, { method: 'DELETE' })
 }
 
-/** POST /api/hours?resource=kinds — add a kind; returns the full list back. */
-export async function addKind(name: string): Promise<string[]> {
-  const result = await request<{ kinds: string[] }>('/api/hours?resource=kinds', {
+/** POST /api/hours?resource=kinds — add a tag to one system; both lists come back. */
+export async function addKind(
+  name: string,
+  system: 'task' | 'project' = 'task',
+): Promise<{ kinds: string[]; projects: string[] }> {
+  return request<{ kinds: string[]; projects: string[] }>('/api/hours?resource=kinds', {
     method: 'POST',
-    body: JSON.stringify({ name }),
+    body: JSON.stringify({ name, system }),
   })
-  return result.kinds
 }
 
 // ── Ghi 01 — loose notes ────────────────────────────────────────────────────

@@ -42,16 +42,25 @@ describe('GET /api/hours', () => {
     expect(fromMock).not.toHaveBeenCalled()
   })
 
-  it('returns the span\'s logs and every kind in one round trip', async () => {
-    fromMock
-      .mockReturnValueOnce(queryBuilder({ data: [row], error: null }))
-      .mockReturnValueOnce(queryBuilder({ data: [{ name: 'đọc' }, { name: 'viết' }], error: null }))
+  it("returns the span's logs and both tag systems in one round trip", async () => {
+    fromMock.mockReturnValueOnce(queryBuilder({ data: [row], error: null })).mockReturnValueOnce(
+      queryBuilder({
+        data: [
+          { name: 'đọc', system: 'task' },
+          { name: 'viết', system: 'task' },
+          { name: 'Sao đâu', system: 'project' },
+        ],
+        error: null,
+      }),
+    )
 
     const res = mockRes()
     await handler(mockReq({ method: 'GET', headers: authHeaders(signToken()) }), res)
 
     expect(res.statusCode).toBe(200)
+    // The two systems come back split, not as one list the caller must sort.
     expect(res.body.kinds).toEqual(['đọc', 'viết'])
+    expect(res.body.projects).toEqual(['Sao đâu'])
     // Postgres returns HH:MM:SS; the journal only ever shows HH:MM.
     expect(res.body.logs[0].at).toBe('06:30')
   })
@@ -154,7 +163,7 @@ describe('POST /api/hours?resource=kinds', () => {
       .mockReturnValueOnce(queryBuilder({ data: [{ sort_order: 4 }], error: null }))
       // 23505 = unique violation: the caller wanted the kind to exist, and it does.
       .mockReturnValueOnce(queryBuilder({ data: null, error: { code: '23505', message: 'duplicate' } }))
-      .mockReturnValueOnce(queryBuilder({ data: [{ name: 'đọc' }], error: null }))
+      .mockReturnValueOnce(queryBuilder({ data: [{ name: 'đọc', system: 'task' }], error: null }))
 
     const res = mockRes()
     await handler(
@@ -164,6 +173,42 @@ describe('POST /api/hours?resource=kinds', () => {
 
     expect(res.statusCode).toBe(200)
     expect(res.body.kinds).toEqual(['đọc'])
+  })
+
+  it('files the tag under the system it was asked for', async () => {
+    const insert = queryBuilder({ data: null, error: null })
+    fromMock
+      .mockReturnValueOnce(queryBuilder({ data: [{ sort_order: 2 }], error: null }))
+      .mockReturnValueOnce(insert)
+      .mockReturnValueOnce(queryBuilder({ data: [{ name: 'Bột nở', system: 'project' }], error: null }))
+
+    const res = mockRes()
+    await handler(
+      mockReq({
+        method: 'POST',
+        query: { resource: 'kinds' },
+        body: { name: 'Bột nở', system: 'project' },
+        headers: authHeaders(signToken()),
+      }),
+      res,
+    )
+
+    expect(insert.insert).toHaveBeenCalledWith(expect.objectContaining({ system: 'project', sort_order: 3 }))
+    expect(res.body.projects).toEqual(['Bột nở'])
+  })
+
+  it('rejects an unknown system', async () => {
+    const res = mockRes()
+    await handler(
+      mockReq({
+        method: 'POST',
+        query: { resource: 'kinds' },
+        body: { name: 'x', system: 'linh tinh' },
+        headers: authHeaders(signToken()),
+      }),
+      res,
+    )
+    expect(res.statusCode).toBe(400)
   })
 
   it('rejects a blank name', async () => {

@@ -4,9 +4,11 @@ import { requireAuth } from '../lib/auth.js'
 import { getSupabase } from '../lib/supabase.js'
 import {
   HOUR_LOG_WRITABLE,
+  TAG_SYSTEMS,
   toHourLog,
   type ActivityKindRow,
   type HourLogRow,
+  type TagSystem,
 } from '../lib/journal.js'
 
 /**
@@ -17,11 +19,11 @@ import {
  * spend a third of the budget on one screen. Kinds are addressed with
  * `?resource=kinds`, a single log with `?id=<uuid>`.
  *
- *   GET    /api/hours?from=YYYY-MM-DD   logs in the span, plus every kind
+ *   GET    /api/hours?from=YYYY-MM-DD   logs in the span, plus both tag systems
  *   POST   /api/hours                   add a log
  *   PATCH  /api/hours?id=…              edit one field or several
  *   DELETE /api/hours?id=…              remove a log
- *   POST   /api/hours?resource=kinds    add a kind
+ *   POST   /api/hours?resource=kinds    add a tag — `system` picks which list
  */
 
 function getParam(req: VercelRequest, key: string): string | null {
@@ -49,16 +51,27 @@ async function handleList(req: VercelRequest, res: VercelResponse): Promise<void
     return
   }
 
+  const named = (system: TagSystem) =>
+    (kinds as ActivityKindRow[]).filter((k) => k.system === system).map((k) => k.name)
+
   res.status(200).json({
     logs: (logs as HourLogRow[]).map(toHourLog),
-    kinds: (kinds as ActivityKindRow[]).map((k) => k.name),
+    kinds: named('task'),
+    projects: named('project'),
   })
 }
 
 async function handleCreateKind(req: VercelRequest, res: VercelResponse): Promise<void> {
-  const name = (req.body ?? {}).name
+  const body = (req.body ?? {}) as { name?: unknown; system?: unknown }
+  const name = body.name
+  const system = (body.system ?? 'task') as TagSystem
+
   if (typeof name !== 'string' || name.trim().length === 0) {
     res.status(400).json({ error: 'name is required' })
+    return
+  }
+  if (!(TAG_SYSTEMS as readonly string[]).includes(system)) {
+    res.status(400).json({ error: `system must be one of: ${TAG_SYSTEMS.join(', ')}` })
     return
   }
 
@@ -66,12 +79,13 @@ async function handleCreateKind(req: VercelRequest, res: VercelResponse): Promis
   const { data: last } = await supabase
     .from('activity_kinds')
     .select('sort_order')
+    .eq('system', system)
     .order('sort_order', { ascending: false })
     .limit(1)
 
   const { error } = await supabase
     .from('activity_kinds')
-    .insert({ name: name.trim(), sort_order: ((last?.[0]?.sort_order as number | undefined) ?? 0) + 1 })
+    .insert({ name: name.trim(), system, sort_order: ((last?.[0]?.sort_order as number | undefined) ?? 0) + 1 })
 
   // 23505 = unique violation: the kind already exists, which is not an error
   // worth surfacing — the caller wanted it to be there, and it is.
@@ -84,7 +98,11 @@ async function handleCreateKind(req: VercelRequest, res: VercelResponse): Promis
     .from('activity_kinds')
     .select('*')
     .order('sort_order', { ascending: true })
-  res.status(200).json({ kinds: (kinds as ActivityKindRow[]).map((k) => k.name) })
+  const rows = (kinds ?? []) as ActivityKindRow[]
+  res.status(200).json({
+    kinds: rows.filter((k) => k.system === 'task').map((k) => k.name),
+    projects: rows.filter((k) => k.system === 'project').map((k) => k.name),
+  })
 }
 
 async function handleCreate(req: VercelRequest, res: VercelResponse): Promise<void> {
@@ -108,6 +126,7 @@ async function handleCreate(req: VercelRequest, res: VercelResponse): Promise<vo
       date: body.date,
       name: typeof body.name === 'string' ? body.name : '',
       kind: body.kind,
+      project: typeof body.project === 'string' && body.project ? body.project : null,
       mins: body.mins,
       at: body.at,
       done: body.done === undefined ? true : Boolean(body.done),

@@ -4,14 +4,16 @@ import { KINDS, SPAN_DAYS, dateStr, dayBefore, type LogEntry } from '../content/
 
 export type UseHoursResult = {
   logs: LogEntry[]
-  /** Every kind on file — the four shipped ones plus any added since. */
+  /** The task system — every kind on file, shipped ones plus any added since. */
   kinds: string[]
+  /** The project system. */
+  projects: string[]
   loading: boolean
   error: string | null
   add(entry: Omit<LogEntry, 'id'>): Promise<LogEntry | null>
   patch(id: string, patch: Partial<Omit<LogEntry, 'id'>>): Promise<void>
   remove(id: string): Promise<void>
-  addKind(name: string): Promise<void>
+  addTag(name: string, system: 'task' | 'project'): Promise<void>
 }
 
 /**
@@ -31,6 +33,7 @@ export type UseHoursResult = {
 export function useHours(): UseHoursResult {
   const [logs, setLogs] = useState<LogEntry[]>([])
   const [kinds, setKinds] = useState<string[]>(KINDS)
+  const [projects, setProjects] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -43,6 +46,7 @@ export function useHours(): UseHoursResult {
       const data = await listHours(from)
       setLogs(data.logs)
       setKinds(data.kinds.length > 0 ? data.kinds : KINDS)
+      setProjects(data.projects ?? [])
       setError(null)
     } catch (e) {
       setError((e as Error).message)
@@ -106,20 +110,25 @@ export function useHours(): UseHoursResult {
     [failed],
   )
 
-  const addKind = useCallback(
-    async (name: string) => {
+  const addTag = useCallback(
+    async (name: string, system: 'task' | 'project') => {
       const trimmed = name.trim()
-      if (!trimmed || kinds.includes(trimmed)) return
-      setKinds((ks) => ks.concat([trimmed]))
+      const existing = system === 'task' ? kinds : projects
+      if (!trimmed || existing.includes(trimmed)) return
+
+      const setter = system === 'task' ? setKinds : setProjects
+      setter((xs) => xs.concat([trimmed]))
       try {
-        setKinds(await apiAddKind(trimmed))
+        const saved = await apiAddKind(trimmed, system)
+        setKinds(saved.kinds)
+        setProjects(saved.projects)
         setError(null)
       } catch (e) {
         failed(e)
       }
     },
-    [kinds, failed],
+    [kinds, projects, failed],
   )
 
-  return { logs, kinds, loading, error, add, patch, remove, addKind }
+  return { logs, kinds, projects, loading, error, add, patch, remove, addTag }
 }

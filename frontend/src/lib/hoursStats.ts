@@ -20,6 +20,14 @@ export type DayBucket = {
   ls: LogEntry[]
   /** minutes from done logs only */
   mins: number
+  /**
+   * Whether anything is filed on this day at all, ticked or not.
+   *
+   * Separate from `mins` on purpose: totals should only count work you've
+   * confirmed, but the day is *used* the moment something is written down —
+   * so the marker lights up on writing, not on ticking.
+   */
+  hasAny: boolean
   /** 0 = today, `SPAN_DAYS - 1` = oldest day in the span */
   age: number
 }
@@ -39,6 +47,7 @@ export function buildAllDays(logs: LogEntry[]): DayBucket[] {
       d,
       ls,
       mins: ls.filter((l) => l.done !== false).reduce((a, l) => a + l.mins, 0),
+      hasAny: ls.length > 0,
       age: i,
     })
   }

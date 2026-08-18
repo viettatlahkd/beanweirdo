@@ -10,7 +10,10 @@ export interface HourLogRow {
   id: string
   date: string
   name: string
+  /** The task system — what kind of work this was. */
   kind: string
+  /** The project system — what it was for. Null when it belongs to none. */
+  project: string | null
   mins: number
   /** `HH:MM:SS` out of Postgres, `HH:MM` going in. */
   at: string
@@ -23,6 +26,7 @@ export interface HourLog {
   date: string
   name: string
   kind: string
+  project: string | null
   mins: number
   at: string
   done: boolean
@@ -37,17 +41,23 @@ export function toHourLog(row: HourLogRow): HourLog {
     date: row.date,
     name: row.name,
     kind: row.kind,
+    project: row.project ?? null,
     mins: row.mins,
     at: trimSeconds(row.at),
     done: row.done,
   }
 }
 
-export const HOUR_LOG_WRITABLE = ['date', 'name', 'kind', 'mins', 'at', 'done'] as const
+export const HOUR_LOG_WRITABLE = ['date', 'name', 'kind', 'project', 'mins', 'at', 'done'] as const
+
+/** The two ways an activity is filed — see migration 0009. */
+export const TAG_SYSTEMS = ['task', 'project'] as const
+export type TagSystem = (typeof TAG_SYSTEMS)[number]
 
 export interface ActivityKindRow {
   id: string
   name: string
+  system: TagSystem
   sort_order: number
 }
 
