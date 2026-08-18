@@ -37,6 +37,8 @@ export type PostSummary = {
   status: PostStatus
   template: PostTemplate | null
   heroImageUrl: string | null
+  /** Cover if the post has one, otherwise the first image inside it. */
+  thumbnailUrl: string | null
   sortOrder: number
   createdAt: string
   updatedAt: string

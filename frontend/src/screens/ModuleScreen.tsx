@@ -9,6 +9,7 @@ import { ink, paper, sans, serif } from '../design/tokens'
 import { Hover } from '../lib/Hover'
 import { useNav, useSettings } from '../lib/nav'
 import { openPost } from '../lib/openPost'
+import { postThumbnail } from '../lib/postThumb'
 
 const kicker: CSSProperties = {
   fontFamily: sans,
@@ -111,7 +112,16 @@ function Band({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
               }}
               hoverStyle={rowHover}
             >
-              <div style={{ width: 172, height: 130, flex: 'none', background: e.tint }} />
+              <div
+                style={{
+                  width: 172,
+                  height: 130,
+                  flex: 'none',
+                  background: postThumbnail(e)
+                    ? `url(${postThumbnail(e)}) center/cover no-repeat`
+                    : e.tint,
+                }}
+              />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div
                   style={{
@@ -281,7 +291,15 @@ function Specimen({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
                 </div>
               </div>
               {showPlates && (
-                <div style={{ aspectRatio: '3/2', background: e.tint, marginBottom: 13 }} />
+                <div
+                  style={{
+                    aspectRatio: '3/2',
+                    marginBottom: 13,
+                    background: postThumbnail(e)
+                      ? `url(${postThumbnail(e)}) center/cover no-repeat`
+                      : e.tint,
+                  }}
+                />
               )}
               <div
                 style={{

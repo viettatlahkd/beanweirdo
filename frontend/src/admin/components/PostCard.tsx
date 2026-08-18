@@ -36,7 +36,7 @@ const ACTIONS_BY_STATUS: Record<PostStatus, { label: string; action: StatusActio
 
 // No color field on PostSummary — pick a stable garden tint per card from
 // the post id so the thumbnail fallback reads like the mockup without a
-// schema change. Used only when the post has no real heroImageUrl yet.
+// schema change. Used only when the post has no picture anywhere in it.
 const THUMB_COLORS = [garden.blush, garden.petalTint2, garden.leafTint2, garden.apricot, garden.honeyTint2]
 function thumbColor(id: string) {
   let hash = 0
@@ -71,9 +71,9 @@ export function PostCard({
         background: hover ? paper.hover : paper.white,
       }}
     >
-      {post.heroImageUrl ? (
+      {post.thumbnailUrl ? (
         <img
-          src={post.heroImageUrl}
+          src={post.thumbnailUrl}
           alt=""
           style={{ width: 44, height: 44, objectFit: 'cover', borderRadius: 6, flex: 'none' }}
         />

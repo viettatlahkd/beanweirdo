@@ -38,10 +38,36 @@ export interface PostRow {
   updated_at: string
 }
 
+// `body` is selected but never returned: it is where a post keeps its pictures,
+// and the listing wants one of them. Sending the whole thing to the browser to
+// find a thumbnail would mean shipping a 100KB article to draw a 44px square.
 export const POST_SUMMARY_COLUMNS =
-  'id, module_id, n, en, vi, kind, date_label, status, template, hero_image_url, sort_order, created_at, updated_at, published_at'
+  'id, module_id, n, en, vi, kind, date_label, status, template, hero_image_url, sort_order, created_at, updated_at, published_at, body'
 
 export const POST_DETAIL_COLUMNS = '*'
+
+/** The first `src` anywhere in a block tree, however the template nests them. */
+function findSrc(value: unknown, depth = 0): string | null {
+  if (depth > 4 || value === null || typeof value !== 'object') return null
+
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const found = findSrc(item, depth + 1)
+      if (found) return found
+    }
+    return null
+  }
+
+  const obj = value as Record<string, unknown>
+  if (typeof obj.src === 'string' && obj.src) return obj.src
+  if (typeof obj.imageUrl === 'string' && obj.imageUrl) return obj.imageUrl
+
+  for (const key of ['fig', 'items', 'sections', 'blocks', 'cards']) {
+    const found = findSrc(obj[key], depth + 1)
+    if (found) return found
+  }
+  return null
+}
 
 export interface PostSummary {
   id: string
@@ -54,6 +80,11 @@ export interface PostSummary {
   status: PostStatus
   template: PostTemplate
   heroImageUrl: string | null
+  /**
+   * The picture that stands for the post in a listing: its cover if it has
+   * one, otherwise the first image inside it.
+   */
+  thumbnailUrl: string | null
   sortOrder: number
   createdAt: string
   updatedAt: string
@@ -83,6 +114,7 @@ export function toPostSummary(row: PostRow): PostSummary {
     status: row.status,
     template: row.template,
     heroImageUrl: row.hero_image_url,
+    thumbnailUrl: row.hero_image_url || findSrc(row.body),
     sortOrder: row.sort_order,
     createdAt: row.created_at,
     updatedAt: row.updated_at,

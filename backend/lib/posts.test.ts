@@ -104,3 +104,34 @@ describe('computeStatusTransition', () => {
     )
   })
 })
+
+describe('toPostSummary — thumbnail', () => {
+  const row = (hero: string | null, body: unknown) =>
+    toPostSummary({
+      id: 'p1', module_id: 'biochem', n: '05', en: 'Lipid', vi: 'mô tả',
+      kind: 'note', date_label: '2025.12', slug: null, body, hero_caption: null,
+      lead: null, pull_quote: null, further_reading: null, sort_order: 5,
+      created_at: 'x', status: 'published', template: 'longform',
+      hero_image_url: hero, published_at: null, deleted_at: null,
+      previous_status: null, updated_at: 'x',
+    } as never)
+
+  it('prefers the cover when the post has one', () => {
+    expect(row('/hero.png', [{ k: 'fig', src: '/inside.png' }]).thumbnailUrl).toBe('/hero.png')
+  })
+
+  it('falls back to the first picture inside the post', () => {
+    // A long-form piece carries its figures in `body`; without this the listing
+    // shows a blank swatch for an article full of images.
+    expect(row(null, [{ k: 'p' }, { k: 'fig', src: '/first.png' }]).thumbnailUrl).toBe('/first.png')
+  })
+
+  it('reaches into a nested block', () => {
+    expect(row(null, [{ k: 'aside', items: [{ k: 'fig', src: '/nested.png' }] }]).thumbnailUrl).toBe('/nested.png')
+  })
+
+  it('is null when the post has no picture at all', () => {
+    expect(row(null, [{ n: '01', title: 'Apple' }]).thumbnailUrl).toBeNull()
+    expect(row(null, null).thumbnailUrl).toBeNull()
+  })
+})

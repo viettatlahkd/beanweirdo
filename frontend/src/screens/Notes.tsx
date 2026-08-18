@@ -12,6 +12,7 @@ import {
 import { useNotes } from '../data/useNotes'
 import { usePublishedPosts } from '../data/usePublishedPosts'
 import { postDescription } from '../lib/postText'
+import { postThumbnail } from '../lib/postThumb'
 import { useNav } from '../lib/nav'
 import { openPost } from '../lib/openPost'
 import { serif } from '../design/tokens'
@@ -510,11 +511,11 @@ export function Notes() {
             }}
             hoverStyle={{ opacity: 1 }}
           >
-            {p.hero_image_url && (
+            {postThumbnail(p) && (
               <div
                 style={{
                   aspectRatio: '4/3',
-                  background: `url(${p.hero_image_url}) center/cover no-repeat`,
+                  background: `url(${postThumbnail(p)}) center/cover no-repeat`,
                   marginBottom: 18,
                 }}
               />
