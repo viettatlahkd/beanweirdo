@@ -13,6 +13,10 @@ type NoteRow = {
   len: NoteLength
   media_hint: string | null
   portrait: boolean
+  template: 'note' | 'memo'
+  pinned: boolean
+  body: unknown | null
+  img: string | null
 }
 
 const toNote = (r: NoteRow): Note => ({
@@ -24,6 +28,10 @@ const toNote = (r: NoteRow): Note => ({
   len: r.len,
   mediaHint: r.media_hint,
   portrait: r.portrait,
+  template: r.template ?? 'note',
+  pinned: r.pinned ?? false,
+  body: r.body ?? null,
+  img: r.img ?? null,
 })
 
 export type UseNotesResult = {
@@ -49,7 +57,12 @@ export function useNotes(): UseNotesResult {
   const [error, setError] = useState<string | null>(null)
 
   const load = useCallback(async () => {
-    const { data, error } = await supabase.from('notes').select('*').order('d', { ascending: false })
+    const { data, error } = await supabase
+      .from('notes')
+      .select('*')
+      // Pinned notes lead, then newest first (merge notes §6).
+      .order('pinned', { ascending: false })
+      .order('d', { ascending: false })
     setLoading(false)
     if (error) {
       setError(error.message)

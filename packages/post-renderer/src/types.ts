@@ -213,3 +213,39 @@ export type LongformPostData = {
   subtitle?: string
   blocks: LongformBlock[]
 }
+
+// ---------------------------------------------------------------------------
+// memo — the tasting write-up, per the "isTaste" section of the design source.
+// Unlike the other templates this one belongs to Ghi 01, not to a module.
+// ---------------------------------------------------------------------------
+
+/** A span inside a memo line; `em` is the design's amber emphasis. */
+export type MemoRun = { t: string; em?: boolean }
+
+export type MemoItem = {
+  runs: MemoRun[]
+  /** Quieter lines hanging under the item — the design's "—" continuations. */
+  cont?: string[]
+  children?: MemoItem[]
+}
+
+/** One numbered stage of the pour. */
+export type MemoPhase = { n: string; label: string; lines: string[] }
+
+export type MemoSection = {
+  h: string
+  items?: MemoItem[]
+  phases?: MemoPhase[]
+  table?: { head: string[]; rows: string[][] }
+}
+
+export type MemoPostData = {
+  title: string
+  subtitle?: string
+  /** The bean / water / pour readings that open the page. */
+  specs?: { k: string; v: string }[]
+  /** Hero photograph, and what it shows. */
+  img?: string | null
+  imgCaption?: string
+  sections: MemoSection[]
+}

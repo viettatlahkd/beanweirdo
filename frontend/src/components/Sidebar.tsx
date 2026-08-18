@@ -174,6 +174,8 @@ function go(nav: Nav, item: NavItem): () => void {
       return () => nav.goReport('admin')
     case 'cards':
       return () => nav.goCards('admin')
+    case 'memo':
+      return () => nav.openMemo()
     default:
       return nav.goLanding
   }

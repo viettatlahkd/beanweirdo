@@ -1,8 +1,15 @@
 import { Article, type ArticleOverrides } from './Article'
 import { Cards, type CardsOverrides } from './Cards'
 import { Longform } from './Longform'
+import { Memo } from './Memo'
 import { Report, type ReportOverrides } from './Report'
-import type { ArticlePostData, CardsPostData, LongformPostData, ReportPostData } from './types'
+import type {
+  ArticlePostData,
+  CardsPostData,
+  LongformPostData,
+  MemoPostData,
+  ReportPostData,
+} from './types'
 
 export type PostRendererProps =
   | ({ template: 'article'; post: ArticlePostData } & ArticleOverrides)
@@ -11,6 +18,9 @@ export type PostRendererProps =
   // Long-form takes no overrides: its content is a parsed export, not fields
   // an editor fills in, so there is nothing for the admin canvas to hook.
   | { template: 'longform'; post: LongformPostData }
+  // Memo belongs to Ghi 01 rather than to a module, but it is a template like
+  // the rest and the admin previews it the same way.
+  | { template: 'memo'; post: MemoPostData }
 
 /**
  * Dispatches to the right template component for `posts.template`.
@@ -26,6 +36,9 @@ export function PostRenderer(props: PostRendererProps) {
   }
   if (props.template === 'longform') {
     return <Longform post={props.post} />
+  }
+  if (props.template === 'memo') {
+    return <Memo post={props.post} />
   }
   if (props.template === 'report') {
     const { template: _template, post, ...overrides } = props

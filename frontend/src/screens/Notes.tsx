@@ -11,6 +11,7 @@ import {
   type Note,
 } from '../content/notes'
 import { useNotes } from '../data/useNotes'
+import { useNav } from '../lib/nav'
 import { useAuth } from '../lib/auth'
 import { serif } from '../design/tokens'
 import { Hover } from '../lib/Hover'
@@ -128,6 +129,7 @@ function NoteCard({
   total,
   onPatch,
   onRemove,
+  onOpenMemo,
 }: {
   n: Note
   i: number
@@ -145,6 +147,7 @@ function NoteCard({
   total: number
   onPatch: (patch: Partial<Omit<Note, 'id'>>) => void
   onRemove: () => void
+  onOpenMemo: (id: string) => void
 }) {
   const isHv = hoverNote === i
   // Keyed by id, not title: a note being written has no title yet, and two
@@ -174,6 +177,12 @@ function NoteCard({
       <div
         onClick={(e) => {
           e.stopPropagation()
+          // A memo has its own template and its own page; a plain note expands
+          // where it sits (System conventions, rule 07).
+          if (n.template === 'memo') {
+            onOpenMemo(n.id)
+            return
+          }
           setOpenNote((prev) => (prev === n.id ? null : n.id))
         }}
         style={{
@@ -463,6 +472,7 @@ function FillerCell({ f, dimmed }: { f: (typeof fillers)[number]; dimmed: boolea
  * aside and dims.
  */
 export function Notes() {
+  const nav = useNav()
   const { notes, loading, error, add, patch, remove } = useNotes()
   const { authed } = useAuth()
   const [noteFilter, setNoteFilter] = useState<'tất cả' | Note['k']>('tất cả')
@@ -664,6 +674,7 @@ export function Notes() {
               el={elRefs.current[i] ?? null}
               editable={authed}
               total={notes.length}
+              onOpenMemo={nav.openMemo}
               onPatch={(p) => void patch(n.id, p)}
               onRemove={() => {
                 setOpenNoteState(null)

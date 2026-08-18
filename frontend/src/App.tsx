@@ -28,6 +28,7 @@ import { IndexScreen } from './screens/IndexScreen'
 import { Landing } from './screens/Landing'
 import { Logic } from './screens/Logic'
 import { ModuleScreen } from './screens/ModuleScreen'
+import { MemoScreen } from './screens/MemoScreen'
 import { Notes } from './screens/Notes'
 import { Report } from './screens/Report'
 
@@ -61,6 +62,7 @@ export function App({ area }: { area: Area }) {
   const [variant, setVariant] = useState<Variant>('A')
   const [moduleId, setModuleId] = useState('sensory')
   const [postId, setPostId] = useState<string | null>(initial.postId)
+  const [memoId, setMemoId] = useState<string | null>(null)
   // Which door each template screen was entered through — see `Origin`.
   const [articleFrom, setArticleFrom] = useState<Origin>('admin')
   const [reportFrom, setReportFrom] = useState<Origin>('admin')
@@ -90,6 +92,11 @@ export function App({ area }: { area: Area }) {
   const editPost = useCallback((id: string) => {
     setPostId(id)
     setScreen('postEdit')
+  }, [])
+
+  const openMemo = useCallback((id?: string) => {
+    setMemoId(id ?? null)
+    setScreen('memo')
   }, [])
 
   const previewPost = useCallback((id: string) => {
@@ -122,6 +129,8 @@ export function App({ area }: { area: Area }) {
       newPost: () => setScreen('postNew'),
       editPost,
       previewPost,
+      openMemo,
+      memoId,
       toggleVariant: () => {
         setScreen('home')
         setVariant((v) => (v === 'A' ? 'B' : 'A'))
@@ -142,6 +151,8 @@ export function App({ area }: { area: Area }) {
       goReport,
       editPost,
       previewPost,
+      openMemo,
+      memoId,
     ],
   )
 
@@ -166,6 +177,7 @@ export function App({ area }: { area: Area }) {
       {shown === 'postNew' && <NewPostWizard />}
       {shown === 'postEdit' && postId && <Editor postId={postId} />}
       {shown === 'postPreview' && postId && <Preview postId={postId} />}
+      {shown === 'memo' && <MemoScreen />}
     </div>
   )
 

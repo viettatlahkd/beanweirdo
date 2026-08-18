@@ -24,6 +24,14 @@ export type Note = {
   mediaHint?: string | null
   /** vertical clip format — narrower media block, taller aspect ratio */
   portrait?: boolean
+  /** Which template reads it — a plain note, or a tasting memo. */
+  template?: 'note' | 'memo'
+  /** Pinned notes lead Ghi 01 regardless of date (merge notes §6). */
+  pinned?: boolean
+  /** A memo's structure; null for a plain note. See migration 0011. */
+  body?: unknown | null
+  /** A memo leads with a photograph rather than a caption placeholder. */
+  img?: string | null
 }
 
 /** What a fresh note starts as before the writer types into it. */

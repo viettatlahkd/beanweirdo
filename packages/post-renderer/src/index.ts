@@ -6,6 +6,7 @@ export type { ArticleProps, ArticleOverrides } from './Article'
 
 export { Cards } from './Cards'
 export { Longform } from './Longform'
+export { Memo } from './Memo'
 export type { CardsProps, CardsOverrides } from './Cards'
 
 export { Report } from './Report'
@@ -32,4 +33,9 @@ export type {
   LongformBlockKind,
   LongformPostData,
   LongformRun,
+  MemoItem,
+  MemoPhase,
+  MemoPostData,
+  MemoRun,
+  MemoSection,
 } from './types'
