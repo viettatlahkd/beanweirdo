@@ -70,6 +70,21 @@ const AREA_SCREENS: Record<Area, readonly string[]> = {
 export const screenAllowed = (area: Area, screen: string) => AREA_SCREENS[area].includes(screen)
 
 /**
+ * Which sidebar sections a visitor may see.
+ *
+ * The public journal shows the Public section and nothing else — being signed
+ * in must not change what the public site looks like. Someone reading over
+ * your shoulder, or a screenshot, should give away nothing about what sits
+ * behind the login.
+ *
+ * The private areas keep Public listed so there is a way back out.
+ */
+export function visibleGroups(area: Area, authed: boolean): NavGroup[] {
+  if (area === 'public' || !authed) return ['Public']
+  return ['Public', 'Practice', 'Admin']
+}
+
+/**
  * Move between areas.
  *
  * This is a real page load, not a client-side transition: each area is its own

@@ -5,7 +5,7 @@ import { useModules, type ModuleRow } from '../data/useModules'
 import { usePublishedPosts, type PostRow } from '../data/usePublishedPosts'
 import { useSiteCopy } from '../data/useSiteCopy'
 import { layout, paper, sans, serif } from '../design/tokens'
-import { areaOfGroup, goToArea } from '../lib/area'
+import { areaOfGroup, goToArea, visibleGroups } from '../lib/area'
 import { useAuth } from '../lib/auth'
 import { Hover, useHover } from '../lib/Hover'
 import { useNav, type Nav } from '../lib/nav'
@@ -196,6 +196,7 @@ export function Sidebar() {
   const { authed, signOut } = useAuth()
   const dark = nav.screen === 'notes' || nav.screen === 'hours'
   const t = theme(dark)
+  const groups = visibleGroups(nav.area, authed)
 
   const countFor = (m: ModuleRow) => posts.filter((p: PostRow) => p.module_id === m.id).length
   /** A module with nothing published isn't on the reader's site yet. */
@@ -316,10 +317,12 @@ export function Sidebar() {
         {section('Public')}
       </div>
 
-      {/* Practice and Admin are private: no rows, no hint they exist, until
-          the visitor is signed in. The pages themselves live behind their own
-          URLs and auth check — this only keeps the door out of sight. */}
-      {authed && (
+      {/* Practice and Admin never appear on the public journal, signed in or
+          not — the public site must look the same to everyone. They show only
+          once you are inside a private area, where they are the way across.
+          The pages themselves are guarded by their own URL and auth check;
+          this only decides what is on offer. */}
+      {groups.includes('Admin') && (
         <>
           <div style={{ margin: '16px 0 0' }}>
             <div style={{ height: 1, background: t.rule, marginBottom: 10 }} />

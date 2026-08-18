@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { AREA_HOME, areaFromPath, areaOfGroup, isPrivate, screenAllowed, type Area } from './area'
+import {
+  AREA_HOME,
+  areaFromPath,
+  areaOfGroup,
+  isPrivate,
+  screenAllowed,
+  visibleGroups,
+  type Area,
+} from './area'
 
 describe('areaFromPath', () => {
   it('maps each entry point to its area', () => {
@@ -70,5 +78,24 @@ describe('screenAllowed', () => {
     for (const area of ['public', 'practice', 'admin'] as Area[]) {
       expect(screenAllowed(area, AREA_HOME[area])).toBe(true)
     }
+  })
+})
+
+describe('visibleGroups', () => {
+  it('shows only Public on the public journal, even when signed in', () => {
+    // Being signed in must not change what the public site looks like — a
+    // screenshot of it should give nothing away about what's behind the login.
+    expect(visibleGroups('public', true)).toEqual(['Public'])
+    expect(visibleGroups('public', false)).toEqual(['Public'])
+  })
+
+  it('offers every section inside a private area, so there is a way across and back', () => {
+    expect(visibleGroups('practice', true)).toEqual(['Public', 'Practice', 'Admin'])
+    expect(visibleGroups('admin', true)).toEqual(['Public', 'Practice', 'Admin'])
+  })
+
+  it('falls back to Public alone when the visitor is not signed in', () => {
+    expect(visibleGroups('admin', false)).toEqual(['Public'])
+    expect(visibleGroups('practice', false)).toEqual(['Public'])
   })
 })
