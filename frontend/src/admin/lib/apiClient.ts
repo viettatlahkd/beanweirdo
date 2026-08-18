@@ -150,7 +150,8 @@ export async function createPost(input: {
   kind: PostKind
   en: string
   vi: string
-  template?: PostTemplate
+  /** The stored template to start from; its body is copied into the new post. */
+  templateId?: string
 }): Promise<{ id: string }> {
   return request<{ id: string }>('/api/posts', { method: 'POST', body: JSON.stringify(input) })
 }
@@ -340,4 +341,39 @@ export async function patchNote(id: string, patch: Partial<Omit<Note, 'id'>>): P
 /** DELETE /api/notes?id= */
 export async function deleteNote(id: string): Promise<void> {
   await request<Record<string, never>>(`/api/notes?id=${id}`, { method: 'DELETE' })
+}
+
+/** A stored blueprint a post can start from — see migration 0014. */
+export type TemplateSummary = {
+  id: string
+  name: string
+  description: string
+  renderer: PostTemplate
+  sortOrder: number
+}
+
+export type StoredTemplate = TemplateSummary & { body: unknown | null }
+
+/** GET /api/templates — the choices, without their bodies. */
+export async function listTemplates(): Promise<TemplateSummary[]> {
+  const result = await request<{ templates: TemplateSummary[] }>('/api/templates')
+  return result.templates
+}
+
+/** GET /api/templates?id=… — one template, body included. */
+export async function getTemplate(id: string): Promise<StoredTemplate> {
+  const result = await request<{ template: StoredTemplate }>(`/api/templates?id=${encodeURIComponent(id)}`)
+  return result.template
+}
+
+/** PATCH /api/templates?id=… — save an edited template back. */
+export async function updateTemplate(
+  id: string,
+  patch: Partial<Pick<StoredTemplate, 'name' | 'description' | 'body' | 'sortOrder'>>,
+): Promise<StoredTemplate> {
+  const result = await request<{ template: StoredTemplate }>(`/api/templates?id=${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(patch),
+  })
+  return result.template
 }

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
 import { Breadcrumbs } from '../components/Breadcrumbs'
-import { NAV, TEMPLATES_HEAD } from '../content/navItems'
+import { NAV } from '../content/navItems'
 import { SITE_DEFAULTS, type NavGroup, type SiteCopy, type SiteOverrides } from '../content/site'
 import {
   createModule,
@@ -336,7 +336,6 @@ export function Cms() {
     { group: 'Admin', color: '#6FA8C0', rows: [] },
   ].map((g) => {
     const rows: { label: string; desc: string; kids: string[] }[] = []
-    let templatesDone = false
     for (const item of NAV.filter((n) => n.group === g.group)) {
       if (g.group === 'Public' && item.key === 'notes') {
         for (const m of modules) {
@@ -347,16 +346,6 @@ export function Cms() {
           })
         }
       }
-      if (item.sub && !templatesDone) {
-        templatesDone = true
-        rows.push({
-          label: TEMPLATES_HEAD.label,
-          desc: TEMPLATES_HEAD.desc,
-          kids: NAV.filter((x) => x.group === g.group && x.sub).map((x) => `${x.label} — ${x.desc}`),
-        })
-        continue
-      }
-      if (item.sub) continue
       rows.push({ label: item.label, desc: item.desc, kids: [] })
     }
     return { ...(g as { group: NavGroup; color: string }), rows }

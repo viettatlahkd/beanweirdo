@@ -18,6 +18,10 @@ export type Screen =
   | 'postNew'
   | 'postEdit'
   | 'postPreview'
+  /** Admin › Templates — the stored blueprints. */
+  | 'templates'
+  /** A template with sample content in it, under Admin › Templates. */
+  | 'template'
 
 /** Two shapes for the index screen — a ledger (A) and three columns (B). */
 export type Variant = 'A' | 'B'
@@ -40,8 +44,6 @@ export type Nav = {
   /** The post currently open on the article screen — null until one is picked. */
   postId: string | null
   articleFrom: Origin
-  reportFrom: Origin
-  cardsFrom: Origin
   goArt(): void
   goLanding(): void
   goHome(): void
@@ -50,8 +52,7 @@ export type Nav = {
   goNotes(): void
   goCms(): void
   goLogic(): void
-  goCards(from?: Origin): void
-  goReport(from?: Origin): void
+  goTemplates(): void
   openModule(id: string): void
   /**
    * Optional id: some call sites (the sidebar's Templates links) don't have a

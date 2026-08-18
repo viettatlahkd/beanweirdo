@@ -20,7 +20,6 @@ import { NewPostWizard } from './admin/screens/NewPostWizard'
 import { Preview } from './admin/screens/Preview'
 import { Archive } from './screens/Archive'
 import { Article } from './screens/Article'
-import { Cards } from './screens/Cards'
 import { Cms } from './screens/Cms'
 import { DesignSystem } from './screens/DesignSystem'
 import { Hours } from './screens/Hours'
@@ -29,7 +28,7 @@ import { Landing } from './screens/Landing'
 import { Logic } from './screens/Logic'
 import { ModuleScreen } from './screens/ModuleScreen'
 import { Notes } from './screens/Notes'
-import { Report } from './screens/Report'
+import { Templates } from './screens/Templates'
 
 const settings: Settings = { density: 'roomy', showPlates: true }
 
@@ -63,8 +62,6 @@ export function App({ area }: { area: Area }) {
   const [postId, setPostId] = useState<string | null>(initial.postId)
   // Which door each template screen was entered through — see `Origin`.
   const [articleFrom, setArticleFrom] = useState<Origin>('admin')
-  const [reportFrom, setReportFrom] = useState<Origin>('admin')
-  const [cardsFrom, setCardsFrom] = useState<Origin>('admin')
 
   const openModule = useCallback((id: string) => {
     setModuleId(id)
@@ -75,16 +72,6 @@ export function App({ area }: { area: Area }) {
     setPostId(id ?? null)
     setArticleFrom(from)
     setScreen('article')
-  }, [])
-
-  const goReport = useCallback((from: Origin = 'admin') => {
-    setReportFrom(from)
-    setScreen('report')
-  }, [])
-
-  const goCards = useCallback((from: Origin = 'admin') => {
-    setCardsFrom(from)
-    setScreen('cards')
   }, [])
 
   const editPost = useCallback((id: string) => {
@@ -105,8 +92,6 @@ export function App({ area }: { area: Area }) {
       moduleId,
       postId,
       articleFrom,
-      reportFrom,
-      cardsFrom,
       goArt: () => setScreen('art'),
       goLanding: () => setScreen('landing'),
       goHome: () => setScreen('home'),
@@ -115,13 +100,12 @@ export function App({ area }: { area: Area }) {
       goNotes: () => setScreen('notes'),
       goCms: () => setScreen('cms'),
       goLogic: () => setScreen('logic'),
-      goCards,
-      goReport,
       openModule,
       openArticle,
       newPost: () => setScreen('postNew'),
       editPost,
       previewPost,
+      goTemplates: () => setScreen('templates'),
       toggleVariant: () => {
         setScreen('home')
         setVariant((v) => (v === 'A' ? 'B' : 'A'))
@@ -134,12 +118,8 @@ export function App({ area }: { area: Area }) {
       moduleId,
       postId,
       articleFrom,
-      reportFrom,
-      cardsFrom,
       openModule,
       openArticle,
-      goCards,
-      goReport,
       editPost,
       previewPost,
     ],
@@ -161,11 +141,10 @@ export function App({ area }: { area: Area }) {
       {shown === 'archive' && <Archive />}
       {shown === 'cms' && <Cms />}
       {shown === 'logic' && <Logic />}
-      {shown === 'cards' && <Cards />}
-      {shown === 'report' && <Report />}
       {shown === 'postNew' && <NewPostWizard />}
       {shown === 'postEdit' && postId && <Editor postId={postId} />}
       {shown === 'postPreview' && postId && <Preview postId={postId} />}
+      {shown === 'templates' && <Templates />}
     </div>
   )
 

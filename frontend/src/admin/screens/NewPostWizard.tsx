@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Stepper } from '../components/Stepper'
-import { createPost, type PostTemplate } from '../lib/apiClient'
+import { createPost } from '../lib/apiClient'
 import { useNav } from '../../lib/nav'
 import { MetadataStep, type Metadata } from './MetadataStep'
 import { TemplateStep } from './TemplateStep'
@@ -21,9 +21,9 @@ function NewPostWizardContent() {
     setStep('template')
   }
 
-  async function handleTemplate(template: PostTemplate) {
+  async function handleTemplate(templateId: string) {
     if (!metadata) return
-    const { id } = await createPost({ ...metadata, template })
+    const { id } = await createPost({ ...metadata, templateId })
     nav.editPost(id)
   }
 

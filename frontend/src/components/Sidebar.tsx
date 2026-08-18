@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react'
-import { NAV, TEMPLATES_HEAD, type Glyph, type NavItem } from '../content/navItems'
+import { NAV, type Glyph, type NavItem } from '../content/navItems'
 import type { NavGroup } from '../content/site'
 import { readingModules, useModules, type ModuleRow } from '../data/useModules'
 import { usePublishedPosts, type PostRow } from '../data/usePublishedPosts'
@@ -166,14 +166,10 @@ function go(nav: Nav, item: NavItem): () => void {
       return nav.goArt
     case 'logic':
       return nav.goLogic
+    case 'templates':
+      return nav.goTemplates
     case 'archive':
       return nav.goArchive
-    case 'article':
-      return () => nav.openArticle(undefined, 'admin')
-    case 'report':
-      return () => nav.goReport('admin')
-    case 'cards':
-      return () => nav.goCards('admin')
     default:
       return nav.goLanding
   }
@@ -204,7 +200,6 @@ export function Sidebar() {
   const section = (group: NavGroup) => {
     const items = NAV.filter((n) => n.group === group)
     const rows: ReactNode[] = []
-    let templatesEmitted = false
 
     for (const item of items) {
       // The modules sit between "Mục lục" and "Ghi 01" in Public.
@@ -229,20 +224,6 @@ export function Sidebar() {
         }
       }
 
-      if (item.sub && !templatesEmitted) {
-        templatesEmitted = true
-        const first = items.find((x) => x.sub)
-        rows.push(
-          <Row
-            key="templates-head"
-            onClick={first ? go(nav, first) : nav.goLanding}
-            label={TEMPLATES_HEAD.label}
-            muted={t.muted}
-            hoverBg={t.hover}
-            glyph={<Mark shape={TEMPLATES_HEAD.shape} />}
-          />,
-        )
-      }
 
       rows.push(
         <Row

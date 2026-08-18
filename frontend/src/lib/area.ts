@@ -51,7 +51,7 @@ export const AREA_HOME: Record<Area, string> = {
  * real post opened from a module, under `admin` the blank sample (see `Origin`).
  */
 const AREA_SCREENS: Record<Area, readonly string[]> = {
-  public: ['landing', 'home', 'module', 'notes', 'article', 'cards', 'report'],
+  public: ['landing', 'home', 'module', 'notes', 'article'],
   practice: ['hours'],
   admin: [
     'cms',
@@ -59,8 +59,7 @@ const AREA_SCREENS: Record<Area, readonly string[]> = {
     'logic',
     'archive',
     'article',
-    'cards',
-    'report',
+    'templates',
     'postNew',
     'postEdit',
     'postPreview',

@@ -38,25 +38,18 @@ export function buildCrumbs(
     label: modules.find((m) => m.id === id)?.title ?? id,
     go: toPublic('landing', () => nav.openModule(id)),
   })
-  const template = (title: string): Crumb[] => [admin, { label: 'Notes' }, { label: 'Templates' }, { label: title }]
 
   switch (nav.screen) {
     case 'home':
       return [landing, { label: navLabel('home') }]
     case 'module':
       return [landing, index, { label: modules.find((m) => m.id === nav.moduleId)?.title ?? nav.moduleId }]
-    case 'cards':
-      return nav.cardsFrom === 'module'
-        ? [landing, index, mod('sensory'), { label: 'Sensory Lexicon' }]
-        : template('Info cards')
-    case 'report':
-      return nav.reportFrom === 'module'
-        ? [landing, index, mod('roasting'), { label: 'Heat Transfer' }]
-        : template('Field report')
     case 'article':
       return nav.articleFrom === 'module'
-        ? [landing, index, mod('biochem'), { label: 'Chlorogenic Acids · 2026.02' }]
-        : template('Article')
+        ? [landing, index, mod(nav.moduleId), { label: 'Bài viết' }]
+        : [admin, { label: 'Templates' }]
+    case 'templates':
+      return [admin, { label: navLabel('templates') }]
     case 'notes':
       return [landing, { label: `beӕn weirdo — ${navLabel('notes')}` }]
     case 'hours':
@@ -86,10 +79,6 @@ export function crumbBack(nav: Nav): () => void {
   switch (nav.screen) {
     case 'module':
       return nav.goHome
-    case 'cards':
-      return nav.cardsFrom === 'module' ? () => nav.openModule('sensory') : out
-    case 'report':
-      return nav.reportFrom === 'module' ? () => nav.openModule('roasting') : out
     case 'article':
       return nav.articleFrom === 'module' ? () => nav.openModule('biochem') : out
     case 'archive':

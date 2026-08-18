@@ -104,6 +104,14 @@ export const NAV: NavItem[] = [
     shape: glyph({ w: '8px', h: '8px', tf: 'rotate(45deg)' }),
   },
   {
+    key: 'templates',
+    group: 'Admin',
+    label: 'Templates',
+    desc: 'khung để bắt đầu một bài',
+    screen: 'templates',
+    shape: glyph({ w: '11px', h: '8px', r: '0 2px 2px 0', brw: '4px' }),
+  },
+  {
     key: 'archive',
     group: 'Admin',
     label: 'Archive',
@@ -111,59 +119,7 @@ export const NAV: NavItem[] = [
     screen: 'archive',
     shape: glyph({ w: '13px', h: '5px', r: '3px' }),
   },
-  {
-    key: 'article',
-    group: 'Admin',
-    label: 'Article',
-    desc: 'khung bài dài',
-    screen: 'article',
-    sub: true,
-    shape: glyph({ w: '11px', h: '7px', brw: '0' }),
-  },
-  {
-    key: 'report',
-    group: 'Admin',
-    label: 'Field report',
-    desc: 'khung ghi hiện trường',
-    screen: 'report',
-    sub: true,
-    shape: glyph({ w: '11px', h: '9px' }),
-  },
-  {
-    key: 'longform',
-    group: 'Admin',
-    label: 'Long-form',
-    desc: 'khung bài dịch dài',
-    screen: 'article',
-    sub: true,
-    shape: glyph({ w: '11px', h: '11px', brw: '3px' }),
-  },
-  {
-    key: 'memo',
-    group: 'Admin',
-    label: 'Memo',
-    desc: 'khung ghi nếm thử',
-    screen: 'article',
-    sub: true,
-    shape: glyph({ w: '10px', h: '8px', r: '2px' }),
-  },
-  {
-    key: 'cards',
-    group: 'Admin',
-    label: 'Info cards',
-    desc: 'khung thẻ gập',
-    screen: 'cards',
-    sub: true,
-    shape: glyph({ w: '11px', h: '4px' }),
-  },
 ]
-
-/** The head row the three template pages nest under. */
-export const TEMPLATES_HEAD = {
-  label: 'Templates',
-  desc: 'khung bài mẫu',
-  shape: glyph({ w: '11px', h: '8px', r: '0 2px 2px 0', brw: '4px' }),
-}
 
 export const navByKey = (key: string): NavItem | undefined => NAV.find((n) => n.key === key)
 

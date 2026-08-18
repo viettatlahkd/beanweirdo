@@ -172,3 +172,61 @@ describe('PUT /api/posts', () => {
     expect(res.statusCode).toBe(200)
   })
 })
+
+describe('POST /api/posts — starting from a template', () => {
+  it('copies the template body into the new post and takes its renderer', async () => {
+    const insert = queryBuilder({ data: { id: 'new' }, error: null })
+    fromMock
+      .mockReturnValueOnce(queryBuilder({ data: { renderer: 'longform', body: [{ k: 'h1' }] }, error: null }))
+      .mockReturnValueOnce(queryBuilder({ data: [], error: null, count: 2 }))
+      .mockReturnValueOnce(insert)
+
+    const res = mockRes()
+    await handler(
+      mockReq({
+        method: 'POST',
+        body: { moduleId: 'biochem', kind: 'note', en: 'Bài mới', vi: 'mô tả', templateId: 't1' },
+        headers: authHeaders(signToken()),
+      }),
+      res,
+    )
+
+    // Picking a template that starts empty was the whole bug: the choice only
+    // set a column and the writer got a blank page.
+    expect(insert.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ template: 'longform', body: [{ k: 'h1' }] }),
+    )
+    expect(res.statusCode).toBe(201)
+  })
+
+  it('rejects a template id that does not exist', async () => {
+    fromMock.mockReturnValueOnce(queryBuilder({ data: null, error: null }))
+    const res = mockRes()
+    await handler(
+      mockReq({
+        method: 'POST',
+        body: { moduleId: 'biochem', kind: 'note', en: 'x', vi: 'y', templateId: 'gone' },
+        headers: authHeaders(signToken()),
+      }),
+      res,
+    )
+    expect(res.statusCode).toBe(400)
+  })
+
+  it('still creates an empty post when no template is named', async () => {
+    const insert = queryBuilder({ data: { id: 'new' }, error: null })
+    fromMock.mockReturnValueOnce(queryBuilder({ data: [], error: null, count: 0 })).mockReturnValueOnce(insert)
+
+    const res = mockRes()
+    await handler(
+      mockReq({
+        method: 'POST',
+        body: { moduleId: 'biochem', kind: 'note', en: 'x', vi: 'y' },
+        headers: authHeaders(signToken()),
+      }),
+      res,
+    )
+
+    expect(insert.insert).toHaveBeenCalledWith(expect.objectContaining({ template: 'article', body: null }))
+  })
+})

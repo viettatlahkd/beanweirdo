@@ -67,11 +67,11 @@ describe('screenAllowed', () => {
     expect(screenAllowed('admin', 'postNew')).toBe(true)
   })
 
-  it('lets the three templates render in both areas — post vs blank sample', () => {
-    for (const screen of ['article', 'cards', 'report']) {
-      expect(screenAllowed('public', screen)).toBe(true)
-      expect(screenAllowed('admin', screen)).toBe(true)
-    }
+  it('lets Templates render in the admin area only', () => {
+    // One screen lists them all now; the five hardcoded template screens are
+    // gone along with the five nav entries.
+    expect(screenAllowed('admin', 'templates')).toBe(true)
+    expect(screenAllowed('public', 'templates')).toBe(false)
   })
 
   it('always allows the screen an area opens on', () => {

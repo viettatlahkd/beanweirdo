@@ -45,6 +45,9 @@ interface CreatePostBody {
   kind?: unknown
   en?: unknown
   vi?: unknown
+  /** The stored template to start from — its body is copied into the new post. */
+  templateId?: unknown
+  /** Renderer, when starting from no template at all. */
   template?: unknown
 }
 
@@ -61,7 +64,12 @@ async function handleCreate(req: VercelRequest, res: VercelResponse): Promise<vo
   const kind = body.kind
   const en = body.en
   const vi = body.vi
-  const template = body.template ?? 'article'
+  const templateId = typeof body.templateId === 'string' ? body.templateId : null
+  let template = body.template ?? 'article'
+  // Starting content. A template hands its body over and the post owns it from
+  // then on — editing the post never touches the template it came from, and
+  // editing the template never reaches back into posts already written.
+  let startingBody: unknown = null
 
   if (typeof moduleId !== 'string' || moduleId.length === 0) {
     res.status(400).json({ error: 'moduleId is required' })
@@ -85,6 +93,27 @@ async function handleCreate(req: VercelRequest, res: VercelResponse): Promise<vo
   }
 
   const supabase = getSupabase()
+
+  if (templateId) {
+    const { data: tpl, error: tplError } = await supabase
+      .from('templates')
+      .select('renderer, body')
+      .eq('id', templateId)
+      .maybeSingle()
+
+    if (tplError) {
+      res.status(500).json({ error: tplError.message })
+      return
+    }
+    if (!tpl) {
+      res.status(400).json({ error: `Template '${templateId}' does not exist` })
+      return
+    }
+    // The template decides the renderer — picking one and then contradicting it
+    // would leave a post drawn by something its content was not written for.
+    template = (tpl as { renderer: string }).renderer
+    startingBody = (tpl as { body: unknown }).body ?? null
+  }
 
   // `n` (display index) and `date_label` are NOT NULL with no DB default —
   // derive reasonable values: n = next sequence number within the module,
@@ -113,6 +142,7 @@ async function handleCreate(req: VercelRequest, res: VercelResponse): Promise<vo
       n,
       date_label: dateLabel,
       sort_order: (count ?? 0) + 1,
+      body: startingBody,
     })
     .select('id')
     .single()
