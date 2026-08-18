@@ -83,7 +83,8 @@ export const LOGIC: LogicPart[] = [
       { s: 'Toàn hệ thống', r: 'Trên dải đường dẫn: mũi tên ← quay về trang liền trước, bấm từng chặng thì tới đúng trang đó.', e: '' },
       { s: 'Toàn hệ thống', r: 'Với sidebar: chia ba nhóm, mỗi nhóm có nhãn và đường kẻ ngăn.', e: '[[secPublic]] · [[secPractice]] · [[secAdmin]]' },
       { s: 'Toàn hệ thống', r: 'Với sidebar: chìm ở 64px, chỉ mở rộng khi rê chuột.', e: '268px khi mở' },
-      { s: 'Module', r: 'Với sidebar: mỗi module một chấm tròn màu riêng; riêng [[notes]] dùng hình vuông để tách khỏi module.', e: '' }
+      { s: 'Module', r: 'Với sidebar: mỗi module một chấm tròn màu riêng; riêng [[notes]] dùng hình vuông để tách khỏi module.', e: '' },
+      { s: 'Module', r: 'Với mọi module đã tạo và chưa ẩn: luôn hiện ở sidebar và [[landing]], kể cả khi chưa có bài nào — số bài hiển thị 0, không tự ẩn đi.', e: 'chưa có bài ≠ chưa tồn tại' }
     ] },
     { n: '06', g: 'Câu trích đầu trang Ghi', items: [
       { s: 'Template', r: 'Ở đầu trang Ghi: một câu trích thật về hiệu suất, thói quen hoặc thời gian, kèm tên tác giả — không tự nghĩ câu.', e: 'nguồn có thật, ghi đúng tên' },

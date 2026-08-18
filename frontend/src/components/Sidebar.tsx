@@ -199,8 +199,6 @@ export function Sidebar() {
   const groups = visibleGroups(nav.area, authed)
 
   const countFor = (m: ModuleRow) => posts.filter((p: PostRow) => p.module_id === m.id).length
-  /** A module with nothing published isn't on the reader's site yet. */
-  const published = modules.filter((m) => countFor(m) > 0)
 
   const section = (group: NavGroup) => {
     const items = NAV.filter((n) => n.group === group)
@@ -210,7 +208,10 @@ export function Sidebar() {
     for (const item of items) {
       // The modules sit between "Mục lục" and "Ghi 01" in Public.
       if (group === 'Public' && item.key === 'notes') {
-        for (const m of published) {
+        // Every module is listed, published or not: the sidebar is the map of
+        // what the journal covers, and a module with nothing in it yet is still
+        // part of that map. The count beside it tells the truth.
+        for (const m of modules) {
           rows.push(
             <Row
               key={`mod-${m.id}`}
