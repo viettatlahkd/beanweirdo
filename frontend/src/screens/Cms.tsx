@@ -17,6 +17,7 @@ import {
   type PostSummary,
 } from '../admin/lib/apiClient'
 import { createPost, transitionStatus, getSite } from '../admin/lib/apiClient'
+import { PostsPanel } from '../admin/components/PostsPanel'
 import { ink, paper, sans, serif } from '../design/tokens'
 import { Hover } from '../lib/Hover'
 
@@ -182,17 +183,18 @@ function ImageSlot({
 /**
  * Content management — the site's own back office.
  *
- * Two tabs. "Sơ đồ trang" is a read-through map of every page in the sidebar,
- * where the three section names are editable in place. "Sửa nội dung" edits the
- * site copy, the three opening plates, and every module: its colours, its
- * layout, its image slots, and its list of posts (drag to reorder, which
- * renumbers them server-side).
+ * Three tabs. "Tạo bài đăng" is where posts are written, edited and published.
+ * "Sơ đồ trang" is a read-through map of every page in the sidebar, where the
+ * three section names are editable in place. "Sửa nội dung" edits the site
+ * copy, the three opening plates, and every module: its colours, its layout,
+ * its image slots, and its list of posts (drag to reorder, which renumbers
+ * them server-side).
  *
  * Everything saves on blur — there is no page-level save button (System
  * conventions, rule 08).
  */
 export function Cms() {
-  const [tab, setTab] = useState<'map' | 'content'>('map')
+  const [tab, setTab] = useState<'posts' | 'map' | 'content'>('posts')
   const [site, setSite] = useState<SiteOverrides>({})
   const [modules, setModules] = useState<Module[]>([])
   const [posts, setPosts] = useState<PostSummary[]>([])
@@ -417,6 +419,7 @@ export function Cms() {
 
         <div style={{ display: 'flex', gap: 4, marginTop: 26 }}>
           {([
+            { k: 'posts', t: 'Tạo bài đăng' },
             { k: 'map', t: 'Sơ đồ trang' },
             { k: 'content', t: 'Sửa nội dung' },
           ] as const).map((x) => (
@@ -452,6 +455,12 @@ export function Cms() {
           }}
         >
           {error}
+        </div>
+      )}
+
+      {tab === 'posts' && (
+        <div style={{ padding: '34px 56px 130px', maxWidth: 1080 }}>
+          <PostsPanel />
         </div>
       )}
 

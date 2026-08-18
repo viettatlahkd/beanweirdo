@@ -5,6 +5,8 @@ import { useModules, type ModuleRow } from '../data/useModules'
 import { usePublishedPosts, type PostRow } from '../data/usePublishedPosts'
 import { useSiteCopy } from '../data/useSiteCopy'
 import { layout, paper, sans, serif } from '../design/tokens'
+import { areaOfGroup, goToArea } from '../lib/area'
+import { useAuth } from '../lib/auth'
 import { Hover, useHover } from '../lib/Hover'
 import { useNav, type Nav } from '../lib/nav'
 
@@ -22,6 +24,18 @@ const glyphSlot: CSSProperties = {
   display: 'flex',
   justifyContent: 'center',
   flex: 'none',
+}
+
+/** An open bracket — the one row that leads out rather than in. */
+const SIGN_OUT_GLYPH: Glyph = {
+  w: '9px',
+  h: '10px',
+  r: '0',
+  bd: '1px solid currentColor',
+  brw: '0',
+  bbw: '1px',
+  bg: 'transparent',
+  tf: 'none',
 }
 
 /**
@@ -129,8 +143,14 @@ function SectionLabel({ children }: { children: ReactNode }) {
   )
 }
 
-/** Where a nav item lands, including resetting a template page's provenance. */
+/**
+ * Where a nav item lands. Items belonging to another area leave this app
+ * entirely — each area is its own entry point with its own auth check.
+ */
 function go(nav: Nav, item: NavItem): () => void {
+  const target = areaOfGroup(item.group)
+  if (target !== nav.area) return () => goToArea(target, item.key)
+
   switch (item.screen) {
     case 'landing':
       return nav.goLanding
@@ -173,6 +193,7 @@ export function Sidebar() {
   const { data: modules } = useModules()
   const { data: posts } = usePublishedPosts()
   const { site } = useSiteCopy()
+  const { authed, signOut } = useAuth()
   const dark = nav.screen === 'notes' || nav.screen === 'hours'
   const t = theme(dark)
 
@@ -295,17 +316,38 @@ export function Sidebar() {
         {section('Public')}
       </div>
 
-      <div style={{ margin: '16px 0 0' }}>
-        <div style={{ height: 1, background: t.rule, marginBottom: 10 }} />
-        <SectionLabel>{site.sections.Practice}</SectionLabel>
-        {section('Practice')}
-      </div>
+      {/* Practice and Admin are private: no rows, no hint they exist, until
+          the visitor is signed in. The pages themselves live behind their own
+          URLs and auth check — this only keeps the door out of sight. */}
+      {authed && (
+        <>
+          <div style={{ margin: '16px 0 0' }}>
+            <div style={{ height: 1, background: t.rule, marginBottom: 10 }} />
+            <SectionLabel>{site.sections.Practice}</SectionLabel>
+            {section('Practice')}
+          </div>
 
-      <div style={{ margin: '16px 0 0' }}>
-        <div style={{ height: 1, background: t.rule, marginBottom: 10 }} />
-        <SectionLabel>{site.sections.Admin}</SectionLabel>
-        {section('Admin')}
-      </div>
+          <div style={{ margin: '16px 0 0' }}>
+            <div style={{ height: 1, background: t.rule, marginBottom: 10 }} />
+            <SectionLabel>{site.sections.Admin}</SectionLabel>
+            {section('Admin')}
+          </div>
+
+          <div style={{ margin: '16px 0 0' }}>
+            <div style={{ height: 1, background: t.rule, marginBottom: 10 }} />
+            <Row
+              onClick={() => {
+                signOut()
+                goToArea('public')
+              }}
+              label="Đăng xuất"
+              muted={t.muted}
+              hoverBg={t.hover}
+              glyph={<Mark shape={SIGN_OUT_GLYPH} />}
+            />
+          </div>
+        </>
+      )}
     </div>
   )
 }

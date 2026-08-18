@@ -1,21 +1,18 @@
 import { useState } from 'react'
-import { PasswordGate } from '../PasswordGate'
 import { Stepper } from '../components/Stepper'
 import { createPost, type PostTemplate } from '../lib/apiClient'
-import { useAdminNav } from '../lib/nav'
+import { useNav } from '../../lib/nav'
 import { MetadataStep, type Metadata } from './MetadataStep'
 import { TemplateStep } from './TemplateStep'
 
 export function NewPostWizard() {
   return (
-    <PasswordGate>
       <NewPostWizardContent />
-    </PasswordGate>
   )
 }
 
 function NewPostWizardContent() {
-  const nav = useAdminNav()
+  const nav = useNav()
   const [step, setStep] = useState<'metadata' | 'template' | 'editor'>('metadata')
   const [metadata, setMetadata] = useState<Metadata | null>(null)
 
@@ -27,7 +24,7 @@ function NewPostWizardContent() {
   async function handleTemplate(template: PostTemplate) {
     if (!metadata) return
     const { id } = await createPost({ ...metadata, template })
-    nav.goEdit(id)
+    nav.editPost(id)
   }
 
   return (

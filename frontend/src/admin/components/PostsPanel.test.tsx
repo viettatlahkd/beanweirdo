@@ -2,16 +2,17 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
-vi.mock('../PasswordGate', () => ({ PasswordGate: ({ children }: { children: React.ReactNode }) => children }))
-vi.mock('../lib/nav', () => ({
-  useAdminNav: () => ({
-    screen: 'dashboard',
+// The panel is a tab inside Content management now — the area's AuthGate
+// covers it, so there is no per-screen gate left to stub out.
+vi.mock('../../lib/nav', () => ({
+  useNav: () => ({
+    screen: 'cms',
+    area: 'admin',
     postId: null,
-    goLogin: vi.fn(),
-    goDashboard: vi.fn(),
-    goNew: vi.fn(),
-    goEdit: vi.fn(),
-    goPreview: vi.fn(),
+    newPost: vi.fn(),
+    editPost: vi.fn(),
+    previewPost: vi.fn(),
+    goCms: vi.fn(),
   }),
 }))
 
@@ -40,11 +41,11 @@ vi.mock('../lib/apiClient', () => ({
   transitionStatus: (...args: unknown[]) => transitionStatus(...args),
 }))
 
-const { Dashboard } = await import('./Dashboard')
+const { PostsPanel } = await import('./PostsPanel')
 
-describe('Dashboard', () => {
+describe('PostsPanel', () => {
   it('lists posts with template, meta and preview, and publishes one on click', async () => {
-    render(<Dashboard />)
+    render(<PostsPanel />)
     expect(await screen.findByText('Senses of Flavors')).toBeInTheDocument()
     // Real template name (not the old band/specimen/sequence naming).
     expect(screen.getByText('Article')).toBeInTheDocument()
@@ -62,12 +63,12 @@ describe('Dashboard', () => {
   })
 
   it('fetches posts for the selected status tab', async () => {
-    render(<Dashboard />)
+    render(<PostsPanel />)
     await screen.findByText('Senses of Flavors')
     listPosts.mockClear()
 
-    // Tabs carry their own testid — the "Lưu trữ" tab label and the row's
-    // "Lưu trữ" (archive) action button share the same visible text.
+    // Filter buttons carry their own testid — the "Lưu trữ" filter label and
+    // the row's "Lưu trữ" (archive) action button share the same visible text.
     await userEvent.click(screen.getByTestId('tab-archived'))
     expect(listPosts).toHaveBeenCalledWith('archived')
   })
@@ -94,12 +95,12 @@ describe('Dashboard', () => {
         publishedAt: '2026-05-02T00:00:00Z',
       },
     ])
-    render(<Dashboard />)
+    render(<PostsPanel />)
     await screen.findByText('First Crack Field Notes')
 
     expect(screen.getByRole('button', { name: 'Bỏ đăng' })).toBeInTheDocument()
     // The row's "Lưu trữ" (archive) button shares its label with the
-    // "Lưu trữ" status tab — pick the one that isn't a tab (no aria-pressed).
+    // "Lưu trữ" status filter — pick the one that isn't a filter (no aria-pressed).
     const archiveButtons = screen.getAllByRole('button', { name: 'Lưu trữ' })
     const rowArchiveButton = archiveButtons.find((b) => !b.hasAttribute('aria-pressed'))
     expect(rowArchiveButton).toBeTruthy()
@@ -126,7 +127,7 @@ describe('Dashboard', () => {
         publishedAt: null,
       },
     ])
-    render(<Dashboard />)
+    render(<PostsPanel />)
     await screen.findByText('Chlorogenic Acids (CGA)')
 
     await userEvent.click(screen.getByRole('button', { name: 'Khôi phục' }))

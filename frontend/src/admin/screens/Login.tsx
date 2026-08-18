@@ -1,10 +1,13 @@
 import { useState, type FormEvent } from 'react'
 import { ApiError, login } from '../lib/apiClient'
-import { useAdminNav } from '../lib/nav'
 import { garden, ink, paper, sans, serif } from '../../design/tokens'
 
-export function Login() {
-  const nav = useAdminNav()
+/**
+ * The password form for both private areas. It reports success upward rather
+ * than navigating itself — the caller (`AuthGate`) simply stops covering the
+ * area, so signing in leaves the visitor on the page they asked for.
+ */
+export function Login({ onSuccess }: { onSuccess: () => void }) {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
@@ -15,7 +18,7 @@ export function Login() {
     setPending(true)
     try {
       await login(password)
-      nav.goDashboard()
+      onSuccess()
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Không thể đăng nhập. Vui lòng thử lại.')
       setPending(false)
@@ -28,7 +31,11 @@ export function Login() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 34 }}>
           <div style={{ width: 18, height: 18, borderRadius: '50%', background: garden.blush, flex: 'none' }} />
           <span style={{ fontFamily: serif, fontWeight: 600, fontSize: 21, letterSpacing: '-0.01em', color: ink.base }}>
-            bean weirdo
+            be
+            <span style={{ display: 'inline-block', transform: 'scale(1.3)', transformOrigin: '50% 82%', color: garden.blush }}>
+              ӕ
+            </span>
+            n weirdo
           </span>
         </div>
 
@@ -89,7 +96,7 @@ export function Login() {
           </p>
         )}
 
-        <div style={{ marginTop: 16, fontSize: 11, color: ink.faint }}>admin.beanweirdo.app</div>
+        <div style={{ marginTop: 16, fontSize: 11, color: ink.faint }}>khu riêng — cần mật khẩu</div>
       </form>
     </div>
   )

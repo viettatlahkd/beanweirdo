@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { PostRenderer } from 'post-renderer'
-import { PasswordGate } from '../PasswordGate'
 import { getPost, listModules, type Module, type PostDetail } from '../lib/apiClient'
 import { ink, paper } from '../../design/tokens'
 import { resolveTemplate, toArticleData, toCardsData, toReportData } from '../lib/postData'
@@ -14,13 +13,12 @@ import { resolveTemplate, toArticleData, toCardsData, toReportData } from '../li
  * Port of the standalone admin app's app/posts/[id]/preview/page.tsx,
  * adapted to take `postId` as a prop instead of a next/navigation route
  * param. Reachable either via Editor's "Xem trước ↗" link (which opens
- * `/admin?preview=<id>` in a new tab — see AdminApp) or by direct in-app nav.
+ * `/admin?preview=<id>` in a new tab — the Admin area reads that param on
+ * mount, see App.tsx's `initialState`) or by direct in-app nav.
  */
 export function Preview({ postId }: { postId: string }) {
   return (
-    <PasswordGate>
       <PreviewContent postId={postId} />
-    </PasswordGate>
   )
 }
 

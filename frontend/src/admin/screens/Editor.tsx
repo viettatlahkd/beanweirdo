@@ -9,7 +9,6 @@ import type {
   ReportTable,
   SectionData,
 } from 'post-renderer'
-import { PasswordGate } from '../PasswordGate'
 import { Stepper } from '../components/Stepper'
 import {
   getPost,
@@ -21,7 +20,7 @@ import {
   type PostDetail,
   type PostTemplate,
 } from '../lib/apiClient'
-import { useAdminNav } from '../lib/nav'
+import { useNav } from '../../lib/nav'
 import { ink, paper, serif } from '../../design/tokens'
 import { blankReportBlock, getBody, resolveTemplate, toArticleData, toCardsData } from '../lib/postData'
 
@@ -60,14 +59,12 @@ const TEMPLATE_LABEL: Record<string, string> = { article: 'Article', cards: 'Car
  */
 export function Editor({ postId }: { postId: string }) {
   return (
-    <PasswordGate>
       <EditorContent postId={postId} />
-    </PasswordGate>
   )
 }
 
 function EditorContent({ postId }: { postId: string }) {
-  const nav = useAdminNav()
+  const nav = useNav()
   const [post, setPost] = useState<PostDetail | null>(null)
   const [modules, setModules] = useState<Module[]>([])
 
@@ -114,19 +111,19 @@ function EditorContent({ postId }: { postId: string }) {
         <span style={{ fontSize: 11, color: ink.muted }}>Tự lưu khi rời khỏi ô soạn · trạng thái hiện tại: {post.status}</span>
         <div>
           {/* Opens the preview screen in a new tab via the ?preview= deep
-              link AdminApp reads on initial mount — this app has no
-              per-screen URL otherwise, so this query param is the one place
-              a real link (rather than an in-app nav() call) is used. */}
+              link the Admin area reads on mount (App.tsx's `initialState`) —
+              screens have no URL of their own otherwise, so this query param
+              is the one place a real link is used instead of a nav() call. */}
           <a href={`/admin?preview=${postId}`} target="_blank" rel="noreferrer" className="admin-btn-ghost" style={{ textDecoration: 'none', display: 'inline-block' }}>
             Xem trước ↗
           </a>
-          <button onClick={() => nav.goDashboard()} className="admin-btn-ghost" style={{ marginLeft: 8 }}>
+          <button onClick={() => nav.goCms()} className="admin-btn-ghost" style={{ marginLeft: 8 }}>
             Lưu nháp
           </button>
           <button
             onClick={async () => {
               await transitionStatus(postId, 'publish')
-              nav.goDashboard()
+              nav.goCms()
             }}
             className="admin-btn"
             style={{ marginLeft: 8 }}

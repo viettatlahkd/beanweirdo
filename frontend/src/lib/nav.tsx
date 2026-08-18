@@ -1,4 +1,5 @@
 import { createContext, useContext } from 'react'
+import type { Area } from './area'
 
 export type Screen =
   | 'art'
@@ -13,6 +14,10 @@ export type Screen =
   | 'logic'
   | 'cards'
   | 'report'
+  // The post-authoring flow, reached from Content management's first tab.
+  | 'postNew'
+  | 'postEdit'
+  | 'postPreview'
 
 /** Two shapes for the index screen — a ledger (A) and three columns (B). */
 export type Variant = 'A' | 'B'
@@ -28,6 +33,8 @@ export type Origin = 'module' | 'admin'
 
 export type Nav = {
   screen: Screen
+  /** Which area this app instance is serving — see `lib/area.ts`. */
+  area: Area
   variant: Variant
   moduleId: string
   /** The post currently open on the article screen — null until one is picked. */
@@ -53,6 +60,10 @@ export type Nav = {
    */
   openArticle(id?: string, from?: Origin): void
   toggleVariant(): void
+  /** Post-authoring, all inside the Admin area. */
+  newPost(): void
+  editPost(id: string): void
+  previewPost(id: string): void
 }
 
 /**
