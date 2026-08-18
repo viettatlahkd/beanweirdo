@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { addKind as apiAddKind, createLog, deleteLog, listHours, patchLog } from '../admin/lib/apiClient'
 import { KINDS, SPAN_DAYS, dateStr, dayBefore, type LogEntry } from '../content/hours'
+import { useUndoStack } from '../lib/useUndoStack'
 
 export type UseHoursResult = {
   logs: LogEntry[]
@@ -14,6 +15,9 @@ export type UseHoursResult = {
   patch(id: string, patch: Partial<Omit<LogEntry, 'id'>>): Promise<void>
   remove(id: string): Promise<void>
   addTag(name: string, system: 'task' | 'project'): Promise<void>
+  /** Ctrl+Z / Ctrl+Shift+Z over the last five writes — System conventions, rule 08. */
+  undo(): Promise<void>
+  redo(): Promise<void>
 }
 
 /**
@@ -36,6 +40,11 @@ export function useHours(): UseHoursResult {
   const [projects, setProjects] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const { record, undo, redo } = useUndoStack()
+  // Reading the current logs inside an undo closure without making every
+  // callback depend on them.
+  const logsRef = useRef<LogEntry[]>([])
+  logsRef.current = logs
 
   // Only the span the screen actually draws — the history behind it stays on
   // the server rather than growing the payload every day.
@@ -68,7 +77,7 @@ export function useHours(): UseHoursResult {
     [load],
   )
 
-  const add = useCallback(
+  const rawAdd = useCallback(
     async (entry: Omit<LogEntry, 'id'>) => {
       try {
         const saved = await createLog(entry)
@@ -83,7 +92,7 @@ export function useHours(): UseHoursResult {
     [failed],
   )
 
-  const patch = useCallback(
+  const rawPatch = useCallback(
     async (id: string, next: Partial<Omit<LogEntry, 'id'>>) => {
       setLogs((ls) => ls.map((l) => (l.id === id ? { ...l, ...next } : l)))
       try {
@@ -97,7 +106,7 @@ export function useHours(): UseHoursResult {
     [failed],
   )
 
-  const remove = useCallback(
+  const rawRemove = useCallback(
     async (id: string) => {
       setLogs((ls) => ls.filter((l) => l.id !== id))
       try {
@@ -108,6 +117,67 @@ export function useHours(): UseHoursResult {
       }
     },
     [failed],
+  )
+
+  const add = useCallback(
+    async (entry: Omit<LogEntry, 'id'>) => {
+      const saved = await rawAdd(entry)
+      if (saved) {
+        // Undoing a create deletes it; redoing makes a new row — a different
+        // id for the same content, which is as close as a create can be undone.
+        let current = saved.id
+        record({
+          label: 'thêm hoạt động',
+          undo: () => rawRemove(current),
+          redo: async () => {
+            const again = await rawAdd(entry)
+            if (again) current = again.id
+          },
+        })
+      }
+      return saved
+    },
+    [rawAdd, rawRemove, record],
+  )
+
+  const patch = useCallback(
+    async (id: string, next: Partial<Omit<LogEntry, 'id'>>) => {
+      const before = logsRef.current.find((l) => l.id === id)
+      if (before) {
+        const previous = Object.fromEntries(
+          Object.keys(next).map((k) => [k, (before as Record<string, unknown>)[k]]),
+        ) as Partial<Omit<LogEntry, 'id'>>
+        record({
+          label: 'sửa hoạt động',
+          undo: () => rawPatch(id, previous),
+          redo: () => rawPatch(id, next),
+        })
+      }
+      await rawPatch(id, next)
+    },
+    [rawPatch, record],
+  )
+
+  const remove = useCallback(
+    async (id: string) => {
+      const gone = logsRef.current.find((l) => l.id === id)
+      await rawRemove(id)
+      if (gone) {
+        // Delete is immediate and unconfirmed by design; this is what makes
+        // that safe (System conventions, rule 08).
+        const { id: _dropped, ...fields } = gone
+        let restored: string | null = null
+        record({
+          label: 'xoá hoạt động',
+          undo: async () => {
+            const back = await rawAdd(fields)
+            restored = back?.id ?? null
+          },
+          redo: () => rawRemove(restored ?? id),
+        })
+      }
+    },
+    [rawAdd, rawRemove, record],
   )
 
   const addTag = useCallback(
@@ -130,5 +200,5 @@ export function useHours(): UseHoursResult {
     [kinds, projects, failed],
   )
 
-  return { logs, kinds, projects, loading, error, add, patch, remove, addTag }
+  return { logs, kinds, projects, loading, error, add, patch, remove, addTag, undo, redo }
 }

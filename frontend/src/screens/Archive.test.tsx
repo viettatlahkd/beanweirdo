@@ -64,7 +64,7 @@ const post: PostRow = {
 }
 
 describe('Archive', () => {
-  it('lists published posts newest-first with their module label, and opens the real post id on click', async () => {
+  it('lists published posts newest-first with their module label, and expands one in place on click', async () => {
     useNav.mockReturnValue({ openArticle })
     useModules.mockReturnValue({ data: [biochem], loading: false, error: null })
     usePublishedPosts.mockReturnValue({ data: [post], loading: false, error: null })
@@ -81,8 +81,37 @@ describe('Archive', () => {
     expect(screen.getByText('biochemistry 101')).toBeInTheDocument()
     expect(screen.getByText('1 notes — sắp theo thời gian')).toBeInTheDocument()
 
+    // Rule 07: the listing expands the post where it sits rather than
+    // navigating — the row's content is already in hand.
     await userEvent.click(screen.getByText('Chlorogenic Acids (CGA)'))
+    expect(openArticle).not.toHaveBeenCalled()
+    expect(screen.getByText(/bài này chưa có nội dung/)).toBeInTheDocument()
+
+    // The post's own page is still one deliberate step away.
+    await userEvent.click(screen.getByText('mở trang bài →'))
     expect(openArticle).toHaveBeenCalledWith('p1')
+  })
+
+  it('collapses the open post when another is opened — one at a time', async () => {
+    useNav.mockReturnValue({ openArticle })
+    useModules.mockReturnValue({ data: [biochem], loading: false, error: null })
+    usePublishedPosts.mockReturnValue({
+      data: [post, { ...post, id: 'p2', en: 'Bean Composition', vi: 'Thành phần' }],
+      loading: false,
+      error: null,
+    })
+
+    render(<Archive />)
+
+    await userEvent.click(screen.getByText('Chlorogenic Acids (CGA)'))
+    expect(screen.getAllByText('mở trang bài →')).toHaveLength(1)
+
+    await userEvent.click(screen.getByText('Bean Composition'))
+    expect(screen.getAllByText('mở trang bài →')).toHaveLength(1)
+
+    // Clicking the open one again closes it, leaving nothing expanded.
+    await userEvent.click(screen.getByText('Bean Composition'))
+    expect(screen.queryByText('mở trang bài →')).not.toBeInTheDocument()
   })
 
   it('lists an archived post but does not let it be opened — there is nothing at the other end', async () => {
@@ -101,10 +130,12 @@ describe('Archive', () => {
     // The count reflects the reading list, with the archive noted beside it.
     expect(screen.getByText(/1 notes — sắp theo thời gian · 1 lưu trữ/)).toBeInTheDocument()
 
+    // An archived row neither expands nor navigates.
     await userEvent.click(screen.getByText('Bean Composition'))
     expect(openArticle).not.toHaveBeenCalled()
+    expect(screen.queryByText('mở trang bài →')).not.toBeInTheDocument()
 
     await userEvent.click(screen.getByText('Chlorogenic Acids (CGA)'))
-    expect(openArticle).toHaveBeenCalledWith('p1')
+    expect(screen.getByText('mở trang bài →')).toBeInTheDocument()
   })
 })

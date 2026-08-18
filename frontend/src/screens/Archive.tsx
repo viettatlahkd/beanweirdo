@@ -1,4 +1,6 @@
+import { useEffect, useRef, useState } from 'react'
 import { Breadcrumbs } from '../components/Breadcrumbs'
+import { PostExcerpt } from '../components/PostExcerpt'
 import { useModules } from '../data/useModules'
 import { usePublishedPosts } from '../data/usePublishedPosts'
 import { useSiteCopy } from '../data/useSiteCopy'
@@ -12,9 +14,22 @@ import { useNav } from '../lib/nav'
  * Unlike every other listing this one includes archived posts: they are a
  * record of what has been written, not part of the reading list. They are drawn
  * dimmed and lead nowhere, because there is nothing at the other end.
+ *
+ * Opening a live post expands it here rather than navigating away, one at a
+ * time, and scrolls it into view (System conventions, rule 07).
  */
 export function Archive() {
   const nav = useNav()
+  const [openId, setOpenId] = useState<string | null>(null)
+  const rows = useRef<Record<string, HTMLDivElement | null>>({})
+
+  useEffect(() => {
+    if (!openId) return
+    const el = rows.current[openId]
+    if (!el) return
+    const top = el.getBoundingClientRect().top + window.scrollY - 110
+    window.scrollTo({ top, behavior: 'smooth' })
+  }, [openId])
   const { data: modules } = useModules()
   const { data: posts } = usePublishedPosts({
     orderBy: 'date_label',
@@ -57,10 +72,16 @@ export function Archive() {
       {posts.map((p) => {
         const mod = modules.find((m) => m.id === p.module_id)
         const archived = p.status === 'archived'
+        const open = openId === p.id
         return (
-          <Hover
+          <div
             key={p.id}
-            onClick={archived ? undefined : () => nav.openArticle(p.id)}
+            ref={(el) => {
+              rows.current[p.id] = el
+            }}
+          >
+          <Hover
+            onClick={archived ? undefined : () => setOpenId(open ? null : p.id)}
             style={{
               display: 'grid',
               gridTemplateColumns: '56px 128px minmax(0,1fr) minmax(0,1fr) 70px',
@@ -100,9 +121,38 @@ export function Archive() {
                 textTransform: 'uppercase',
               }}
             >
-              {archived ? 'lưu trữ' : p.kind}
+              {archived ? 'lưu trữ' : open ? 'thu ↑' : p.kind}
             </div>
           </Hover>
+
+          {open && (
+            <div
+              style={{
+                padding: '18px 10px 30px 74px',
+                borderBottom: `1px solid ${paper.rule}`,
+                background: paper.white,
+              }}
+            >
+              <PostExcerpt post={p} />
+              <Hover
+                onClick={() => nav.openArticle(p.id)}
+                style={{
+                  display: 'inline-block',
+                  marginTop: 20,
+                  fontFamily: sans,
+                  fontSize: 10,
+                  letterSpacing: '.14em',
+                  textTransform: 'uppercase',
+                  color: ink.green,
+                  cursor: 'pointer',
+                }}
+                hoverStyle={{ color: ink.base }}
+              >
+                mở trang bài →
+              </Hover>
+            </div>
+          )}
+          </div>
         )
       })}
     </div>
