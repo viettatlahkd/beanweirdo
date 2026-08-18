@@ -17,7 +17,6 @@ import {
   type PostSummary,
 } from '../admin/lib/apiClient'
 import { createPost, transitionStatus, getSite } from '../admin/lib/apiClient'
-import { NotesPanel } from '../admin/components/NotesPanel'
 import { PostsPanel } from '../admin/components/PostsPanel'
 import { ink, paper, sans, serif } from '../design/tokens'
 import { Hover } from '../lib/Hover'
@@ -184,9 +183,9 @@ function ImageSlot({
 /**
  * Content management — the site's own back office.
  *
- * Four tabs. "Tạo bài đăng" is where posts are written, edited and published,
- * and "Ghi chú" is where Ghi 01 is — both here rather than on the pages they
- * feed, so there is one door to content.
+ * Three tabs. "Tạo bài đăng" is where everything written is written — posts
+ * under modules and Ghi 01 notes alike, one list, because a note is a kind of
+ * entry rather than a separate thing to administer.
  * "Sơ đồ trang" is a read-through map of every page in the sidebar, where the
  * three section names are editable in place. "Sửa nội dung" edits the site
  * copy, the three opening plates, and every module: its colours, its layout,
@@ -197,7 +196,7 @@ function ImageSlot({
  * conventions, rule 08).
  */
 export function Cms() {
-  const [tab, setTab] = useState<'posts' | 'notes' | 'map' | 'content'>('posts')
+  const [tab, setTab] = useState<'posts' | 'map' | 'content'>('posts')
   const [site, setSite] = useState<SiteOverrides>({})
   const [modules, setModules] = useState<Module[]>([])
   const [posts, setPosts] = useState<PostSummary[]>([])
@@ -423,7 +422,6 @@ export function Cms() {
         <div style={{ display: 'flex', gap: 4, marginTop: 26 }}>
           {([
             { k: 'posts', t: 'Tạo bài đăng' },
-            { k: 'notes', t: 'Ghi chú' },
             { k: 'map', t: 'Sơ đồ trang' },
             { k: 'content', t: 'Sửa nội dung' },
           ] as const).map((x) => (
@@ -465,12 +463,6 @@ export function Cms() {
       {tab === 'posts' && (
         <div style={{ padding: '34px 56px 130px', maxWidth: 1080 }}>
           <PostsPanel />
-        </div>
-      )}
-
-      {tab === 'notes' && (
-        <div style={{ padding: '34px 56px 130px', maxWidth: 1080 }}>
-          <NotesPanel />
         </div>
       )}
 
