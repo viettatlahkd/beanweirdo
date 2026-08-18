@@ -12,7 +12,7 @@ import type { LogEntry } from '../../content/hours'
 import type { Note } from '../../content/notes'
 
 /** The 3 real post templates (the old `templates` table is gone). */
-export const TEMPLATES = ['article', 'cards', 'report'] as const
+export const TEMPLATES = ['article', 'cards', 'report', 'longform', 'memo'] as const
 export type PostTemplate = (typeof TEMPLATES)[number]
 
 export type PostKind = 'note' | 'essay' | 'ref' | 'log'

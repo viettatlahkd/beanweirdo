@@ -3,7 +3,7 @@ import { TEMPLATES, type PostTemplate } from '../lib/apiClient'
 import { garden, ink, paper } from '../../design/tokens'
 
 /**
- * The 3 real post templates are a fixed, non-extensible choice now — the old
+ * The real post templates are a fixed, non-extensible choice now — the old
  * admin-managed `templates` table (band/specimen/sequence + admin-created
  * color variants) is gone. No fetch, no dynamic list.
  */
@@ -15,6 +15,14 @@ const TEMPLATE_INFO: Record<PostTemplate, { name: string; desc: string }> = {
   cards: {
     name: 'Cards',
     desc: 'Danh sách thẻ xổ ra, lọc theo tag, TOC dính bên phải. Hợp bài dạng từ điển/tham chiếu.',
+  },
+  longform: {
+    name: 'Long-form',
+    desc: 'Bài rất dài, tiêu đề gập được, mục lục nổi theo trang. Hợp bài dịch hoặc tổng thuật nhiều phần.',
+  },
+  memo: {
+    name: 'Memo',
+    desc: 'Khung ghi nếm thử một trang. Thuộc Ghi 01 chứ không nằm dưới module.',
   },
   report: {
     name: 'Report',

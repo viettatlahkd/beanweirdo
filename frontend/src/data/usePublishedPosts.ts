@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 
 export type PostKind = 'note' | 'essay' | 'ref' | 'log'
-export type PostTemplate = 'article' | 'cards' | 'report'
+export type PostTemplate = 'article' | 'cards' | 'report' | 'longform' | 'memo'
 export type PostStatus = 'draft' | 'published' | 'archived' | 'deleted'
 
 /**

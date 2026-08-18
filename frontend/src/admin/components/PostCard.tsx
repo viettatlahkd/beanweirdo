@@ -3,9 +3,15 @@ import type { PostStatus, PostSummary, PostTemplate, StatusAction } from '../lib
 import { garden, ink, paper, sans, serif } from '../../design/tokens'
 import { StatusBadge } from './StatusBadge'
 
-// Real template names (article/cards/report) — the old band/specimen/sequence
-// naming is gone along with the invented DB-shaped templates table.
-const TEMPLATE_LABEL: Record<PostTemplate, string> = { article: 'Article', cards: 'Cards', report: 'Report' }
+// Real template names — the old band/specimen/sequence naming is gone along
+// with the invented DB-shaped templates table.
+const TEMPLATE_LABEL: Record<PostTemplate, string> = {
+  article: 'Article',
+  cards: 'Cards',
+  report: 'Report',
+  longform: 'Long-form',
+  memo: 'Memo',
+}
 
 const ACTIONS_BY_STATUS: Record<PostStatus, { label: string; action: StatusAction }[]> = {
   draft: [

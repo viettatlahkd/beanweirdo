@@ -160,3 +160,56 @@ export type ReportPostData = {
   blurb?: string
   blocks: ReportBlock[]
 }
+
+// ---------------------------------------------------------------------------
+// longform — the very long translated piece, per the "isLongform" section of
+// the design source. Blocks come pre-parsed from a Notion export.
+// ---------------------------------------------------------------------------
+
+/** A span of text with its own weight and slant. */
+export type LongformRun = {
+  t: string
+  /** CSS font-weight as a string, e.g. "300" / "600" */
+  w?: string
+  /** "normal" | "italic" */
+  s?: string
+}
+
+export type LongformBlockKind =
+  | 'h1'
+  | 'h2'
+  | 'h3'
+  | 'h4'
+  | 'p'
+  /** a continuation line — same paragraph, tighter and quieter */
+  | 'cont'
+  | 'li'
+  | 'fig'
+  | 'note'
+  | 'aside'
+  | 'formula'
+  | 'meta'
+
+export type LongformBlock = {
+  k: LongformBlockKind
+  runs?: LongformRun[]
+  /** li nesting, 1–3 */
+  lvl?: number
+  /** p/cont indent flag */
+  ind?: boolean
+  /** fig */
+  src?: string
+  ar?: string
+  /** formula */
+  v?: string
+  /** aside carries its own blocks */
+  items?: LongformBlock[]
+}
+
+export type LongformPostData = {
+  /** Shown as the opening h1 — the post's title, not the export's. */
+  title: string
+  /** Italic line under the title; empty on the standalone sample. */
+  subtitle?: string
+  blocks: LongformBlock[]
+}

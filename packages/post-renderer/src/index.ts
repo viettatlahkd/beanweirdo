@@ -5,6 +5,7 @@ export { Article } from './Article'
 export type { ArticleProps, ArticleOverrides } from './Article'
 
 export { Cards } from './Cards'
+export { Longform } from './Longform'
 export type { CardsProps, CardsOverrides } from './Cards'
 
 export { Report } from './Report'
@@ -27,4 +28,8 @@ export type {
   ReportTable,
   ReportBlock,
   ReportPostData,
+  LongformBlock,
+  LongformBlockKind,
+  LongformPostData,
+  LongformRun,
 } from './types'

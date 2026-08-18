@@ -1,7 +1,16 @@
 import { PostRenderer } from 'post-renderer'
-import type { ArticlePostData, CardData, CardsPostData, ReportBlock, ReportPostData, SectionData } from 'post-renderer'
+import type {
+  ArticlePostData,
+  CardData,
+  CardsPostData,
+  LongformBlock,
+  LongformPostData,
+  ReportBlock,
+  ReportPostData,
+  SectionData,
+} from 'post-renderer'
 import { usePost } from '../data/usePost'
-import { postDescription } from '../lib/postText'
+import { postDescription, postTitle } from '../lib/postText'
 import type { ModuleRow } from '../data/useModules'
 import type { PostRow } from '../data/usePublishedPosts'
 import { usePublishedPosts } from '../data/usePublishedPosts'
@@ -71,6 +80,21 @@ function toArticleData(post: PostRow, moduleTitle: string, related: PostRow[]): 
     detailPlate: { ...PLATE_FALLBACK.detail, imageUrl: null },
     furtherReadingHeading: 'Đọc thêm',
     furtherReading: post.further_reading ?? [],
+  }
+}
+
+/**
+ * A post written on the long-form template.
+ *
+ * The blocks are a parsed export, stored as they came; only the title and the
+ * line under it come from the post's own fields, so the piece can be retitled
+ * without touching its content.
+ */
+function toLongformData(post: PostRow): LongformPostData {
+  return {
+    title: postTitle(post),
+    subtitle: postDescription(post),
+    blocks: Array.isArray(post.body) ? (post.body as LongformBlock[]) : [],
   }
 }
 
@@ -146,6 +170,9 @@ export function Article() {
   const module_ = modules.find((m) => m.id === post.module_id)
   const moduleTitle = module_?.title ?? post.module_id
 
+  if (post.template === 'longform') {
+    return <PostRenderer template="longform" post={toLongformData(post)} />
+  }
   if (post.template === 'cards') {
     return <PostRenderer template="cards" post={toCardsData(post, module_)} />
   }
