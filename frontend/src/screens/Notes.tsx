@@ -109,7 +109,6 @@ function cardStyle(
     dir: n.portrait ? 'row' : 'column',
     rowGap: isOpen || n.portrait ? '30px' : '20px',
     subSlot: n.portrait ? 'ảnh phụ — khung hình cắt ra từ clip' : 'ảnh phụ — chi tiết bổ trợ cho bài',
-    cueLabel: isOpen ? 'Bấm ra ngoài để thu lại' : 'Bấm để mở',
   }
 }
 
@@ -401,19 +400,6 @@ function NoteCard({
               </div>
             )}
           </div>
-        </div>
-
-        <div
-          style={{
-            marginTop: 16,
-            fontFamily: "'Be Vietnam Pro',sans-serif",
-            fontSize: 10,
-            letterSpacing: '.24em',
-            textTransform: 'uppercase',
-            color,
-          }}
-        >
-          {s.cueLabel}
         </div>
       </div>
     </div>
