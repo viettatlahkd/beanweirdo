@@ -75,6 +75,8 @@ export type Module = {
   img2: string | null
   img3: string | null
   sortOrder: number
+  /** 'normal' = reading module; 'special' = a journal a post can be filed under. */
+  kind: 'normal' | 'special'
 }
 
 const DEFAULT_API_BASE = 'http://localhost:3001'

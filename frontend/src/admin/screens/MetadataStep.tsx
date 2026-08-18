@@ -30,11 +30,26 @@ export function MetadataStep({ onContinue }: { onContinue: (m: Metadata) => void
       </label>
       <select id="module" aria-label="Module" value={moduleId} onChange={(e) => setModuleId(e.target.value)} className="admin-field">
         {modules.length === 0 && <option value="">Đang tải module…</option>}
-        {modules.map((m) => (
-          <option key={m.id} value={m.id}>
-            {m.title}
-          </option>
-        ))}
+        {/* Reading modules first, then the journals — a post can be filed
+            under either, but they are not the same kind of place. */}
+        <optgroup label="Module">
+          {modules
+            .filter((m) => m.kind !== 'special')
+            .map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.title}
+              </option>
+            ))}
+        </optgroup>
+        <optgroup label="Ghi chép">
+          {modules
+            .filter((m) => m.kind === 'special')
+            .map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.title}
+              </option>
+            ))}
+        </optgroup>
       </select>
 
       <label htmlFor="kind" style={fieldLabelStyle}>

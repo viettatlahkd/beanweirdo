@@ -143,7 +143,7 @@ export const NAV: NavItem[] = [
     group: 'Admin',
     label: 'Memo',
     desc: 'khung ghi nếm thử',
-    screen: 'memo',
+    screen: 'article',
     sub: true,
     shape: glyph({ w: '10px', h: '8px', r: '2px' }),
   },

@@ -10,7 +10,10 @@ import {
   type Note,
 } from '../content/notes'
 import { useNotes } from '../data/useNotes'
+import { usePublishedPosts } from '../data/usePublishedPosts'
+import { postDescription } from '../lib/postText'
 import { useNav } from '../lib/nav'
+import { openPost } from '../lib/openPost'
 import { serif } from '../design/tokens'
 import { Hover } from '../lib/Hover'
 
@@ -112,7 +115,6 @@ function NoteCard({
   setEl,
   el,
   total,
-  onOpenMemo,
 }: {
   n: Note
   i: number
@@ -127,7 +129,6 @@ function NoteCard({
   el: HTMLDivElement | null
   /** Signed in — the note is written straight into the page. */
   total: number
-  onOpenMemo: (id: string) => void
 }) {
   const isHv = hoverNote === i
   // Keyed by id, not title: a note being written has no title yet, and two
@@ -157,12 +158,6 @@ function NoteCard({
       <div
         onClick={(e) => {
           e.stopPropagation()
-          // A memo has its own template and its own page; a plain note expands
-          // where it sits (System conventions, rule 07).
-          if (n.template === 'memo') {
-            onOpenMemo(n.id)
-            return
-          }
           setOpenNote((prev) => (prev === n.id ? null : n.id))
         }}
         style={{
@@ -361,6 +356,8 @@ function FillerCell({ f, dimmed }: { f: (typeof fillers)[number]; dimmed: boolea
 export function Notes() {
   const nav = useNav()
   const { notes, loading, error } = useNotes()
+  // Posts filed under Ghi 01 — the memo lives here, as a post like any other.
+  const { data: filed } = usePublishedPosts({ moduleId: 'ghi01' })
   const [noteFilter, setNoteFilter] = useState<'tất cả' | Note['k']>('tất cả')
   const [hoverNote, setHoverNote] = useState<number | null>(null)
   const [openNote, setOpenNoteState] = useState<string | null>(null)
@@ -496,7 +493,62 @@ export function Notes() {
           alignItems: 'start',
         }}
       >
-        {!loading && filtered.length === 0 && (
+        {/* Posts filed under Ghi 01 lead the grid — they are full pieces with
+            their own template, so they open rather than expand. */}
+        {filed.map((p) => (
+          <Hover
+            key={p.id}
+            onClick={(e) => {
+              e.stopPropagation()
+              openPost(nav, p)
+            }}
+            style={{
+              gridColumn: 'span 5',
+              cursor: 'pointer',
+              opacity: openNote !== null ? 0.18 : 1,
+              transition: 'opacity .45s ease',
+            }}
+            hoverStyle={{ opacity: 1 }}
+          >
+            {p.hero_image_url && (
+              <div
+                style={{
+                  aspectRatio: '4/3',
+                  background: `url(${p.hero_image_url}) center/cover no-repeat`,
+                  marginBottom: 18,
+                }}
+              />
+            )}
+            <div
+              style={{
+                fontFamily: "'Be Vietnam Pro',sans-serif",
+                fontSize: 9.5,
+                letterSpacing: '.2em',
+                textTransform: 'uppercase',
+                color: '#8A8A80',
+                marginBottom: 10,
+              }}
+            >
+              {p.template} · {p.date_label}
+            </div>
+            <div style={{ fontFamily: serif, fontSize: 40, lineHeight: 1.06, letterSpacing: '-.035em' }}>{p.en}</div>
+            <div
+              style={{
+                fontFamily: "'Be Vietnam Pro',sans-serif",
+                fontWeight: 200,
+                fontSize: 15,
+                lineHeight: 1.6,
+                color: '#33332C',
+                marginTop: 12,
+                maxWidth: 520,
+              }}
+            >
+              {postDescription(p)}
+            </div>
+          </Hover>
+        ))}
+
+        {!loading && filtered.length === 0 && filed.length === 0 && (
           <div
             style={{
               gridColumn: '1 / -1',
@@ -526,7 +578,6 @@ export function Notes() {
               my={my}
               el={elRefs.current[i] ?? null}
               total={notes.length}
-              onOpenMemo={nav.openMemo}
               setEl={(el) => {
                 elRefs.current[i] = el
               }}

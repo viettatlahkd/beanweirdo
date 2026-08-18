@@ -20,7 +20,7 @@ vi.mock('../lib/supabaseClient', () => ({
   supabase: { from: (...args: unknown[]) => from(...args) },
 }))
 
-const { useModules } = await import('./useModules')
+const { useModules, readingModules } = await import('./useModules')
 
 describe('useModules', () => {
   it('fetches every module ordered by sort_order, ascending', async () => {
@@ -52,5 +52,20 @@ describe('useModules', () => {
 
     expect(result.current.error).toBe('boom')
     expect(result.current.data).toEqual([])
+  })
+})
+
+describe('readingModules', () => {
+  const mod = (id: string, kind: 'normal' | 'special') => ({ id, kind }) as never
+
+  it('leaves the journals out — they have pages of their own', () => {
+    // Listing Ghi 01 beside sensory would introduce it a second time under a
+    // different name (migration 0012).
+    const all = [mod('sensory', 'normal'), mod('ghi01', 'special'), mod('biochem', 'normal')]
+    expect(readingModules(all).map((m) => m.id)).toEqual(['sensory', 'biochem'])
+  })
+
+  it('keeps a module whose kind has not been set', () => {
+    expect(readingModules([mod('sensory', undefined as never)])).toHaveLength(1)
   })
 })

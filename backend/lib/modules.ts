@@ -27,6 +27,8 @@ export interface ModuleRow {
   img2: string | null
   img3: string | null
   sort_order: number
+  /** 'normal' = reading module; 'special' = a journal you can file under. */
+  kind: 'normal' | 'special'
 }
 
 export interface Module {
@@ -49,6 +51,7 @@ export interface Module {
   img2: string | null
   img3: string | null
   sortOrder: number
+  kind: 'normal' | 'special'
 }
 
 export function toModule(row: ModuleRow): Module {
@@ -72,6 +75,7 @@ export function toModule(row: ModuleRow): Module {
     img2: row.img2,
     img3: row.img3,
     sortOrder: row.sort_order,
+    kind: row.kind ?? 'normal',
   }
 }
 
@@ -119,5 +123,7 @@ export function newModuleRow(id: string, sortOrder: number): Omit<ModuleRow, 'im
     shot2: 'ảnh phụ',
     shot3: 'ảnh phụ',
     sort_order: sortOrder,
+    // Created from the CMS means a reading module; the journals are seeded.
+    kind: 'normal',
   }
 }

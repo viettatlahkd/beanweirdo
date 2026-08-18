@@ -2,7 +2,7 @@ import type { CSSProperties } from 'react'
 import { postDescription } from '../lib/postText'
 import { useMemo } from 'react'
 import type { ModuleRow } from '../data/useModules'
-import { useModules } from '../data/useModules'
+import { readingModules, useModules } from '../data/useModules'
 import type { PostRow } from '../data/usePublishedPosts'
 import { usePublishedPosts } from '../data/usePublishedPosts'
 import { Breadcrumbs } from '../components/Breadcrumbs'
@@ -362,7 +362,8 @@ function Columns({ modules, postsByModule }: ModulesProps) {
 /** Mục lục — the table of contents, in whichever shape is selected. */
 export function IndexScreen() {
   const { variant } = useNav()
-  const { data: modules } = useModules()
+  const { data: allModules } = useModules()
+  const modules = readingModules(allModules)
   const { data: posts } = usePublishedPosts({ orderBy: 'sort_order', ascending: true })
   const postsByModule = useMemo(() => groupByModule(posts), [posts])
 

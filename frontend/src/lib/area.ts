@@ -51,8 +51,7 @@ export const AREA_HOME: Record<Area, string> = {
  * real post opened from a module, under `admin` the blank sample (see `Origin`).
  */
 const AREA_SCREENS: Record<Area, readonly string[]> = {
-  // A memo is a Ghi 01 note read on its own template, so it belongs here.
-  public: ['landing', 'home', 'module', 'notes', 'article', 'cards', 'report', 'memo'],
+  public: ['landing', 'home', 'module', 'notes', 'article', 'cards', 'report'],
   practice: ['hours'],
   admin: [
     'cms',
@@ -62,7 +61,6 @@ const AREA_SCREENS: Record<Area, readonly string[]> = {
     'article',
     'cards',
     'report',
-    'memo',
     'postNew',
     'postEdit',
     'postPreview',

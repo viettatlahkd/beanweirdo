@@ -25,6 +25,12 @@ export type ModuleRow = {
   img2: string | null
   img3: string | null
   sort_order: number
+  /**
+   * 'normal' — a reading module, listed on the landing page and the index.
+   * 'special' — a journal that already has its own page. A valid place to file
+   * a post, never listed as a module. See migration 0012.
+   */
+  kind: 'normal' | 'special'
 }
 
 export type UseModulesResult = {
@@ -92,3 +98,13 @@ export function useModules(): UseModulesResult {
   const own = useModulesQuery(shared === null)
   return shared ?? own
 }
+
+/**
+ * The modules the reader is shown.
+ *
+ * Everything written points at a module, but the journals have pages of their
+ * own — listing them again beside the reading modules would introduce them
+ * twice under different names.
+ */
+export const readingModules = (modules: ModuleRow[]) =>
+  modules.filter((m) => m.kind !== 'special')

@@ -1,7 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { NAV, TEMPLATES_HEAD, type Glyph, type NavItem } from '../content/navItems'
 import type { NavGroup } from '../content/site'
-import { useModules, type ModuleRow } from '../data/useModules'
+import { readingModules, useModules, type ModuleRow } from '../data/useModules'
 import { usePublishedPosts, type PostRow } from '../data/usePublishedPosts'
 import { useSiteCopy } from '../data/useSiteCopy'
 import { layout, paper, sans, serif } from '../design/tokens'
@@ -174,8 +174,6 @@ function go(nav: Nav, item: NavItem): () => void {
       return () => nav.goReport('admin')
     case 'cards':
       return () => nav.goCards('admin')
-    case 'memo':
-      return () => nav.openMemo()
     default:
       return nav.goLanding
   }
@@ -192,7 +190,8 @@ function go(nav: Nav, item: NavItem): () => void {
 export function Sidebar() {
   const nav = useNav()
   const { on, bind } = useHover()
-  const { data: modules } = useModules()
+  const { data: allModules } = useModules()
+  const modules = readingModules(allModules)
   const { data: posts } = usePublishedPosts()
   const { site } = useSiteCopy()
   const { authed, signOut } = useAuth()

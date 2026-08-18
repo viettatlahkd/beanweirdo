@@ -18,8 +18,6 @@ export type Screen =
   | 'postNew'
   | 'postEdit'
   | 'postPreview'
-  /** The tasting memo — a Ghi 01 note read on its own template. */
-  | 'memo'
 
 /** Two shapes for the index screen — a ledger (A) and three columns (B). */
 export type Variant = 'A' | 'B'
@@ -66,10 +64,6 @@ export type Nav = {
   newPost(): void
   editPost(id: string): void
   previewPost(id: string): void
-  /** Open a memo note; no id means the blank sample under Templates. */
-  openMemo(id?: string): void
-  /** The memo note currently open. */
-  memoId: string | null
 }
 
 /**

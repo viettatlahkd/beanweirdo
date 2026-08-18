@@ -5,6 +5,7 @@ import type {
   CardsPostData,
   LongformBlock,
   LongformPostData,
+  MemoPostData,
   ReportBlock,
   ReportPostData,
   SectionData,
@@ -80,6 +81,24 @@ function toArticleData(post: PostRow, moduleTitle: string, related: PostRow[]): 
     detailPlate: { ...PLATE_FALLBACK.detail, imageUrl: null },
     furtherReadingHeading: 'Đọc thêm',
     furtherReading: post.further_reading ?? [],
+  }
+}
+
+/**
+ * A post written on the memo template.
+ *
+ * Its structure lives in `body` like every other template's, so a memo is an
+ * ordinary post distinguished only by which renderer reads it.
+ */
+function toMemoData(post: PostRow): MemoPostData {
+  const body = (post.body ?? {}) as Partial<MemoPostData>
+  return {
+    title: postTitle(post),
+    subtitle: body.subtitle ?? postDescription(post),
+    specs: body.specs,
+    img: post.hero_image_url,
+    imgCaption: post.hero_caption ?? undefined,
+    sections: body.sections ?? [],
   }
 }
 
@@ -170,6 +189,9 @@ export function Article() {
   const module_ = modules.find((m) => m.id === post.module_id)
   const moduleTitle = module_?.title ?? post.module_id
 
+  if (post.template === 'memo') {
+    return <PostRenderer template="memo" post={toMemoData(post)} />
+  }
   if (post.template === 'longform') {
     return <PostRenderer template="longform" post={toLongformData(post)} />
   }
