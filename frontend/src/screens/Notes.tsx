@@ -237,7 +237,9 @@ function NoteCard({
               marginBottom: s.mediaMb,
               aspectRatio: s.ar,
               width: s.mediaW,
-              background: block,
+              // A note with a photograph shows it; the tinted block with its
+              // caption is what stands in until there is one.
+              background: n.img ? `url(${n.img}) center/cover no-repeat` : block,
               display: 'flex',
               alignItems: 'flex-end',
               padding: 14,
@@ -250,7 +252,7 @@ function NoteCard({
               transition: 'aspect-ratio .6s cubic-bezier(.16,.84,.32,1)',
             }}
           >
-            {s.mediaLabel}
+            {n.img ? null : s.mediaLabel}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontFamily: serif, fontSize: s.size, lineHeight: 1.14, letterSpacing: '-.035em', marginBottom: 16 }}>
