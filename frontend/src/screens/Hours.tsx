@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { Breadcrumbs } from '../components/Breadcrumbs'
 import {
   KINDS,
   KINDS_STORAGE_KEY,
@@ -6,6 +7,7 @@ import {
   STORAGE_KEY,
   TODAY,
   kindColorMap,
+  quoteOfTheDay,
   seedLogs,
   type LogEntry,
 } from '../content/hours'
@@ -98,6 +100,8 @@ export function Hours() {
   const [openMonths, setOpenMonths] = useState<Record<string, boolean>>({})
   const [kindAdding, setKindAdding] = useState(false)
   const [kindDraft, setKindDraft] = useState('')
+  /** Kind chip picked in the filter bar — null shows every kind. */
+  const [kindFilter, setKindFilter] = useState<string | null>(null)
   const [editId, setEditId] = useState<number | null>(null)
   const [newId, setNewId] = useState<number | null>(null)
   const [editFocus, setEditFocus] = useState<'at' | 'dur'>('dur')
@@ -149,6 +153,8 @@ export function Hours() {
 
   const allKinds = useMemo(() => KINDS.concat(extraKinds), [extraKinds])
   const kindColor = useMemo(() => kindColorMap(allKinds), [allKinds])
+  // One quote per calendar day, same for every visit that day.
+  const quote = useMemo(() => quoteOfTheDay(), [])
 
   function addKind() {
     const v = kindDraft.trim()
@@ -230,6 +236,7 @@ export function Hours() {
   const dayViews = shownDays.map((x) => {
     const recent = x.age < RECENT_DAYS
     const rows = (recent ? x.ls : x.ls.filter((l) => l.done !== false))
+      .filter((l) => !kindFilter || l.kind === kindFilter)
       .slice()
       .sort((a, b) => toMin(a.at) - toMin(b.at))
     const isToday = x.ds === TODAY
@@ -303,9 +310,11 @@ export function Hours() {
         background: '#FCFCFA',
         color: '#172124',
         minHeight: '100vh',
-        padding: '52px 60px 110px',
+        padding: '44px 60px 110px',
       }}
     >
+      <Breadcrumbs color="#7C7C70" />
+
       <div style={{ borderBottom: '1px solid #102F35', paddingBottom: 22 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 56, flexWrap: 'wrap' }}>
           <div>
@@ -357,12 +366,12 @@ export function Hours() {
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
               <div style={{ width: 34, height: 8, background: '#F2A0A5', marginBottom: 5 }} />
               <div style={{ fontFamily: serif, fontStyle: 'italic', fontSize: 24, lineHeight: 1.3, color: '#3E7A4E' }}>
-                "We are what we repeatedly do."
+                {quote.t}
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '6px 0 0 46px' }}>
               <div style={{ width: 15, height: 1, background: '#A2A296' }} />
-              <div style={{ fontFamily: serif, fontStyle: 'italic', fontSize: 12, color: '#A2A296' }}>Will Durant</div>
+              <div style={{ fontFamily: serif, fontStyle: 'italic', fontSize: 12, color: '#A2A296' }}>{quote.w}</div>
             </div>
           </div>
           <div style={{ display: 'flex', gap: 24, justifyContent: 'flex-end', alignItems: 'flex-end' }}>
@@ -406,6 +415,115 @@ export function Hours() {
         <div style={{ width: 6, height: 6, background: 'currentColor' }} />
         <div>{statsOpen ? 'Thu gọn thống kê' : 'Mở thống kê chi tiết'}</div>
       </Hover>
+
+      {/* Kind filter — also the fastest place to add a kind. */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 9,
+          flexWrap: 'wrap',
+          marginTop: 30,
+          padding: '14px 0 15px',
+          borderTop: '1px solid #E3E3DB',
+          borderBottom: '1px solid #E3E3DB',
+        }}
+      >
+        {allKinds.map((k) => {
+          const on = kindFilter === k
+          const n = logs.filter((l) => l.kind === k && l.done !== false).length
+          return (
+            <div
+              key={k}
+              onClick={() => setKindFilter(on ? null : k)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                background: on ? kindColor[k] : 'transparent',
+                border: `1px solid ${on ? kindColor[k] : '#DEDED6'}`,
+                padding: '6px 12px',
+                cursor: 'pointer',
+              }}
+            >
+              <div
+                style={{ width: 8, height: 8, borderRadius: '50%', background: kindColor[k], flex: 'none' }}
+              />
+              <div style={{ fontSize: 12.5, color: on ? '#FFFFFF' : '#414A42' }}>{k}</div>
+              <div
+                style={{
+                  fontSize: 11,
+                  color: on ? '#FFFFFF' : '#414A42',
+                  opacity: 0.55,
+                  fontVariantNumeric: 'tabular-nums',
+                }}
+              >
+                {n}
+              </div>
+            </div>
+          )
+        })}
+        {kindAdding ? (
+          <input
+            value={kindDraft}
+            onChange={(e) => setKindDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') addKind()
+              if (e.key === 'Escape') {
+                setKindAdding(false)
+                setKindDraft('')
+              }
+            }}
+            onBlur={addKind}
+            autoFocus
+            placeholder="loại mới"
+            style={{
+              width: 112,
+              background: '#FFFFFF',
+              border: '1px solid #3E7A4E',
+              color: '#172124',
+              fontFamily: "'Be Vietnam Pro',sans-serif",
+              fontWeight: 300,
+              fontSize: 12.5,
+              padding: '6px 10px',
+              outline: 'none',
+            }}
+          />
+        ) : (
+          <Hover
+            onClick={() => {
+              setKindAdding(true)
+              setKindDraft('')
+            }}
+            style={{
+              fontSize: 12.5,
+              color: '#A2A296',
+              border: '1px dashed #CFCFC4',
+              padding: '6px 12px',
+              cursor: 'pointer',
+            }}
+            hoverStyle={{ color: '#3E7A4E', borderColor: '#3E7A4E' }}
+          >
+            + loại
+          </Hover>
+        )}
+        {kindFilter && (
+          <Hover
+            onClick={() => setKindFilter(null)}
+            style={{
+              fontSize: 11,
+              letterSpacing: '.14em',
+              textTransform: 'uppercase',
+              color: '#A2A296',
+              cursor: 'pointer',
+              marginLeft: 4,
+            }}
+            hoverStyle={{ color: '#C25C7C' }}
+          >
+            bỏ lọc ✕
+          </Hover>
+        )}
+      </div>
 
       {statsOpen && (
         <div style={{ margin: '30px 0 6px' }}>

@@ -7,6 +7,7 @@
  * authenticated call.
  */
 import type { SectionData } from 'post-renderer'
+import type { SiteOverrides } from '../../content/site'
 
 /** The 3 real post templates (the old `templates` table is gone). */
 export const TEMPLATES = ['article', 'cards', 'report'] as const
@@ -67,6 +68,10 @@ export type Module = {
   shot1: string | null
   shot2: string | null
   shot3: string | null
+  /** Uploaded photo for each shot slot — null until one is uploaded. */
+  img1: string | null
+  img2: string | null
+  img3: string | null
   sortOrder: number
 }
 
@@ -162,6 +167,9 @@ export async function updatePost(
     lead: string
     pullQuote: string
     furtherReading: string[]
+    n: string
+    dateLabel: string
+    sortOrder: number
   }>,
 ): Promise<PostDetail> {
   const result = await request<{ post: PostDetail }>(`/api/posts/${id}`, {
@@ -198,4 +206,63 @@ export async function uploadImage(file: File): Promise<{ url: string }> {
 export async function listModules(): Promise<Module[]> {
   const result = await request<{ modules: Module[] }>('/api/modules')
   return result.modules
+}
+
+/** PUT /api/posts — reorder one module's posts; also renumbers their `n`. */
+export async function reorderPosts(moduleId: string, order: string[]): Promise<PostSummary[]> {
+  const result = await request<{ posts: PostSummary[] }>('/api/posts', {
+    method: 'PUT',
+    body: JSON.stringify({ moduleId, order }),
+  })
+  return result.posts
+}
+
+/** POST /api/modules — the CMS's "+ module mới"; server fills in placeholders. */
+export async function createModule(id?: string): Promise<Module> {
+  const result = await request<{ module: Module }>('/api/modules', {
+    method: 'POST',
+    body: JSON.stringify(id ? { id } : {}),
+  })
+  return result.module
+}
+
+/** PATCH /api/modules/:id — partial update of one module. */
+export async function updateModule(id: string, patch: Partial<Omit<Module, 'id' | 'sortOrder'>>): Promise<Module> {
+  const result = await request<{ module: Module }>(`/api/modules/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(patch),
+  })
+  return result.module
+}
+
+/** DELETE /api/modules/:id — removes the module and (by cascade) its posts. */
+export async function deleteModule(id: string): Promise<void> {
+  await request<Record<string, never>>(`/api/modules/${id}`, { method: 'DELETE' })
+}
+
+/** PUT /api/modules — reorder every module by id. */
+export async function reorderModules(order: string[]): Promise<Module[]> {
+  const result = await request<{ modules: Module[] }>('/api/modules', {
+    method: 'PUT',
+    body: JSON.stringify({ order }),
+  })
+  return result.modules
+}
+
+/** GET /api/site — the stored site-copy overrides (`{}` on a fresh install). */
+export async function getSite(): Promise<SiteOverrides> {
+  const result = await request<{ site: SiteOverrides }>('/api/site')
+  return result.site
+}
+
+/**
+ * PATCH /api/site — shallow-merges the given fields into the stored copy.
+ * Passing '' for a field drops it, which restores that field's default.
+ */
+export async function updateSite(patch: SiteOverrides): Promise<SiteOverrides> {
+  const result = await request<{ site: SiteOverrides }>('/api/site', {
+    method: 'PATCH',
+    body: JSON.stringify(patch),
+  })
+  return result.site
 }

@@ -89,7 +89,8 @@ describe('ModuleScreen', () => {
     expect(usePublishedPosts).toHaveBeenCalledWith(expect.objectContaining({ moduleId: 'sensory' }))
 
     await userEvent.click(screen.getByText('Senses of Flavors'))
-    expect(openArticle).toHaveBeenCalledWith('post-1')
+    // The second argument records the door the reader came through — see `Origin`.
+    expect(openArticle).toHaveBeenCalledWith('post-1', 'module')
   })
 
   it('shows a loading state while modules are still resolving', () => {

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { Breadcrumbs } from '../components/Breadcrumbs'
 import {
   fillers,
   noteBlock,
@@ -421,13 +422,12 @@ export function Notes() {
         setOpenNoteState(null)
         setHoverNote(null)
       }}
-      style={{ background: '#FCFCFA', color: '#12120F', minHeight: '100vh', padding: '56px 72px 56px' }}
+      style={{ background: '#FCFCFA', color: '#12120F', minHeight: '100vh', padding: '44px 72px 56px' }}
     >
+      <Breadcrumbs color="#9A9A90" />
+
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 56, flexWrap: 'wrap' }}>
         <div>
-          <div style={{ fontFamily: "'Be Vietnam Pro',sans-serif", fontSize: 9.5, letterSpacing: '.34em', textTransform: 'uppercase', color: '#9A9A90', marginBottom: 20 }}>
-            beӕn weirdo — 02
-          </div>
           <h1 style={{ fontFamily: serif, fontSize: 118, lineHeight: 0.82, letterSpacing: '-.045em', margin: 0, fontWeight: 400 }}>
             Notes<span style={{ fontStyle: 'italic', color: '#F2A0A5' }}>.</span>
           </h1>

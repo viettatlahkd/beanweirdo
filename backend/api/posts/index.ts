@@ -112,6 +112,7 @@ async function handleCreate(req: VercelRequest, res: VercelResponse): Promise<vo
       template: template as PostTemplate,
       n,
       date_label: dateLabel,
+      sort_order: (count ?? 0) + 1,
     })
     .select('id')
     .single()
@@ -129,6 +130,55 @@ async function handleCreate(req: VercelRequest, res: VercelResponse): Promise<vo
   res.status(201).json({ id: (data as { id: string }).id })
 }
 
+/**
+ * PUT — reorder one module's posts.
+ *
+ * Takes the module's post ids in their new order and rewrites both `sort_order`
+ * and the displayed `n` to 1..N, so the numbering the reader sees always matches
+ * the order the editor dragged them into (the prototype's `renumber()`).
+ */
+async function handleReorder(req: VercelRequest, res: VercelResponse): Promise<void> {
+  const body = (req.body ?? {}) as { moduleId?: unknown; order?: unknown }
+  const moduleId = body.moduleId
+  const order = body.order
+
+  if (typeof moduleId !== 'string' || moduleId.length === 0) {
+    res.status(400).json({ error: 'moduleId is required' })
+    return
+  }
+  if (!Array.isArray(order) || order.some((id) => typeof id !== 'string')) {
+    res.status(400).json({ error: 'order must be an array of post ids' })
+    return
+  }
+
+  const supabase = getSupabase()
+  const nowIso = new Date().toISOString()
+
+  for (const [i, id] of (order as string[]).entries()) {
+    const { error } = await supabase
+      .from('posts')
+      .update({ sort_order: i + 1, n: String(i + 1).padStart(2, '0'), updated_at: nowIso })
+      .eq('id', id)
+      .eq('module_id', moduleId)
+    if (error) {
+      res.status(500).json({ error: error.message })
+      return
+    }
+  }
+
+  const { data, error } = await supabase
+    .from('posts')
+    .select(POST_SUMMARY_COLUMNS)
+    .eq('module_id', moduleId)
+    .order('sort_order', { ascending: true })
+
+  if (error) {
+    res.status(500).json({ error: error.message })
+    return
+  }
+  res.status(200).json({ posts: (data as PostRow[]).map(toPostSummary) })
+}
+
 async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
   if (!requireAuth(req, res)) return
 
@@ -138,6 +188,10 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
   }
   if (req.method === 'POST') {
     await handleCreate(req, res)
+    return
+  }
+  if (req.method === 'PUT') {
+    await handleReorder(req, res)
     return
   }
   res.status(405).json({ error: 'Method not allowed' })

@@ -9,9 +9,22 @@ export type Screen =
   | 'archive'
   | 'hours'
   | 'notes'
+  | 'cms'
+  | 'logic'
+  | 'cards'
+  | 'report'
 
 /** Two shapes for the index screen — a ledger (A) and three columns (B). */
 export type Variant = 'A' | 'B'
+
+/**
+ * How the reader reached a template screen. The three templates (Article,
+ * Field report, Info cards) each serve two roles: a real post under a module,
+ * and the blank sample reachable from Admin › Templates. Same screen, but the
+ * colour block, labels and breadcrumb trail differ — so the screen has to know
+ * which door was used.
+ */
+export type Origin = 'module' | 'admin'
 
 export type Nav = {
   screen: Screen
@@ -19,19 +32,26 @@ export type Nav = {
   moduleId: string
   /** The post currently open on the article screen — null until one is picked. */
   postId: string | null
+  articleFrom: Origin
+  reportFrom: Origin
+  cardsFrom: Origin
   goArt(): void
   goLanding(): void
   goHome(): void
   goArchive(): void
   goHours(): void
   goNotes(): void
+  goCms(): void
+  goLogic(): void
+  goCards(from?: Origin): void
+  goReport(from?: Origin): void
   openModule(id: string): void
   /**
-   * Optional id: some call sites (the sidebar's static "sample post" link)
-   * don't have a real post to hand over — the article screen falls back to
-   * the one post that has a full essay written when none is given.
+   * Optional id: some call sites (the sidebar's Templates links) don't have a
+   * real post to hand over — the article screen falls back to the one post
+   * that has a full essay written when none is given.
    */
-  openArticle(id?: string): void
+  openArticle(id?: string, from?: Origin): void
   toggleVariant(): void
 }
 

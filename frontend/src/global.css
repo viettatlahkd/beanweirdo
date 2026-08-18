@@ -22,6 +22,12 @@ a:hover {
   background: #f7cbd0;
 }
 
+/* The sidebar scrolls its three sections; the bar itself is never shown. */
+div::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
 /* light-on-dark placeholder used by the Ghi timer's inline inputs */
 input::placeholder {
   color: rgba(244, 244, 239, 0.62);

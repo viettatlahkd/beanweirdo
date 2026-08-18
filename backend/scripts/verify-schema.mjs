@@ -16,7 +16,7 @@ async function assertTableExists(table) {
   if (!ok) failed = true
 }
 
-for (const table of ['modules', 'posts', 'activity_kinds', 'hour_logs', 'notes']) {
+for (const table of ['modules', 'posts', 'activity_kinds', 'hour_logs', 'notes', 'site_settings']) {
   await assertTableExists(table)
 }
 
@@ -33,6 +33,17 @@ async function assertColumnExists(table, column) {
 for (const col of ['status', 'template', 'hero_image_url', 'published_at', 'deleted_at', 'previous_status', 'updated_at']) {
   await assertColumnExists('posts', col)
 }
+
+// 0007 — the CMS's per-module photo slots.
+for (const col of ['img1', 'img2', 'img3']) {
+  await assertColumnExists('modules', col)
+}
+
+// 0007 — site copy lives in exactly one row, enforced by the boolean PK.
+const { rows: siteRows } = await client.query('select count(*)::int as n from site_settings')
+const oneSiteRow = siteRows[0]?.n === 1
+console.log(`${oneSiteRow ? 'PASS' : 'FAIL'} — site_settings holds exactly one row (got ${siteRows[0]?.n})`)
+if (!oneSiteRow) failed = true
 
 const { rows: dropped } = await client.query(
   `select table_name from information_schema.tables where table_schema = 'public' and table_name = 'templates'`,

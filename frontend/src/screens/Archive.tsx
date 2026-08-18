@@ -1,5 +1,7 @@
+import { Breadcrumbs } from '../components/Breadcrumbs'
 import { useModules } from '../data/useModules'
 import { usePublishedPosts } from '../data/usePublishedPosts'
+import { useSiteCopy } from '../data/useSiteCopy'
 import { ink, layout, paper, sans, serif } from '../design/tokens'
 import { Hover } from '../lib/Hover'
 import { useNav } from '../lib/nav'
@@ -9,9 +11,12 @@ export function Archive() {
   const nav = useNav()
   const { data: modules } = useModules()
   const { data: posts } = usePublishedPosts({ orderBy: 'date_label', ascending: false })
+  const { site } = useSiteCopy()
 
   return (
-    <div style={{ padding: '76px 56px 130px', maxWidth: layout.page - 40 }}>
+    <div style={{ padding: '44px 56px 130px', maxWidth: layout.page - 40 }}>
+      <Breadcrumbs color={ink.muted} />
+
       <div
         style={{
           display: 'flex',
@@ -30,10 +35,10 @@ export function Archive() {
             margin: 0,
           }}
         >
-          Archive
+          {site.archiveTitle}
         </h1>
         <div style={{ fontFamily: sans, fontSize: 11, color: ink.muted, paddingBottom: 8 }}>
-          {posts.length} notes — sắp theo thời gian
+          {posts.length} notes — {site.archiveNote}
         </div>
       </div>
 

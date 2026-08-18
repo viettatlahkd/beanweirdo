@@ -130,3 +130,45 @@ describe('POST /api/posts', () => {
     expect(res.statusCode).toBe(400)
   })
 })
+
+describe('PUT /api/posts', () => {
+  it('requires a moduleId', async () => {
+    const res = mockRes()
+    await handler(mockReq({ method: 'PUT', body: { order: ['a'] }, headers: authHeaders(signToken()) }), res)
+    expect(res.statusCode).toBe(400)
+  })
+
+  it('requires order to be an array of ids', async () => {
+    const res = mockRes()
+    await handler(
+      mockReq({ method: 'PUT', body: { moduleId: 'sensory', order: 'a' }, headers: authHeaders(signToken()) }),
+      res,
+    )
+    expect(res.statusCode).toBe(400)
+  })
+
+  it('rewrites sort_order and renumbers n, scoped to the module', async () => {
+    const first = queryBuilder({ data: null, error: null })
+    const second = queryBuilder({ data: null, error: null })
+    fromMock
+      .mockReturnValueOnce(first)
+      .mockReturnValueOnce(second)
+      .mockReturnValueOnce(queryBuilder({ data: [], error: null }))
+
+    const res = mockRes()
+    await handler(
+      mockReq({
+        method: 'PUT',
+        body: { moduleId: 'sensory', order: ['post-b', 'post-a'] },
+        headers: authHeaders(signToken()),
+      }),
+      res,
+    )
+
+    expect(first.update).toHaveBeenCalledWith(expect.objectContaining({ sort_order: 1, n: '01' }))
+    expect(first.eq).toHaveBeenCalledWith('id', 'post-b')
+    expect(first.eq).toHaveBeenCalledWith('module_id', 'sensory')
+    expect(second.update).toHaveBeenCalledWith(expect.objectContaining({ sort_order: 2, n: '02' }))
+    expect(res.statusCode).toBe(200)
+  })
+})

@@ -18,6 +18,7 @@
   a:hover { color:#3E7A4E; }
   ::selection { background:#F7CBD0; }
   h1, h2, h3, h4 { font-weight:400; }
+  div::-webkit-scrollbar { width:0; height:0; }
   input::placeholder { color: rgba(244,244,239,.62); }
   @keyframes riseIn { from { opacity:0; transform:translateY(28px); } to { opacity:1; transform:none; } }
 </style>
@@ -25,64 +26,77 @@
 
 <div style="min-height:100vh; background:#FDFBF2; color:#23211A; font-family:'Be Vietnam Pro',system-ui,sans-serif; font-weight:200; -webkit-font-smoothing:antialiased;">
 
-  <div style="position:fixed; top:0; left:0; bottom:0; width:64px; background: {{ sideBg }}; color: {{ sideFg }}; overflow:hidden; z-index:60; transition:width .3s cubic-bezier(.4,0,.2,1); display:flex; flex-direction:column; padding:22px 0;" style-hover="width:268px; box-shadow:22px 0 50px -34px rgba(35,33,26,.45);">
+  <div style="position:fixed; top:0; left:0; bottom:0; width:64px; background: {{ sideBg }}; color: {{ sideFg }}; overflow-x:hidden; overflow-y:auto; scrollbar-width:none; z-index:60; transition:width .3s cubic-bezier(.4,0,.2,1); display:flex; flex-direction:column; padding:22px 0;" style-hover="width:268px; box-shadow:22px 0 50px -34px rgba(35,33,26,.45);">
     <div style="display:flex; align-items:center; gap:30px; padding:0 22px 24px; white-space:nowrap;">
       <div style="width:20px; height:20px; border-radius:50%; background: {{ sideDot }}; flex:none;"></div>
-      <div style="font-family:'Playfair Display',serif; font-size:23px; letter-spacing:-.01em;">coffee study</div>
+      <div style="font-family:'Playfair Display',serif; font-size:23px; letter-spacing:-.01em;">be<span style="display:inline-block; transform:scale(1.3); transform-origin:50% 82%; color:#F2A0A5; margin:0 -.02em;">ӕ</span>n weirdo</div>
     </div>
     <div style="height:1px; background: {{ sideRule }}; margin:0 0 20px;"></div>
     <div style="display:flex; flex-direction:column; gap:1px;">
-      <div onClick="{{ goArt }}" style="display:flex; align-items:center; gap:30px; padding:10px 22px; cursor:pointer; white-space:nowrap; color: {{ sideMuted }};" style-hover="background: {{ sideHover }};">
-        <div style="width:20px; display:flex; justify-content:center; flex:none;"><div style="width:8px; height:8px; border:1px solid currentColor; transform:rotate(45deg);"></div></div>
-        <div style="font-size:13px;">Design system</div>
-      </div>
-      <div onClick="{{ goLanding }}" style="display:flex; align-items:center; gap:30px; padding:10px 22px; cursor:pointer; white-space:nowrap; color: {{ sideMuted }};" style-hover="background: {{ sideHover }};">
-        <div style="width:20px; display:flex; justify-content:center; flex:none;"><div style="width:10px; height:10px; border-radius:50%; border:1px solid currentColor;"></div></div>
-        <div style="font-size:13px;">Trang chủ</div>
-      </div>
-      <div onClick="{{ goHome }}" style="display:flex; align-items:center; gap:30px; padding:10px 22px; cursor:pointer; white-space:nowrap; color: {{ sideMuted }};" style-hover="background: {{ sideHover }};">
-        <div style="width:20px; display:flex; justify-content:center; flex:none;"><div style="width:10px; height:1px; background:currentColor;"></div></div>
-        <div style="font-size:13px;">Mục lục</div>
-      </div>
-      <sc-for list="{{ modules }}" as="m" hint-placeholder-count="3">
-        <div onClick="{{ m.open }}" style="display:flex; align-items:center; gap:30px; padding:10px 22px; cursor:pointer; white-space:nowrap; color: {{ sideMuted }};" style-hover="background: {{ sideHover }};">
-          <div style="width:20px; display:flex; justify-content:center; flex:none;"><div style="width:10px; height:10px; border-radius:50%; background: {{ m.accent }};"></div></div>
-          <div style="font-size:13px; flex:1;">{{ m.title }}</div>
-          <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; color:#B5AE99; padding-right:18px;">{{ m.count }}</div>
+      <div style="padding:0 22px 8px; white-space:nowrap; display:flex; gap:30px;"><div style="width:20px; flex:none;"></div><div style="font-size:9.5px; letter-spacing:.18em; text-transform:uppercase; color:#B5AE99;">{{ secPublic }}</div></div>
+      <sc-for list="{{ navPublic }}" as="n" hint-placeholder-count="6">
+        <div onClick="{{ n.go }}" style="display:flex; align-items:center; gap:30px; padding:10px 22px; cursor:pointer; white-space:nowrap; color: {{ sideMuted }};" style-hover="background: {{ sideHover }};">
+          <div style="width:20px; display:flex; justify-content:center; flex:none;">
+            <sc-if value="{{ n.isMod }}" hint-placeholder-val="{{ false }}">
+              <div style="width:10px; height:10px; border-radius:50%; background: {{ n.accent }};"></div>
+            </sc-if>
+            <sc-if value="{{ n.isPage }}" hint-placeholder-val="{{ true }}">
+              <div style="width: {{ n.sh.w }}; height: {{ n.sh.h }}; border-radius: {{ n.sh.r }}; border: {{ n.sh.bd }}; border-right-width: {{ n.sh.brw }}; border-bottom-width: {{ n.sh.bbw }}; background: {{ n.sh.bg }}; transform: {{ n.sh.tf }};"></div>
+            </sc-if>
+          </div>
+          <div style="font-size:13px; flex:1;">{{ n.label }}</div>
+          <div style="font-size:10px; color:#B5AE99; padding-right:18px;">{{ n.count }}</div>
         </div>
       </sc-for>
-        <div onClick="{{ goNotes }}" style="display:flex; align-items:center; gap:30px; padding:10px 22px; cursor:pointer; white-space:nowrap; color: {{ sideMuted }};" style-hover="background: {{ sideHover }};">
-          <div style="width:20px; display:flex; justify-content:center; flex:none;"><div style="width:9px; height:9px; background:#6FA8C0;"></div></div>
-          <div style="font-size:13px;">bite-size</div>
-        </div>
-      <div onClick="{{ goArchive }}" style="display:flex; align-items:center; gap:30px; padding:10px 22px; cursor:pointer; white-space:nowrap; color: {{ sideMuted }};" style-hover="background: {{ sideHover }};">
-        <div style="width:20px; display:flex; justify-content:center; flex:none;"><div style="width:8px; height:8px; border:1px solid currentColor;"></div></div>
-        <div style="font-size:13px;">Archive</div>
-      </div>
-      <div onClick="{{ openArticle }}" style="display:flex; align-items:center; gap:30px; padding:10px 22px; cursor:pointer; white-space:nowrap; color: {{ sideMuted }};" style-hover="background: {{ sideHover }};">
-        <div style="width:20px; display:flex; justify-content:center; flex:none;"><div style="width:11px; height:7px; border-top:1px solid currentColor; border-bottom:1px solid currentColor;"></div></div>
-        <div style="font-size:13px;">Bài mẫu — CGA</div>
-      </div>
     </div>
-    <div style="margin:24px 0 0;">
-      <div style="height:1px; background: {{ sideRule }}; margin-bottom:14px;"></div>
-      <div style="padding:0 22px 8px; white-space:nowrap; display:flex; gap:30px;"><div style="width:20px; flex:none;"></div><div style="font-size:9.5px; letter-spacing:.18em; text-transform:uppercase; color:#B5AE99;">Practice</div></div>
-      <div style="display:flex; flex-direction:column; gap:1px;">
-        <div onClick="{{ goHours }}" style="display:flex; align-items:center; gap:30px; padding:10px 22px; cursor:pointer; white-space:nowrap; color: {{ sideMuted }};" style-hover="background: {{ sideHover }};">
-          <div style="width:20px; display:flex; justify-content:center; flex:none;"><div style="width:9px; height:9px; border:1px solid currentColor; border-radius:50%; position:relative;"><div style="position:absolute; left:3px; top:1px; width:1px; height:3px; background:currentColor;"></div></div></div>
-          <div style="font-size:13px;">Ghi — daily journal</div>
-        </div>
+
+    <div style="margin:16px 0 0;">
+      <div style="height:1px; background: {{ sideRule }}; margin-bottom:10px;"></div>
+      <div style="padding:0 22px 8px; white-space:nowrap; display:flex; gap:30px;"><div style="width:20px; flex:none;"></div><div style="font-size:9.5px; letter-spacing:.18em; text-transform:uppercase; color:#B5AE99;">{{ secPractice }}</div></div>
+        <sc-for list="{{ navPractice }}" as="n" hint-placeholder-count="1">
+          <div onClick="{{ n.go }}" style="display:flex; align-items:center; gap:30px; padding:10px 22px; cursor:pointer; white-space:nowrap; color: {{ sideMuted }};" style-hover="background: {{ sideHover }};">
+            <div style="width:20px; display:flex; justify-content:center; flex:none;"><div style="width: {{ n.sh.w }}; height: {{ n.sh.h }}; border-radius: {{ n.sh.r }}; border: {{ n.sh.bd }}; background: {{ n.sh.bg }};"></div></div>
+            <div style="font-size:13px;">{{ n.label }}</div>
+          </div>
+        </sc-for>
       </div>
-    </div>
-    <div style="margin-top:auto; padding:0 22px; white-space:nowrap;">
-      <div style="width:20px; height:1px; background:#EBE5D3;"></div>
-    </div>
+
+    <div style="margin:16px 0 0;">
+      <div style="height:1px; background: {{ sideRule }}; margin-bottom:10px;"></div>
+      <div style="padding:0 22px 8px; white-space:nowrap; display:flex; gap:30px;"><div style="width:20px; flex:none;"></div><div style="font-size:9.5px; letter-spacing:.18em; text-transform:uppercase; color:#B5AE99;">{{ secAdmin }}</div></div>
+        <sc-for list="{{ navAdmin }}" as="n" hint-placeholder-count="7">
+          <div onClick="{{ n.go }}" style="display:flex; align-items:center; gap:30px; padding:10px 22px; cursor:pointer; white-space:nowrap; color: {{ sideMuted }};" style-hover="background: {{ sideHover }};">
+            <div style="width:20px; display:flex; justify-content:center; flex:none;">
+              <sc-if value="{{ n.notSub }}" hint-placeholder-val="{{ true }}">
+                <div style="width: {{ n.sh.w }}; height: {{ n.sh.h }}; border-radius: {{ n.sh.r }}; border: {{ n.sh.bd }}; border-right-width: {{ n.sh.brw }}; border-bottom-width: {{ n.sh.bbw }}; background: {{ n.sh.bg }}; transform: {{ n.sh.tf }};"></div>
+              </sc-if>
+            </div>
+            <div style="font-size:13px; display:flex; align-items:baseline; gap:9px;">
+              <sc-if value="{{ n.isSub }}" hint-placeholder-val="{{ false }}">
+                <div style="width:9px; height:1px; background:currentColor; opacity:.5; flex:none; margin-bottom:4px;"></div>
+              </sc-if>
+              <div>{{ n.label }}</div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
   </div>
 
   <div style="margin-left:64px;">
 
     <sc-if value="{{ isHours }}" hint-placeholder-val="{{ false }}">
-      <div style="background:#FCFCFA; color:#172124; min-height:100vh; padding:52px 60px 110px; font-family:'Be Vietnam Pro',sans-serif; font-weight:200;">
+      <div style="background:#FCFCFA; color:#172124; min-height:100vh; padding:44px 60px 110px; font-family:'Be Vietnam Pro',sans-serif; font-weight:200;">
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; margin-bottom:24px; color:#7C7C70;">
+          <div onClick="{{ crumbBack }}" style="cursor:pointer; padding-right:6px;">←</div>
+          <sc-for list="{{ crumbs }}" as="cb" hint-placeholder-count="3">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <div onClick="{{ cb.jump }}" style="cursor: {{ cb.cursor }}; opacity: {{ cb.op }};">{{ cb.t }}</div>
+              <sc-if value="{{ cb.notLast }}" hint-placeholder-val="{{ true }}">
+                <div style="opacity:.4;">›</div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
 
         <div style="border-bottom:1px solid #102F35; padding-bottom:22px;">
           <div style="display:flex; align-items:baseline; justify-content:space-between; gap:56px; flex-wrap:wrap;">
@@ -103,11 +117,11 @@
             <div style="max-width:560px;">
               <div style="display:flex; align-items:baseline; gap:12px; flex-wrap:wrap;">
                 <div style="width:34px; height:8px; background:#F2A0A5; margin-bottom:5px;"></div>
-                <div style="font-family:'Playfair Display',serif; font-style:italic; font-size:24px; line-height:1.3; color:#3E7A4E;">“We are what we repeatedly do.”</div>
+                <div style="font-family:'Playfair Display',serif; font-style:italic; font-size:24px; line-height:1.3; color:#3E7A4E;">{{ quoteText }}</div>
               </div>
               <div style="display:flex; align-items:center; gap:10px; margin:6px 0 0 46px;">
                 <div style="width: 15px; height: 1px; background: #A2A296"></div>
-                <div style="font-family:'Playfair Display',serif; font-style:italic; font-size:12px; color:#A2A296;">Will Durant</div>
+                <div style="font-family:'Playfair Display',serif; font-style:italic; font-size:12px; color:#A2A296;">{{ quoteWho }}</div>
               </div>
             </div>
             <div style="display:flex; gap:24px; justify-content:flex-end; align-items:flex-end;">
@@ -127,6 +141,25 @@
         <div onClick="{{ toggleStats }}" style="display:inline-flex; align-items:center; gap:11px; margin-top:26px; font-weight:600; font-size:11.5px; letter-spacing:.2em; text-transform:uppercase; background: {{ statsBtnBg }}; color: {{ statsBtnFg }}; border:1px solid {{ statsBtnEdge }}; padding:13px 20px; cursor:pointer; transition:background .25s ease, color .25s ease;" style-hover="background:#102F35; color:#F4F4EF; border-color:#102F35;">
           <div style="width:6px; height:6px; background:currentColor;"></div>
           <div>{{ statsLabel }}</div>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:9px; flex-wrap:wrap; margin-top:30px; padding:14px 0 15px; border-top:1px solid #E3E3DB; border-bottom:1px solid #E3E3DB;">
+          <sc-for list="{{ kindBar }}" as="k" hint-placeholder-count="4">
+            <div onClick="{{ k.pick }}" style="display:inline-flex; align-items:center; gap:8px; background: {{ k.bg }}; border:1px solid {{ k.edge }}; padding:6px 12px; cursor:pointer;">
+              <div style="width:8px; height:8px; border-radius:50%; background: {{ k.c }}; flex:none;"></div>
+              <div style="font-size:12.5px; color: {{ k.fg }};">{{ k.k }}</div>
+              <div style="font-size:11px; color: {{ k.fg }}; opacity:.55; font-variant-numeric:tabular-nums;">{{ k.n }}</div>
+            </div>
+          </sc-for>
+          <sc-if value="{{ kindAdding }}" hint-placeholder-val="{{ false }}">
+            <input value="{{ kindDraft }}" onChange="{{ setKindDraft }}" onKeyDown="{{ kindKey }}" onBlur="{{ commitKind }}" autoFocus="{{ true }}" placeholder="loại mới" style="width:112px; background:#FFFFFF; border:1px solid #3E7A4E; color:#172124; font-family:'Be Vietnam Pro',sans-serif; font-weight:300; font-size:12.5px; padding:6px 10px; outline:none;" />
+          </sc-if>
+          <sc-if value="{{ kindIdle }}" hint-placeholder-val="{{ true }}">
+            <div onClick="{{ openAddKind }}" style="font-size:12.5px; color:#A2A296; border:1px dashed #CFCFC4; padding:6px 12px; cursor:pointer;" style-hover="color:#3E7A4E; border-color:#3E7A4E;">+ loại</div>
+          </sc-if>
+          <sc-if value="{{ kindFiltered }}" hint-placeholder-val="{{ false }}">
+            <div onClick="{{ clearKindFilter }}" style="font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:#A2A296; cursor:pointer; margin-left:4px;" style-hover="color:#C25C7C;">bỏ lọc ✕</div>
+          </sc-if>
         </div>
         <sc-if value="{{ statsOpen }}" hint-placeholder-val="{{ false }}">
           <div style="margin:30px 0 6px;">
@@ -353,10 +386,20 @@
     </sc-if>
 
     <sc-if value="{{ isNotes }}" hint-placeholder-val="{{ false }}">
-      <div onClick="{{ closeNotes }}" style="background:#FCFCFA; color:#12120F; min-height:100vh; padding:56px 72px 56px;">
+      <div onClick="{{ closeNotes }}" style="background:#FCFCFA; color:#12120F; min-height:100vh; padding:44px 72px 56px;">
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; margin-bottom:24px; color:#9A9A90;">
+          <div onClick="{{ crumbBack }}" style="cursor:pointer; padding-right:6px;">←</div>
+          <sc-for list="{{ crumbs }}" as="cb" hint-placeholder-count="3">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <div onClick="{{ cb.jump }}" style="cursor: {{ cb.cursor }}; opacity: {{ cb.op }};">{{ cb.t }}</div>
+              <sc-if value="{{ cb.notLast }}" hint-placeholder-val="{{ true }}">
+                <div style="opacity:.4;">›</div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
         <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:56px; flex-wrap:wrap;">
           <div>
-            <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:9.5px; letter-spacing:.34em; text-transform:uppercase; color:#9A9A90; margin-bottom:20px;">beӕn weirdo — 02</div>
             <h1 style="font-family:'Playfair Display',serif; font-size:118px; line-height:.82; letter-spacing:-.045em; margin:0; font-weight:400;">Notes<span style="font-style:italic; color:#F2A0A5;">.</span></h1>
             <div style="font-family:'Playfair Display',serif; font-style:italic; font-size:27px; color:#4A4A42; margin-top:12px;">ghi chép rời — không thuộc module nào</div>
           </div>
@@ -435,11 +478,22 @@
 
     <sc-if value="{{ isArt }}" hint-placeholder-val="{{ true }}">
       <div>
-        <div style="background:#F7DCD3; color:#23211A; padding:70px 56px 56px;">
-          <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.18em; text-transform:uppercase; margin-bottom:26px; color:#8A6B62;">Design system — v4 / garden</div>
+        <div style="background:#F7DCD3; color:#23211A; padding:44px 56px 56px;">
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; margin-bottom:24px; color:#8A6B62;">
+            <div onClick="{{ crumbBack }}" style="cursor:pointer; padding-right:6px;">←</div>
+            <sc-for list="{{ crumbs }}" as="cb" hint-placeholder-count="3">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div onClick="{{ cb.jump }}" style="cursor: {{ cb.cursor }}; opacity: {{ cb.op }};">{{ cb.t }}</div>
+                <sc-if value="{{ cb.notLast }}" hint-placeholder-val="{{ true }}">
+                  <div style="opacity:.4;">›</div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+
           <div style="display:grid; grid-template-columns:minmax(0,1.5fr) minmax(0,1fr); gap:48px; align-items:end;">
-            <h1 style="font-family:'Playfair Display',serif; font-size:100px; line-height:.92; letter-spacing:-.03em; margin:0;">Garden colours,<br><span style="font-style:italic; color:#3E7A4E;">quiet paper</span></h1>
-            <div style="font-size:14px; line-height:1.45; padding-bottom:0; margin-top:36px; color:#4B463A;">Bảng màu lấy từ vườn hơn là từ màn hình: hồng cánh hoa, xanh lá non, mơ chín, xanh trời nhạt. Đủ tươi để thấy vui, đủ dịu để đọc lâu. Nền kem giữ nhịp; mỗi module sở hữu một mảng màu lớn của riêng nó.</div>
+            <h1 style="font-family:'Playfair Display',serif; font-size:100px; line-height:.92; letter-spacing:-.03em; margin:0;">{{ artT1 }}<br><span style="font-style:italic; color:#3E7A4E;">{{ artT2 }}</span></h1>
+            <div style="font-size:14px; line-height:1.45; padding-bottom:0; margin-top:36px; color:#4B463A;">{{ artIntro }}</div>
           </div>
         </div>
 
@@ -534,12 +588,12 @@
     <sc-if value="{{ isLanding }}" hint-placeholder-val="{{ true }}">
       <div>
         <div style="padding:80px 56px 64px; max-width:1240px;">
-          <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:#8C8674; margin-bottom:28px;">coffee study journal — 2024 / 2026</div>
-          <h1 style="font-family:'Playfair Display',serif; font-size:104px; line-height:.92; letter-spacing:-.035em; margin:0 0 24px;">be<span style="display:inline-block; transform:scale(1.22); transform-origin:50% 88%; color:#F2A0A5;">ӕ</span>n weirdo<br><span style="font-style:italic; color:#3E7A4E;">bằng cách viết ra</span></h1>
+          <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:#8C8674; margin-bottom:28px;">{{ lEyebrow }}</div>
+          <h1 style="font-family:'Playfair Display',serif; font-size:104px; line-height:.92; letter-spacing:-.035em; margin:0 0 24px;">{{ lT1pre }}<span style="display:inline-block; transform:scale(1.22); transform-origin:50% 88%; color:#F2A0A5;">{{ lT1ae }}</span>{{ lT1post }}<br><span style="font-style:italic; color:#3E7A4E;">{{ lTitle2 }}</span></h1>
           <div style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,.8fr); gap:40px; align-items:start;">
-            <div style="font-size:15px; line-height:1.5; color:#3B3729;">Mỗi thứ học được đều bị viết lại thành một ghi chú ngắn, xếp vào một module. Ba module đang mở: giác quan, hoá sinh, rang. Bài mới nhất luôn nằm trên cùng của module tương ứng.</div>
-            <div style="font-size:13.5px; line-height:1.45; color:#5C5745;">Không có bài nào ở đây là kết luận. Phần lớn là ghi chép giữa đường: đọc được gì, thử gì, sai ở đâu. Mục "còn chưa rõ" ở cuối mỗi bài thường là phần đáng đọc nhất.</div>
-            <div onClick="{{ goHome }}" style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#3E7A4E; cursor:pointer; padding-top:4px;" style-hover="color:#23211A;">xem mục lục 18 bài →</div>
+            <div style="font-size:15px; line-height:1.5; color:#3B3729;">{{ lIntro1 }}</div>
+            <div style="font-size:13.5px; line-height:1.45; color:#5C5745;">{{ lIntro2 }}</div>
+            <div onClick="{{ goHome }}" style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#3E7A4E; cursor:pointer; padding-top:4px;" style-hover="color:#23211A;">{{ lCtaFull }}</div>
           </div>
         </div>
 
@@ -611,25 +665,36 @@
 
     <sc-if value="{{ isHomeA }}" hint-placeholder-val="{{ false }}">
       <div>
-        <div style="padding:76px 56px 38px; max-width:1240px;">
+        <div style="padding:44px 56px 38px; max-width:1240px;">
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; margin-bottom:24px; color:#8C8674;">
+            <div onClick="{{ crumbBack }}" style="cursor:pointer; padding-right:6px;">←</div>
+            <sc-for list="{{ crumbs }}" as="cb" hint-placeholder-count="3">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div onClick="{{ cb.jump }}" style="cursor: {{ cb.cursor }}; opacity: {{ cb.op }};">{{ cb.t }}</div>
+                <sc-if value="{{ cb.notLast }}" hint-placeholder-val="{{ true }}">
+                  <div style="opacity:.4;">›</div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
           <div style="display:grid; grid-template-columns:minmax(0,1.6fr) minmax(0,1fr); gap:44px; align-items:end;">
-            <h1 style="font-family:'Playfair Display',serif; font-size:108px; line-height:.9; letter-spacing:-.035em; margin:0;">A coffee study<br><span style="font-style:italic; color:#3E7A4E;">journal</span></h1>
+            <h1 style="font-family:'Playfair Display',serif; font-size:108px; line-height:.9; letter-spacing:-.035em; margin:0;">{{ siteT1 }}<br><span style="font-style:italic; color:#3E7A4E;">{{ siteT2 }}</span></h1>
             <div style="padding-bottom:14px;">
-              <div style="font-size:14px; line-height:1.45; color:#4B463A; margin-bottom:14px;">Ghi chép quá trình học về cà phê — chia theo module, mỗi module là một tập bài ngắn. Đọc theo thứ tự hoặc nhặt bất kỳ đâu.</div>
+              <div style="font-size:14px; line-height:1.45; color:#4B463A; margin-bottom:14px;">{{ siteBlurb }}</div>
               <div onClick="{{ toggleVariant }}" style="font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#8C8674; cursor:pointer; display:inline-block; border-bottom:1px solid #EBE5D3; padding-bottom:3px;" style-hover="color:#3E7A4E;">xem dạng cột →</div>
             </div>
           </div>
         </div>
         <sc-if value="{{ showPlates }}" hint-placeholder-val="{{ true }}">
           <div style="display:grid; grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1fr); gap:0;">
-            <div style="aspect-ratio:16/9; background:#F2A0A5; display:flex; align-items:flex-end; padding:16px;">
-              <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; color:#3B2A2B;">ảnh mở đầu — vật thể đơn</div>
+            <div style="aspect-ratio:16/9; background: {{ plateBg1 }}; display:flex; align-items:flex-end; padding:16px;">
+              <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; color:#3B2A2B;">{{ plate1 }}</div>
             </div>
-            <div style="aspect-ratio:16/9; background:#7FB87E; display:flex; align-items:flex-end; padding:16px;">
-              <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; color:#1F3323;">mặt cắt</div>
+            <div style="aspect-ratio:16/9; background: {{ plateBg2 }}; display:flex; align-items:flex-end; padding:16px;">
+              <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; color:#1F3323;">{{ plate2 }}</div>
             </div>
-            <div style="aspect-ratio:16/9; background:oklch(0.50 0.135 14); display:flex; align-items:flex-end; padding:16px;">
-              <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; color:#3B2E19;">dải rang</div>
+            <div style="aspect-ratio:16/9; background: {{ plateBg3 }}; display:flex; align-items:flex-end; padding:16px;">
+              <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; color:#3B2E19;">{{ plate3 }}</div>
             </div>
           </div>
         </sc-if>
@@ -644,7 +709,7 @@
             </div>
             <div style="font-size:14px; line-height:1.35; color:#5C5745; max-width:600px; margin:0 0 18px;">{{ m.blurb }}</div>
             <sc-for list="{{ m.entries }}" as="e" hint-placeholder-count="6">
-              <div onClick="{{ openArticle }}" style="display:grid; grid-template-columns:44px minmax(0,1fr) minmax(0,1.05fr) 72px 56px; align-items:baseline; gap:18px; padding:{{ rowPad }} 12px {{ rowPad }} 10px; border-top:1px solid #EBE5D3; cursor:pointer; border-left:3px solid transparent;" style-hover="background:#FFFFFF; border-left:3px solid #3E7A4E;">
+              <div onClick="{{ e.go }}" style="display:grid; grid-template-columns:44px minmax(0,1fr) minmax(0,1.05fr) 72px 56px; align-items:baseline; gap:18px; padding:{{ rowPad }} 12px {{ rowPad }} 10px; border-top:1px solid #EBE5D3; cursor:pointer; border-left:3px solid transparent;" style-hover="background:#FFFFFF; border-left:3px solid #3E7A4E;">
                 <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:11px; color:#B5AE99;">{{ e.n }}</div>
                 <div style="font-family:'Playfair Display',serif; font-size:23px; letter-spacing:-.015em;">{{ e.en }}</div>
                 <div style="font-size:13px; color:#5C5745; line-height:1.2;">{{ e.vi }}</div>
@@ -660,9 +725,20 @@
     </sc-if>
 
     <sc-if value="{{ isHomeB }}" hint-placeholder-val="{{ false }}">
-      <div style="padding:76px 56px 130px; max-width:1340px;">
-        <h1 style="font-family:'Playfair Display',serif; font-size:108px; line-height:.9; letter-spacing:-.035em; margin:0 0 16px;">A coffee study <span style="font-style:italic; color:#3E7A4E;">journal</span></h1>
-        <div style="max-width:440px; font-size:14px; line-height:1.45; color:#4B463A; margin-bottom:14px;">Ghi chép quá trình học về cà phê — chia theo module, mỗi module là một tập bài ngắn.</div>
+      <div style="padding:44px 56px 130px; max-width:1340px;">
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; margin-bottom:24px; color:#8C8674;">
+          <div onClick="{{ crumbBack }}" style="cursor:pointer; padding-right:6px;">←</div>
+          <sc-for list="{{ crumbs }}" as="cb" hint-placeholder-count="3">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <div onClick="{{ cb.jump }}" style="cursor: {{ cb.cursor }}; opacity: {{ cb.op }};">{{ cb.t }}</div>
+              <sc-if value="{{ cb.notLast }}" hint-placeholder-val="{{ true }}">
+                <div style="opacity:.4;">›</div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+        <h1 style="font-family:'Playfair Display',serif; font-size:108px; line-height:.9; letter-spacing:-.035em; margin:0 0 16px;">{{ siteT1 }} <span style="font-style:italic; color:#3E7A4E;">{{ siteT2 }}</span></h1>
+        <div style="max-width:440px; font-size:14px; line-height:1.45; color:#4B463A; margin-bottom:14px;">{{ siteBlurbShort }}</div>
         <div onClick="{{ toggleVariant }}" style="font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#8C8674; cursor:pointer; display:inline-block; border-bottom:1px solid #EBE5D3; padding-bottom:3px; margin-bottom:44px;" style-hover="color:#3E7A4E;">xem dạng danh sách →</div>
         <div style="display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:0;">
           <sc-for list="{{ modules }}" as="m" hint-placeholder-count="3">
@@ -676,7 +752,7 @@
                 </div>
               </sc-if>
               <sc-for list="{{ m.entries }}" as="e" hint-placeholder-count="6">
-                <div onClick="{{ openArticle }}" style="display:flex; gap:12px; padding:11px 0; border-top:1px solid rgba(35,33,26,.16); cursor:pointer;">
+                <div onClick="{{ e.go }}" style="display:flex; gap:12px; padding:11px 0; border-top:1px solid rgba(35,33,26,.16); cursor:pointer;">
                   <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; opacity:.6; padding-top:6px;">{{ e.n }}</div>
                   <div style="flex:1;">
                     <div style="font-family:'Playfair Display',serif; font-size:21px; line-height:1.2; letter-spacing:-.015em;">{{ e.en }}</div>
@@ -693,8 +769,17 @@
     <sc-if value="{{ modBand }}" hint-placeholder-val="{{ false }}">
       <div>
         <div style="background: {{ mod.accent }}; color: {{ mod.on }}; padding:52px 56px 44px;">
-          <div onClick="{{ goHome }}" style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; cursor:pointer; margin-bottom:28px; opacity:.7;">← index</div>
-          <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; margin-bottom:10px; opacity:.7;">module 01 — {{ mod.concept }} — band</div>
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; margin-bottom:24px; opacity:.75;">
+            <div onClick="{{ crumbBack }}" style="cursor:pointer; padding-right:6px;">←</div>
+            <sc-for list="{{ crumbs }}" as="cb" hint-placeholder-count="4">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div onClick="{{ cb.jump }}" style="cursor: {{ cb.cursor }}; opacity: {{ cb.op }};">{{ cb.t }}</div>
+                <sc-if value="{{ cb.notLast }}" hint-placeholder-val="{{ true }}">
+                  <div style="opacity:.4;">›</div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
           <h1 style="font-family:'Playfair Display',serif; font-size:92px; line-height:.94; letter-spacing:-.04em; margin:0 0 20px;">{{ mod.title }}</h1>
           <div style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:44px;">
             <div style="font-size:15px; line-height:1.45;">{{ mod.long }}</div>
@@ -709,7 +794,7 @@
         <div style="padding:36px 56px 120px; max-width:1240px;">
           <div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:0 44px;">
             <sc-for list="{{ mod.entries }}" as="e" hint-placeholder-count="6">
-              <div onClick="{{ openArticle }}" style="display:flex; gap:16px; padding:18px 10px; border-top:1px solid #EBE5D3; cursor:pointer; align-items:flex-start;" style-hover="background:#FFFFFF;">
+              <div onClick="{{ e.go }}" style="display:flex; gap:16px; padding:18px 10px; border-top:1px solid #EBE5D3; cursor:pointer; align-items:flex-start;" style-hover="background:#FFFFFF;">
                 <div style="width:172px; height:130px; flex:none; background: {{ e.tint }};"></div>
                 <div style="flex:1; min-width:0;">
                   <div style="font-family:'Playfair Display',serif; font-size:24px; letter-spacing:-.018em; line-height:1.15;">{{ e.en }}</div>
@@ -731,8 +816,17 @@
       <div>
         <div style="display:grid; grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);">
           <div style="background: {{ mod.accent }}; color: {{ mod.on }}; padding: 52px 48px 48px; width: 571px; height: 373px">
-            <div onClick="{{ goHome }}" style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; cursor:pointer; margin-bottom:28px; opacity:.7;">← index</div>
-            <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; margin-bottom:10px; opacity:.7;">module 02 — {{ mod.concept }} — specimen</div>
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; margin-bottom:24px; opacity:.75;">
+              <div onClick="{{ crumbBack }}" style="cursor:pointer; padding-right:6px;">←</div>
+              <sc-for list="{{ crumbs }}" as="cb" hint-placeholder-count="4">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <div onClick="{{ cb.jump }}" style="cursor: {{ cb.cursor }}; opacity: {{ cb.op }};">{{ cb.t }}</div>
+                  <sc-if value="{{ cb.notLast }}" hint-placeholder-val="{{ true }}">
+                    <div style="opacity:.4;">›</div>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
             <h1 style="font-family:'Playfair Display',serif; font-size:84px; line-height:.94; letter-spacing:-.04em; margin:0 0 18px;">{{ mod.title }}</h1>
             <div style="font-size:15px; line-height:1.45; max-width:520px;">{{ mod.long }}</div>
           </div>
@@ -754,7 +848,7 @@
         <div style="padding:0 0 120px;">
           <div style="display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1px; background:#EBE5D3; border-bottom:1px solid #EBE5D3;">
             <sc-for list="{{ mod.entries }}" as="e" hint-placeholder-count="6">
-              <div onClick="{{ openArticle }}" style="background:#FDFBF2; padding:18px 18px 20px; cursor:pointer; display:flex; flex-direction:column; min-height:230px;" style-hover="background:#FFFFFF;">
+              <div onClick="{{ e.go }}" style="background:#FDFBF2; padding:18px 18px 20px; cursor:pointer; display:flex; flex-direction:column; min-height:230px;" style-hover="background:#FFFFFF;">
                 <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:11px;">
                   <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; color:#B5AE99;">{{ e.n }}</div>
                   <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:9.5px; color:#8C8674; text-transform:uppercase; letter-spacing:.08em;">{{ e.kind }}</div>
@@ -775,8 +869,17 @@
     <sc-if value="{{ modSequence }}" hint-placeholder-val="{{ false }}">
       <div>
         <div style="background: {{ mod.accent }}; color: {{ mod.on }}; padding:52px 56px 40px;">
-          <div onClick="{{ goHome }}" style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; cursor:pointer; margin-bottom:24px; opacity:.7;">← index</div>
-          <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; margin-bottom:6px; opacity:.7;">module 03 — {{ mod.concept }} — sequence</div>
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; margin-bottom:24px; opacity:.75;">
+            <div onClick="{{ crumbBack }}" style="cursor:pointer; padding-right:6px;">←</div>
+            <sc-for list="{{ crumbs }}" as="cb" hint-placeholder-count="4">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div onClick="{{ cb.jump }}" style="cursor: {{ cb.cursor }}; opacity: {{ cb.op }};">{{ cb.t }}</div>
+                <sc-if value="{{ cb.notLast }}" hint-placeholder-val="{{ true }}">
+                  <div style="opacity:.4;">›</div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
           <h1 style="font-family:'Playfair Display',serif; font-size:96px; line-height:.94; letter-spacing:-.04em; margin:0 0 22px;">{{ mod.title }}</h1>
           <div style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr); gap:36px;">
             <div style="font-size:15px; line-height:1.45; grid-column:span 2;">{{ mod.long }}</div>
@@ -793,7 +896,7 @@
         </sc-if>
         <div style="padding:34px 56px 120px; max-width:1240px;">
           <sc-for list="{{ mod.entries }}" as="e" hint-placeholder-count="6">
-            <div onClick="{{ openArticle }}" style="display:grid; grid-template-columns:70px minmax(0,1.1fr) minmax(0,1.3fr) 88px; gap:24px; align-items:center; padding:20px 10px; border-bottom:1px solid #EBE5D3; cursor:pointer;" style-hover="background:#FFFFFF;">
+            <div onClick="{{ e.go }}" style="display:grid; grid-template-columns:70px minmax(0,1.1fr) minmax(0,1.3fr) 88px; gap:24px; align-items:center; padding:20px 10px; border-bottom:1px solid #EBE5D3; cursor:pointer;" style-hover="background:#FFFFFF;">
               <div style="font-family:'Playfair Display',serif; font-size:38px; color:#D99C55;">{{ e.n }}</div>
               <div style="font-family:'Playfair Display',serif; font-size:27px; letter-spacing:-.02em; line-height:1.15;">{{ e.en }}</div>
               <div style="font-size:13.5px; color:#5C5745; line-height:1.3;">{{ e.vi }}</div>
@@ -803,12 +906,784 @@
         </div>
       </div>
     </sc-if>
+    <sc-if value="{{ isCms }}" hint-placeholder-val="{{ false }}">
+      <div style="background:#FDFBF2; color:#23211A; min-height:100vh;">
+        <div style="background:#DDEBF0; color:#0E2C38; padding:44px 56px 30px;">
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; margin-bottom:24px; opacity:.75;">
+            <div onClick="{{ crumbBack }}" style="cursor:pointer; padding-right:6px;">←</div>
+            <sc-for list="{{ crumbs }}" as="cb" hint-placeholder-count="3">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div onClick="{{ cb.jump }}" style="cursor: {{ cb.cursor }}; opacity: {{ cb.op }};">{{ cb.t }}</div>
+                <sc-if value="{{ cb.notLast }}" hint-placeholder-val="{{ true }}">
+                  <div style="opacity:.4;">›</div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:44px; flex-wrap:wrap;">
+            <div>
+              <h1 style="font-family:'Playfair Display',serif; font-weight:400; font-size:70px; line-height:1; letter-spacing:-.04em; margin:0;">{{ cmsTitle }}</h1>
+              <div style="font-family:'Be Vietnam Pro',sans-serif; font-weight:300; font-size:13.5px; line-height:1.5; margin-top:10px; max-width:430px; opacity:.85;">{{ cmsIntro }}</div>
+            </div>
+            <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:11px; letter-spacing:.14em; text-transform:uppercase; opacity:.7; padding-bottom:8px;">{{ cmsCount }}</div>
+          </div>
+          <div style="display:flex; gap:4px; margin-top:26px;">
+            <sc-for list="{{ cmsTabs }}" as="t" hint-placeholder-count="2">
+              <div onClick="{{ t.pick }}" style="font-family:'Be Vietnam Pro',sans-serif; font-size:11px; font-weight:500; letter-spacing:.16em; text-transform:uppercase; padding:10px 18px; cursor:pointer; background: {{ t.bg }}; color: {{ t.fg }};">{{ t.t }}</div>
+            </sc-for>
+          </div>
+        </div>
+
+        <sc-if value="{{ cmsIsMap }}" hint-placeholder-val="{{ true }}">
+          <div style="padding:34px 56px 130px; max-width:1080px;">
+            <sc-for list="{{ cmsTree }}" as="G" hint-placeholder-count="3">
+              <div style="margin-bottom:40px;">
+                <div style="display:flex; align-items:center; gap:10px; border-bottom:2px solid #23211A; padding-bottom:9px; margin-bottom:6px;">
+                  <div style="width:9px; height:9px; background: {{ G.c }};"></div>
+                  <input value="{{ G.g }}" onChange="{{ G.setName }}" title="Tên section — đồng bộ với sidebar" style="flex:1; min-width:0; background:transparent; border:0; border-bottom:1px solid transparent; outline:none; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-size:10.5px; font-weight:500; letter-spacing:.2em; text-transform:uppercase; padding:0 0 1px;" style-hover="border-bottom-color:#DAD7C7;" style-focus="border-bottom-color:#23211A;" />
+                </div>
+                <sc-for list="{{ G.rows }}" as="r" hint-placeholder-count="4">
+                  <sc-if value="{{ r.notSub }}" hint-placeholder-val="{{ true }}">
+                  <div style="border-bottom:1px solid #F0EBDB; padding:11px 0;">
+                    <div onClick="{{ r.go }}" style="display:flex; align-items:baseline; gap:14px; cursor:pointer;" style-hover="background:#F6F2E2;">
+                      <div style="font-family:'Playfair Display',serif; font-size:21px; line-height:1.1; letter-spacing:-.02em; flex:1; min-width:0;">{{ r.label }}</div>
+                      <div style="font-family:'Be Vietnam Pro',sans-serif; font-weight:300; font-size:12px; color:#8C8674;">{{ r.desc }}</div>
+                    </div>
+                    <sc-for list="{{ r.kids }}" as="k" hint-placeholder-count="0">
+                      <div style="display:flex; align-items:baseline; gap:12px; padding:4px 0 4px 26px; border-left:1px solid #EBE5D3; margin:4px 0 0 6px;">
+                        <div style="font-family:'Be Vietnam Pro',sans-serif; font-weight:300; font-size:13px; color:#4B463A; flex:1; min-width:0;">{{ k.t }}</div>
+                        <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10.5px; letter-spacing:.1em; color:#B5AE99;">{{ k.d }}</div>
+                      </div>
+                    </sc-for>
+                  </div>
+                  </sc-if>
+                </sc-for>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ cmsIsContent }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:34px 56px 130px; max-width:1080px;">
+            <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10.5px; font-weight:500; letter-spacing:.2em; text-transform:uppercase; color:#8C8674; border-bottom:2px solid #23211A; padding-bottom:9px; margin-bottom:18px;">Trang chủ — landing</div>
+            <div style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:22px; margin-bottom:14px;">
+              <div>
+                <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Nhãn trên cùng</div>
+                <input value="{{ lEyebrow }}" onChange="{{ setLEyebrow }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-size:13px; padding:9px 12px; outline:none;" />
+              </div>
+              <div>
+                <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Nhãn xem mục lục</div>
+                <input value="{{ lCta }}" onChange="{{ setLCta }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-size:13px; padding:9px 12px; outline:none;" />
+              </div>
+              <div>
+                <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Tên lớn — dòng 1 · chữ <span style="color:#F2A0A5;">ӕ</span> phóng to màu hồng</div>
+                <input value="{{ lTitle1 }}" onChange="{{ setLTitle1 }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Playfair Display',serif; font-size:22px; padding:9px 12px; outline:none;" />
+              </div>
+              <div>
+                <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Tên lớn — dòng 2 (nghiêng, xanh)</div>
+                <input value="{{ lTitle2 }}" onChange="{{ setLTitle2 }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#3E7A4E; font-family:'Playfair Display',serif; font-style:italic; font-size:22px; padding:9px 12px; outline:none;" />
+              </div>
+              <div>
+                <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Đoạn dẫn — cột 1</div>
+                <textarea value="{{ lIntro1 }}" onChange="{{ setLIntro1 }}" rows="4" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-weight:300; font-size:13.5px; line-height:1.5; padding:10px 12px; outline:none; resize:vertical;"></textarea>
+              </div>
+              <div>
+                <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Đoạn dẫn — cột 2</div>
+                <textarea value="{{ lIntro2 }}" onChange="{{ setLIntro2 }}" rows="4" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-weight:300; font-size:13.5px; line-height:1.5; padding:10px 12px; outline:none; resize:vertical;"></textarea>
+              </div>
+            </div>
+
+            <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10.5px; font-weight:500; letter-spacing:.2em; text-transform:uppercase; color:#8C8674; border-bottom:2px solid #23211A; padding-bottom:9px; margin:34px 0 18px;">Mục lục</div>
+            <div style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:22px; margin-bottom:14px;">
+              <div>
+                <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Tiêu đề — dòng 1</div>
+                <input value="{{ siteT1 }}" onChange="{{ setSiteT1 }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Playfair Display',serif; font-size:22px; padding:9px 12px; outline:none;" />
+              </div>
+              <div>
+                <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Tiêu đề — dòng 2 (nghiêng, xanh)</div>
+                <input value="{{ siteT2 }}" onChange="{{ setSiteT2 }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#3E7A4E; font-family:'Playfair Display',serif; font-style:italic; font-size:22px; padding:9px 12px; outline:none;" />
+              </div>
+            </div>
+            <div style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:22px; margin-bottom:18px;">
+              <div>
+                <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Đoạn dẫn — dạng danh sách</div>
+                <textarea value="{{ siteBlurb }}" onChange="{{ setSiteBlurb }}" rows="3" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-weight:300; font-size:14px; line-height:1.5; padding:10px 12px; outline:none; resize:vertical;"></textarea>
+              </div>
+              <div>
+                <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Đoạn dẫn — dạng cột</div>
+                <textarea value="{{ siteBlurbShort }}" onChange="{{ setSiteBlurbShort }}" rows="3" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-weight:300; font-size:14px; line-height:1.5; padding:10px 12px; outline:none; resize:vertical;"></textarea>
+              </div>
+            </div>
+            <div style="display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:22px; margin-bottom:40px;">
+              <div>
+                <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Chú thích ảnh 1</div>
+                <input value="{{ plate1 }}" onChange="{{ setPlate1 }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-size:13px; padding:8px 11px; outline:none;" />
+                <sc-if value="{{ hasPlate1 }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin-top:7px; aspect-ratio:16/9; background: {{ plateThumb1 }}; border:1px solid #EBE5D3;"></div>
+                </sc-if>
+                <div style="display:flex; align-items:center; gap:10px; margin-top:7px;">
+                  <label style="flex:1; min-width:0; display:block; font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#5C5745; border:1px dashed #DAD7C7; padding:7px 10px; cursor:pointer; text-align:center;" style-hover="border-color:#23211A; color:#23211A;">
+                    <sc-if value="{{ hasPlate1 }}" hint-placeholder-val="{{ false }}">đổi ảnh</sc-if>
+                    <sc-if value="{{ noPlate1 }}" hint-placeholder-val="{{ true }}">tải ảnh lên</sc-if>
+                    <input type="file" accept="image/*" onChange="{{ upPlate1 }}" style="display:none;" />
+                  </label>
+                  <sc-if value="{{ hasPlate1 }}" hint-placeholder-val="{{ false }}">
+                    <div onClick="{{ clearPlate1 }}" style="font-family:'Be Vietnam Pro',sans-serif; font-size:11px; color:#B5AE99; cursor:pointer; flex:none;" style-hover="color:#C25C7C;">✕</div>
+                  </sc-if>
+                </div>
+              </div>
+              <div>
+                <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Chú thích ảnh 2</div>
+                <input value="{{ plate2 }}" onChange="{{ setPlate2 }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-size:13px; padding:8px 11px; outline:none;" />
+                <sc-if value="{{ hasPlate2 }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin-top:7px; aspect-ratio:16/9; background: {{ plateThumb2 }}; border:1px solid #EBE5D3;"></div>
+                </sc-if>
+                <div style="display:flex; align-items:center; gap:10px; margin-top:7px;">
+                  <label style="flex:1; min-width:0; display:block; font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#5C5745; border:1px dashed #DAD7C7; padding:7px 10px; cursor:pointer; text-align:center;" style-hover="border-color:#23211A; color:#23211A;">
+                    <sc-if value="{{ hasPlate2 }}" hint-placeholder-val="{{ false }}">đổi ảnh</sc-if>
+                    <sc-if value="{{ noPlate2 }}" hint-placeholder-val="{{ true }}">tải ảnh lên</sc-if>
+                    <input type="file" accept="image/*" onChange="{{ upPlate2 }}" style="display:none;" />
+                  </label>
+                  <sc-if value="{{ hasPlate2 }}" hint-placeholder-val="{{ false }}">
+                    <div onClick="{{ clearPlate2 }}" style="font-family:'Be Vietnam Pro',sans-serif; font-size:11px; color:#B5AE99; cursor:pointer; flex:none;" style-hover="color:#C25C7C;">✕</div>
+                  </sc-if>
+                </div>
+              </div>
+              <div>
+                <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Chú thích ảnh 3</div>
+                <input value="{{ plate3 }}" onChange="{{ setPlate3 }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-size:13px; padding:8px 11px; outline:none;" />
+                <sc-if value="{{ hasPlate3 }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin-top:7px; aspect-ratio:16/9; background: {{ plateThumb3 }}; border:1px solid #EBE5D3;"></div>
+                </sc-if>
+                <div style="display:flex; align-items:center; gap:10px; margin-top:7px;">
+                  <label style="flex:1; min-width:0; display:block; font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#5C5745; border:1px dashed #DAD7C7; padding:7px 10px; cursor:pointer; text-align:center;" style-hover="border-color:#23211A; color:#23211A;">
+                    <sc-if value="{{ hasPlate3 }}" hint-placeholder-val="{{ false }}">đổi ảnh</sc-if>
+                    <sc-if value="{{ noPlate3 }}" hint-placeholder-val="{{ true }}">tải ảnh lên</sc-if>
+                    <input type="file" accept="image/*" onChange="{{ upPlate3 }}" style="display:none;" />
+                  </label>
+                  <sc-if value="{{ hasPlate3 }}" hint-placeholder-val="{{ false }}">
+                    <div onClick="{{ clearPlate3 }}" style="font-family:'Be Vietnam Pro',sans-serif; font-size:11px; color:#B5AE99; cursor:pointer; flex:none;" style-hover="color:#C25C7C;">✕</div>
+                  </sc-if>
+                </div>
+              </div>
+            </div>
+
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:20px; border-bottom:2px solid #23211A; padding-bottom:9px; margin-bottom:6px;">
+              <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10.5px; font-weight:500; letter-spacing:.2em; text-transform:uppercase; color:#8C8674;">Module — kéo thẻ để đổi thứ tự</div>
+              <div onClick="{{ addMod }}" style="font-family:'Be Vietnam Pro',sans-serif; font-size:11px; letter-spacing:.14em; text-transform:uppercase; background:#23211A; color:#FDFBF2; padding:8px 14px; cursor:pointer;">+ module mới</div>
+            </div>
+
+            <sc-for list="{{ cmsMods }}" as="m" hint-placeholder-count="3">
+              <div draggable="{{ true }}" onDragStart="{{ m.onDragStart }}" onDragOver="{{ m.onDragOver }}" onDrop="{{ m.onDrop }}" onDragEnd="{{ m.onDragEnd }}" style="border-bottom:1px solid #F0EBDB; padding:13px 0; opacity: {{ m.rowOpacity }};">
+                <sc-if value="{{ m.dragOver }}" hint-placeholder-val="{{ false }}">
+                  <div style="height:2px; background:#23211A; margin:-13px 0 11px;"></div>
+                </sc-if>
+                <div style="display:flex; align-items:center; gap:13px;">
+                  <div title="Kéo để đổi thứ tự" style="font-family:'Be Vietnam Pro',sans-serif; font-size:13px; line-height:1; color:#C9C2AC; cursor:grab; width:12px; flex:none; letter-spacing:.05em;" style-hover="color:#23211A;">⠿</div>
+                  <div onClick="{{ m.toggle }}" style="font-family:'Be Vietnam Pro',sans-serif; font-size:12px; color:#8C8674; cursor:pointer; width:14px; flex:none;">{{ m.caret }}</div>
+                  <div style="width:9px; height:9px; border-radius:50%; background: {{ m.accent }}; flex:none;"></div>
+                  <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10.5px; letter-spacing:.16em; color:#B5AE99; width:26px; flex:none;">{{ m.n }}</div>
+                  <div onClick="{{ m.toggle }}" style="font-family:'Playfair Display',serif; font-size:24px; line-height:1.1; letter-spacing:-.025em; flex:1; min-width:0; cursor:pointer;">{{ m.title }}</div>
+                  <div style="font-family:'Be Vietnam Pro',sans-serif; font-weight:300; font-size:12px; color:#8C8674; flex:none;">{{ m.count }}</div>
+                  <div style="display:flex; gap:7px; flex:none; font-family:'Be Vietnam Pro',sans-serif; font-size:12px; color:#B5AE99;">
+                    <div onClick="{{ m.del }}" style="cursor:pointer;" style-hover="color:#C25C7C;">✕</div>
+                  </div>
+                </div>
+
+                <sc-if value="{{ m.open }}" hint-placeholder-val="{{ false }}">
+                  <div style="background:#F8F5EA; padding:18px 20px 20px; margin:12px 0 4px 27px;">
+                    <div style="display:grid; grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) 108px; gap:16px; margin-bottom:16px;">
+                      <div>
+                        <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Tên module</div>
+                        <input value="{{ m.title }}" onChange="{{ m.setTitle }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-size:14px; padding:8px 11px; outline:none;" />
+                      </div>
+                      <div>
+                        <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Concept</div>
+                        <input value="{{ m.concept }}" onChange="{{ m.setConcept }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-size:14px; padding:8px 11px; outline:none;" />
+                      </div>
+                      <div>
+                        <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Màu</div>
+                        <input value="{{ m.accent }}" onChange="{{ m.setAccent }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-size:13px; padding:8px 11px; outline:none;" />
+                      </div>
+                    </div>
+                    <div style="display:grid; grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) 108px; gap:16px; margin-bottom:16px;">
+                      <div>
+                        <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Giới thiệu ngắn — hiện ở Mục lục</div>
+                        <textarea value="{{ m.blurb }}" onChange="{{ m.setBlurb }}" rows="3" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-weight:300; font-size:13.5px; line-height:1.5; padding:9px 11px; outline:none; resize:vertical;"></textarea>
+                      </div>
+                      <div style="grid-column:span 2;">
+                        <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Mô tả dài — Trang chủ và đầu trang module</div>
+                        <textarea value="{{ m.long }}" onChange="{{ m.setLong }}" rows="3" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-weight:300; font-size:13.5px; line-height:1.5; padding:9px 11px; outline:none; resize:vertical;"></textarea>
+                      </div>
+                    </div>
+                    <div style="display:grid; grid-template-columns:120px minmax(0,1fr) minmax(0,1fr); gap:16px; margin-bottom:16px;">
+                      <div>
+                        <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Dàn trang</div>
+                        <select value="{{ m.layout }}" onChange="{{ m.setLayout }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-size:13px; padding:8px 9px; outline:none;">
+                          <option value="band">band</option>
+                          <option value="specimen">specimen</option>
+                          <option value="sequence">sequence</option>
+                        </select>
+                      </div>
+                      <div>
+                        <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Treatment — hiện ở Design system</div>
+                        <textarea value="{{ m.treatment }}" onChange="{{ m.setTreatment }}" rows="2" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-weight:300; font-size:13px; line-height:1.5; padding:9px 11px; outline:none; resize:vertical;"></textarea>
+                      </div>
+                      <div>
+                        <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Ghi chú dàn trang — Design system</div>
+                        <textarea value="{{ m.layoutNote }}" onChange="{{ m.setLayoutNote }}" rows="2" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-weight:300; font-size:13px; line-height:1.5; padding:9px 11px; outline:none; resize:vertical;"></textarea>
+                      </div>
+                    </div>
+                    <div style="display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; margin-bottom:18px;">
+                      <div>
+                        <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Chú thích ảnh chính</div>
+                        <input value="{{ m.shot1 }}" onChange="{{ m.setShot1 }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-size:13px; padding:8px 11px; outline:none;" />
+                        <sc-if value="{{ m.hasImg1 }}" hint-placeholder-val="{{ false }}">
+                          <div style="margin-top:7px; aspect-ratio:4/3; background: {{ m.thumb1 }}; border:1px solid #EBE5D3;"></div>
+                        </sc-if>
+                        <sc-if value="{{ m.noImg1 }}" hint-placeholder-val="{{ true }}">
+                          <div style="margin-top:7px; aspect-ratio:4/3; background:#FFFFFF; border:1px dashed #E4DECB; display:flex; align-items:flex-end; padding:9px;">
+                            <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; color:#C4BCA4;">chưa có ảnh</div>
+                          </div>
+                        </sc-if>
+                        <div style="display:flex; align-items:center; gap:9px; margin-top:7px;">
+                          <label style="flex:1; min-width:0; display:block; font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#5C5745; border:1px dashed #DAD7C7; padding:7px 10px; cursor:pointer; text-align:center;" style-hover="border-color:#23211A; color:#23211A;">
+                            <sc-if value="{{ m.hasImg1 }}" hint-placeholder-val="{{ false }}">đổi ảnh</sc-if>
+                            <sc-if value="{{ m.noImg1 }}" hint-placeholder-val="{{ true }}">tải ảnh lên</sc-if>
+                            <input type="file" accept="image/*" onChange="{{ m.upImg1 }}" style="display:none;" />
+                          </label>
+                          <sc-if value="{{ m.hasImg1 }}" hint-placeholder-val="{{ false }}">
+                            <div onClick="{{ m.clearImg1 }}" style="font-family:'Be Vietnam Pro',sans-serif; font-size:11px; color:#B5AE99; cursor:pointer; flex:none;" style-hover="color:#C25C7C;">✕</div>
+                          </sc-if>
+                        </div>
+                      </div>
+                      <div>
+                        <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Chú thích ảnh phụ 1</div>
+                        <input value="{{ m.shot2 }}" onChange="{{ m.setShot2 }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-size:13px; padding:8px 11px; outline:none;" />
+                        <sc-if value="{{ m.hasImg2 }}" hint-placeholder-val="{{ false }}">
+                          <div style="margin-top:7px; aspect-ratio:4/3; background: {{ m.thumb2 }}; border:1px solid #EBE5D3;"></div>
+                        </sc-if>
+                        <sc-if value="{{ m.noImg2 }}" hint-placeholder-val="{{ true }}">
+                          <div style="margin-top:7px; aspect-ratio:4/3; background:#FFFFFF; border:1px dashed #E4DECB; display:flex; align-items:flex-end; padding:9px;">
+                            <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; color:#C4BCA4;">chưa có ảnh</div>
+                          </div>
+                        </sc-if>
+                        <div style="display:flex; align-items:center; gap:9px; margin-top:7px;">
+                          <label style="flex:1; min-width:0; display:block; font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#5C5745; border:1px dashed #DAD7C7; padding:7px 10px; cursor:pointer; text-align:center;" style-hover="border-color:#23211A; color:#23211A;">
+                            <sc-if value="{{ m.hasImg2 }}" hint-placeholder-val="{{ false }}">đổi ảnh</sc-if>
+                            <sc-if value="{{ m.noImg2 }}" hint-placeholder-val="{{ true }}">tải ảnh lên</sc-if>
+                            <input type="file" accept="image/*" onChange="{{ m.upImg2 }}" style="display:none;" />
+                          </label>
+                          <sc-if value="{{ m.hasImg2 }}" hint-placeholder-val="{{ false }}">
+                            <div onClick="{{ m.clearImg2 }}" style="font-family:'Be Vietnam Pro',sans-serif; font-size:11px; color:#B5AE99; cursor:pointer; flex:none;" style-hover="color:#C25C7C;">✕</div>
+                          </sc-if>
+                        </div>
+                      </div>
+                      <div>
+                        <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Chú thích ảnh phụ 2</div>
+                        <input value="{{ m.shot3 }}" onChange="{{ m.setShot3 }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-size:13px; padding:8px 11px; outline:none;" />
+                        <sc-if value="{{ m.hasImg3 }}" hint-placeholder-val="{{ false }}">
+                          <div style="margin-top:7px; aspect-ratio:4/3; background: {{ m.thumb3 }}; border:1px solid #EBE5D3;"></div>
+                        </sc-if>
+                        <sc-if value="{{ m.noImg3 }}" hint-placeholder-val="{{ true }}">
+                          <div style="margin-top:7px; aspect-ratio:4/3; background:#FFFFFF; border:1px dashed #E4DECB; display:flex; align-items:flex-end; padding:9px;">
+                            <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; color:#C4BCA4;">chưa có ảnh</div>
+                          </div>
+                        </sc-if>
+                        <div style="display:flex; align-items:center; gap:9px; margin-top:7px;">
+                          <label style="flex:1; min-width:0; display:block; font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#5C5745; border:1px dashed #DAD7C7; padding:7px 10px; cursor:pointer; text-align:center;" style-hover="border-color:#23211A; color:#23211A;">
+                            <sc-if value="{{ m.hasImg3 }}" hint-placeholder-val="{{ false }}">đổi ảnh</sc-if>
+                            <sc-if value="{{ m.noImg3 }}" hint-placeholder-val="{{ true }}">tải ảnh lên</sc-if>
+                            <input type="file" accept="image/*" onChange="{{ m.upImg3 }}" style="display:none;" />
+                          </label>
+                          <sc-if value="{{ m.hasImg3 }}" hint-placeholder-val="{{ false }}">
+                            <div onClick="{{ m.clearImg3 }}" style="font-family:'Be Vietnam Pro',sans-serif; font-size:11px; color:#B5AE99; cursor:pointer; flex:none;" style-hover="color:#C25C7C;">✕</div>
+                          </sc-if>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; border-top:1px solid #E8E2CE; padding-top:14px; margin-bottom:4px;">
+                      <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; font-weight:500; letter-spacing:.18em; text-transform:uppercase; color:#8C8674;">Bài trong module</div>
+                      <div onClick="{{ m.addEntry }}" style="font-family:'Be Vietnam Pro',sans-serif; font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; border:1px solid #DAD7C7; padding:6px 12px; cursor:pointer; color:#5C5745;" style-hover="border-color:#23211A; color:#23211A;">+ bài</div>
+                    </div>
+                    <sc-for list="{{ m.entries }}" as="e" hint-placeholder-count="4">
+                      <div draggable="{{ true }}" onDragStart="{{ e.onDragStart }}" onDragOver="{{ e.onDragOver }}" onDrop="{{ e.onDrop }}" onDragEnd="{{ e.onDragEnd }}" style="display:grid; grid-template-columns:44px minmax(0,1fr) minmax(0,1.15fr) 74px 48px; gap:10px; align-items:center; padding:6px 0; border-bottom:1px solid #EFEADA;">
+                        <div style="display:flex; align-items:center; gap:7px;">
+                          <div title="Kéo để đổi thứ tự" style="font-family:'Be Vietnam Pro',sans-serif; font-size:12px; line-height:1; color:#D5CEB8; cursor:grab;" style-hover="color:#23211A;">⠿</div>
+                          <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10.5px; letter-spacing:.12em; color:#B5AE99;">{{ e.n }}</div>
+                        </div>
+                        <input value="{{ e.en }}" onChange="{{ e.setEn }}" style="width:100%; box-sizing:border-box; background:transparent; border:0; border-bottom:1px solid transparent; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-size:13.5px; padding:4px 2px; outline:none;" style-focus="border-color:#3E7A4E; background:#FFFFFF;" />
+                        <input value="{{ e.vi }}" onChange="{{ e.setVi }}" style="width:100%; box-sizing:border-box; background:transparent; border:0; border-bottom:1px solid transparent; color:#5C5745; font-family:'Be Vietnam Pro',sans-serif; font-weight:300; font-size:13px; padding:4px 2px; outline:none;" style-focus="border-color:#3E7A4E; background:#FFFFFF;" />
+                        <input value="{{ e.date }}" onChange="{{ e.setDate }}" style="width:100%; box-sizing:border-box; background:transparent; border:0; border-bottom:1px solid transparent; color:#8C8674; font-family:'Be Vietnam Pro',sans-serif; font-size:12px; padding:4px 2px; outline:none;" style-focus="border-color:#3E7A4E; background:#FFFFFF;" />
+                        <div style="display:flex; gap:7px; font-family:'Be Vietnam Pro',sans-serif; font-size:12px; color:#B5AE99;">
+                          <div onClick="{{ e.del }}" style="cursor:pointer;" style-hover="color:#C25C7C;">✕</div>
+                        </div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+
+            <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10.5px; font-weight:500; letter-spacing:.2em; text-transform:uppercase; color:#8C8674; border-bottom:2px solid #23211A; padding-bottom:9px; margin:44px 0 18px;">{{ secAdmin }}</div>
+            <div style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:22px; margin-bottom:20px;">
+              <div>
+                <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Design system — tiêu đề dòng 1</div>
+                <input value="{{ artT1 }}" onChange="{{ setArtT1 }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Playfair Display',serif; font-size:20px; padding:9px 12px; outline:none;" />
+              </div>
+              <div>
+                <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Design system — tiêu đề dòng 2 (nghiêng, xanh)</div>
+                <input value="{{ artT2 }}" onChange="{{ setArtT2 }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#3E7A4E; font-family:'Playfair Display',serif; font-style:italic; font-size:20px; padding:9px 12px; outline:none;" />
+              </div>
+              <div style="grid-column:span 2;">
+                <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Design system — đoạn dẫn</div>
+                <textarea value="{{ artIntro }}" onChange="{{ setArtIntro }}" rows="3" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-weight:300; font-size:13.5px; line-height:1.5; padding:10px 12px; outline:none; resize:vertical;"></textarea>
+              </div>
+              <div>
+                <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">System conventions — tiêu đề</div>
+                <input value="{{ logicTitle }}" onChange="{{ setLogicTitle }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Playfair Display',serif; font-size:20px; padding:9px 12px; outline:none;" />
+              </div>
+              <div>
+                <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">System conventions — đoạn dẫn</div>
+                <textarea value="{{ logicIntro }}" onChange="{{ setLogicIntro }}" rows="2" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-weight:300; font-size:13.5px; line-height:1.5; padding:10px 12px; outline:none; resize:vertical;"></textarea>
+              </div>
+              <div>
+                <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Content — tiêu đề</div>
+                <input value="{{ cmsTitle }}" onChange="{{ setCmsTitle }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Playfair Display',serif; font-size:20px; padding:9px 12px; outline:none;" />
+              </div>
+              <div>
+                <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Content — đoạn dẫn</div>
+                <textarea value="{{ cmsIntro }}" onChange="{{ setCmsIntro }}" rows="2" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-weight:300; font-size:13.5px; line-height:1.5; padding:10px 12px; outline:none; resize:vertical;"></textarea>
+              </div>
+              <div>
+                <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Archive — tiêu đề</div>
+                <input value="{{ archiveTitle }}" onChange="{{ setArchiveTitle }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Playfair Display',serif; font-size:20px; padding:9px 12px; outline:none;" />
+              </div>
+              <div>
+                <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Archive — ghi chú sau số bài</div>
+                <input value="{{ archiveNote }}" onChange="{{ setArchiveNote }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-size:13px; padding:9px 12px; outline:none;" />
+              </div>
+            </div>
+
+            <div onClick="{{ resetCms }}" style="display:inline-block; margin-top:30px; font-family:'Be Vietnam Pro',sans-serif; font-size:10.5px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; border-bottom:1px solid #EBE5D3; padding-bottom:4px; cursor:pointer;" style-hover="color:#C25C7C; border-color:#C25C7C;">Trả về nội dung gốc</div>
+          </div>
+        </sc-if>
+      </div>
+    </sc-if>
+
+
+    <sc-if value="{{ isLogic }}" hint-placeholder-val="{{ false }}">
+      <div style="background:#FDFBF2; color:#23211A; min-height:100vh;">
+        <div style="background:#102F35; color:#F4F4EF; padding:44px 56px 38px;">
+<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; margin-bottom:22px; opacity:.7;">
+            <div onClick="{{ crumbBack }}" style="cursor:pointer; padding-right:6px;">←</div>
+            <sc-for list="{{ crumbs }}" as="cb" hint-placeholder-count="3">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div onClick="{{ cb.jump }}" style="cursor: {{ cb.cursor }}; opacity: {{ cb.op }};">{{ cb.t }}</div>
+                <sc-if value="{{ cb.notLast }}" hint-placeholder-val="{{ true }}">
+                  <div style="opacity:.4;">›</div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:44px; flex-wrap:wrap;">
+            <h1 style="font-family:'Playfair Display',serif; font-weight:400; font-size:76px; line-height:.88; letter-spacing:-.04em; margin:0;">{{ logicTitle }}</h1>
+            <div style="font-family:'Be Vietnam Pro',sans-serif; font-weight:300; font-size:13.5px; line-height:1.55; max-width:400px; opacity:.8; padding-bottom:8px;">{{ logicIntro }}</div>
+          </div>
+        </div>
+
+        <div style="padding:0 56px 120px; max-width:1120px;">
+          <div style="display:flex; gap:22px; flex-wrap:wrap; padding:16px 0 20px;">
+            <sc-for list="{{ scopeKey }}" as="k" hint-placeholder-count="3">
+              <div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <div style="width:8px; height:8px; background: {{ k.c }}; flex:none;"></div>
+                  <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10.5px; font-weight:500; letter-spacing:.14em; text-transform:uppercase; color:#5C5745;">{{ k.s }}</div>
+                </div>
+                <div style="font-family:'Be Vietnam Pro',sans-serif; font-weight:300; font-size:12px; color:#A2A296; margin:3px 0 0 16px;">{{ k.d }}</div>
+              </div>
+            </sc-for>
+          </div>
+
+          <sc-for list="{{ logicParts }}" as="P" hint-placeholder-count="3">
+            <div style="margin-top:38px;">
+              <div style="display:flex; align-items:flex-end; gap:18px; flex-wrap:wrap; border-bottom:2px solid #23211A; padding-bottom:12px;">
+                <div style="font-family:'Playfair Display',serif; font-style:italic; font-size:19px; color:#B5AE99;">{{ P.p }}</div>
+                <div style="font-family:'Playfair Display',serif; font-size:40px; line-height:1; letter-spacing:-.035em;">{{ P.part }}</div>
+                <div style="flex:1 1 240px; font-family:'Be Vietnam Pro',sans-serif; font-weight:300; font-size:12.5px; line-height:1.5; color:#8A8A7C; padding-bottom:4px;">{{ P.note }}</div>
+              </div>
+
+              <sc-for list="{{ P.groups }}" as="L" hint-placeholder-count="3">
+                <div style="display:grid; grid-template-columns:minmax(0,168px) minmax(0,1fr); gap:26px; padding:18px 0 16px; border-bottom:1px solid #E8E2CE; align-items:start;">
+                  <div style="position:sticky; top:24px; display:flex; align-items:baseline; gap:9px;">
+                    <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10.5px; font-weight:500; letter-spacing:.18em; color:#B5AE99;">{{ L.n }}</div>
+                    <div style="font-family:'Playfair Display',serif; font-size:23px; line-height:1.06; letter-spacing:-.03em;">{{ L.g }}</div>
+                  </div>
+                  <div>
+                    <sc-for list="{{ L.items }}" as="it" hint-placeholder-count="4">
+                      <div style="display:grid; grid-template-columns:14px minmax(0,1fr) minmax(0,186px); gap:16px; padding:7px 0; align-items:baseline;">
+                        <div title="{{ it.s }}" style="width:7px; height:7px; background: {{ it.sc }}; margin-top:6px;"></div>
+                        <div style="font-family:'Be Vietnam Pro',sans-serif; font-weight:300; font-size:14.5px; line-height:1.45; color:#3B3729;">{{ it.r }}</div>
+                        <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:12px; line-height:1.5; color:#A2A296;">{{ it.e }}</div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isCards }}" hint-placeholder-val="{{ false }}">
+      <div style="background:#FDFBF2; color:#23211A; min-height:100vh;">
+        <div style="background: {{ cardsBandBg }}; color: {{ cardsBandFg }}; padding:40px 56px 32px;">
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; margin-bottom:22px; opacity:.85;">
+            <div onClick="{{ crumbBack }}" style="cursor:pointer; padding-right:6px;">←</div>
+            <sc-for list="{{ crumbs }}" as="cb" hint-placeholder-count="3">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div onClick="{{ cb.jump }}" style="cursor: {{ cb.cursor }}; opacity: {{ cb.op }};">{{ cb.t }}</div>
+                <sc-if value="{{ cb.notLast }}" hint-placeholder-val="{{ true }}">
+                  <div style="opacity:.4;">›</div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:44px; flex-wrap:wrap;">
+            <div>
+              <h1 style="font-family:'Playfair Display',serif; font-weight:400; font-size:70px; line-height:.9; letter-spacing:-.04em; margin:0;">sensory lexicon</h1>
+            </div>
+            <div style="font-family:'Be Vietnam Pro',sans-serif; font-weight:300; font-size:13px; line-height:1.5; max-width:330px; opacity:.85;">
+              <div>{{ cardsLine1 }}</div>
+              <div style="margin-top:4px;">{{ cardsLine2 }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="background:#F6F4EA; border-bottom:1px solid #EBE5D3; padding:16px 56px 17px; display:flex; align-items:center; gap:9px; flex-wrap:wrap;">
+          <sc-for list="{{ groupBar }}" as="g" hint-placeholder-count="6">
+            <div onClick="{{ g.pick }}" style="display:inline-flex; align-items:center; gap:8px; background: {{ g.bg }}; border:1px solid {{ g.edge }}; padding:6px 12px; cursor:pointer;">
+              <div style="width:8px; height:8px; border-radius:50%; background: {{ g.c }}; flex:none;"></div>
+              <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:12px; color: {{ g.fg }};">{{ g.g }}</div>
+              <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10.5px; color: {{ g.ink }}; opacity:.5; font-variant-numeric:tabular-nums;">{{ g.n }}</div>
+            </div>
+          </sc-for>
+          <sc-if value="{{ barAdding }}" hint-placeholder-val="{{ false }}">
+            <input value="{{ tagDraft }}" onChange="{{ setTagDraft }}" onKeyDown="{{ barKey }}" onBlur="{{ barCommit }}" autoFocus="{{ true }}" list="flavor-groups" placeholder="thêm nhóm hương" style="width:170px; background:#FFFFFF; border:1px solid #3E7A4E; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-weight:300; font-size:12px; padding:6px 10px; outline:none;" />
+          </sc-if>
+          <sc-if value="{{ barIdle }}" hint-placeholder-val="{{ true }}">
+            <div onClick="{{ barOpen }}" style="font-family:'Be Vietnam Pro',sans-serif; font-size:12px; color:#B5AE99; border:1px dashed #DAD7C7; padding:6px 12px; cursor:pointer;" style-hover="color:#3E7A4E; border-color:#3E7A4E;">+ tag</div>
+          </sc-if>
+          <sc-if value="{{ hasGroupFilter }}" hint-placeholder-val="{{ false }}">
+            <div onClick="{{ clearGroup }}" style="font-family:'Be Vietnam Pro',sans-serif; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:#8A8A7C; cursor:pointer; margin-left:4px;" style-hover="color:#C25C2E;">bỏ lọc ✕</div>
+          </sc-if>
+        </div>
+
+        <datalist id="flavor-groups">
+          <sc-for list="{{ groupList }}" as="g" hint-placeholder-count="14">
+            <option value="{{ g.g }}"></option>
+          </sc-for>
+        </datalist>
+
+        <div style="display:grid; grid-template-columns:minmax(0,1fr) minmax(220px,272px); gap:52px; padding:32px 56px 140px; max-width:1320px; align-items:start;">
+          <div>
+            <div style="display:flex; align-items:baseline; gap:18px; border-bottom:1px solid #23211A; padding-bottom:10px; margin-bottom:6px; font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.18em; text-transform:uppercase;">
+              <div style="color:#8A8A7C; flex:1;">{{ cardsCount }}</div>
+              <div onClick="{{ cardsOpenAll }}" style="cursor:pointer; color:#B5AE99;" style-hover="color:#3E7A4E;">mở hết</div>
+              <div onClick="{{ cardsCloseAll }}" style="cursor:pointer; color:#B5AE99;" style-hover="color:#3E7A4E;">gập hết</div>
+            </div>
+
+            <sc-for list="{{ cards }}" as="c" hint-placeholder-count="4">
+              <div ref="{{ c.setRef }}" style="border-bottom:1px solid #EBE5D3;">
+                <div onClick="{{ c.toggle }}" style="display:flex; align-items:flex-start; gap:0; padding:18px 4px 16px; cursor:pointer;" style-hover="background:#FBF8EC;">
+                  <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:12px; color: {{ c.ink }}; padding-top:8px; width:16px; flex:none;">{{ c.caret }}</div>
+                  <div style="width:5px; flex:none; align-self:stretch; background: {{ c.hue }}; margin:4px 14px 4px 0;"></div>
+                  <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:11px; font-weight:500; letter-spacing:.16em; color:#B5AE99; width:34px; flex:none; padding-top:11px;">{{ c.n }}</div>
+                  <div style="flex:1; min-width:0;">
+                    <div style="font-family:'Playfair Display',serif; font-size:32px; line-height:1.02; letter-spacing:-.03em; color: {{ c.ink }};">{{ c.title }}</div>
+                    <div style="font-family:'Be Vietnam Pro',sans-serif; font-weight:400; font-size:15px; line-height:1.35; color:#6B6555; margin-top:6px;">{{ c.sub }}</div>
+                    <div style="font-family:'Be Vietnam Pro',sans-serif; font-weight:300; font-style:italic; font-size:12.5px; line-height:1.4; color:#A2A296; margin-top:5px;">{{ c.tag }}</div>
+                  </div>
+                </div>
+
+                <sc-if value="{{ c.open }}" hint-placeholder-val="{{ true }}">
+                  <div style="padding:0 4px 26px 54px;">
+                    <sc-for list="{{ c.parts }}" as="p" hint-placeholder-count="3">
+                      <div style="position:relative; margin-bottom:24px; padding-right:44px;">
+
+                        <sc-if value="{{ p.isMethod }}" hint-placeholder-val="{{ false }}">
+                          <div>
+                            <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:9.5px; font-weight:500; letter-spacing:.2em; text-transform:uppercase; color:#8A8A7C; margin-bottom:9px;">{{ p.h }}</div>
+                            <div style="font-family:'Be Vietnam Pro',sans-serif; font-weight:300; font-size:15px; line-height:1.55; color:#3B3729; max-width:620px;">{{ p.v }}</div>
+                          </div>
+                        </sc-if>
+
+                        <sc-if value="{{ p.isDetail }}" hint-placeholder-val="{{ false }}">
+                          <div>
+                            <div style="font-family:'Be Vietnam Pro',sans-serif; font-weight:500; font-style:italic; font-size:14px; color:#23211A; margin-bottom:12px;">{{ p.h }}</div>
+                            <sc-for list="{{ p.rows }}" as="r" hint-placeholder-count="3">
+                              <div style="display:flex; gap:16px; align-items:baseline; padding:9px 0; border-top:1px solid #F0EBDB;">
+                                <div style="flex:1; min-width:0;">
+                                  <div style="font-family:'Be Vietnam Pro',sans-serif; font-weight:300; font-size:15px; line-height:1.45; color:#3B3729;">{{ r.l }}</div>
+                                  <sc-if value="{{ r.hasNote }}" hint-placeholder-val="{{ true }}">
+                                    <div style="font-family:'Be Vietnam Pro',sans-serif; font-weight:300; font-style:italic; font-size:13.5px; line-height:1.5; color:#7C7768; margin-top:4px;">{{ r.n }}</div>
+                                  </sc-if>
+                                </div>
+                                <div style="flex:none; font-family:'Playfair Display',serif; font-size:19px; color:#3E7A4E; font-variant-numeric:tabular-nums; width:26px; text-align:right;">{{ r.s }}</div>
+                              </div>
+                            </sc-for>
+                          </div>
+                        </sc-if>
+
+                        <sc-if value="{{ p.isCallout }}" hint-placeholder-val="{{ false }}">
+                          <div style="background:#F4F2E8; padding:18px 20px 19px; max-width:640px;">
+                            <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:9.5px; font-weight:500; letter-spacing:.2em; text-transform:uppercase; color:#8A8A7C; margin-bottom:10px;">{{ p.h }}</div>
+                            <sc-for list="{{ p.lines }}" as="ln" hint-placeholder-count="2">
+                              <div style="font-family:'Be Vietnam Pro',sans-serif; font-weight:300; font-size:14px; line-height:1.55; color:#3B3729;">{{ ln.t }}</div>
+                            </sc-for>
+                          </div>
+                        </sc-if>
+
+                        <div style="position:absolute; right:0; top:0; display:flex; flex-direction:column; gap:3px; font-family:'Be Vietnam Pro',sans-serif; font-size:11px; color:#DAD7C7;">
+                          <sc-if value="{{ p.notFirst }}" hint-placeholder-val="{{ true }}">
+                            <div onClick="{{ p.up }}" style="cursor:pointer; padding:1px 4px;" style-hover="color:#3E7A4E;">↑</div>
+                          </sc-if>
+                          <sc-if value="{{ p.notLast }}" hint-placeholder-val="{{ true }}">
+                            <div onClick="{{ p.down }}" style="cursor:pointer; padding:1px 4px;" style-hover="color:#3E7A4E;">↓</div>
+                          </sc-if>
+                        </div>
+                      </div>
+                    </sc-for>
+                    </div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="position:sticky; top:24px;">
+            <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:9.5px; font-weight:500; letter-spacing:.2em; text-transform:uppercase; color:#8A8A7C; border-bottom:1px solid #23211A; padding-bottom:9px; margin-bottom:14px;">Mục lục trong bài</div>
+            <sc-for list="{{ toc }}" as="t" hint-placeholder-count="4">
+              <div style="position:relative; padding:9px 0 10px; border-bottom:1px solid #F0EBDB;">
+                <div onClick="{{ t.jump }}" style="display:flex; gap:10px; align-items:baseline; cursor:pointer; padding-right:26px;">
+                  <div style="width:7px; height:7px; flex:none; border-radius:50%; background: {{ t.hue }}; margin-top:6px;"></div>
+                  <div style="flex:1; min-width:0;">
+                    <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:14px; color: {{ t.fg }};">{{ t.n }} · {{ t.title }}</div>
+                    <sc-if value="{{ t.active }}" hint-placeholder-val="{{ false }}">
+                      <div style="margin-top:6px; display:flex; flex-direction:column; gap:3px;">
+                        <sc-for list="{{ t.parts }}" as="pp" hint-placeholder-count="3">
+                          <div style="font-family:'Be Vietnam Pro',sans-serif; font-weight:300; font-size:11.5px; color:#A2A296; padding-left:2px;">— {{ pp.h }}</div>
+                        </sc-for>
+                      </div>
+                    </sc-if>
+                  </div>
+                </div>
+                <div style="position:absolute; right:0; top:8px; display:flex; flex-direction:column; gap:2px; font-family:'Be Vietnam Pro',sans-serif; font-size:10px; color:#DAD7C7;">
+                  <sc-if value="{{ t.notFirst }}" hint-placeholder-val="{{ true }}">
+                    <div onClick="{{ t.up }}" style="cursor:pointer; padding:0 3px;" style-hover="color:#3E7A4E;">↑</div>
+                  </sc-if>
+                  <sc-if value="{{ t.notLast }}" hint-placeholder-val="{{ true }}">
+                    <div onClick="{{ t.down }}" style="cursor:pointer; padding:0 3px;" style-hover="color:#3E7A4E;">↓</div>
+                  </sc-if>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+
+    <sc-if value="{{ isReport }}" hint-placeholder-val="{{ false }}">
+      <div style="background:#FDFBF2; color:#23211A; min-height:100vh;">
+        <div style="background: {{ reportBandBg }}; color: {{ reportBandFg }}; padding:40px 56px 34px;">
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; margin-bottom:22px; opacity:.85;">
+            <div onClick="{{ crumbBack }}" style="cursor:pointer; padding-right:6px;">←</div>
+            <sc-for list="{{ crumbs }}" as="cb" hint-placeholder-count="3">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div onClick="{{ cb.jump }}" style="cursor: {{ cb.cursor }}; opacity: {{ cb.op }};">{{ cb.t }}</div>
+                <sc-if value="{{ cb.notLast }}" hint-placeholder-val="{{ true }}">
+                  <div style="opacity:.4;">›</div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:44px; flex-wrap:wrap;">
+            <div>
+              <h1 style="font-family:'Playfair Display',serif; font-weight:400; font-size:70px; line-height:.9; letter-spacing:-.04em; margin:0;">{{ reportTitle }}</h1>
+            </div>
+            <div style="font-family:'Be Vietnam Pro',sans-serif; font-weight:300; font-size:13px; line-height:1.5; max-width:330px; opacity:.85;">{{ reportBlurb }}</div>
+          </div>
+        </div>
+
+        <div ref="{{ rHostRef }}" style="display:flex; align-items:stretch; padding:0 56px 140px; max-width:1320px;">
+          <div style="width: {{ splitMain }}; min-width:0; padding:34px 0 0;">
+            <sc-for list="{{ rBlocks }}" as="b" hint-placeholder-count="9">
+              <div style="position:relative; padding-right:34px;">
+
+                <sc-if value="{{ b.isMeta }}" hint-placeholder-val="{{ false }}">
+                  <div contentEditable="{{ true }}" suppressContentEditableWarning="{{ true }}" onBlur="{{ b.commit }}" style="font-family:'Be Vietnam Pro',sans-serif; font-size:10.5px; letter-spacing:.18em; text-transform:uppercase; color:#8A8A7C; padding:4px 6px; margin:0 -6px 18px; outline:none;" style-hover="background:#F5F2E4;">{{ b.v }}</div>
+                </sc-if>
+
+                <sc-if value="{{ b.isH }}" hint-placeholder-val="{{ false }}">
+                  <div contentEditable="{{ true }}" suppressContentEditableWarning="{{ true }}" onBlur="{{ b.commit }}" style="font-family:'Playfair Display',serif; font-size:34px; line-height:1.08; letter-spacing:-.03em; color:#172124; padding:4px 6px; margin:26px -6px 14px; outline:none;" style-hover="background:#F5F2E4;">{{ b.v }}</div>
+                </sc-if>
+
+                <sc-if value="{{ b.isP }}" hint-placeholder-val="{{ false }}">
+                  <div contentEditable="{{ true }}" suppressContentEditableWarning="{{ true }}" onBlur="{{ b.commit }}" style="font-family:'Be Vietnam Pro',sans-serif; font-weight:300; font-size:15.5px; line-height:1.55; color:#3B3729; padding:5px 6px; margin:0 -6px 20px; outline:none; max-width:660px;" style-hover="background:#F5F2E4;">{{ b.v }}</div>
+                </sc-if>
+
+                <sc-if value="{{ b.isMetrics }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(132px,1fr)); gap:1px; background:#E6E2D2; margin:0 0 24px;">
+                    <sc-for list="{{ b.m }}" as="x" hint-placeholder-count="6">
+                      <div style="background:#FFFFFF; padding:13px 14px 14px;">
+                        <div contentEditable="{{ true }}" suppressContentEditableWarning="{{ true }}" onBlur="{{ x.commitK }}" style="font-family:'Be Vietnam Pro',sans-serif; font-size:9.5px; font-weight:500; letter-spacing:.16em; text-transform:uppercase; color:#8A8A7C; outline:none; margin-bottom:7px;">{{ x.k }}</div>
+                        <div contentEditable="{{ true }}" suppressContentEditableWarning="{{ true }}" onBlur="{{ x.commitV }}" style="font-family:'Playfair Display',serif; font-size:26px; line-height:1; letter-spacing:-.02em; color:#172124; outline:none; font-variant-numeric:tabular-nums;">{{ x.v }}</div>
+                      </div>
+                    </sc-for>
+                    <div onClick="{{ b.addMetric }}" style="background:#FFFFFF; display:flex; align-items:center; justify-content:center; font-size:15px; color:#C4C1B2; cursor:pointer;" style-hover="color:#6FA8C0;">+</div>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{ b.isChart }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin:0 0 26px; border-left:1px solid #DDD9C8; border-bottom:1px solid #DDD9C8; padding:0 0 0 12px;">
+                    <div style="display:flex; align-items:flex-end; gap:8px; height:168px;">
+                      <sc-for list="{{ b.c }}" as="p" hint-placeholder-count="7">
+                        <div style="flex:1; display:flex; flex-direction:column; justify-content:flex-end; height:100%;">
+                          <div style="height: {{ p.h }}; background:#6FA8C0;"></div>
+                        </div>
+                      </sc-for>
+                    </div>
+                    <div style="display:flex; gap:8px; margin-top:7px;">
+                      <sc-for list="{{ b.c }}" as="p" hint-placeholder-count="7">
+                        <div style="flex:1; text-align:center; font-family:'Be Vietnam Pro',sans-serif; font-size:9.5px; color:#8A8A7C; font-variant-numeric:tabular-nums;">{{ p.l }}</div>
+                      </sc-for>
+                    </div>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{ b.isTable }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin:0 0 26px;">
+                    <div style="display:flex; align-items:stretch;">
+                      <table style="border-collapse:collapse; width:100%; table-layout:fixed; font-family:'Be Vietnam Pro',sans-serif;">
+                        
+                          <sc-for list="{{ b.cols }}" as="c" hint-placeholder-count="4">
+                            
+                          </sc-for>
+                        
+                        <thead>
+                          <tr>
+                            <sc-for list="{{ b.th }}" as="h" hint-placeholder-count="4">
+                              <th style="text-align:left; padding:0; border-bottom:1px solid #23211A; position:relative;">
+                                <div style="display:flex; align-items:baseline; gap:10px; padding:0 10px 8px;">
+                                  <div contentEditable="{{ true }}" suppressContentEditableWarning="{{ true }}" onBlur="{{ h.commit }}" style="flex:1; min-width:0; font-weight:500; font-size:9.5px; letter-spacing:.16em; text-transform:uppercase; color:#6FA8C0; outline:none;">{{ h.h }}</div>
+                                  <sc-if value="{{ h.isLast }}" hint-placeholder-val="{{ false }}">
+                                    <div onClick="{{ b.addCol }}" style="flex:none; font-family:'Be Vietnam Pro',sans-serif; font-weight:400; font-size:10px; letter-spacing:.04em; text-transform:none; color:#C4C1B2; cursor:pointer;" style-hover="color:#6FA8C0;">+ cột</div>
+                                  </sc-if>
+                                </div>
+                                <sc-if value="{{ h.notLast }}" hint-placeholder-val="{{ true }}">
+                                  <div onMouseDown="{{ h.grab }}" title="kéo để đổi bề rộng cột" style="position:absolute; top:0; right:-3px; bottom:0; width:7px; cursor:col-resize; z-index:5;"></div>
+                                </sc-if>
+                              </th>
+                            </sc-for>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <sc-for list="{{ b.tr }}" as="row" hint-placeholder-count="3">
+                            <tr style="height: {{ row.h }};">
+                              <sc-for list="{{ row.cells }}" as="cell" hint-placeholder-count="4">
+                                <td style="padding:0; border-bottom:1px solid #EBE5D3; vertical-align:top; position:relative;">
+                                  <div contentEditable="{{ true }}" suppressContentEditableWarning="{{ true }}" onBlur="{{ cell.commit }}" style="font-weight:300; font-size:14px; line-height:1.45; color:#3B3729; padding:10px; outline:none; overflow-wrap:break-word;">{{ cell.c }}</div>
+                                  <sc-if value="{{ cell.first }}" hint-placeholder-val="{{ true }}">
+                                    <div onMouseDown="{{ row.grabRow }}" title="kéo để đổi chiều cao dòng" style="position:absolute; left:0; right:0; bottom:-3px; height:7px; cursor:row-resize; z-index:5;"></div>
+                                  </sc-if>
+                                </td>
+                              </sc-for>
+                            </tr>
+                          </sc-for>
+                        </tbody>
+                      </table>
+                    </div>
+                    <div onClick="{{ b.addRow }}" style="padding:8px 10px 0; font-family:'Be Vietnam Pro',sans-serif; font-size:11px; color:#C4C1B2; cursor:pointer; width:fit-content;" style-hover="color:#6FA8C0;">+ dòng</div>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{ b.isImage }}" hint-placeholder-val="{{ false }}">
+                  <div style="height:250px; background:#E9F1F4; display:flex; align-items:flex-end; padding:14px; margin:0 0 26px;">
+                    <div contentEditable="{{ true }}" suppressContentEditableWarning="{{ true }}" onBlur="{{ b.commit }}" style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; color:#4B6873; outline:none;">{{ b.v }}</div>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{ b.hasMemoSlot }}" hint-placeholder-val="{{ false }}">
+                  <div style="position:absolute; left:calc(100% + 22px); top:0; width: {{ memoW }};">
+                    <sc-for list="{{ b.memos }}" as="m" hint-placeholder-count="1">
+                      <div style="position:relative; margin-bottom:12px; padding-left:11px; border-left:2px solid #6FA8C0; padding-right:14px;">
+                        <div contentEditable="{{ true }}" suppressContentEditableWarning="{{ true }}" onBlur="{{ m.commit }}" style="font-family:'Be Vietnam Pro',sans-serif; font-weight:300; font-size:12.5px; line-height:1.45; color:#4B463A; outline:none; padding:2px 4px; margin-left:-4px;" style-hover="background:#F5F2E4;">{{ m.v }}</div>
+                        <div onClick="{{ m.del }}" style="position:absolute; right:0; top:1px; font-size:10px; color:#DAD7C7; cursor:pointer;" style-hover="color:#C25C7C;">✕</div>
+                      </div>
+                    </sc-for>
+                    <div onClick="{{ b.addMemo }}" style="font-family:'Be Vietnam Pro',sans-serif; font-size:11px; color:#E0DDCC; cursor:pointer; padding-left:13px;" style-hover="color:#6FA8C0;">+ memo</div>
+                  </div>
+                </sc-if>
+
+                <div onClick="{{ b.toggleMenu }}" style="position:absolute; right:0; top:6px; width:20px; height:20px; display:flex; align-items:center; justify-content:center; font-size:14px; color:#D2CFBF; cursor:pointer;" style-hover="color:#6FA8C0;">+</div>
+                <sc-if value="{{ b.open }}" hint-placeholder-val="{{ false }}">
+                  <div style="position:absolute; right:24px; top:2px; z-index:20; background:#FFFFFF; border:1px solid #E6E2D2; box-shadow:0 12px 30px -18px rgba(23,33,36,.5); padding:5px 0; min-width:126px;">
+                    <sc-for list="{{ b.menu }}" as="mi" hint-placeholder-count="6">
+                      <div onClick="{{ mi.add }}" style="font-family:'Be Vietnam Pro',sans-serif; font-size:12.5px; padding:7px 14px; cursor:pointer; color:#3B3729;" style-hover="background:#EDF4F7; color:#26606F;">{{ mi.lab }}</div>
+                    </sc-for>
+                    <div onClick="{{ b.del }}" style="font-family:'Be Vietnam Pro',sans-serif; font-size:12.5px; padding:7px 14px; cursor:pointer; color:#A2A296; border-top:1px solid #EBE5D3; margin-top:4px;" style-hover="color:#C25C7C;">xoá khối</div>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+
+          <div onMouseDown="{{ splitGrab }}" style="width:11px; flex:none; cursor:col-resize; display:flex; justify-content:center; padding:34px 0 0;" title="kéo để đổi tỉ lệ cột">
+            <div style="width:1px; background: {{ splitBarBg }};"></div>
+          </div>
+
+          <div style="width: {{ splitAside }}; min-width:0; padding:34px 0 0 22px;">
+            <div style="display:flex; align-items:baseline; justify-content:space-between; border-bottom:1px solid #23211A; padding-bottom:9px; margin-bottom:16px;">
+              <div style="display:flex; gap:16px; font-family:'Be Vietnam Pro',sans-serif; font-size:10px; font-weight:500; letter-spacing:.2em; text-transform:uppercase;">
+                <div onClick="{{ modeExplore }}" style="cursor:pointer; color: {{ exploreFg }};">Explorations</div>
+                <div onClick="{{ modeMemo }}" style="cursor:pointer; color: {{ memoFg }};">Memo notes</div>
+              </div>
+              <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:9.5px; color:#C4C1B2; font-variant-numeric:tabular-nums;">{{ splitLabel }}</div>
+            </div>
+            <sc-if value="{{ isMemo }}" hint-placeholder-val="{{ false }}">
+              <div style="font-family:'Be Vietnam Pro',sans-serif; font-weight:300; font-size:12.5px; line-height:1.5; color:#A2A296;">Memo nằm rải theo từng khối trong bài — bấm “+ memo” cạnh khối cần hỏi.</div>
+            </sc-if>
+            <sc-if value="{{ isExplore }}" hint-placeholder-val="{{ true }}">
+            <sc-for list="{{ rNotes }}" as="n" hint-placeholder-count="3">
+              <div style="position:relative; margin-bottom:16px; padding-left:12px; border-left:2px solid #6FA8C0;">
+                <div contentEditable="{{ true }}" suppressContentEditableWarning="{{ true }}" onBlur="{{ n.commit }}" style="font-family:'Be Vietnam Pro',sans-serif; font-weight:300; font-size:13.5px; line-height:1.5; color:#4B463A; outline:none; padding:2px 4px; margin-left:-4px;" style-hover="background:#F5F2E4;">{{ n.v }}</div>
+                <div onClick="{{ n.del }}" style="position:absolute; right:0; top:0; font-size:11px; color:#DAD7C7; cursor:pointer;" style-hover="color:#C25C7C;">✕</div>
+              </div>
+            </sc-for>
+            <div onClick="{{ addNote }}" style="font-family:'Be Vietnam Pro',sans-serif; font-size:12px; color:#C4C1B2; cursor:pointer; padding:4px 0;" style-hover="color:#6FA8C0;">+ ghi chú</div>
+            </sc-if>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
 
     <sc-if value="{{ isArticle }}" hint-placeholder-val="{{ false }}">
       <div>
         <div style="background:#7FB87E; color:#1F3323; padding:46px 56px 124px; position:relative;">
-          <div onClick="{{ goBackModule }}" style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; cursor:pointer; margin-bottom:24px; opacity:.7;">← biochemistry 101</div>
-          <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; opacity:.7; margin-bottom:12px;">03 — essay — 2026.02</div>
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; margin-bottom:24px; opacity:.8;">
+            <div onClick="{{ crumbBack }}" style="cursor:pointer; padding-right:6px;">←</div>
+            <sc-for list="{{ crumbs }}" as="cb" hint-placeholder-count="3">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div onClick="{{ cb.jump }}" style="cursor: {{ cb.cursor }}; opacity: {{ cb.op }};">{{ cb.t }}</div>
+                <sc-if value="{{ cb.notLast }}" hint-placeholder-val="{{ true }}">
+                  <div style="opacity:.4;">›</div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
           <h1 style="font-family:'Playfair Display',serif; font-size:76px; line-height:.94; letter-spacing:-.04em; margin:0 0 12px; max-width:min(660px, 100% - 300px);">Chlorogenic Acids <span style="font-style:italic;">(CGA)</span></h1>
           <div style="font-family:'Playfair Display',serif; font-style:italic; font-size:24px; line-height:1.4; max-width:min(520px, 100% - 300px);">Nguồn gốc của vị chát và phần lớn vị chua trong tách cà phê.</div>
           <sc-if value="{{ showPlates }}" hint-placeholder-val="{{ true }}">
@@ -875,10 +1750,21 @@
     </sc-if>
 
     <sc-if value="{{ isArchive }}" hint-placeholder-val="{{ false }}">
-      <div style="padding:76px 56px 130px; max-width:1200px;">
+      <div style="padding:44px 56px 130px; max-width:1200px;">
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; margin-bottom:24px; color:#8C8674;">
+          <div onClick="{{ crumbBack }}" style="cursor:pointer; padding-right:6px;">←</div>
+          <sc-for list="{{ crumbs }}" as="cb" hint-placeholder-count="3">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <div onClick="{{ cb.jump }}" style="cursor: {{ cb.cursor }}; opacity: {{ cb.op }};">{{ cb.t }}</div>
+              <sc-if value="{{ cb.notLast }}" hint-placeholder-val="{{ true }}">
+                <div style="opacity:.4;">›</div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
         <div style="display:flex; align-items:flex-end; justify-content:space-between; padding-bottom:16px; border-bottom:3px solid #23211A;">
-          <h1 style="font-family:'Playfair Display',serif; font-size:72px; line-height:.94; letter-spacing:-.04em; margin:0;">Archive</h1>
-          <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:11px; color:#8C8674; padding-bottom:8px;">18 notes — sắp theo thời gian</div>
+          <h1 style="font-family:'Playfair Display',serif; font-size:72px; line-height:.94; letter-spacing:-.04em; margin:0;">{{ archiveTitle }}</h1>
+          <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:11px; color:#8C8674; padding-bottom:8px;">{{ archiveNoteFull }}</div>
         </div>
         <sc-for list="{{ allPosts }}" as="p" hint-placeholder-count="18">
           <div onClick="{{ openArticle }}" style="display:grid; grid-template-columns:56px 128px minmax(0,1fr) minmax(0,1fr) 70px; align-items:center; gap:18px; padding:12px 10px; border-bottom:1px solid #EBE5D3; cursor:pointer; border-left:3px solid transparent;" style-hover="background:#FFFFFF; border-left:3px solid #3E7A4E;">
@@ -924,14 +1810,277 @@ class Component extends DCLogic {
       }
       return out;
     })(),
-    statsOpen: false, openMonths: {}, extraKinds: [], kindAdding: false, kindDraft: '', editId: null, newId: null, editFocus: 'dur', eName: '', eMins: '', eAt: '',
+    statsOpen: false, openMonths: {},
+    split: 68, dragSplit: false,
+    rBlocks: [
+      { id: 1, t: 'meta', v: 'Trại Cầu Đất · lô A2 · 2026.02.11 · 14:20' },
+      { id: 2, t: 'h', v: 'Rang thử — Sơn La natural, 900g' },
+      { id: 3, t: 'metrics', m: [
+        { k: 'Charge', v: '196°C' }, { k: 'Turning point', v: '1:42 / 91°C' },
+        { k: 'First crack', v: '8:54 / 197°C' }, { k: 'Drop', v: '10:36 / 208°C' },
+        { k: 'Development', v: '19.8%' }, { k: 'Weight loss', v: '14.2%' }
+      ] },
+      { id: 4, t: 'p', v: 'Mẻ này đẩy lửa cao hơn mẻ trước 8% trong bốn phút đầu để rút ngắn giai đoạn sấy. Turning point đến sớm hơn 11 giây, nhưng first crack lại muộn hơn — nghi do độ ẩm nhân cao hơn lô trước, chưa đo lại được.' },
+      { id: 5, t: 'chart', c: [
+        { l: '0:00', v: 34 }, { l: '2:00', v: 46 }, { l: '4:00', v: 58 },
+        { l: '6:00', v: 71 }, { l: '8:00', v: 86 }, { l: '8:54', v: 92 }, { l: '10:36', v: 100 }
+      ] },
+      { id: 6, t: 'table', th: ['Mốc', 'Thời gian', 'Nhiệt', 'Ghi chú'], tr: [
+        ['Sấy', '0:00 — 4:10', '196 → 148°C', 'màu nhân chuyển vàng nhạt'],
+        ['Maillard', '4:10 — 8:54', '148 → 197°C', 'mùi bánh mì, khói mảnh'],
+        ['Development', '8:54 — 10:36', '197 → 208°C', 'crack rời, không dồn dập']
+      ] },
+      { id: 7, t: 'h', v: 'Cupping sau 48 giờ nghỉ' },
+      { id: 8, t: 'table', th: ['Tiêu chí', 'Điểm', 'Mô tả'], tr: [
+        ['Hương khô', '7.75', 'mật mía, vỏ cam'],
+        ['Vị', '8.00', 'chua táo đỏ, hậu ngọt dài'],
+        ['Body', '7.50', 'vừa, hơi mỏng ở cuối'],
+        ['Cân bằng', '7.75', 'chua và ngọt khớp nhau']
+      ] },
+      { id: 9, t: 'image', v: 'ảnh — nhân sau khi drop, chụp trên nền trắng' }
+    ],
+    rNotes: [
+      { id: 101, v: 'Lần sau hạ lửa ở phút 6 thay vì phút 7 — thử giữ development dưới 19%.' },
+      { id: 102, v: 'Cần mua ẩm kế nhân. Không đo được độ ẩm thì mọi so sánh giữa lô đều là phỏng đoán.' },
+      { id: 103, v: 'Vị mỏng ở cuối có thể do drop sớm, cũng có thể do nước pha. Tách hai biến ra thử riêng.' }
+    ],
+    rSel: null, rNoteMode: 'explore', cardsFrom: 'admin', reportFrom: 'admin', articleFrom: 'admin',
+    cms: null, cmsSel: null, cmsTab: 'map',
+    site: { t1: 'A coffee study', t2: 'journey', blurb: 'Ghi chép quá trình học về cà phê — chia theo module, mỗi module là một tập bài ngắn.' },
+    cardOpen: { 2: true }, cardSel: null, tagOn: null, tagDraft: '', extraGroups: [], pinnedGroups: [], groupFilter: null,
+    cards: [
+      { id: 1, n: '01', title: 'Apple', sub: 'crisp sweet, green skin, thin sour tail', groups: ['Other Fruit', 'Green/Vegetative', 'Sour'],
+        tag: 'ethyl 2-methylbutyrate · hexanal',
+        parts: [
+          { k: 'method', h: 'Phương pháp', v: 'Nếm ba dạng cạnh nhau trong một buổi: nguyên quả cắt lát, nước ép tươi không lọc, và nước ép đóng chai. Mỗi dạng 30ml, nhiệt độ phòng, nghỉ 90 giây giữa các mẫu.' },
+          { k: 'detail', h: 'Ghi chi tiết', rows: [
+            { l: 'ngọt giòn (crisp sweet)', s: '6', n: 'ngọt sáng, không dày; tan nhanh ở đầu lưỡi' },
+            { l: 'vỏ xanh, hơi hăng', s: '4', n: '~ hexanal, cảm giác lá tươi bị bấm dập' },
+            { l: 'chua đọng cuối vị', s: '5', n: 'mảnh và ngắn, không rít lưỡi' }
+          ] },
+          { k: 'callout', h: 'Đối chiếu', v: 'Nước ép đóng chai mất hẳn phần vỏ hăng, đổi lại ngọt dày hơn — nghi do quá trình gia nhiệt phá vỡ các aldehyde nhẹ.' }
+        ] },
+      { id: 2, n: '02', title: 'Pear', sub: 'sweet floral, nectar (ripe-fruit) sweet, green crisp (sour) nuance', groups: ['Other Fruit', 'Floral', 'Sweet'],
+        tag: 'ethyl (2E,4Z)-2,4-decadienoate',
+        parts: [
+          { k: 'method', h: 'Phương pháp', v: 'Hai mẫu: 1oz nước lê Rauch đóng chai, và lê nguyên quả gọt vỏ. Nếm mù, ghi trước khi gọi tên hương.' },
+          { k: 'detail', h: '#1 — 1oz Rauch pear nectar', rows: [
+            { l: 'ngọt mật (ngọt thỉu, ripe fruit)', s: '5', n: '' },
+            { l: 'mùi mát gardenia (fresh herbs, fresh cut-grass)', s: '6', n: '' },
+            { l: 'chua đọng cuối vị, nồng, crisp', s: '6', n: '~ citric acid — chua sắc, sâu, nổi, kèm cảm giác mát' }
+          ] },
+          { k: 'detail', h: '#2 — nguyên quả', rows: [
+            { l: 'sweet floral ~ soft, warm-to-hot (white flower)', s: '5', n: '~ benzyl propionate · hậu vị nồng, gần giống note mùi hậu vị của chuối' },
+            { l: 'green crisp notes ~ juicy, tangy cider', s: '4', n: '~ manzanate aka ethyl 2-methylpentanoate' },
+            { l: 'watery nectar sweet', s: '6', n: 'ngọt mật (rỉ) của cây thân gỗ, hơi xanh mát; citric acid chua rít hàm lượng nhỏ, chỉ đọng ít ở cuối vị' }
+          ] },
+          { k: 'callout', h: 'east × west', v: '— lê châu Á: subtle về mùi và vị hơn, watery, subtle gardenia với warm-to-hot floral (hoa trắng nhưng có note nồng/nóng) và herb-fresh-cut.\n— lê châu Âu (đóng chai): ngọt đậm của mật rỉ (nectar), gợi nhắc một vài quả stone-fruit như đào, mơ, kèm mùi mát nhẹ không quá nổi.' }
+        ] },
+      { id: 3, n: '03', title: 'Lemon', sub: 'bright citric sour, herbal-sweet peel, watery finish', groups: ['Citrus Fruit', 'Sour', 'Floral'],
+        tag: 'citral · limonene · citric acid',
+        parts: [
+          { k: 'method', h: 'Phương pháp', v: 'Tách hai phần: vỏ (chà nhẹ để dầu bật ra, ngửi trực tiếp) và nước cốt (5ml không pha loãng). Ghi riêng từng phần rồi mới đối chiếu.' },
+          { k: 'detail', h: 'vỏ — ngọt hoa cỏ', rows: [
+            { l: 'mùi ngọt nhẹ nhưng dày', s: '5', n: 'đanh và nét như tinh dầu cây cỏ hoặc cây thân gỗ; trong mùi ngọt có note mát ~ hoa cỏ sân vườn (herbaneous, gardenia)' },
+            { l: 'vỏ và tinh dầu có mùi sả', s: '4', n: 'hơi cay nhẹ, mùi nét, có chút se sắt' },
+            { l: 'hậu mùi ngọt của tinh dầu cây', s: '4', n: '' }
+          ] },
+          { k: 'detail', h: 'juice', rows: [
+            { l: 'mùi ngọt hoa cỏ mát, thanh và nhẹ', s: '6', n: 'kèm note chua mát rất sáng (màu vàng trắng, trong nhẹ ~ nắng hè dịu, gió nhẹ)' },
+            { l: 'vị chua gắt của citric', s: '7', n: 'se sắt lưỡi, chua nhăn mặt và hơi tiết nước bọt; đọng chút chát, rít ở cuống họng và lưỡi' },
+            { l: 'hậu vị mùi ngọt hoa cỏ floral', s: '5', n: 'tươi và thanh mát, khiến cảm nhận tổng quan có buffer của cảm giác ngọt' }
+          ] },
+          { k: 'callout', h: 'Giả thuyết', v: 'Hơi có cảm giác mọng nước khi nếm lượng lớn ~ gợi nhắc tới các quả có độ mọng tự nhiên, đặc biệt là quả vải.\n— cảm giác mọng lý giải do cơ chế tiết nước bọt làm water volume tăng.\n— vị giống quả vải: giả thuyết do tổng hoà giữa mùi floral và mouthfeel mọng nước khiến trigger crossmodal association.' }
+        ] },
+      { id: 4, n: '04', title: 'Stone fruit — đào', sub: 'warm floral sweet, fuzzy skin, low acid', groups: ['Other Fruit', 'Sweet', 'Floral'],
+        tag: 'γ-decalactone',
+        parts: [
+          { k: 'method', h: 'Phương pháp', v: 'Đào chín mềm, nếm cả vỏ và thịt. So sánh với mẫu đào đóng hộp trong siro để tách phần hương do nhiệt sinh ra.' },
+          { k: 'detail', h: 'Ghi chi tiết', rows: [
+            { l: 'ngọt ấm, dày, gần như có mùi kem sữa', s: '7', n: '~ γ-decalactone, chất tạo nên cảm giác “đào” điển hình' },
+            { l: 'floral ấm, không sắc', s: '5', n: 'khác hẳn hoa trắng mát của lê' },
+            { l: 'chua rất thấp', s: '2', n: 'nên hậu vị trôi nhanh, thiếu điểm neo' }
+          ] },
+          { k: 'callout', h: 'Ghi chú', v: 'Đào đóng hộp đẩy lactone lên rất mạnh và xoá hết phần vỏ. Nếu mô tả một mẻ cà phê là “đào”, cần nói rõ đào tươi hay đào siro — hai thứ này gần như không cùng một hương.' }
+        ] }
+    ],
+    rMemos: [
+      { id: 201, at: 4, v: 'Vì sao first crack muộn hơn dù lửa cao hơn?' },
+      { id: 202, at: 6, v: 'Maillard dài 4:44 — có phải quá dài cho lô natural?' },
+      { id: 203, at: 8, v: 'Điểm body thấp nhất bảng. Đối chiếu với mẻ 09.02.' }
+    ], extraKinds: [], kindAdding: false, kindDraft: '', kindFilter: null, editId: null, newId: null, editFocus: 'dur', eName: '', eMins: '', eAt: '',
     tMode: 'up', tRunning: false, tSec: 0, tTarget: 1500,
     dName: '', dStart: '', dEnd: '', dKind: 'đọc',
     hoverNote: null, openNote: null, mx: null, my: null,
     noteFilter: 'tất cả'
   };
 
+  LOGIC = [
+    { p: 'A', part: 'Design system', note: 'Quy tắc về thị giác — màu, chữ, khoảng cách. Áp cho mọi trang.', groups: [
+      { n: '01', g: 'Màu', items: [
+        { s: 'Toàn hệ thống', r: 'Trên mọi trang: nền mặc định là kem, mực chính là than.', e: '#FDFBF2 · #23211A' },
+        { s: 'Toàn hệ thống', r: 'Trên mọi nền màu: nền vừa-đậm thì chữ sáng, nền nhạt thì chữ mực đậm.', e: '' },
+        { s: 'Module', r: 'Với ba module: hồng cho sensory, xanh lá cho biochemistry 101, vàng đất cho roasting — không dùng lẫn sang module khác.', e: '#F2A0A5 · #7FB87E · #F0B45C' },
+        { s: 'Module', r: 'Với mỗi trang module: chỉ một khối màu lớn ở đầu trang, không lặp giữa các bài.', e: '' },
+        { s: 'Template', r: 'Riêng [[cards]]: mỗi nhóm hương có hai màu — màu tươi cho chấm và vạch, màu mực đậm cho chữ.', e: '' },
+        { s: 'Template', r: 'Riêng nhóm Practice: dùng xanh than với hồng mận, tách hẳn khỏi hệ màu module.', e: '#102F35 · #C25C7C' }
+      ] },
+      { n: '02', g: 'Chữ', items: [
+        { s: 'Toàn hệ thống', r: 'Trên mọi trang: đúng hai họ chữ — serif cho tiêu đề, sans cho mọi thứ còn lại.', e: 'Playfair Display · Be Vietnam Pro' },
+        { s: 'Toàn hệ thống', r: 'Trong thân bài: nét mảnh 300; nhãn in hoa dùng nét 500.', e: '' },
+        { s: 'Toàn hệ thống', r: 'Với font thân bài: phải có đủ dấu tiếng Việt.', e: '' },
+        { s: 'Toàn hệ thống', r: 'Với tên beӕn weirdo khi đặt bằng serif ở vị trí tên hoặc tiêu đề: chữ ӕ luôn phóng to hơn phần còn lại và tô màu hồng cánh hoa; các vị trí đặt bằng sans in hoa giữ nguyên một màu.', e: 'ӕ · scale 1.2–1.3 · #F2A0A5' },
+        { s: 'Toàn hệ thống', r: 'Với mọi số liệu: dùng chữ số cùng bề rộng.', e: 'tabular-nums' }
+      ] },
+      { n: '03', g: 'Khoảng cách & lưới', items: [
+        { s: 'Toàn hệ thống', r: 'Trên mọi trang: nhịp khoảng cách 8 / 20 / 40 / 64 / 96px.', e: '' },
+        { s: 'Toàn hệ thống', r: 'Trên mọi trang: đệm 56px hai bên, căn lề trên xuống chứ không từ dưới lên.', e: '' },
+        { s: 'Toàn hệ thống', r: 'Với thân bài: rộng tối đa 1140px, cột chữ khoảng 600px.', e: '' }
+      ] }
+    ] },
+
+    { p: 'B', part: 'UX/UI Logic', note: 'Quy tắc về cách đặt tên, điều hướng và thao tác. Áp cho mọi trang.', groups: [
+      { n: '04', g: 'Đặt tên trang', items: [
+        { s: 'Toàn hệ thống', r: 'Với nhãn trang: gồm hai phần, ngăn bằng gạch ngang dài.', e: 'Sensory — Notes' },
+        { s: 'Toàn hệ thống', r: 'Trong nhãn trang: phần trước gạch là module, phần sau gạch là dạng bài.', e: 'sensory · Notes' },
+        { s: 'Toàn hệ thống', r: 'Trong nhãn trang: ngày tháng nếu có thì đứng sau cùng, ngăn bằng dấu chấm giữa.', e: 'Article · 2026.02' }
+      ] },
+      { n: '05', g: 'Điều hướng', items: [
+        { s: 'Toàn hệ thống', r: 'Với mọi trang con: có dải đường dẫn phản ánh đúng hành trình người dùng.', e: '[[landing]] › [[home]] › sensory › Notes' },
+        { s: 'Toàn hệ thống', r: 'Trên dải đường dẫn: mũi tên ← quay về trang liền trước, bấm từng chặng thì tới đúng trang đó.', e: '' },
+        { s: 'Toàn hệ thống', r: 'Với sidebar: chia ba nhóm, mỗi nhóm có nhãn và đường kẻ ngăn.', e: '[[secPublic]] · [[secPractice]] · [[secAdmin]]' },
+        { s: 'Toàn hệ thống', r: 'Với sidebar: chìm ở 64px, chỉ mở rộng khi rê chuột.', e: '268px khi mở' },
+        { s: 'Module', r: 'Với sidebar: mỗi module một chấm tròn màu riêng; riêng [[notes]] dùng hình vuông để tách khỏi module.', e: '' }
+      ] },
+      { n: '06', g: 'Câu trích đầu trang Ghi', items: [
+        { s: 'Template', r: 'Ở đầu trang Ghi: một câu trích thật về hiệu suất, thói quen hoặc thời gian, kèm tên tác giả — không tự nghĩ câu.', e: 'nguồn có thật, ghi đúng tên' },
+        { s: 'Template', r: 'Với câu trích: đổi mỗi ngày một câu, chọn theo số ngày nên cùng một ngày luôn ra cùng một câu.', e: 'index = ngày % số câu' },
+        { s: 'Template', r: 'Với danh sách câu trích: giữ trong một mảng cố định, thêm câu mới vào cuối; hết mảng thì quay lại câu đầu.', e: '' },
+        { s: 'Template', r: 'Với cách trình bày: câu trích Playfair nghiêng 24px màu xanh lá, tên tác giả 12px xám kèm gạch ngắn phía trước.', e: '' }
+      ] },
+      { n: '07', g: 'Đọc — mở nội dung', items: [
+        { s: 'Toàn hệ thống', r: 'Ở mọi danh sách bài ([[notes]], [[cards]], [[archive]]): bấm một mục thì nội dung xổ ra tại chỗ trong danh sách, không mở trang mới.', e: 'GET danh sách trả đủ nội dung' },
+        { s: 'Toàn hệ thống', r: 'Ở mọi mục xổ ra: mục đang mở tự cuộn vào giữa khung nhìn.', e: '' },
+        { s: 'Toàn hệ thống', r: 'Ở [[notes]] và [[archive]]: mỗi lần chỉ một mục mở, bấm lại để thu.', e: '' }
+      ] },
+      { n: '08', g: 'Ghi — sửa và lưu', items: [
+        { s: 'Toàn hệ thống', r: 'Ở mọi dòng dữ liệu sửa được ([[hours]], bảng [[report]]): bấm thẳng vào giá trị cần sửa, không mở hộp thoại riêng.', e: 'PATCH từng field' },
+        { s: 'Toàn hệ thống', r: 'Ở mọi ô đang sửa: Enter để lưu, Esc để bỏ, rời con trỏ cũng lưu.', e: '' },
+        { s: 'Toàn hệ thống', r: 'Ở mọi thao tác sửa: lưu ngay từng thay đổi, không có nút lưu toàn trang.', e: 'không dùng PUT cả trang' },
+        { s: 'Toàn hệ thống', r: 'Ở mọi mục tạo mới: tạo dòng trống trước rồi con trỏ nhảy vào; để trống mà rời đi thì dòng tự mất.', e: 'POST rồi PATCH, hoặc DELETE nếu rỗng' },
+        { s: 'Toàn hệ thống', r: 'Ở mọi thao tác xoá: xoá thẳng, không hỏi lại — hoàn tác thay cho hộp xác nhận.', e: 'DELETE' },
+        { s: 'Toàn hệ thống', r: 'Ở mọi thao tác ghi (sửa, tạo, xoá, kéo thả): Ctrl + Z hoàn tác thao tác gần nhất, Ctrl + Shift + Z làm lại.', e: 'undo / redo' },
+        { s: 'Toàn hệ thống', r: 'Với bộ nhớ đệm hoàn tác: giữ tối đa 5 thao tác gần nhất, thao tác thứ 6 đẩy thao tác cũ nhất ra; rời trang là xoá sạch.', e: 'stack 5, không lưu server' }
+      ] }
+    ] },
+
+    { p: 'C', part: 'Riêng theo template', note: 'Mỗi template có logic riêng, không áp dàn trải sang template khác.', groups: [
+      { n: '09', g: 'Bài mẫu → bài chính thức', items: [
+        { s: 'Toàn hệ thống', r: 'Với bài mẫu trong [[secAdmin]]: được tự do chọn màu, vì nó chỉ là khung để dựng.', e: 'Templates giữ màu riêng' },
+        { s: 'Module', r: 'Khi clone bài mẫu sang module chính thức: bắt buộc đổi toàn bộ màu sang theme của module đó, không giữ màu của bản mẫu.', e: 'accent · tint · tint2 của module' },
+        { s: 'Module', r: 'Khi một bài mẫu được nhân bản thành bài chính thức dưới module: khối màu đầu trang phải lấy đúng accent của module đó.', e: 'sensory → #F2A0A5' },
+        { s: 'Toàn hệ thống', r: 'Với mỗi bài dùng chung template: chỉ đổi màu, nhãn, tiêu đề và đoạn dẫn theo lối vào — nội dung và thao tác giữ nguyên.', e: 'một template, hai vai' },
+        { s: 'Toàn hệ thống', r: 'Với đường dẫn: bài chính thức đi từ [[landing]] › [[home]] › module, bài mẫu đi từ [[secAdmin]] › Notes › Templates.', e: '' }
+      ] },
+      { n: '10', g: '[[article]]', items: [
+        { s: 'Template', r: 'Với [[article]]: hai cột — cột lớn thân bài, cột nhỏ mục lục hoặc ghi chú bên lề.', e: '' },
+        { s: 'Template', r: 'Với [[article]]: ảnh phụ thả trôi trong thân bài, không dồn xuống chân bài.', e: '' },
+        { s: 'Template', r: 'Với [[article]]: ảnh chính ít nhất 1.7 lần ảnh phụ, tối đa 3–4 ảnh mỗi cụm.', e: '' }
+      ] },
+      { n: '11', g: '[[report]]', items: [
+        { s: 'Template', r: 'Với [[report]]: cột chính là số liệu và bảng, cột phụ chỉ chứa ghi chú.', e: '' },
+        { s: 'Template', r: 'Với [[report]]: kéo được vạch giữa hai cột để đổi tỉ lệ.', e: '' },
+        { s: 'Template', r: 'Riêng [[report]]: ghi chú có hai chế độ — Explorations xếp trên xuống, Memo notes rải theo vị trí trong bài.', e: '' },
+        { s: 'Template', r: 'Với [[report]]: bảng thêm được cột và dòng, kéo được bề rộng cột.', e: '' }
+      ] },
+      { n: '12', g: '[[cards]]', items: [
+        { s: 'Template', r: 'Riêng [[cards]]: mở được nhiều thẻ cùng lúc để đối chiếu — ngoại lệ của quy tắc 06.', e: 'có mở hết / gập hết' },
+        { s: 'Template', r: 'Với [[cards]]: các thẻ cùng một cấp, gập mở độc lập, đổi được thứ tự.', e: '' },
+        { s: 'Template', r: 'Riêng [[cards]]: bộ tag nhóm hương đặt cố định ở đầu trang, không rải theo từng thẻ.', e: '' },
+        { s: 'Template', r: 'Với [[cards]]: màu thẻ lấy theo nhóm hương đầu tiên của thẻ đó.', e: '' }
+      ] },
+      { n: '13', g: '[[notes]]', items: [
+        { s: 'Template', r: 'Với [[notes]]: lưới 12 cột lệch tầng, mỗi note một bề rộng và độ tụt khác nhau.', e: '' },
+        { s: 'Template', r: 'Với [[notes]]: rê chuột thì các note khác mờ đi, bấm thì note đó giãn hết bề ngang.', e: '' },
+        { s: 'Template', r: 'Với [[notes]]: khối màu đặc và câu trích chèn vào chỗ trống của lưới.', e: '' }
+      ] },
+      { n: '14', g: '[[hours]]', items: [
+        { s: 'Template', r: 'Với [[hours]]: chuỗi ngày là phần chính, ô bấm giờ lệch sang phải.', e: '' },
+        { s: 'Template', r: 'Riêng [[hours]]: sửa hoạt động chỉ hai nhánh — đổi thời gian, hoặc xoá. Sửa tên là thao tác phụ.', e: '' },
+        { s: 'Template', r: 'Với [[hours]]: ngày trong 7 ngày gần nhất cho sửa, xoá, kéo thả; ngày cũ hơn chỉ hiện việc đã xong.', e: '' },
+        { s: 'Template', r: 'Với [[hours]]: tháng cũ tự thu gọn, không tách khỏi danh mục.', e: '' }
+      ] }
+    ] }
+  ];
+
+  FLAVOR_GROUPS = [
+    { g: 'Berry', c: '#D93A6A', ink: '#8E1E42', w: '#FBE4EC' },
+    { g: 'Dried Fruit', c: '#C4603F', ink: '#7A3520', w: '#FAE7DE' },
+    { g: 'Other Fruit', c: '#F2703A', ink: '#8F3A14', w: '#FDE8DC' },
+    { g: 'Citrus Fruit', c: '#F0C020', ink: '#7A5A04', w: '#FCF3D4' },
+    { g: 'Floral', c: '#C361C9', ink: '#753A7A', w: '#F8E6FA' },
+    { g: 'Sweet', c: '#F0A93C', ink: '#8A5510', w: '#FDEED6' },
+    { g: 'Nutty/Cocoa', c: '#A87B4C', ink: '#5C3D1E', w: '#F4E9DB' },
+    { g: 'Spices', c: '#E14B2A', ink: '#8A2A13', w: '#FBE3DC' },
+    { g: 'Roasted', c: '#8A6248', ink: '#4A2E1D', w: '#EFE5DB' },
+    { g: 'Green/Vegetative', c: '#4FAE63', ink: '#256B37', w: '#E4F4E6' },
+    { g: 'Sour', c: '#B9D62B', ink: '#5A6B0C', w: '#F2F8D8' },
+    { g: 'Fermented', c: '#8B74D9', ink: '#4C3A8E', w: '#EDE9FB' },
+    { g: 'Papery/Musty', c: '#9C9684', ink: '#585345', w: '#F0EEE6' },
+    { g: 'Chemical', c: '#3D9AB0', ink: '#1E5A69', w: '#E0F1F5' }
+  ];
+
+  groupMeta(g) {
+    const f = this.FLAVOR_GROUPS.find(x => x.g === g);
+    if (f) return f;
+    const i = (this.state.extraGroups || []).indexOf(g);
+    const p = [['#6FBF5C', '#3B6B2E'], ['#F0C020', '#7A5A04'], ['#E8628C', '#8E1E42'], ['#3D9AB0', '#1E5A69'], ['#8B74D9', '#4C3A8E']];
+    const pair = p[(i < 0 ? 0 : i) % p.length];
+    return { g, c: pair[0], ink: pair[1], w: '#F1EFE6' };
+  }
+
+  pinGroup() {
+    const v = (this.state.tagDraft || '').trim();
+    if (!v) { this.setState({ tagOn: null, tagDraft: '' }); return; }
+    const known = this.FLAVOR_GROUPS.map(x => x.g).concat(this.state.extraGroups || []);
+    this.setState(st => ({
+      tagOn: null, tagDraft: '',
+      extraGroups: known.indexOf(v) >= 0 ? st.extraGroups : (st.extraGroups || []).concat([v]),
+      pinnedGroups: (st.pinnedGroups || []).indexOf(v) >= 0 ? st.pinnedGroups : (st.pinnedGroups || []).concat([v])
+    }));
+  }
+
+  addGroupTag(cardId) {
+    const v = (this.state.tagDraft || '').trim();
+    if (!v) { this.setState({ tagOn: null, tagDraft: '' }); return; }
+    const known = this.FLAVOR_GROUPS.map(x => x.g).concat(this.state.extraGroups || []);
+    const extra = known.indexOf(v) >= 0 ? (this.state.extraGroups || []) : (this.state.extraGroups || []).concat([v]);
+    this.setState(st => ({
+      extraGroups: extra, tagOn: null, tagDraft: '',
+      cards: st.cards.map(c => c.id === cardId
+        ? Object.assign({}, c, { groups: (c.groups || []).indexOf(v) >= 0 ? c.groups : (c.groups || []).concat([v]) })
+        : c)
+    }));
+  }
+
+  removeGroupTag(cardId, g) {
+    this.setState(st => ({
+      cards: st.cards.map(c => c.id === cardId
+        ? Object.assign({}, c, { groups: (c.groups || []).filter(x => x !== g) }) : c)
+    }));
+  }
+
   KINDS = ['đọc', 'thực hành', 'viết', 'quan sát'];
+  QUOTES = [
+    { t: '“We are what we repeatedly do.”', w: 'Will Durant' },
+    { t: '“Small daily improvements are the key to staggering long-term results.”', w: 'Robin Sharma' },
+    { t: '“Amateurs sit and wait for inspiration, the rest of us just get up and go to work.”', w: 'Stephen King' },
+    { t: '“What gets measured gets managed.”', w: 'Peter Drucker' },
+    { t: '“It is not that we have a short time to live, but that we waste a lot of it.”', w: 'Seneca' },
+    { t: '“Discipline is choosing between what you want now and what you want most.”', w: 'Abraham Lincoln' },
+    { t: '“Nothing will work unless you do.”', w: 'Maya Angelou' }
+  ];
+
   KIND_PALETTE = ['#3E7A4E', 'oklch(0.50 0.135 14)', '#8A6420', '#102F35', '#5E7F52', 'oklch(0.60 0.115 14)', '#6E5A2A'];
 
   allKinds() { return this.KINDS.concat(this.state.extraKinds || []); }
@@ -955,7 +2104,110 @@ class Component extends DCLogic {
       if (raw) this.setState({ logs: JSON.parse(raw) });
       const rk = localStorage.getItem('cs_practice_kinds_v1');
       if (rk) this.setState({ extraKinds: JSON.parse(rk) });
+      const rc = localStorage.getItem('cs_cms_v1');
+      if (rc) { const o = JSON.parse(rc); this.setState({ cms: o.cms || null, site: o.site || this.state.site }); }
     } catch (e) {}
+  }
+
+  cardMove(id, pi, dir) {
+    this.setState(st => ({
+      cards: st.cards.map(c => {
+        if (c.id !== id) return c;
+        const p = c.parts.slice(), j = pi + dir;
+        if (j < 0 || j >= p.length) return c;
+        const t = p[pi]; p[pi] = p[j]; p[j] = t;
+        return Object.assign({}, c, { parts: p });
+      })
+    }));
+  }
+
+  cardShift(id, dir) {
+    this.setState(st => {
+      const arr = st.cards.slice(), i = arr.findIndex(c => c.id === id), j = i + dir;
+      if (j < 0 || j >= arr.length) return {};
+      const t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+      return { cards: arr };
+    });
+  }
+
+  rid() { return Date.now() + Math.floor(Math.random() * 999); }
+
+  rSet(list, id, patch) {
+    this.setState(st => ({ [list]: st[list].map(b => b.id === id ? Object.assign({}, b, patch) : b) }));
+  }
+
+  rInsert(after, t) {
+    const nb = { id: this.rid(), t };
+    if (t === 'table') { nb.th = ['Cột 1', 'Cột 2', 'Cột 3']; nb.tr = [['', '', ''], ['', '', '']]; }
+    else if (t === 'metrics') nb.m = [{ k: 'Chỉ số', v: '—' }, { k: 'Chỉ số', v: '—' }];
+    else if (t === 'chart') nb.c = [{ l: '1', v: 40 }, { l: '2', v: 70 }];
+    else nb.v = '';
+    this.setState(st => {
+      const i = st.rBlocks.findIndex(b => b.id === after);
+      const arr = st.rBlocks.slice();
+      arr.splice(i < 0 ? arr.length : i + 1, 0, nb);
+      return { rBlocks: arr, rSel: null };
+    });
+  }
+
+  rDel(list, id) { this.setState(st => ({ [list]: st[list].filter(b => b.id !== id) })); }
+
+  colDrag(id, ci, e) {
+    const table = e.currentTarget.closest('table');
+    if (!table) return;
+    const total = table.getBoundingClientRect().width;
+    const b0 = this.state.rBlocks.find(x => x.id === id);
+    const n = (b0.th || []).length;
+    const base = (b0.cols || (b0.th || []).map(() => 100 / n)).slice();
+    const x0 = e.clientX;
+    const move = ev => {
+      const d = (ev.clientX - x0) / total * 100;
+      const a = Math.max(8, base[ci] + d), bb = Math.max(8, base[ci + 1] - d);
+      if (a + bb !== base[ci] + base[ci + 1]) return;
+      const cols = base.slice(); cols[ci] = a; cols[ci + 1] = bb;
+      this.rSet('rBlocks', id, { cols });
+    };
+    const up = () => { window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', up); };
+    window.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', up);
+    e.preventDefault();
+  }
+
+  rowDrag(id, ri, e) {
+    const b0 = this.state.rBlocks.find(x => x.id === id);
+    const rows = (b0.rowH || (b0.tr || []).map(() => 40)).slice();
+    const y0 = e.clientY, h0 = rows[ri];
+    const move = ev => {
+      const rh = rows.slice();
+      rh[ri] = Math.max(30, Math.round(h0 + (ev.clientY - y0)));
+      this.rSet('rBlocks', id, { rowH: rh });
+    };
+    const up = () => { window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', up); };
+    window.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', up);
+    e.preventDefault();
+  }
+
+  startSplit() {
+    const move = e => {
+      const host = this._rHost; if (!host) return;
+      const r = host.getBoundingClientRect();
+      const pct = Math.min(82, Math.max(45, (e.clientX - r.left) / r.width * 100));
+      this.setState({ split: Math.round(pct) });
+    };
+    const up = () => {
+      window.removeEventListener('mousemove', move);
+      window.removeEventListener('mouseup', up);
+      this.setState({ dragSplit: false });
+    };
+    window.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', up);
+    this.setState({ dragSplit: true });
+  }
+
+  dayIndex() {
+    const d = new Date();
+    return Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000);
   }
 
   bump(id, n) {
@@ -1009,6 +2261,228 @@ class Component extends DCLogic {
   }
 
   componentWillUnmount() { this.disarm(); }
+
+  SITE_DEF = {
+    t1: 'A coffee study', t2: 'journal',
+    blurb: 'Ghi chép quá trình học về cà phê — chia theo module, mỗi module là một tập bài ngắn. Đọc theo thứ tự hoặc nhặt bất kỳ đâu.',
+    blurbShort: 'Ghi chép quá trình học về cà phê — chia theo module, mỗi module là một tập bài ngắn.',
+    lEyebrow: 'coffee study journal — 2024 / 2026',
+    lTitle1: 'beӕn weirdo', lTitle2: '#viettatlahkd',
+    lIntro1: 'Mỗi thứ học được đều bị viết lại thành một ghi chú ngắn, xếp vào một module. Ba module đang mở: giác quan, hoá sinh, rang. Bài mới nhất luôn nằm trên cùng của module tương ứng.',
+    lIntro2: 'Không có bài nào ở đây là kết luận. Phần lớn là ghi chép giữa đường: đọc được gì, thử gì, sai ở đâu. Mục "còn chưa rõ" ở cuối mỗi bài thường là phần đáng đọc nhất.',
+    lCta: 'xem mục lục',
+    artT1: 'Garden colours,', artT2: 'quiet paper',
+    artIntro: 'Bảng màu lấy từ vườn hơn là từ màn hình: hồng cánh hoa, xanh lá non, mơ chín, xanh trời nhạt. Đủ tươi để thấy vui, đủ dịu để đọc lâu. Nền kem giữ nhịp; mỗi module sở hữu một mảng màu lớn của riêng nó.',
+    logicTitle: 'System conventions',
+    logicIntro: 'Chia ba phần: quy tắc thị giác, quy tắc thao tác, và quy tắc riêng của từng template. Mỗi dòng có dấu cho biết phạm vi áp dụng.',
+    cmsTitle: 'Content', cmsIntro: 'Sơ đồ toàn bộ trang và khu vực biên tập nội dung.',
+    archiveTitle: 'Archive', archiveNote: 'sắp theo thời gian',
+    plate1: 'ảnh mở đầu — vật thể đơn', plate2: 'mặt cắt', plate3: 'dải rang'
+  };
+
+  sv(k) {
+    const v = (this.state.site || {})[k];
+    return (v === undefined || v === null || v === '') ? this.SITE_DEF[k] : v;
+  }
+
+  setSv(k, v) { this.saveCms(null, Object.assign({}, this.state.site || {}, { [k]: v })); }
+
+  uploadMod(mid, k, ev) {
+    const f = ev.target.files && ev.target.files[0];
+    if (!f) return;
+    const r = new FileReader();
+    r.onload = () => this.editMod(mid, { [k]: r.result });
+    r.readAsDataURL(f);
+  }
+
+  upload(k, ev) {
+    const f = ev.target.files && ev.target.files[0];
+    if (!f) return;
+    const r = new FileReader();
+    r.onload = () => this.setSv(k, r.result);
+    r.readAsDataURL(f);
+  }
+
+  tokenMap() {
+    const m = {
+      secPublic: this.secName('Public'),
+      secPractice: this.secName('Practice'),
+      secAdmin: this.secName('Admin')
+    };
+    this.NAV.forEach(n => { m[n.k] = n.label; });
+    return m;
+  }
+
+  tok(v) {
+    if (typeof v !== 'string' || v.indexOf('[[') < 0) return v;
+    const m = this.tokenMap();
+    return v.replace(/\[\[([a-zA-Z]+)\]\]/g, (all, k) => (k in m ? m[k] : all));
+  }
+
+  secName(g) {
+    const s = this.state.site || {};
+    return (s.sections && s.sections[g]) || g;
+  }
+
+  setSecName(g, v) {
+    const s = this.state.site || {};
+    const sections = Object.assign({}, s.sections || {});
+    sections[g] = v;
+    this.saveCms(null, Object.assign({}, s, { sections }));
+  }
+
+  renumber(cms) {
+    if (!cms || !cms.map) return cms;
+    return cms.map(m => Object.assign({}, m, {
+      entries: (m.entries || []).map((e, i) => Object.assign({}, e, { n: String(i + 1).padStart(2, '0') }))
+    }));
+  }
+
+  saveCms(cms, site) {
+    const next = { cms: this.renumber(cms || this.state.cms), site: site || this.state.site };
+    try { localStorage.setItem('cs_cms_v1', JSON.stringify(next)); } catch (e) {}
+    this.setState(next);
+  }
+
+  NAV = [
+    { k: 'landing', g: 'Public', label: 'Trang chủ', desc: 'tổng quan module', sc: 'landing',
+      sh: { w: '10px', h: '10px', r: '50%', bd: '1px solid currentColor', bg: 'transparent', brw: '1px', bbw: '1px', tf: 'none' } },
+    { k: 'home', g: 'Public', label: 'Mục lục', desc: 'danh sách toàn bộ bài', sc: 'home',
+      sh: { w: '10px', h: '1px', r: '0', bd: '0', bg: 'currentColor', brw: '0', bbw: '0', tf: 'none' } },
+    { k: 'notes', g: 'Public', label: 'Ghi 01', desc: 'bite-size — ghi chép rời', sc: 'notes',
+      sh: { w: '9px', h: '9px', r: '0', bd: '0', bg: '#6FA8C0', brw: '0', bbw: '0', tf: 'none' } },
+    { k: 'hours', g: 'Practice', label: 'Ghi 02', desc: 'daily journal', sc: 'hours',
+      sh: { w: '10px', h: '10px', r: '50% 50% 50% 0', bd: '0', bg: '#C25C7C', brw: '0', bbw: '0', tf: 'none' } },
+    { k: 'cms', g: 'Admin', label: 'Content management', desc: 'sơ đồ và nội dung', sc: 'cms',
+      sh: { w: '9px', h: '11px', r: '0', bd: '1px solid currentColor', bg: 'transparent', brw: '1px', bbw: '4px', tf: 'none' } },
+    { k: 'art', g: 'Admin', label: 'Design system', desc: 'màu, chữ, khoảng cách', sc: 'art',
+      sh: { w: '10px', h: '10px', r: '50%', bd: '3px solid currentColor', bg: 'transparent', brw: '3px', bbw: '3px', tf: 'none' } },
+    { k: 'logic', g: 'Admin', label: 'System conventions', desc: 'quy tắc FE / BE', sc: 'logic',
+      sh: { w: '8px', h: '8px', r: '0', bd: '1px solid currentColor', bg: 'transparent', brw: '1px', bbw: '1px', tf: 'rotate(45deg)' } },
+    { k: 'archive', g: 'Admin', label: 'Archive', desc: 'toàn bộ bài theo thời gian', sc: 'archive',
+      sh: { w: '13px', h: '5px', r: '3px', bd: '1px solid currentColor', bg: 'transparent', brw: '1px', bbw: '1px', tf: 'none' } },
+    { k: 'article', g: 'Admin', label: 'Article', desc: 'khung bài dài', sc: 'article', from: 'articleFrom', sub: true,
+      sh: { w: '11px', h: '7px', r: '0', bd: '1px solid currentColor', bg: 'transparent', brw: '0', bbw: '1px', tf: 'none' } },
+    { k: 'report', g: 'Admin', label: 'Field report', desc: 'khung ghi hiện trường', sc: 'report', from: 'reportFrom', sub: true,
+      sh: { w: '11px', h: '9px', r: '0', bd: '1px solid currentColor', bg: 'transparent', brw: '1px', bbw: '1px', tf: 'none' } },
+    { k: 'cards', g: 'Admin', label: 'Info cards', desc: 'khung thẻ gập', sc: 'cards', from: 'cardsFrom', sub: true,
+      sh: { w: '11px', h: '4px', r: '0', bd: '1px solid currentColor', bg: 'transparent', brw: '1px', bbw: '1px', tf: 'none' } }
+  ];
+
+  navLabel(k) { const n = this.NAV.find(x => x.k === k); return n ? n.label : k; }
+
+  goNav(n) {
+    const patch = { screen: n.sc };
+    if (n.from) patch[n.from] = 'admin';
+    this.setState(patch);
+  }
+
+  navGroup(g, modules) {
+    const rows = [];
+    this.NAV.filter(n => n.g === g).forEach(n => {
+      if (g === 'Public' && n.k === 'notes') {
+        modules.forEach(m => rows.push({
+          label: m.title, desc: 'module · ' + m.concept, count: m.entries.length + ' bài',
+          isMod: true, isPage: false, accent: m.accent, isSub: false, notSub: true,
+          go: () => this.setState({ screen: 'module', moduleId: m.id }),
+          kids: m.entries.map(e => ({ t: e.n + ' · ' + e.en, d: e.kind }))
+        }));
+      }
+      if (n.sub && !rows.some(r => r.isTplHead)) {
+        const subs = this.NAV.filter(x => x.g === g && x.sub);
+        rows.push({
+          label: 'Templates', desc: 'khung bài mẫu', count: '',
+          isMod: false, isPage: false, isTplHead: true, accent: '', isSub: false, notSub: true,
+          sh: { w: '11px', h: '8px', r: '0 2px 2px 0', bd: '1px solid currentColor', bg: 'transparent', brw: '4px', bbw: '1px', tf: 'none' },
+          go: () => this.goNav(subs[0]),
+          kids: subs.map(x => ({ t: x.label, d: x.desc }))
+        });
+      }
+      rows.push({
+        label: n.label, desc: n.desc, count: '', isMod: false, isPage: true, accent: '',
+        isSub: !!n.sub, notSub: !n.sub,
+        sh: n.sh, go: () => this.goNav(n), kids: []
+      });
+    });
+    return rows;
+  }
+
+  mods() { return this.state.cms || this.data(); }
+
+  editMod(id, patch) { this.saveCms(this.mods().map(m => m.id === id ? Object.assign({}, m, patch) : m)); }
+
+  moveMod(id, d) {
+    const a = this.mods().slice(), i = a.findIndex(m => m.id === id), j = i + d;
+    if (i < 0 || j < 0 || j >= a.length) return;
+    a.splice(j, 0, a.splice(i, 1)[0]);
+    this.saveCms(a);
+  }
+
+  dropMod(srcId, dstId) {
+    if (!srcId || srcId === dstId) return;
+    const a = this.mods().slice();
+    const i = a.findIndex(m => m.id === srcId), j = a.findIndex(m => m.id === dstId);
+    if (i < 0 || j < 0) return;
+    a.splice(j, 0, a.splice(i, 1)[0]);
+    this.setState({ dragMod: null, overMod: null });
+    this.saveCms(a);
+  }
+
+  addMod() {
+    const id = 'mod' + Date.now();
+    this.saveCms(this.mods().concat([{
+      id, title: 'module mới', accent: '#6FA8C0', on: '#0E2C38', tint: '#DDEBF0', tint2: '#C6DDE5',
+      layout: 'band', concept: 'chưa đặt', blurb: 'Một dòng giới thiệu ngắn.',
+      long: '', treatment: '', layoutNote: '', shot1: 'ảnh chính', shot2: 'ảnh phụ', shot3: 'ảnh phụ',
+      entries: []
+    }]));
+    this.setState({ cmsSel: id, cmsTab: 'content' });
+  }
+
+  delMod(id) { this.saveCms(this.mods().filter(m => m.id !== id)); this.setState({ cmsSel: null }); }
+
+  editEntry(mid, n, patch) {
+    this.saveCms(this.mods().map(m => m.id === mid
+      ? Object.assign({}, m, { entries: m.entries.map(e => e.n === n ? Object.assign({}, e, patch) : e) }) : m));
+  }
+
+  moveEntry(mid, n, d) {
+    this.saveCms(this.mods().map(m => {
+      if (m.id !== mid) return m;
+      const a = m.entries.slice(), i = a.findIndex(e => e.n === n), j = i + d;
+      if (i < 0 || j < 0 || j >= a.length) return m;
+      a.splice(j, 0, a.splice(i, 1)[0]);
+      return Object.assign({}, m, { entries: a });
+    }));
+  }
+
+  dropEntry(mid, srcN, dstN) {
+    if (!srcN || srcN === dstN) return;
+    this.saveCms(this.mods().map(m => {
+      if (m.id !== mid) return m;
+      const a = m.entries.slice();
+      const i = a.findIndex(e => e.n === srcN), j = a.findIndex(e => e.n === dstN);
+      if (i < 0 || j < 0) return m;
+      a.splice(j, 0, a.splice(i, 1)[0]);
+      return Object.assign({}, m, { entries: a });
+    }));
+    this.setState({ dragEntry: null, overEntry: null });
+  }
+
+  addEntry(mid) {
+    this.saveCms(this.mods().map(m => {
+      if (m.id !== mid) return m;
+      const num = String(m.entries.length + 1).padStart(2, '0');
+      return Object.assign({}, m, { entries: m.entries.concat([{ n: num, en: 'Bài mới', vi: 'Một dòng mô tả', kind: 'note', date: '2026.08' }]) });
+    }));
+  }
+
+  delEntry(mid, n) {
+    this.saveCms(this.mods().map(m => m.id === mid
+      ? Object.assign({}, m, { entries: m.entries.filter(e => e.n !== n) }) : m));
+  }
+
+  resetCms() { try { localStorage.removeItem('cs_cms_v1'); } catch (e) {} this.setState({ cms: null, site: { t1: 'A coffee study', t2: 'journey', blurb: 'Ghi chép quá trình học về cà phê — chia theo module, mỗi module là một tập bài ngắn.' } }); }
 
   persist(logs) {
     try { localStorage.setItem('cs_practice_logs_v1', JSON.stringify(logs)); } catch (e) {}
@@ -1087,25 +2561,7 @@ class Component extends DCLogic {
         ]
       },
       {
-        id: 'biochem', title: 'biochemistry 101', accent: '#7FB87E', on: '#1F3323', tint: '#E4F0DF', tint2: '#CFE6C8', layout: 'specimen', concept: 'structure',
-        blurb: 'Hạt cà phê nhìn từ bên trong: cấu trúc, hợp chất, phản ứng.',
-        long: 'Sáu bài ngắn về thành phần hoá học của hạt nhân xanh và những gì xảy ra khi chúng gặp nhiệt. Theme hình ảnh: mặt cắt — quả chín bổ đôi, nhân trong lớp nhầy, thớ tế bào phóng đại.',
-        treatment: 'Xanh lá non cạnh xanh rêu đậm. Chụp thẳng góc, ánh sáng phẳng, vật thể đặt giữa khung.',
-        layoutNote: 'Specimen — khối màu chiếm nửa trái, nửa phải là lưới ảnh vuông; bài viết xếp thành khay ba cột.',
-        shot1: 'mặt cắt — quả chín bổ đôi',
-        shot2: 'nhân xanh chụp từ trên, nền rêu',
-        shot3: 'thớ tế bào phóng đại',
-        entries: [
-          { n: '01', en: 'Bean Composition', vi: 'Thành phần hoá học của một hạt nhân xanh', kind: 'note', date: '2026.04' },
-          { n: '02', en: 'Cell Wall: Lignin', vi: 'Cấu trúc gỗ hoá quyết định độ giòn khi rang', kind: 'note', date: '2026.03' },
-          { n: '03', en: 'Chlorogenic Acids (CGA)', vi: 'Nguồn gốc của vị chát và phần lớn vị chua', kind: 'essay', date: '2026.02' },
-          { n: '04', en: 'Carbohydrates', vi: 'Đường, polysaccharide và cái ngọt ở hậu vị', kind: 'note', date: '2026.01' },
-          { n: '05', en: 'Lipids in Beans', vi: 'Chất béo, thể chất của nước, và sự ôi hoá', kind: 'note', date: '2025.12' },
-          { n: '06', en: 'Melanoidins', vi: 'Sản phẩm cuối của Maillard và màu nâu của nước', kind: 'ref', date: '2025.11' }
-        ]
-      },
-      {
-        id: 'roasting', title: 'roasting', accent: '#F0B45C', on: '#3B2E19', tint: '#F9EBD2', tint2: '#F3DCAE', layout: 'sequence', concept: 'process',
+        id: 'roasting', title: 'roasting 101', accent: '#F0B45C', on: '#3B2E19', tint: '#F9EBD2', tint2: '#F3DCAE', layout: 'sequence', concept: 'process',
         blurb: 'Nhiệt, thời gian, và những gì đọc được từ một đường cong.',
         long: 'Nhiệt đi vào hạt bằng cách nào, mỗi giai đoạn làm gì, và cách ghi lại một mẻ rang để lần sau lặp được. Theme hình ảnh: quá trình và biến đổi — dải màu hạt chuyển dần, khói mảnh, mặt đồng hồ nhiệt.',
         treatment: 'Mơ chín chuyển dần sang nâu quế theo trình tự rang — màu tự nó kể quá trình.',
@@ -1120,6 +2576,24 @@ class Component extends DCLogic {
           { n: '04', en: 'First Crack & Development', vi: 'Đo thời gian phát triển bằng gì cho đúng', kind: 'note', date: '2026.02' },
           { n: '05', en: 'Roast Defects', vi: 'Baked, scorched, tipping — nhận diện qua ly', kind: 'ref', date: '2026.01' },
           { n: '06', en: 'Profile Logging', vi: 'Ghi log rang như ghi nhật ký thí nghiệm', kind: 'log', date: '2025.12' }
+        ]
+      },
+      {
+        id: 'biochem', title: 'biochemistry 101', accent: '#7FB87E', on: '#1F3323', tint: '#E4F0DF', tint2: '#CFE6C8', layout: 'specimen', concept: 'structure',
+        blurb: 'Hạt cà phê nhìn từ bên trong: cấu trúc, hợp chất, phản ứng.',
+        long: 'Sáu bài ngắn về thành phần hoá học của hạt nhân xanh và những gì xảy ra khi chúng gặp nhiệt. Theme hình ảnh: mặt cắt — quả chín bổ đôi, nhân trong lớp nhầy, thớ tế bào phóng đại.',
+        treatment: 'Xanh lá non cạnh xanh rêu đậm. Chụp thẳng góc, ánh sáng phẳng, vật thể đặt giữa khung.',
+        layoutNote: 'Specimen — khối màu chiếm nửa trái, nửa phải là lưới ảnh vuông; bài viết xếp thành khay ba cột.',
+        shot1: 'mặt cắt — quả chín bổ đôi',
+        shot2: 'nhân xanh chụp từ trên, nền rêu',
+        shot3: 'thớ tế bào phóng đại',
+        entries: [
+          { n: '05', en: 'Lipids in Beans', vi: 'Chất béo, thể chất của nước, và sự ôi hoá', kind: 'note', date: '2025.12' },
+          { n: '01', en: 'Bean Composition', vi: 'Thành phần hoá học của một hạt nhân xanh', kind: 'note', date: '2026.04' },
+          { n: '02', en: 'Cell Wall: Lignin', vi: 'Cấu trúc gỗ hoá quyết định độ giòn khi rang', kind: 'note', date: '2026.03' },
+          { n: '03', en: 'Chlorogenic Acids (CGA)', vi: 'Nguồn gốc của vị chát và phần lớn vị chua', kind: 'essay', date: '2026.02' },
+          { n: '04', en: 'Carbohydrates', vi: 'Đường, polysaccharide và cái ngọt ở hậu vị', kind: 'note', date: '2026.01' },
+          { n: '06', en: 'Melanoidins', vi: 'Sản phẩm cuối của Maillard và màu nâu của nước', kind: 'ref', date: '2025.11' }
         ]
       }
     ];
@@ -1148,13 +2622,20 @@ class Component extends DCLogic {
 
   renderVals() {
     const density = this.props.density ?? 'roomy';
-    const modules = this.data().map(m => Object.assign({}, m, {
+    const modules = this.mods().map(m => Object.assign({}, m, {
       count: m.entries.length,
       isBand: m.layout === 'band',
       isSpecimen: m.layout === 'specimen',
       isSequence: m.layout === 'sequence',
       top3: m.entries.slice(0, 3),
-      entries: m.entries.map((e, i) => Object.assign({}, e, { tint: i % 2 === 0 ? m.tint : m.tint2 })),
+      entries: m.entries.map((e, i) => Object.assign({}, e, {
+        tint: i % 2 === 0 ? m.tint : m.tint2,
+        go: (m.id === 'sensory' && e.en === 'Sensory Lexicon')
+          ? () => this.setState({ screen: 'cards', cardsFrom: 'module' })
+          : (m.id === 'roasting' && e.en === 'Heat Transfer')
+            ? () => this.setState({ screen: 'report', reportFrom: 'module' })
+            : () => this.setState({ screen: 'article', articleFrom: 'module' })
+      })),
       open: () => this.setState({ screen: 'module', moduleId: m.id })
     }));
     const mod = modules.find(m => m.id === this.state.moduleId) || modules[0];
@@ -1188,7 +2669,8 @@ class Component extends DCLogic {
 
     const days = all.slice().reverse().slice(0, 12).map(x => {
       const recent = x.age <= 6;
-      const shown = (recent ? x.ls : x.ls.filter(l => l.done !== false)).slice()
+      const kf = this.state.kindFilter;
+      const shown = (recent ? x.ls : x.ls.filter(l => l.done !== false)).filter(l => !kf || l.kind === kf).slice()
         .sort((a, b) => this.toMin(a.at) - this.toMin(b.at));
       return {
         ds: x.ds,
@@ -1444,8 +2926,10 @@ class Component extends DCLogic {
       }));
     });
 
+    const pubModules = modules.filter(m => m.entries.length > 0);
+
     return {
-      modules, mod, allPosts,
+      modules: pubModules, mod, allPosts,
       showPlates: this.props.showPlates ?? true,
       rowPad: density === 'compact' ? '12px' : '17px',
       variantLabel: this.state.variant,
@@ -1456,9 +2940,240 @@ class Component extends DCLogic {
       modBand: isModule && mod.layout === 'band',
       modSpecimen: isModule && mod.layout === 'specimen',
       modSequence: isModule && mod.layout === 'sequence',
+      crumbs: (function () {
+        const sc = this.state.screen;
+        const modules2 = modules;
+        const nl = k => this.navLabel(k);
+        const home = { t: nl('landing'), go: () => this.setState({ screen: 'landing' }) };
+        const index = { t: nl('home'), go: () => this.setState({ screen: 'home' }) };
+        const admin = { t: this.secName('Admin') };
+        const modCrumb = id => ({ t: (modules2.find(m => m.id === id) || {}).title || id, go: () => this.setState({ screen: 'module', moduleId: id }) });
+        const modNo = id => 'module ' + String(modules2.findIndex(m => m.id === id) + 1).padStart(2, '0');
+        const map = {
+          home: [home, { t: nl('home') }],
+          module: [home, index, { t: (mod || {}).title || '' }],
+          cards: this.state.cardsFrom === 'module'
+            ? [home, index, modCrumb('sensory'), { t: 'Sensory Lexicon' }]
+            : [admin, { t: 'Notes' }, { t: 'Templates' }, { t: 'Info cards' }],
+          report: this.state.reportFrom === 'module'
+            ? [home, index, modCrumb('roasting'), { t: 'Heat Transfer' }]
+            : [admin, { t: 'Notes' }, { t: 'Templates' }, { t: 'Field report' }],
+          article: this.state.articleFrom === 'module'
+            ? [home, index, modCrumb('biochem'), { t: 'Chlorogenic Acids · 2026.02' }]
+            : [admin, { t: 'Notes' }, { t: 'Templates' }, { t: 'Article' }],
+          notes: [home, { t: 'beӕn weirdo — ' + nl('notes') }],
+          hours: [home, { t: 'beӕn weirdo — ' + nl('hours') }],
+          archive: [admin, { t: 'Notes' }, { t: nl('archive') }],
+          art: [admin, { t: 'Backend' }, { t: nl('art') }],
+          logic: [admin, { t: 'Backend' }, { t: nl('logic') }],
+          cms: [admin, { t: 'Backend' }, { t: nl('cms') }]
+        };
+        const list = map[sc] || [home];
+        return list.map((c, i) => ({
+          t: c.t, last: i === list.length - 1, notLast: i < list.length - 1,
+          fg: i === list.length - 1 ? 'currentColor' : 'currentColor',
+          op: i === list.length - 1 ? '1' : '.6',
+          cursor: c.go ? 'pointer' : 'default',
+          jump: c.go || (() => {})
+        }));
+      }).call(this),
+      crumbBack: (function () {
+        const sc = this.state.screen;
+        const back = {
+          module: () => this.setState({ screen: 'home' }),
+          cards: () => this.state.cardsFrom === 'module'
+            ? this.setState({ screen: 'module', moduleId: 'sensory' })
+            : this.setState({ screen: 'landing' }),
+          report: () => this.state.reportFrom === 'module'
+            ? this.setState({ screen: 'module', moduleId: 'roasting' })
+            : this.setState({ screen: 'landing' }),
+          article: () => this.state.articleFrom === 'module'
+            ? this.setState({ screen: 'module', moduleId: 'biochem' })
+            : this.setState({ screen: 'landing' }),
+          notes: () => this.setState({ screen: 'landing' }),
+          hours: () => this.setState({ screen: 'landing' }),
+          archive: () => this.setState({ screen: 'home' }),
+          art: () => this.setState({ screen: 'landing' }),
+          logic: () => this.setState({ screen: 'landing' }),
+          cms: () => this.setState({ screen: 'landing' }),
+          home: () => this.setState({ screen: 'landing' })
+        };
+        return back[sc] || (() => this.setState({ screen: 'landing' }));
+      }).call(this),
+      isLogic: this.state.screen === 'logic',
+      goLogic: () => this.setState({ screen: 'logic' }),
+      scopeKey: [
+        { s: 'Toàn hệ thống', c: '#102F35', d: 'mọi trang' },
+        { s: 'Module', c: '#3E7A4E', d: 'trang module' },
+        { s: 'Template', c: '#2E6B7A', d: 'chỉ template đó' }
+      ],
+      logicParts: this.LOGIC.map(P => Object.assign({}, P, {
+        part: this.tok(P.part), note: this.tok(P.note),
+        groups: P.groups.map(g => Object.assign({}, g, {
+          g: this.tok(g.g),
+          items: g.items.map(it => Object.assign({}, it, {
+            r: this.tok(it.r), e: this.tok(it.e),
+            sc: it.s === 'Toàn hệ thống' ? '#102F35' : it.s === 'Module' ? '#3E7A4E' : '#2E6B7A'
+          }))
+        }))
+      })),
+      navPublic: this.navGroup('Public', pubModules),
+      navPractice: this.navGroup('Practice', pubModules),
+      navAdmin: this.navGroup('Admin', pubModules),
+      isCms: this.state.screen === 'cms',
+      goCms: () => this.setState({ screen: 'cms' }),
+      cmsIsMap: this.state.cmsTab === 'map', cmsIsContent: this.state.cmsTab === 'content',
+      cmsTabs: [
+        { k: 'map', t: 'Sơ đồ trang' },
+        { k: 'content', t: 'Sửa nội dung' }
+      ].map(x => ({
+        t: x.t, on: this.state.cmsTab === x.k,
+        bg: this.state.cmsTab === x.k ? '#23211A' : 'transparent',
+        fg: this.state.cmsTab === x.k ? '#FDFBF2' : '#5C5745',
+        pick: () => this.setState({ cmsTab: x.k })
+      })),
+      siteT1: this.sv('t1'), siteT2: this.sv('t2'), siteBlurb: this.sv('blurb'),
+      setSiteT1: e => this.setSv('t1', e.target.value),
+      setSiteT2: e => this.setSv('t2', e.target.value),
+      setSiteBlurb: e => this.setSv('blurb', e.target.value),
+      siteBlurbShort: this.sv('blurbShort'),
+      setSiteBlurbShort: e => this.setSv('blurbShort', e.target.value),
+      lEyebrow: this.sv('lEyebrow'),
+      setLEyebrow: e => this.setSv('lEyebrow', e.target.value),
+      lTitle1: this.sv('lTitle1'),
+      lT1pre: this.sv('lTitle1').split('ӕ')[0],
+      lT1ae: this.sv('lTitle1').indexOf('ӕ') >= 0 ? 'ӕ' : '',
+      lT1post: this.sv('lTitle1').indexOf('ӕ') >= 0 ? this.sv('lTitle1').split('ӕ').slice(1).join('ӕ') : '',
+      setLTitle1: e => this.setSv('lTitle1', e.target.value),
+      lTitle2: this.sv('lTitle2'),
+      setLTitle2: e => this.setSv('lTitle2', e.target.value),
+      lIntro1: this.sv('lIntro1'), setLIntro1: e => this.setSv('lIntro1', e.target.value),
+      lIntro2: this.sv('lIntro2'), setLIntro2: e => this.setSv('lIntro2', e.target.value),
+      lCta: this.sv('lCta'), setLCta: e => this.setSv('lCta', e.target.value),
+      lCtaFull: this.sv('lCta') + ' ' + modules.reduce((a, m) => a + m.entries.length, 0) + ' bài →',
+      plate1: this.sv('plate1'), setPlate1: e => this.setSv('plate1', e.target.value),
+      plate2: this.sv('plate2'), setPlate2: e => this.setSv('plate2', e.target.value),
+      plate3: this.sv('plate3'), setPlate3: e => this.setSv('plate3', e.target.value),
+      artT1: this.sv('artT1'), setArtT1: e => this.setSv('artT1', e.target.value),
+      artT2: this.sv('artT2'), setArtT2: e => this.setSv('artT2', e.target.value),
+      artIntro: this.sv('artIntro'), setArtIntro: e => this.setSv('artIntro', e.target.value),
+      logicTitle: this.sv('logicTitle'), setLogicTitle: e => this.setSv('logicTitle', e.target.value),
+      logicIntro: this.sv('logicIntro'), setLogicIntro: e => this.setSv('logicIntro', e.target.value),
+      cmsTitle: this.sv('cmsTitle'), setCmsTitle: e => this.setSv('cmsTitle', e.target.value),
+      cmsIntro: this.sv('cmsIntro'), setCmsIntro: e => this.setSv('cmsIntro', e.target.value),
+      archiveTitle: this.sv('archiveTitle'), setArchiveTitle: e => this.setSv('archiveTitle', e.target.value),
+      archiveNote: this.sv('archiveNote'), setArchiveNote: e => this.setSv('archiveNote', e.target.value),
+      archiveNoteFull: modules.reduce((a, m) => a + m.entries.length, 0) + ' notes — ' + this.sv('archiveNote'),
+      plateThumb1: 'url(' + ((this.state.site || {}).plateImg1 || '') + ') center/cover no-repeat',
+      plateThumb2: 'url(' + ((this.state.site || {}).plateImg2 || '') + ') center/cover no-repeat',
+      plateThumb3: 'url(' + ((this.state.site || {}).plateImg3 || '') + ') center/cover no-repeat',
+      upPlate1: e => this.upload('plateImg1', e),
+      upPlate2: e => this.upload('plateImg2', e),
+      upPlate3: e => this.upload('plateImg3', e),
+      clearPlate1: () => this.setSv('plateImg1', ''),
+      clearPlate2: () => this.setSv('plateImg2', ''),
+      clearPlate3: () => this.setSv('plateImg3', ''),
+      hasPlate1: !!(this.state.site || {}).plateImg1,
+      hasPlate2: !!(this.state.site || {}).plateImg2,
+      hasPlate3: !!(this.state.site || {}).plateImg3,
+      noPlate1: !(this.state.site || {}).plateImg1,
+      noPlate2: !(this.state.site || {}).plateImg2,
+      noPlate3: !(this.state.site || {}).plateImg3,
+      plateBg1: (this.state.site || {}).plateImg1 ? 'url(' + (this.state.site || {}).plateImg1 + ') center/cover no-repeat' : '#F2A0A5',
+      plateBg2: (this.state.site || {}).plateImg2 ? 'url(' + (this.state.site || {}).plateImg2 + ') center/cover no-repeat' : '#7FB87E',
+      plateBg3: (this.state.site || {}).plateImg3 ? 'url(' + (this.state.site || {}).plateImg3 + ') center/cover no-repeat' : 'oklch(0.50 0.135 14)',
+      resetCms: () => this.resetCms(),
+      cmsCount: modules.length + ' module · ' + modules.reduce((a, m) => a + m.entries.length, 0) + ' bài',
+      addMod: () => this.addMod(),
+      secPublic: this.secName('Public'),
+      secPractice: this.secName('Practice'),
+      secAdmin: this.secName('Admin'),
+      cmsTree: [
+        { g: this.secName('Public'), c: '#3E7A4E', setName: e => this.setSecName('Public', e.target.value), rows: this.navGroup('Public', modules) },
+        { g: this.secName('Practice'), c: '#C25C7C', setName: e => this.setSecName('Practice', e.target.value), rows: this.navGroup('Practice', modules) },
+        { g: this.secName('Admin'), c: '#6FA8C0', setName: e => this.setSecName('Admin', e.target.value), rows: this.navGroup('Admin', pubModules) }
+      ],
+      cmsMods: modules.map((m, i) => ({
+        id: m.id, title: m.title, accent: m.accent, concept: m.concept, blurb: m.blurb,
+        n: String(i + 1).padStart(2, '0'),
+        count: m.entries.length ? m.entries.length + ' bài' : 'chưa có bài — chưa hiện trên trang',
+        open: this.state.cmsSel === m.id, closed: this.state.cmsSel !== m.id,
+        caret: this.state.cmsSel === m.id ? '▾' : '▸',
+        toggle: () => this.setState(st => ({ cmsSel: st.cmsSel === m.id ? null : m.id })),
+        up: () => this.moveMod(m.id, -1), down: () => this.moveMod(m.id, 1),
+        dragging: this.state.dragMod === m.id,
+        dragOver: this.state.overMod === m.id && this.state.dragMod !== m.id,
+        onDragStart: ev => { try { ev.dataTransfer.effectAllowed = 'move'; ev.dataTransfer.setData('text/plain', m.id); } catch (err) {} this.setState({ dragMod: m.id }); },
+        onDragOver: ev => { ev.preventDefault(); try { ev.dataTransfer.dropEffect = 'move'; } catch (err) {} if (this.state.overMod !== m.id) this.setState({ overMod: m.id }); },
+        onDrop: ev => { ev.preventDefault(); let src = this.state.dragMod; try { src = ev.dataTransfer.getData('text/plain') || src; } catch (err) {} this.dropMod(src, m.id); },
+        onDragEnd: () => this.setState({ dragMod: null, overMod: null }),
+        del: () => this.delMod(m.id),
+        setTitle: e => this.editMod(m.id, { title: e.target.value }),
+        setConcept: e => this.editMod(m.id, { concept: e.target.value }),
+        setBlurb: e => this.editMod(m.id, { blurb: e.target.value }),
+        setAccent: e => this.editMod(m.id, { accent: e.target.value }),
+        long: m.long, setLong: e => this.editMod(m.id, { long: e.target.value }),
+        treatment: m.treatment, setTreatment: e => this.editMod(m.id, { treatment: e.target.value }),
+        layoutNote: m.layoutNote, setLayoutNote: e => this.editMod(m.id, { layoutNote: e.target.value }),
+        shot1: m.shot1, setShot1: e => this.editMod(m.id, { shot1: e.target.value }),
+        shot2: m.shot2, setShot2: e => this.editMod(m.id, { shot2: e.target.value }),
+        shot3: m.shot3, setShot3: e => this.editMod(m.id, { shot3: e.target.value }),
+        upImg1: e => this.uploadMod(m.id, 'img1', e),
+        upImg2: e => this.uploadMod(m.id, 'img2', e),
+        upImg3: e => this.uploadMod(m.id, 'img3', e),
+        clearImg1: () => this.editMod(m.id, { img1: '' }),
+        clearImg2: () => this.editMod(m.id, { img2: '' }),
+        clearImg3: () => this.editMod(m.id, { img3: '' }),
+        hasImg1: !!m.img1, hasImg2: !!m.img2, hasImg3: !!m.img3,
+        noImg1: !m.img1, noImg2: !m.img2, noImg3: !m.img3,
+        thumb1: 'url(' + (m.img1 || '') + ') center/cover no-repeat',
+        thumb2: 'url(' + (m.img2 || '') + ') center/cover no-repeat',
+        thumb3: 'url(' + (m.img3 || '') + ') center/cover no-repeat',
+        layout: m.layout, setLayout: e => this.editMod(m.id, { layout: e.target.value }),
+        addEntry: () => this.addEntry(m.id),
+        entries: m.entries.map(e => ({
+          n: e.n, en: e.en, vi: e.vi, date: e.date,
+          setEn: ev => this.editEntry(m.id, e.n, { en: ev.target.value }),
+          setVi: ev => this.editEntry(m.id, e.n, { vi: ev.target.value }),
+          setDate: ev => this.editEntry(m.id, e.n, { date: ev.target.value }),
+          up: () => this.moveEntry(m.id, e.n, -1), down: () => this.moveEntry(m.id, e.n, 1),
+          dragOver: this.state.overEntry === m.id + ':' + e.n && this.state.dragEntry !== m.id + ':' + e.n,
+          onDragStart: ev => { try { ev.dataTransfer.effectAllowed = 'move'; ev.dataTransfer.setData('text/plain', e.n); } catch (err) {} this.setState({ dragEntry: m.id + ':' + e.n }); },
+          onDragOver: ev => { ev.preventDefault(); const key = m.id + ':' + e.n; if (this.state.overEntry !== key) this.setState({ overEntry: key }); },
+          onDrop: ev => {
+            ev.preventDefault();
+            const cur = (this.state.dragEntry || '').split(':');
+            let src = cur[0] === m.id ? cur[1] : null;
+            try { const dt = ev.dataTransfer.getData('text/plain'); if (dt && cur[0] === m.id) src = dt; } catch (err) {}
+            this.dropEntry(m.id, src, e.n);
+          },
+          onDragEnd: () => this.setState({ dragEntry: null, overEntry: null }),
+          del: () => this.delEntry(m.id, e.n)
+        }))
+      })),
+      isCards: this.state.screen === 'cards',
+      goCards: () => this.setState({ screen: 'cards', cardsFrom: 'admin' }),
+      cardsLabel: this.state.cardsFrom === 'module' ? 'Sensory — Notes' : 'Bài mẫu — Info cards',
+      cardsBandBg: this.state.cardsFrom === 'module' ? (modules.find(m => m.id === 'sensory') || {}).accent : '#E4F0DF',
+      cardsBandFg: this.state.cardsFrom === 'module' ? (modules.find(m => m.id === 'sensory') || {}).on : '#1F3323',
+      cardsLine1: 'Tham khảo: Sensory Lexicon, 2016 Edition',
+      cardsLine2: this.state.cardsFrom === 'module'
+        ? 'Thang rút ngắn 0-8, trên thang gốc 0-15'
+        : 'Mẫu info cards — bấm một thẻ để mở, kéo ↑↓ để đổi thứ tự.',
+      isReport: this.state.screen === 'report',
+      goReport: () => this.setState({ screen: 'report', reportFrom: 'admin' }),
+      reportLabel: this.state.reportFrom === 'module' ? 'Roasting — Field report' : 'Bài mẫu — Field report',
+      reportTitle: this.state.reportFrom === 'module' ? 'Heat Transfer' : 'Ghi hiện trường',
+      reportBandBg: this.state.reportFrom === 'module' ? (modules.find(m => m.id === 'roasting') || {}).accent : '#6FA8C0',
+      reportBandFg: this.state.reportFrom === 'module' ? (modules.find(m => m.id === 'roasting') || {}).on : '#0E2C38',
+      quoteText: (function () { const q = this.QUOTES[this.dayIndex() % this.QUOTES.length]; return q.t; }).call(this),
+      quoteWho: (function () { const q = this.QUOTES[this.dayIndex() % this.QUOTES.length]; return q.w; }).call(this),
+      reportBlurb: this.state.reportFrom === 'module'
+        ? 'Ba đường nhiệt đi vào hạt: dẫn, đối lưu, bức xạ. Ghi lại số liệu từng mẻ và những gì đọc được từ đó.'
+        : 'Mẫu cho tiến trình rang, pha hoặc lên men. Bấm vào bất cứ dòng nào để sửa, dùng dấu + để thêm khối, kéo vạch giữa hai cột để đổi tỉ lệ.',
       isArticle: this.state.screen === 'article',
       isArchive: this.state.screen === 'archive',
-      related: modules[1].entries.filter(e => e.n !== '03'),
+      related: (modules.find(m => m.id === 'biochem') || modules[0]).entries.filter(e => e.n !== '03'),
       swatches: [
         { name: 'cream paper', hex: '#FDFBF2', fg: '#4B463A' },
         { name: 'blush', hex: '#F2A0A5', fg: '#3B2A2B' },
@@ -1576,6 +3291,19 @@ class Component extends DCLogic {
       tSave: () => this.saveTimer(Math.round(tUsedSec / 60)),
       tName: this.state.tName, setTName: e => this.setState({ tName: e.target.value }),
       kindAdding: this.state.kindAdding, kindIdle: !this.state.kindAdding, kindDraft: this.state.kindDraft,
+      kindFiltered: !!this.state.kindFilter,
+      clearKindFilter: () => this.setState({ kindFilter: null }),
+      kindBar: kindList.map(k => {
+        const on = this.state.kindFilter === k;
+        const n = logs.filter(l => l.kind === k && l.done !== false).length;
+        return {
+          k, n, c: kindColor[k],
+          bg: on ? kindColor[k] : 'transparent',
+          edge: on ? kindColor[k] : '#DEDED6',
+          fg: on ? '#FFFFFF' : '#414A42',
+          pick: () => this.setState({ kindFilter: on ? null : k })
+        };
+      }),
       setKindDraft: e => this.setState({ kindDraft: e.target.value }),
       openAddKind: () => this.setState({ kindAdding: true, kindDraft: '' }),
       commitKind: () => this.addKind(),
@@ -1598,7 +3326,157 @@ class Component extends DCLogic {
       openSpecimen: () => this.setState({ screen: 'module', moduleId: 'biochem' }),
       openSequence: () => this.setState({ screen: 'module', moduleId: 'roasting' }),
       goBackModule: () => this.setState({ screen: 'module', moduleId: 'biochem' }),
-      openArticle: () => this.setState({ screen: 'article' }),
+      openArticle: () => this.setState({ screen: 'article', articleFrom: 'admin' }),
+      rHostRef: el => { this._rHost = el; },
+      cardsOpenAll: () => { const o = {}; this.state.cards.forEach(c => { o[c.id] = true; }); this.setState({ cardOpen: o }); },
+      cardsCloseAll: () => this.setState({ cardOpen: {} }),
+      cardsCount: this.state.cards.length + ' thẻ',
+      toc: this.state.cards.map((c, i) => ({
+        n: c.n, title: c.title, sub: c.sub,
+        active: !!this.state.cardOpen[c.id],
+        dotBg: this.state.cardOpen[c.id] ? '#3E7A4E' : 'transparent',
+        fg: this.state.cardOpen[c.id] ? '#23211A' : '#8A8A7C',
+        parts: c.parts.map(p => ({ h: p.h })),
+        jump: () => {
+          this.setState(st => ({ cardOpen: Object.assign({}, st.cardOpen, { [c.id]: true }) }));
+          const el = this._cardEls && this._cardEls[c.id];
+          if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 24, behavior: 'smooth' });
+        },
+        up: () => this.cardShift(c.id, -1),
+        down: () => this.cardShift(c.id, 1),
+        hue: this.groupMeta((c.groups || [])[0] || 'Other Fruit').c,
+        notFirst: i > 0, notLast: i < this.state.cards.length - 1
+      })),
+      cards: this.state.cards.filter(c => !this.state.groupFilter || (c.groups || []).indexOf(this.state.groupFilter) >= 0).map(c => {
+        const open = !!this.state.cardOpen[c.id];
+        return {
+          n: c.n, title: c.title, sub: c.sub, tag: c.tag,
+          open, closed: !open,
+          caret: open ? '▾' : '▸',
+          hue: this.groupMeta((c.groups || [])[0] || 'Other Fruit').c,
+          ink: this.groupMeta((c.groups || [])[0] || 'Other Fruit').ink,
+          wash: this.groupMeta((c.groups || [])[0] || 'Other Fruit').w,
+          setRef: el => { this._cardEls = this._cardEls || {}; this._cardEls[c.id] = el; },
+          toggle: () => {
+            const willOpen = !this.state.cardOpen[c.id];
+            this.setState(st => ({ cardOpen: Object.assign({}, st.cardOpen, { [c.id]: willOpen }) }));
+            if (willOpen) setTimeout(() => {
+              const el = this._cardEls && this._cardEls[c.id];
+              if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 24, behavior: 'smooth' });
+            }, 60);
+          },
+          partCount: c.parts.length + ' phần',
+          parts: c.parts.map((p, pi) => ({
+            h: p.h, v: p.v || '',
+            isMethod: p.k === 'method', isDetail: p.k === 'detail', isCallout: p.k === 'callout',
+            lines: (p.v || '').split('\n').map(t => ({ t })),
+            rows: (p.rows || []).map(r => ({ l: r.l, s: r.s, n: r.n, hasNote: !!r.n })),
+            notFirst: pi > 0, notLast: pi < c.parts.length - 1,
+            up: () => this.cardMove(c.id, pi, -1),
+            down: () => this.cardMove(c.id, pi, 1)
+          }))
+        };
+      }),
+      tagDraft: this.state.tagDraft,
+      setTagDraft: e => this.setState({ tagDraft: e.target.value }),
+      groupBar: (function () {
+        const counts = {};
+        this.state.cards.forEach(c => (c.groups || []).forEach(g => { counts[g] = (counts[g] || 0) + 1; }));
+        const order = this.FLAVOR_GROUPS.map(x => x.g).concat(this.state.extraGroups || []);
+        const shown = order.filter(g => counts[g]).concat((this.state.pinnedGroups || []).filter(g => !counts[g]));
+        const sel = this.state.groupFilter;
+        return shown.map(g => {
+          const m = this.groupMeta(g), on = sel === g;
+          return {
+            g, c: m.c, ink: m.ink, n: counts[g] || 0,
+            bg: on ? m.w : '#FFFFFF', edge: on ? m.c : '#EBE5D3',
+            fg: on ? m.ink : '#4B463A',
+            pick: () => this.setState(st => ({ groupFilter: st.groupFilter === g ? null : g }))
+          };
+        });
+      }).call(this),
+      hasGroupFilter: !!this.state.groupFilter,
+      clearGroup: () => this.setState({ groupFilter: null }),
+      barAdding: this.state.tagOn === 'bar', barIdle: this.state.tagOn !== 'bar',
+      barOpen: () => this.setState({ tagOn: 'bar', tagDraft: '' }),
+      barCommit: () => this.pinGroup(),
+      barKey: e => { if (e.key === 'Enter') this.pinGroup(); if (e.key === 'Escape') this.setState({ tagOn: null, tagDraft: '' }); },
+      groupList: this.FLAVOR_GROUPS.concat((this.state.extraGroups || []).map(g => this.groupMeta(g))).map(x => ({ g: x.g })),
+      splitMain: this.state.split + '%',
+      splitAside: (100 - this.state.split) + '%',
+      splitLabel: this.state.split + ' / ' + (100 - this.state.split),
+      splitGrab: () => this.startSplit(),
+      splitBarBg: this.state.dragSplit ? '#F2A0A5' : '#E6E6DE',
+      isExplore: this.state.rNoteMode === 'explore',
+      isMemo: this.state.rNoteMode === 'memo',
+      noteTitle: this.state.rNoteMode === 'memo' ? 'Memo notes' : 'Explorations',
+      modeExplore: () => this.setState({ rNoteMode: 'explore' }),
+      modeMemo: () => this.setState({ rNoteMode: 'memo' }),
+      exploreFg: this.state.rNoteMode === 'explore' ? '#26606F' : '#C4C1B2',
+      memoFg: this.state.rNoteMode === 'memo' ? '#26606F' : '#C4C1B2',
+      memoW: 'calc(' + Math.round((100 - this.state.split) / this.state.split * 1000) / 10 + '% - 10px)',
+      rBlocks: this.state.rBlocks.map((b, bi) => {
+        const T = { 'văn bản': 'p', 'tiêu đề': 'h', 'bảng': 'table', 'số liệu': 'metrics', 'biểu đồ': 'chart', 'ảnh': 'image' };
+        const maxV = b.c ? Math.max.apply(null, b.c.map(x => x.v)) : 1;
+        return {
+          id: b.id, v: b.v || '',
+          memos: (this.state.rNoteMode === 'memo' ? this.state.rMemos.filter(m => m.at === bi) : []).map(m => ({
+            v: m.v,
+            commit: e => this.rSet('rMemos', m.id, { v: e.target.innerText }),
+            del: () => this.rDel('rMemos', m.id)
+          })),
+          hasMemoSlot: this.state.rNoteMode === 'memo',
+          addMemo: () => this.setState(st => ({ rMemos: st.rMemos.concat([{ id: this.rid(), at: bi, v: '' }]) })),
+          isP: b.t === 'p', isH: b.t === 'h', isMeta: b.t === 'meta',
+          isTable: b.t === 'table', isMetrics: b.t === 'metrics',
+          isChart: b.t === 'chart', isImage: b.t === 'image',
+          open: this.state.rSel === b.id, closed: this.state.rSel !== b.id,
+          toggleMenu: () => this.setState(st => ({ rSel: st.rSel === b.id ? null : b.id })),
+          del: () => this.rDel('rBlocks', b.id),
+          commit: e => this.rSet('rBlocks', b.id, { v: e.target.innerText }),
+          menu: ['văn bản', 'tiêu đề', 'bảng', 'số liệu', 'biểu đồ', 'ảnh'].map(lab => ({
+            lab, add: () => this.rInsert(b.id, T[lab])
+          })),
+          cols: (b.cols || (b.th || []).map(() => 100 / Math.max(1, (b.th || []).length))).map(w => ({ w: w + '%' })),
+          th: (b.th || []).map((h, ci) => ({
+            h, notLast: ci < (b.th || []).length - 1, isLast: ci === (b.th || []).length - 1,
+            grab: e => this.colDrag(b.id, ci, e),
+            commit: e => {
+              const th = (b.th || []).slice(); th[ci] = e.target.innerText;
+              this.rSet('rBlocks', b.id, { th });
+            }
+          })),
+          tr: (b.tr || []).map((row, ri) => ({
+            h: ((b.rowH || [])[ri] || 40) + 'px',
+            grabRow: e => this.rowDrag(b.id, ri, e),
+            cells: row.map((c, ci) => ({
+              first: ci === 0,
+              c, commit: e => {
+                const tr = b.tr.map(r => r.slice()); tr[ri][ci] = e.target.innerText;
+                this.rSet('rBlocks', b.id, { tr });
+              }
+            }))
+          })),
+          addRow: () => this.rSet('rBlocks', b.id, { tr: (b.tr || []).concat([(b.th || []).map(() => '')]) }),
+          addCol: () => this.rSet('rBlocks', b.id, {
+            th: (b.th || []).concat(['Cột ' + ((b.th || []).length + 1)]),
+            tr: (b.tr || []).map(r => r.concat(['']))
+          }),
+          m: (b.m || []).map((x, mi) => ({
+            k: x.k, v: x.v,
+            commitK: e => { const m = b.m.map(y => Object.assign({}, y)); m[mi].k = e.target.innerText; this.rSet('rBlocks', b.id, { m }); },
+            commitV: e => { const m = b.m.map(y => Object.assign({}, y)); m[mi].v = e.target.innerText; this.rSet('rBlocks', b.id, { m }); }
+          })),
+          addMetric: () => this.rSet('rBlocks', b.id, { m: (b.m || []).concat([{ k: 'Chỉ số', v: '—' }]) }),
+          c: (b.c || []).map(x => ({ l: x.l, v: x.v, h: Math.max(3, Math.round(x.v / maxV * 100)) + '%' }))
+        };
+      }),
+      rNotes: this.state.rNotes.map(n => ({
+        id: n.id, v: n.v,
+        commit: e => this.rSet('rNotes', n.id, { v: e.target.innerText }),
+        del: () => this.rDel('rNotes', n.id)
+      })),
+      addNote: () => this.setState(st => ({ rNotes: st.rNotes.concat([{ id: this.rid(), v: '' }]) })),
       toggleVariant: () => this.setState(s => ({ screen: 'home', variant: s.variant === 'A' ? 'B' : 'A' }))
     };
   }

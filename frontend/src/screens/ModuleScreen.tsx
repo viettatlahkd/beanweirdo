@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react'
+import { Breadcrumbs } from '../components/Breadcrumbs'
 import type { ModuleRow } from '../data/useModules'
 import { useModules } from '../data/useModules'
 import type { PostRow } from '../data/usePublishedPosts'
@@ -6,15 +7,7 @@ import { usePublishedPosts } from '../data/usePublishedPosts'
 import { ink, paper, sans, serif } from '../design/tokens'
 import { Hover } from '../lib/Hover'
 import { useNav, useSettings } from '../lib/nav'
-
-const back: CSSProperties = {
-  fontFamily: sans,
-  fontSize: 10,
-  letterSpacing: '.14em',
-  textTransform: 'uppercase',
-  cursor: 'pointer',
-  opacity: 0.7,
-}
+import { openPost } from '../lib/openPost'
 
 const kicker: CSSProperties = {
   fontFamily: sans,
@@ -37,8 +30,6 @@ const rowHover: CSSProperties = { background: paper.white }
 const statusLabel: CSSProperties = { ...kicker, padding: '120px 56px' }
 
 /** `01`, `02`, `03` — position of the module in the running order. */
-const moduleNumber = (m: ModuleRow) => String(m.sort_order).padStart(2, '0')
-
 /** Alternate the two tints down a list so consecutive thumbnails differ. */
 type TintedPost = PostRow & { tint: string }
 const withTints = (posts: PostRow[], m: ModuleRow): TintedPost[] =>
@@ -56,12 +47,8 @@ function Band({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
   return (
     <div>
       <div style={{ background: m.accent, color: m.on_color, padding: '52px 56px 44px' }}>
-        <div onClick={nav.goHome} style={{ ...back, marginBottom: 28 }}>
-          ← index
-        </div>
-        <div style={{ ...kicker, marginBottom: 10 }}>
-          module {moduleNumber(m)} — {m.concept} — band
-        </div>
+        <Breadcrumbs style={{ opacity: 0.75 }} />
+
         <h1
           style={{
             fontFamily: serif,
@@ -112,7 +99,7 @@ function Band({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
           {entries.map((e) => (
             <Hover
               key={e.id}
-              onClick={() => nav.openArticle(e.id)}
+              onClick={() => openPost(nav, e)}
               style={{
                 display: 'flex',
                 gap: 16,
@@ -180,12 +167,8 @@ function Specimen({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
             height: 373,
           }}
         >
-          <div onClick={nav.goHome} style={{ ...back, marginBottom: 28 }}>
-            ← index
-          </div>
-          <div style={{ ...kicker, marginBottom: 10 }}>
-            module {moduleNumber(m)} — {m.concept} — specimen
-          </div>
+          <Breadcrumbs style={{ opacity: 0.75 }} />
+
           <h1
             style={{
               fontFamily: serif,
@@ -264,7 +247,7 @@ function Specimen({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
           {entries.map((e) => (
             <Hover
               key={e.id}
-              onClick={() => nav.openArticle(e.id)}
+              onClick={() => openPost(nav, e)}
               style={{
                 background: paper.cream,
                 padding: '18px 18px 20px',
@@ -349,12 +332,8 @@ function Sequence({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
   return (
     <div>
       <div style={{ background: m.accent, color: m.on_color, padding: '52px 56px 40px' }}>
-        <div onClick={nav.goHome} style={{ ...back, marginBottom: 24 }}>
-          ← index
-        </div>
-        <div style={{ ...kicker, marginBottom: 6 }}>
-          module {moduleNumber(m)} — {m.concept} — sequence
-        </div>
+        <Breadcrumbs style={{ opacity: 0.75 }} />
+
         <h1
           style={{
             fontFamily: serif,
@@ -400,7 +379,7 @@ function Sequence({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
         {posts.map((e) => (
           <Hover
             key={e.id}
-            onClick={() => nav.openArticle(e.id)}
+            onClick={() => openPost(nav, e)}
             style={{
               display: 'grid',
               gridTemplateColumns: '70px minmax(0,1.1fr) minmax(0,1.3fr) 88px',
