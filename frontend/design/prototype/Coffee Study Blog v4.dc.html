@@ -29,7 +29,12 @@
   <div style="position:fixed; top:0; left:0; bottom:0; width:64px; background: {{ sideBg }}; color: {{ sideFg }}; overflow-x:hidden; overflow-y:auto; scrollbar-width:none; z-index:60; transition:width .3s cubic-bezier(.4,0,.2,1); display:flex; flex-direction:column; padding:22px 0;" style-hover="width:268px; box-shadow:22px 0 50px -34px rgba(35,33,26,.45);">
     <div style="display:flex; align-items:center; gap:30px; padding:0 22px 24px; white-space:nowrap;">
       <div style="width:20px; height:20px; border-radius:50%; background: {{ sideDot }}; flex:none;"></div>
-      <div style="font-family:'Playfair Display',serif; font-size:23px; letter-spacing:-.01em;">be<span style="display:inline-block; transform:scale(1.3); transform-origin:50% 82%; color:#F2A0A5; margin:0 -.02em;">ӕ</span>n weirdo</div>
+      <sc-if value="{{ bwNoImg }}" hint-placeholder-val="{{ true }}">
+        <div style="font-family:'Playfair Display',serif; font-size:23px; letter-spacing:-.01em;">{{ bwPre }}<span style="display:inline-block; transform: {{ bwTf }}; transform-origin:50% 82%; color: {{ bwColor }}; margin:0 -.02em;">{{ bwMid }}</span>{{ bwPost }}</div>
+      </sc-if>
+      <sc-if value="{{ bwHasImg }}" hint-placeholder-val="{{ false }}">
+        <div style="height:26px; width:150px; background: {{ bwThumb }};"></div>
+      </sc-if>
     </div>
     <div style="height:1px; background: {{ sideRule }}; margin:0 0 20px;"></div>
     <div style="display:flex; flex-direction:column; gap:1px;">
@@ -90,7 +95,7 @@
           <div onClick="{{ crumbBack }}" style="cursor:pointer; padding-right:6px;">←</div>
           <sc-for list="{{ crumbs }}" as="cb" hint-placeholder-count="3">
             <div style="display:flex; align-items:center; gap:8px;">
-              <div onClick="{{ cb.jump }}" style="cursor: {{ cb.cursor }}; opacity: {{ cb.op }};">{{ cb.t }}</div>
+              <div onClick="{{ cb.jump }}" style="cursor: {{ cb.cursor }}; opacity: {{ cb.op }};">{{ cb.pre }}<span style="display:inline-block; color: {{ bwColor }}; transform: {{ bwTf }};">{{ cb.mid }}</span>{{ cb.post }}</div>
               <sc-if value="{{ cb.notLast }}" hint-placeholder-val="{{ true }}">
                 <div style="opacity:.4;">›</div>
               </sc-if>
@@ -101,7 +106,7 @@
         <div style="border-bottom:1px solid #102F35; padding-bottom:22px;">
           <div style="display:flex; align-items:baseline; justify-content:space-between; gap:56px; flex-wrap:wrap;">
             <div>
-              <div style="font-size:9.5px; letter-spacing:.34em; text-transform:uppercase; color:#7C7C70; margin-bottom:18px;">beӕn weirdo — 01</div>
+              <div style="font-size:9.5px; letter-spacing:.34em; text-transform:uppercase; color:#7C7C70; margin-bottom:18px;">{{ bwPre }}<span style="display:inline-block; color: {{ bwColor }}; transform: {{ bwTf }};">{{ bwMid }}</span>{{ bwPost }} — 01</div>
               <h1 style="font-family:'Playfair Display',serif; font-weight:400; font-size:104px; line-height:.8; letter-spacing:-.045em; margin:0; display:flex; align-items:baseline; gap:16px; flex-wrap:wrap;">
                 <span style="color:#102F35;">Ghi</span>
                 <span style="font-family: 'Be Vietnam Pro',sans-serif; font-weight: 500; font-style: italic; font-size: 62px; letter-spacing: -.03em; color: oklch(0.50 0.135 14); font-variant-numeric: tabular-nums">2026</span>
@@ -152,7 +157,7 @@
             </div>
           </sc-for>
           <sc-if value="{{ kindAdding }}" hint-placeholder-val="{{ false }}">
-            <input value="{{ kindDraft }}" onChange="{{ setKindDraft }}" onKeyDown="{{ kindKey }}" onBlur="{{ commitKind }}" autoFocus="{{ true }}" placeholder="loại mới" style="width:112px; background:#FFFFFF; border:1px solid #3E7A4E; color:#172124; font-family:'Be Vietnam Pro',sans-serif; font-weight:300; font-size:12.5px; padding:6px 10px; outline:none;" />
+            <input value="{{ kindDraft }}" onChange="{{ setKindDraft }}" onKeyDown="{{ kindKey }}" onBlur="{{ commitKind }}" autoFocus="{{ true }}" placeholder="loại mới" style="width:112px; background:#FFFFFF; border:1px solid #3E7A4E; color:#172124; font-family:'Be Vietnam Pro',sans-serif; font-weight:300; font-size:12.5px; padding:6px 10px; outline:none;">
           </sc-if>
           <sc-if value="{{ kindIdle }}" hint-placeholder-val="{{ true }}">
             <div onClick="{{ openAddKind }}" style="font-size:12.5px; color:#A2A296; border:1px dashed #CFCFC4; padding:6px 12px; cursor:pointer;" style-hover="color:#3E7A4E; border-color:#3E7A4E;">+ loại</div>
@@ -391,7 +396,7 @@
           <div onClick="{{ crumbBack }}" style="cursor:pointer; padding-right:6px;">←</div>
           <sc-for list="{{ crumbs }}" as="cb" hint-placeholder-count="3">
             <div style="display:flex; align-items:center; gap:8px;">
-              <div onClick="{{ cb.jump }}" style="cursor: {{ cb.cursor }}; opacity: {{ cb.op }};">{{ cb.t }}</div>
+              <div onClick="{{ cb.jump }}" style="cursor: {{ cb.cursor }}; opacity: {{ cb.op }};">{{ cb.pre }}<span style="display:inline-block; color: {{ bwColor }}; transform: {{ bwTf }};">{{ cb.mid }}</span>{{ cb.post }}</div>
               <sc-if value="{{ cb.notLast }}" hint-placeholder-val="{{ true }}">
                 <div style="opacity:.4;">›</div>
               </sc-if>
@@ -403,7 +408,7 @@
             <h1 style="font-family:'Playfair Display',serif; font-size:118px; line-height:.82; letter-spacing:-.045em; margin:0; font-weight:400;">Notes<span style="font-style:italic; color:#F2A0A5;">.</span></h1>
             <div style="font-family:'Playfair Display',serif; font-style:italic; font-size:27px; color:#4A4A42; margin-top:12px;">ghi chép rời — không thuộc module nào</div>
           </div>
-          <div style="font-family:'Be Vietnam Pro',sans-serif; font-weight:200; font-size:13.5px; line-height:1.6; color:#5A5A50; max-width:310px; padding-bottom:14px;">Một quan sát vật lý trong bếp, một đoạn video không tiếng, một ý nghĩ bắc cầu giữa hai lĩnh vực.<div style="margin-top:10px; font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:#B0B0A6;">Bấm vào bài để xổ toàn bộ nội dung · bấm ra ngoài để thu lại</div></div>
+          <div style="font-family:'Be Vietnam Pro',sans-serif; font-weight:200; font-size:13.5px; line-height:1.6; color:#5A5A50; max-width:310px; padding-bottom:14px;">Một quan sát vật lý trong bếp, một đoạn video không tiếng, một ý nghĩ bắc cầu giữa hai lĩnh vực.</div>
         </div>
 
         <div style="display:flex; gap:26px; flex-wrap:wrap; align-items:center; margin:44px 0 14px; padding-bottom:16px; border-bottom:1px solid #12120F;">
@@ -439,6 +444,12 @@
                   <div style="height:1px; background:#12120F; width: {{ n.ruleW }}; transition:width .7s cubic-bezier(.16,.84,.32,1); margin-bottom:14px;"></div>
                   <div style="display:flex; align-items:baseline; gap:14px; margin-bottom:16px; font-family:'Be Vietnam Pro',sans-serif;">
                     <div style="font-family:'Playfair Display',serif; font-style:italic; font-size:15px; color: {{ n.color }};">{{ n.num }}</div>
+                    <sc-if value="{{ n.pinned }}" hint-placeholder-val="{{ false }}">
+                      <div style="display:flex; align-items:center; gap:6px; font-size:9.5px; letter-spacing:.22em; text-transform:uppercase; color:#C25C7C;">
+                        <div style="width:6px; height:6px; border-radius:50% 50% 50% 0; background:#C25C7C;"></div>
+                        <div>ghim</div>
+                      </div>
+                    </sc-if>
                     <div style="font-size:9.5px; letter-spacing:.26em; text-transform:uppercase; color: {{ n.color }};">{{ n.k }}</div>
                     <div style="flex:1;"></div>
                     <div style="font-size:10px; letter-spacing:.16em; color:#B0B0A6; font-variant-numeric:tabular-nums;">{{ n.d }}</div>
@@ -458,7 +469,6 @@
                       <div style="font-family:'Be Vietnam Pro',sans-serif; font-weight:200; font-size: {{ n.bodySize }}; line-height:1.62; color:#4A4A42; opacity: {{ n.bodyOpacity }}; transition:opacity .5s ease; display: {{ n.bodyDisplay }}; -webkit-line-clamp: {{ n.clamp }}; -webkit-box-orient:vertical; overflow: {{ n.bodyOverflow }};">{{ n.b }}</div>
                     </div>
                   </div>
-                  <div style="margin-top:16px; font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.24em; text-transform:uppercase; color: {{ n.color }};">{{ n.cueLabel }}</div>
                 </div>
               </sc-if>
             </div>
@@ -483,7 +493,7 @@
             <div onClick="{{ crumbBack }}" style="cursor:pointer; padding-right:6px;">←</div>
             <sc-for list="{{ crumbs }}" as="cb" hint-placeholder-count="3">
               <div style="display:flex; align-items:center; gap:8px;">
-                <div onClick="{{ cb.jump }}" style="cursor: {{ cb.cursor }}; opacity: {{ cb.op }};">{{ cb.t }}</div>
+                <div onClick="{{ cb.jump }}" style="cursor: {{ cb.cursor }}; opacity: {{ cb.op }};">{{ cb.pre }}<span style="display:inline-block; color: {{ bwColor }}; transform: {{ bwTf }};">{{ cb.mid }}</span>{{ cb.post }}</div>
                 <sc-if value="{{ cb.notLast }}" hint-placeholder-val="{{ true }}">
                   <div style="opacity:.4;">›</div>
                 </sc-if>
@@ -589,7 +599,7 @@
       <div>
         <div style="padding:80px 56px 64px; max-width:1240px;">
           <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:#8C8674; margin-bottom:28px;">{{ lEyebrow }}</div>
-          <h1 style="font-family:'Playfair Display',serif; font-size:104px; line-height:.92; letter-spacing:-.035em; margin:0 0 24px;">{{ lT1pre }}<span style="display:inline-block; transform:scale(1.22); transform-origin:50% 88%; color:#F2A0A5;">{{ lT1ae }}</span>{{ lT1post }}<br><span style="font-style:italic; color:#3E7A4E;">{{ lTitle2 }}</span></h1>
+          <h1 style="font-family:'Playfair Display',serif; font-size:104px; line-height:.92; letter-spacing:-.035em; margin:0 0 24px;">{{ lT1pre }}<span style="display:inline-block; transform: {{ bwTf }}; transform-origin:50% 88%; color: {{ bwColor }};">{{ lT1ae }}</span>{{ lT1post }}<br><span style="font-style:italic; color:#3E7A4E;">{{ lTitle2 }}</span></h1>
           <div style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,.8fr); gap:40px; align-items:start;">
             <div style="font-size:15px; line-height:1.5; color:#3B3729;">{{ lIntro1 }}</div>
             <div style="font-size:13.5px; line-height:1.45; color:#5C5745;">{{ lIntro2 }}</div>
@@ -670,7 +680,7 @@
             <div onClick="{{ crumbBack }}" style="cursor:pointer; padding-right:6px;">←</div>
             <sc-for list="{{ crumbs }}" as="cb" hint-placeholder-count="3">
               <div style="display:flex; align-items:center; gap:8px;">
-                <div onClick="{{ cb.jump }}" style="cursor: {{ cb.cursor }}; opacity: {{ cb.op }};">{{ cb.t }}</div>
+                <div onClick="{{ cb.jump }}" style="cursor: {{ cb.cursor }}; opacity: {{ cb.op }};">{{ cb.pre }}<span style="display:inline-block; color: {{ bwColor }}; transform: {{ bwTf }};">{{ cb.mid }}</span>{{ cb.post }}</div>
                 <sc-if value="{{ cb.notLast }}" hint-placeholder-val="{{ true }}">
                   <div style="opacity:.4;">›</div>
                 </sc-if>
@@ -730,7 +740,7 @@
           <div onClick="{{ crumbBack }}" style="cursor:pointer; padding-right:6px;">←</div>
           <sc-for list="{{ crumbs }}" as="cb" hint-placeholder-count="3">
             <div style="display:flex; align-items:center; gap:8px;">
-              <div onClick="{{ cb.jump }}" style="cursor: {{ cb.cursor }}; opacity: {{ cb.op }};">{{ cb.t }}</div>
+              <div onClick="{{ cb.jump }}" style="cursor: {{ cb.cursor }}; opacity: {{ cb.op }};">{{ cb.pre }}<span style="display:inline-block; color: {{ bwColor }}; transform: {{ bwTf }};">{{ cb.mid }}</span>{{ cb.post }}</div>
               <sc-if value="{{ cb.notLast }}" hint-placeholder-val="{{ true }}">
                 <div style="opacity:.4;">›</div>
               </sc-if>
@@ -773,7 +783,7 @@
             <div onClick="{{ crumbBack }}" style="cursor:pointer; padding-right:6px;">←</div>
             <sc-for list="{{ crumbs }}" as="cb" hint-placeholder-count="4">
               <div style="display:flex; align-items:center; gap:8px;">
-                <div onClick="{{ cb.jump }}" style="cursor: {{ cb.cursor }}; opacity: {{ cb.op }};">{{ cb.t }}</div>
+                <div onClick="{{ cb.jump }}" style="cursor: {{ cb.cursor }}; opacity: {{ cb.op }};">{{ cb.pre }}<span style="display:inline-block; color: {{ bwColor }}; transform: {{ bwTf }};">{{ cb.mid }}</span>{{ cb.post }}</div>
                 <sc-if value="{{ cb.notLast }}" hint-placeholder-val="{{ true }}">
                   <div style="opacity:.4;">›</div>
                 </sc-if>
@@ -820,7 +830,7 @@
               <div onClick="{{ crumbBack }}" style="cursor:pointer; padding-right:6px;">←</div>
               <sc-for list="{{ crumbs }}" as="cb" hint-placeholder-count="4">
                 <div style="display:flex; align-items:center; gap:8px;">
-                  <div onClick="{{ cb.jump }}" style="cursor: {{ cb.cursor }}; opacity: {{ cb.op }};">{{ cb.t }}</div>
+                  <div onClick="{{ cb.jump }}" style="cursor: {{ cb.cursor }}; opacity: {{ cb.op }};">{{ cb.pre }}<span style="display:inline-block; color: {{ bwColor }}; transform: {{ bwTf }};">{{ cb.mid }}</span>{{ cb.post }}</div>
                   <sc-if value="{{ cb.notLast }}" hint-placeholder-val="{{ true }}">
                     <div style="opacity:.4;">›</div>
                   </sc-if>
@@ -873,7 +883,7 @@
             <div onClick="{{ crumbBack }}" style="cursor:pointer; padding-right:6px;">←</div>
             <sc-for list="{{ crumbs }}" as="cb" hint-placeholder-count="4">
               <div style="display:flex; align-items:center; gap:8px;">
-                <div onClick="{{ cb.jump }}" style="cursor: {{ cb.cursor }}; opacity: {{ cb.op }};">{{ cb.t }}</div>
+                <div onClick="{{ cb.jump }}" style="cursor: {{ cb.cursor }}; opacity: {{ cb.op }};">{{ cb.pre }}<span style="display:inline-block; color: {{ bwColor }}; transform: {{ bwTf }};">{{ cb.mid }}</span>{{ cb.post }}</div>
                 <sc-if value="{{ cb.notLast }}" hint-placeholder-val="{{ true }}">
                   <div style="opacity:.4;">›</div>
                 </sc-if>
@@ -913,7 +923,7 @@
             <div onClick="{{ crumbBack }}" style="cursor:pointer; padding-right:6px;">←</div>
             <sc-for list="{{ crumbs }}" as="cb" hint-placeholder-count="3">
               <div style="display:flex; align-items:center; gap:8px;">
-                <div onClick="{{ cb.jump }}" style="cursor: {{ cb.cursor }}; opacity: {{ cb.op }};">{{ cb.t }}</div>
+                <div onClick="{{ cb.jump }}" style="cursor: {{ cb.cursor }}; opacity: {{ cb.op }};">{{ cb.pre }}<span style="display:inline-block; color: {{ bwColor }}; transform: {{ bwTf }};">{{ cb.mid }}</span>{{ cb.post }}</div>
                 <sc-if value="{{ cb.notLast }}" hint-placeholder-val="{{ true }}">
                   <div style="opacity:.4;">›</div>
                 </sc-if>
@@ -940,7 +950,7 @@
               <div style="margin-bottom:40px;">
                 <div style="display:flex; align-items:center; gap:10px; border-bottom:2px solid #23211A; padding-bottom:9px; margin-bottom:6px;">
                   <div style="width:9px; height:9px; background: {{ G.c }};"></div>
-                  <input value="{{ G.g }}" onChange="{{ G.setName }}" title="Tên section — đồng bộ với sidebar" style="flex:1; min-width:0; background:transparent; border:0; border-bottom:1px solid transparent; outline:none; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-size:10.5px; font-weight:500; letter-spacing:.2em; text-transform:uppercase; padding:0 0 1px;" style-hover="border-bottom-color:#DAD7C7;" style-focus="border-bottom-color:#23211A;" />
+                  <input value="{{ G.g }}" onChange="{{ G.setName }}" title="Tên section — đồng bộ với sidebar" style="flex:1; min-width:0; background:transparent; border:0; border-bottom:1px solid transparent; outline:none; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-size:10.5px; font-weight:500; letter-spacing:.2em; text-transform:uppercase; padding:0 0 1px;" style-hover="border-bottom-color:#DAD7C7;" style-focus="border-bottom-color:#23211A;">
                 </div>
                 <sc-for list="{{ G.rows }}" as="r" hint-placeholder-count="4">
                   <sc-if value="{{ r.notSub }}" hint-placeholder-val="{{ true }}">
@@ -969,19 +979,19 @@
             <div style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:22px; margin-bottom:14px;">
               <div>
                 <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Nhãn trên cùng</div>
-                <input value="{{ lEyebrow }}" onChange="{{ setLEyebrow }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-size:13px; padding:9px 12px; outline:none;" />
+                <input value="{{ lEyebrow }}" onChange="{{ setLEyebrow }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-size:13px; padding:9px 12px; outline:none;">
               </div>
               <div>
                 <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Nhãn xem mục lục</div>
-                <input value="{{ lCta }}" onChange="{{ setLCta }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-size:13px; padding:9px 12px; outline:none;" />
+                <input value="{{ lCta }}" onChange="{{ setLCta }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-size:13px; padding:9px 12px; outline:none;">
               </div>
               <div>
                 <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Tên lớn — dòng 1 · chữ <span style="color:#F2A0A5;">ӕ</span> phóng to màu hồng</div>
-                <input value="{{ lTitle1 }}" onChange="{{ setLTitle1 }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Playfair Display',serif; font-size:22px; padding:9px 12px; outline:none;" />
+                <input value="{{ lTitle1 }}" onChange="{{ setLTitle1 }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Playfair Display',serif; font-size:22px; padding:9px 12px; outline:none;">
               </div>
               <div>
                 <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Tên lớn — dòng 2 (nghiêng, xanh)</div>
-                <input value="{{ lTitle2 }}" onChange="{{ setLTitle2 }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#3E7A4E; font-family:'Playfair Display',serif; font-style:italic; font-size:22px; padding:9px 12px; outline:none;" />
+                <input value="{{ lTitle2 }}" onChange="{{ setLTitle2 }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#3E7A4E; font-family:'Playfair Display',serif; font-style:italic; font-size:22px; padding:9px 12px; outline:none;">
               </div>
               <div>
                 <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Đoạn dẫn — cột 1</div>
@@ -997,11 +1007,11 @@
             <div style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:22px; margin-bottom:14px;">
               <div>
                 <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Tiêu đề — dòng 1</div>
-                <input value="{{ siteT1 }}" onChange="{{ setSiteT1 }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Playfair Display',serif; font-size:22px; padding:9px 12px; outline:none;" />
+                <input value="{{ siteT1 }}" onChange="{{ setSiteT1 }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Playfair Display',serif; font-size:22px; padding:9px 12px; outline:none;">
               </div>
               <div>
                 <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Tiêu đề — dòng 2 (nghiêng, xanh)</div>
-                <input value="{{ siteT2 }}" onChange="{{ setSiteT2 }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#3E7A4E; font-family:'Playfair Display',serif; font-style:italic; font-size:22px; padding:9px 12px; outline:none;" />
+                <input value="{{ siteT2 }}" onChange="{{ setSiteT2 }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#3E7A4E; font-family:'Playfair Display',serif; font-style:italic; font-size:22px; padding:9px 12px; outline:none;">
               </div>
             </div>
             <div style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:22px; margin-bottom:18px;">
@@ -1017,7 +1027,7 @@
             <div style="display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:22px; margin-bottom:40px;">
               <div>
                 <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Chú thích ảnh 1</div>
-                <input value="{{ plate1 }}" onChange="{{ setPlate1 }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-size:13px; padding:8px 11px; outline:none;" />
+                <input value="{{ plate1 }}" onChange="{{ setPlate1 }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-size:13px; padding:8px 11px; outline:none;">
                 <sc-if value="{{ hasPlate1 }}" hint-placeholder-val="{{ false }}">
                   <div style="margin-top:7px; aspect-ratio:16/9; background: {{ plateThumb1 }}; border:1px solid #EBE5D3;"></div>
                 </sc-if>
@@ -1025,7 +1035,7 @@
                   <label style="flex:1; min-width:0; display:block; font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#5C5745; border:1px dashed #DAD7C7; padding:7px 10px; cursor:pointer; text-align:center;" style-hover="border-color:#23211A; color:#23211A;">
                     <sc-if value="{{ hasPlate1 }}" hint-placeholder-val="{{ false }}">đổi ảnh</sc-if>
                     <sc-if value="{{ noPlate1 }}" hint-placeholder-val="{{ true }}">tải ảnh lên</sc-if>
-                    <input type="file" accept="image/*" onChange="{{ upPlate1 }}" style="display:none;" />
+                    <input type="file" accept="image/*" onChange="{{ upPlate1 }}" style="display:none;">
                   </label>
                   <sc-if value="{{ hasPlate1 }}" hint-placeholder-val="{{ false }}">
                     <div onClick="{{ clearPlate1 }}" style="font-family:'Be Vietnam Pro',sans-serif; font-size:11px; color:#B5AE99; cursor:pointer; flex:none;" style-hover="color:#C25C7C;">✕</div>
@@ -1034,7 +1044,7 @@
               </div>
               <div>
                 <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Chú thích ảnh 2</div>
-                <input value="{{ plate2 }}" onChange="{{ setPlate2 }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-size:13px; padding:8px 11px; outline:none;" />
+                <input value="{{ plate2 }}" onChange="{{ setPlate2 }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-size:13px; padding:8px 11px; outline:none;">
                 <sc-if value="{{ hasPlate2 }}" hint-placeholder-val="{{ false }}">
                   <div style="margin-top:7px; aspect-ratio:16/9; background: {{ plateThumb2 }}; border:1px solid #EBE5D3;"></div>
                 </sc-if>
@@ -1042,7 +1052,7 @@
                   <label style="flex:1; min-width:0; display:block; font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#5C5745; border:1px dashed #DAD7C7; padding:7px 10px; cursor:pointer; text-align:center;" style-hover="border-color:#23211A; color:#23211A;">
                     <sc-if value="{{ hasPlate2 }}" hint-placeholder-val="{{ false }}">đổi ảnh</sc-if>
                     <sc-if value="{{ noPlate2 }}" hint-placeholder-val="{{ true }}">tải ảnh lên</sc-if>
-                    <input type="file" accept="image/*" onChange="{{ upPlate2 }}" style="display:none;" />
+                    <input type="file" accept="image/*" onChange="{{ upPlate2 }}" style="display:none;">
                   </label>
                   <sc-if value="{{ hasPlate2 }}" hint-placeholder-val="{{ false }}">
                     <div onClick="{{ clearPlate2 }}" style="font-family:'Be Vietnam Pro',sans-serif; font-size:11px; color:#B5AE99; cursor:pointer; flex:none;" style-hover="color:#C25C7C;">✕</div>
@@ -1051,7 +1061,7 @@
               </div>
               <div>
                 <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Chú thích ảnh 3</div>
-                <input value="{{ plate3 }}" onChange="{{ setPlate3 }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-size:13px; padding:8px 11px; outline:none;" />
+                <input value="{{ plate3 }}" onChange="{{ setPlate3 }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-size:13px; padding:8px 11px; outline:none;">
                 <sc-if value="{{ hasPlate3 }}" hint-placeholder-val="{{ false }}">
                   <div style="margin-top:7px; aspect-ratio:16/9; background: {{ plateThumb3 }}; border:1px solid #EBE5D3;"></div>
                 </sc-if>
@@ -1059,7 +1069,7 @@
                   <label style="flex:1; min-width:0; display:block; font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#5C5745; border:1px dashed #DAD7C7; padding:7px 10px; cursor:pointer; text-align:center;" style-hover="border-color:#23211A; color:#23211A;">
                     <sc-if value="{{ hasPlate3 }}" hint-placeholder-val="{{ false }}">đổi ảnh</sc-if>
                     <sc-if value="{{ noPlate3 }}" hint-placeholder-val="{{ true }}">tải ảnh lên</sc-if>
-                    <input type="file" accept="image/*" onChange="{{ upPlate3 }}" style="display:none;" />
+                    <input type="file" accept="image/*" onChange="{{ upPlate3 }}" style="display:none;">
                   </label>
                   <sc-if value="{{ hasPlate3 }}" hint-placeholder-val="{{ false }}">
                     <div onClick="{{ clearPlate3 }}" style="font-family:'Be Vietnam Pro',sans-serif; font-size:11px; color:#B5AE99; cursor:pointer; flex:none;" style-hover="color:#C25C7C;">✕</div>
@@ -1095,15 +1105,15 @@
                     <div style="display:grid; grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) 108px; gap:16px; margin-bottom:16px;">
                       <div>
                         <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Tên module</div>
-                        <input value="{{ m.title }}" onChange="{{ m.setTitle }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-size:14px; padding:8px 11px; outline:none;" />
+                        <input value="{{ m.title }}" onChange="{{ m.setTitle }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-size:14px; padding:8px 11px; outline:none;">
                       </div>
                       <div>
                         <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Concept</div>
-                        <input value="{{ m.concept }}" onChange="{{ m.setConcept }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-size:14px; padding:8px 11px; outline:none;" />
+                        <input value="{{ m.concept }}" onChange="{{ m.setConcept }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-size:14px; padding:8px 11px; outline:none;">
                       </div>
                       <div>
                         <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Màu</div>
-                        <input value="{{ m.accent }}" onChange="{{ m.setAccent }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-size:13px; padding:8px 11px; outline:none;" />
+                        <input value="{{ m.accent }}" onChange="{{ m.setAccent }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-size:13px; padding:8px 11px; outline:none;">
                       </div>
                     </div>
                     <div style="display:grid; grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) 108px; gap:16px; margin-bottom:16px;">
@@ -1137,7 +1147,7 @@
                     <div style="display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; margin-bottom:18px;">
                       <div>
                         <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Chú thích ảnh chính</div>
-                        <input value="{{ m.shot1 }}" onChange="{{ m.setShot1 }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-size:13px; padding:8px 11px; outline:none;" />
+                        <input value="{{ m.shot1 }}" onChange="{{ m.setShot1 }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-size:13px; padding:8px 11px; outline:none;">
                         <sc-if value="{{ m.hasImg1 }}" hint-placeholder-val="{{ false }}">
                           <div style="margin-top:7px; aspect-ratio:4/3; background: {{ m.thumb1 }}; border:1px solid #EBE5D3;"></div>
                         </sc-if>
@@ -1150,7 +1160,7 @@
                           <label style="flex:1; min-width:0; display:block; font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#5C5745; border:1px dashed #DAD7C7; padding:7px 10px; cursor:pointer; text-align:center;" style-hover="border-color:#23211A; color:#23211A;">
                             <sc-if value="{{ m.hasImg1 }}" hint-placeholder-val="{{ false }}">đổi ảnh</sc-if>
                             <sc-if value="{{ m.noImg1 }}" hint-placeholder-val="{{ true }}">tải ảnh lên</sc-if>
-                            <input type="file" accept="image/*" onChange="{{ m.upImg1 }}" style="display:none;" />
+                            <input type="file" accept="image/*" onChange="{{ m.upImg1 }}" style="display:none;">
                           </label>
                           <sc-if value="{{ m.hasImg1 }}" hint-placeholder-val="{{ false }}">
                             <div onClick="{{ m.clearImg1 }}" style="font-family:'Be Vietnam Pro',sans-serif; font-size:11px; color:#B5AE99; cursor:pointer; flex:none;" style-hover="color:#C25C7C;">✕</div>
@@ -1159,7 +1169,7 @@
                       </div>
                       <div>
                         <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Chú thích ảnh phụ 1</div>
-                        <input value="{{ m.shot2 }}" onChange="{{ m.setShot2 }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-size:13px; padding:8px 11px; outline:none;" />
+                        <input value="{{ m.shot2 }}" onChange="{{ m.setShot2 }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-size:13px; padding:8px 11px; outline:none;">
                         <sc-if value="{{ m.hasImg2 }}" hint-placeholder-val="{{ false }}">
                           <div style="margin-top:7px; aspect-ratio:4/3; background: {{ m.thumb2 }}; border:1px solid #EBE5D3;"></div>
                         </sc-if>
@@ -1172,7 +1182,7 @@
                           <label style="flex:1; min-width:0; display:block; font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#5C5745; border:1px dashed #DAD7C7; padding:7px 10px; cursor:pointer; text-align:center;" style-hover="border-color:#23211A; color:#23211A;">
                             <sc-if value="{{ m.hasImg2 }}" hint-placeholder-val="{{ false }}">đổi ảnh</sc-if>
                             <sc-if value="{{ m.noImg2 }}" hint-placeholder-val="{{ true }}">tải ảnh lên</sc-if>
-                            <input type="file" accept="image/*" onChange="{{ m.upImg2 }}" style="display:none;" />
+                            <input type="file" accept="image/*" onChange="{{ m.upImg2 }}" style="display:none;">
                           </label>
                           <sc-if value="{{ m.hasImg2 }}" hint-placeholder-val="{{ false }}">
                             <div onClick="{{ m.clearImg2 }}" style="font-family:'Be Vietnam Pro',sans-serif; font-size:11px; color:#B5AE99; cursor:pointer; flex:none;" style-hover="color:#C25C7C;">✕</div>
@@ -1181,7 +1191,7 @@
                       </div>
                       <div>
                         <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Chú thích ảnh phụ 2</div>
-                        <input value="{{ m.shot3 }}" onChange="{{ m.setShot3 }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-size:13px; padding:8px 11px; outline:none;" />
+                        <input value="{{ m.shot3 }}" onChange="{{ m.setShot3 }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-size:13px; padding:8px 11px; outline:none;">
                         <sc-if value="{{ m.hasImg3 }}" hint-placeholder-val="{{ false }}">
                           <div style="margin-top:7px; aspect-ratio:4/3; background: {{ m.thumb3 }}; border:1px solid #EBE5D3;"></div>
                         </sc-if>
@@ -1194,7 +1204,7 @@
                           <label style="flex:1; min-width:0; display:block; font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#5C5745; border:1px dashed #DAD7C7; padding:7px 10px; cursor:pointer; text-align:center;" style-hover="border-color:#23211A; color:#23211A;">
                             <sc-if value="{{ m.hasImg3 }}" hint-placeholder-val="{{ false }}">đổi ảnh</sc-if>
                             <sc-if value="{{ m.noImg3 }}" hint-placeholder-val="{{ true }}">tải ảnh lên</sc-if>
-                            <input type="file" accept="image/*" onChange="{{ m.upImg3 }}" style="display:none;" />
+                            <input type="file" accept="image/*" onChange="{{ m.upImg3 }}" style="display:none;">
                           </label>
                           <sc-if value="{{ m.hasImg3 }}" hint-placeholder-val="{{ false }}">
                             <div onClick="{{ m.clearImg3 }}" style="font-family:'Be Vietnam Pro',sans-serif; font-size:11px; color:#B5AE99; cursor:pointer; flex:none;" style-hover="color:#C25C7C;">✕</div>
@@ -1213,9 +1223,9 @@
                           <div title="Kéo để đổi thứ tự" style="font-family:'Be Vietnam Pro',sans-serif; font-size:12px; line-height:1; color:#D5CEB8; cursor:grab;" style-hover="color:#23211A;">⠿</div>
                           <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10.5px; letter-spacing:.12em; color:#B5AE99;">{{ e.n }}</div>
                         </div>
-                        <input value="{{ e.en }}" onChange="{{ e.setEn }}" style="width:100%; box-sizing:border-box; background:transparent; border:0; border-bottom:1px solid transparent; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-size:13.5px; padding:4px 2px; outline:none;" style-focus="border-color:#3E7A4E; background:#FFFFFF;" />
-                        <input value="{{ e.vi }}" onChange="{{ e.setVi }}" style="width:100%; box-sizing:border-box; background:transparent; border:0; border-bottom:1px solid transparent; color:#5C5745; font-family:'Be Vietnam Pro',sans-serif; font-weight:300; font-size:13px; padding:4px 2px; outline:none;" style-focus="border-color:#3E7A4E; background:#FFFFFF;" />
-                        <input value="{{ e.date }}" onChange="{{ e.setDate }}" style="width:100%; box-sizing:border-box; background:transparent; border:0; border-bottom:1px solid transparent; color:#8C8674; font-family:'Be Vietnam Pro',sans-serif; font-size:12px; padding:4px 2px; outline:none;" style-focus="border-color:#3E7A4E; background:#FFFFFF;" />
+                        <input value="{{ e.en }}" onChange="{{ e.setEn }}" style="width:100%; box-sizing:border-box; background:transparent; border:0; border-bottom:1px solid transparent; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-size:13.5px; padding:4px 2px; outline:none;" style-focus="border-color:#3E7A4E; background:#FFFFFF;">
+                        <input value="{{ e.vi }}" onChange="{{ e.setVi }}" placeholder="{{ e.viHint }}" style="width:100%; box-sizing:border-box; background:transparent; border:0; border-bottom:1px solid transparent; color:#5C5745; font-family:'Be Vietnam Pro',sans-serif; font-weight:300; font-size:13px; padding:4px 2px; outline:none;" style-focus="border-color:#3E7A4E; background:#FFFFFF;">
+                        <input value="{{ e.date }}" onChange="{{ e.setDate }}" style="width:100%; box-sizing:border-box; background:transparent; border:0; border-bottom:1px solid transparent; color:#8C8674; font-family:'Be Vietnam Pro',sans-serif; font-size:12px; padding:4px 2px; outline:none;" style-focus="border-color:#3E7A4E; background:#FFFFFF;">
                         <div style="display:flex; gap:7px; font-family:'Be Vietnam Pro',sans-serif; font-size:12px; color:#B5AE99;">
                           <div onClick="{{ e.del }}" style="cursor:pointer;" style-hover="color:#C25C7C;">✕</div>
                         </div>
@@ -1226,15 +1236,61 @@
               </div>
             </sc-for>
 
+            <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10.5px; font-weight:500; letter-spacing:.2em; text-transform:uppercase; color:#8C8674; border-bottom:2px solid #23211A; padding-bottom:9px; margin:44px 0 18px;">Text art — tên thương hiệu</div>
+            <div style="font-family:'Be Vietnam Pro',sans-serif; font-weight:300; font-size:12.5px; line-height:1.6; color:#8C8674; max-width:640px; margin-bottom:18px;">Một chỗ khai báo duy nhất cho tên hiện ở sidebar, trang chủ, dải đường dẫn và các tiêu đề. Chữ được chọn sẽ phóng to và đổi màu ở mọi vị trí; nếu tải ảnh lên thì ảnh thay cho phần chữ ở sidebar.</div>
+            <div style="display:grid; grid-template-columns:minmax(0,1.4fr) 110px 130px 110px; gap:16px; align-items:start; margin-bottom:16px;">
+              <div>
+                <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Tên</div>
+                <input value="{{ bwText }}" onChange="{{ setBwText }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Playfair Display',serif; font-size:20px; padding:9px 12px; outline:none;" />
+              </div>
+              <div>
+                <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Chữ nhấn</div>
+                <input value="{{ bwGlyph }}" onChange="{{ setBwGlyph }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Playfair Display',serif; font-size:20px; text-align:center; padding:9px 12px; outline:none;" />
+              </div>
+              <div>
+                <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Màu chữ nhấn</div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <div style="width:26px; height:26px; flex:none; background: {{ bwColor }}; border:1px solid #EBE5D3;"></div>
+                  <input value="{{ bwColor }}" onChange="{{ setBwColor }}" style="flex:1; min-width:0; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-size:13px; padding:8px 10px; outline:none;" />
+                </div>
+              </div>
+              <div>
+                <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Cỡ chữ nhấn</div>
+                <input value="{{ bwScaleVal }}" onChange="{{ setBwScale }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-size:13px; padding:8px 10px; outline:none; font-variant-numeric:tabular-nums;" />
+              </div>
+            </div>
+            <div style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:16px; margin-bottom:12px;">
+              <div>
+                <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Xem trước</div>
+                <div style="background:#FFFFFF; border:1px solid #EBE5D3; padding:16px 18px; font-family:'Playfair Display',serif; font-size:28px; letter-spacing:-.01em; color:#23211A;">{{ bwPre }}<span style="display:inline-block; transform: {{ bwTf }}; transform-origin:50% 82%; color: {{ bwColor }}; margin:0 -.02em;">{{ bwMid }}</span>{{ bwPost }}</div>
+              </div>
+              <div>
+                <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Ảnh thay cho chữ (không bắt buộc)</div>
+                <sc-if value="{{ bwHasImg }}" hint-placeholder-val="{{ false }}">
+                  <div style="height:52px; background: {{ bwThumb }}; border:1px solid #EBE5D3; margin-bottom:7px;"></div>
+                </sc-if>
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <label style="flex:1; min-width:0; display:block; font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#5C5745; border:1px dashed #DAD7C7; padding:7px 10px; cursor:pointer; text-align:center;" style-hover="border-color:#23211A; color:#23211A;">
+                    <sc-if value="{{ bwHasImg }}" hint-placeholder-val="{{ false }}">đổi ảnh</sc-if>
+                    <sc-if value="{{ bwNoImg }}" hint-placeholder-val="{{ true }}">tải ảnh lên</sc-if>
+                    <input type="file" accept="image/*" onChange="{{ upBw }}" style="display:none;" />
+                  </label>
+                  <sc-if value="{{ bwHasImg }}" hint-placeholder-val="{{ false }}">
+                    <div onClick="{{ clearBw }}" style="font-family:'Be Vietnam Pro',sans-serif; font-size:11px; color:#B5AE99; cursor:pointer; flex:none;" style-hover="color:#C25C7C;">✕</div>
+                  </sc-if>
+                </div>
+              </div>
+            </div>
+
             <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10.5px; font-weight:500; letter-spacing:.2em; text-transform:uppercase; color:#8C8674; border-bottom:2px solid #23211A; padding-bottom:9px; margin:44px 0 18px;">{{ secAdmin }}</div>
             <div style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:22px; margin-bottom:20px;">
               <div>
                 <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Design system — tiêu đề dòng 1</div>
-                <input value="{{ artT1 }}" onChange="{{ setArtT1 }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Playfair Display',serif; font-size:20px; padding:9px 12px; outline:none;" />
+                <input value="{{ artT1 }}" onChange="{{ setArtT1 }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Playfair Display',serif; font-size:20px; padding:9px 12px; outline:none;">
               </div>
               <div>
                 <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Design system — tiêu đề dòng 2 (nghiêng, xanh)</div>
-                <input value="{{ artT2 }}" onChange="{{ setArtT2 }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#3E7A4E; font-family:'Playfair Display',serif; font-style:italic; font-size:20px; padding:9px 12px; outline:none;" />
+                <input value="{{ artT2 }}" onChange="{{ setArtT2 }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#3E7A4E; font-family:'Playfair Display',serif; font-style:italic; font-size:20px; padding:9px 12px; outline:none;">
               </div>
               <div style="grid-column:span 2;">
                 <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Design system — đoạn dẫn</div>
@@ -1242,7 +1298,7 @@
               </div>
               <div>
                 <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">System conventions — tiêu đề</div>
-                <input value="{{ logicTitle }}" onChange="{{ setLogicTitle }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Playfair Display',serif; font-size:20px; padding:9px 12px; outline:none;" />
+                <input value="{{ logicTitle }}" onChange="{{ setLogicTitle }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Playfair Display',serif; font-size:20px; padding:9px 12px; outline:none;">
               </div>
               <div>
                 <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">System conventions — đoạn dẫn</div>
@@ -1250,7 +1306,7 @@
               </div>
               <div>
                 <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Content — tiêu đề</div>
-                <input value="{{ cmsTitle }}" onChange="{{ setCmsTitle }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Playfair Display',serif; font-size:20px; padding:9px 12px; outline:none;" />
+                <input value="{{ cmsTitle }}" onChange="{{ setCmsTitle }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Playfair Display',serif; font-size:20px; padding:9px 12px; outline:none;">
               </div>
               <div>
                 <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Content — đoạn dẫn</div>
@@ -1258,11 +1314,11 @@
               </div>
               <div>
                 <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Archive — tiêu đề</div>
-                <input value="{{ archiveTitle }}" onChange="{{ setArchiveTitle }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Playfair Display',serif; font-size:20px; padding:9px 12px; outline:none;" />
+                <input value="{{ archiveTitle }}" onChange="{{ setArchiveTitle }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Playfair Display',serif; font-size:20px; padding:9px 12px; outline:none;">
               </div>
               <div>
                 <div style="font-family:'Be Vietnam Pro',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#B5AE99; margin-bottom:6px;">Archive — ghi chú sau số bài</div>
-                <input value="{{ archiveNote }}" onChange="{{ setArchiveNote }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-size:13px; padding:9px 12px; outline:none;" />
+                <input value="{{ archiveNote }}" onChange="{{ setArchiveNote }}" style="width:100%; box-sizing:border-box; background:#FFFFFF; border:1px solid #EBE5D3; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-size:13px; padding:9px 12px; outline:none;">
               </div>
             </div>
 
@@ -1280,7 +1336,7 @@
             <div onClick="{{ crumbBack }}" style="cursor:pointer; padding-right:6px;">←</div>
             <sc-for list="{{ crumbs }}" as="cb" hint-placeholder-count="3">
               <div style="display:flex; align-items:center; gap:8px;">
-                <div onClick="{{ cb.jump }}" style="cursor: {{ cb.cursor }}; opacity: {{ cb.op }};">{{ cb.t }}</div>
+                <div onClick="{{ cb.jump }}" style="cursor: {{ cb.cursor }}; opacity: {{ cb.op }};">{{ cb.pre }}<span style="display:inline-block; color: {{ bwColor }}; transform: {{ bwTf }};">{{ cb.mid }}</span>{{ cb.post }}</div>
                 <sc-if value="{{ cb.notLast }}" hint-placeholder-val="{{ true }}">
                   <div style="opacity:.4;">›</div>
                 </sc-if>
@@ -1337,6 +1393,417 @@
       </div>
     </sc-if>
 
+    <sc-if value="{{ isLongform }}" hint-placeholder-val="{{ false }}">
+      <div style="background:#FCFCFA; color:#172124; min-height:100vh; font-family:'Be Vietnam Pro',sans-serif; font-weight:300; padding:40px 56px 140px;">
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:10px; letter-spacing:.14em; text-transform:uppercase; margin-bottom:30px; color:#7C7C70;">
+          <div onClick="{{ crumbBack }}" style="cursor:pointer; padding-right:6px;">←</div>
+          <sc-for list="{{ crumbs }}" as="cb" hint-placeholder-count="4">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <div onClick="{{ cb.jump }}" style="cursor: {{ cb.cursor }}; opacity: {{ cb.op }};">{{ cb.pre }}<span style="display:inline-block; color: {{ bwColor }}; transform: {{ bwTf }};">{{ cb.mid }}</span>{{ cb.post }}</div>
+              <sc-if value="{{ cb.notLast }}" hint-placeholder-val="{{ true }}">
+                <div style="opacity:.4;">›</div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+
+        <div onMouseLeave="{{ closeLfNav }}" style="position:fixed; top:0; right:0; bottom:0; width:340px; z-index:40; display:flex; align-items:center; justify-content:flex-end; pointer-events:none;">
+          <div style="display:flex; align-items:center; justify-content:flex-end; transform: {{ lfShift }}; transition:transform 1.1s cubic-bezier(.22,.72,.2,1); will-change:transform;">
+          <div onMouseEnter="{{ openLfNav }}" style="pointer-events:auto; width:44px; flex:none; display: {{ lfRailDisplay }}; flex-direction:column; align-items:center; gap:14px; padding:14px 0; margin-right:10px; cursor:pointer;">
+            <sc-for list="{{ lfIndex }}" as="ix" hint-placeholder-count="5">
+              <div style="display:flex; align-items:center; gap:7px; align-self:stretch; justify-content:flex-end;">
+                <div style="font-family:'Playfair Display',serif; font-style:italic; font-size:11px; color:#C4C0B0; font-variant-numeric:tabular-nums;">{{ ix.n }}</div>
+                <div style="width:16px; height:1px; background:#D8D4C6;"></div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="pointer-events:auto; width:300px; flex:none; max-height:76vh; display: {{ lfPanelDisplay }}; flex-direction:column; background:linear-gradient(to left, rgba(252,252,250,.99) 0%, rgba(252,252,250,.97) 52%, rgba(252,252,250,.86) 78%, rgba(252,252,250,0) 100%); backdrop-filter:blur(2px); WebkitBackdropFilter:blur(2px); padding:18px 26px 12px 44px; overflow-y:auto;">
+            <div style="font-size:9px; letter-spacing:.24em; text-transform:uppercase; color:#B0B0A6; margin-bottom:4px;">Mục trong bài</div>
+            <sc-for list="{{ lfIndex }}" as="ix" hint-placeholder-count="5">
+              <div onClick="{{ ix.go }}" style="display:grid; grid-template-columns:22px minmax(0,1fr); gap:9px; padding:9px 0; cursor:pointer; border-top:1px solid rgba(23,33,36,.08);" style-hover="color:#8A6420;">
+                <div style="font-family:'Playfair Display',serif; font-style:italic; font-size:11.5px; color:#B0B0A6; font-variant-numeric:tabular-nums;">{{ ix.n }}</div>
+                <div style="font-size:12.5px; line-height:1.4;">{{ ix.t }}</div>
+              </div>
+            </sc-for>
+          </div>
+          </div>
+        </div>
+
+        <div style="position:fixed; right:0; bottom:44px; z-index:39; display:flex; flex-direction:column; align-items:flex-end; gap:1px; padding:8px 16px 8px 18px; background:linear-gradient(to left, rgba(252,252,250,.97) 0%, rgba(252,252,250,.86) 70%, rgba(252,252,250,0) 100%);">
+          <div onClick="{{ lfFoldAll }}" style="display:flex; align-items:center; gap:9px; padding:7px 0; cursor:pointer; color:#7C7C70;" style-hover="color:#102F35;">
+            <div style="font-size:9.5px; letter-spacing:.2em; text-transform:uppercase;">thu gọn</div>
+            <div style="width:19px; height:19px; border:1px solid rgba(124,124,112,.4); font-size:10px; line-height:17px; text-align:center;">▸</div>
+          </div>
+          <div onClick="{{ lfOpenAll }}" style="display:flex; align-items:center; gap:9px; padding:7px 0; cursor:pointer; color:#7C7C70;" style-hover="color:#102F35;">
+            <div style="font-size:9.5px; letter-spacing:.2em; text-transform:uppercase;">xem tất cả</div>
+            <div style="width:19px; height:19px; border:1px solid rgba(124,124,112,.4); font-size:10px; line-height:17px; text-align:center;">▾</div>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:minmax(0,760px); justify-content:center; padding-right:56px;">
+          <div style="display:flex; flex-direction:column; gap:0;">
+            <sc-for list="{{ lfBlocks }}" as="b" hint-placeholder-count="12">
+              <div style="display: {{ b.disp }};">
+                <sc-if value="{{ b.isH1 }}" hint-placeholder-val="{{ false }}">
+                  <h1 onClick="{{ b.toggleFold }}" data-lf-h1="{{ b.hIdx }}" style="cursor: {{ b.hCursor }}; font-family:'Playfair Display',serif; font-weight:400; font-size: {{ b.hFs }}; line-height: {{ b.hLh }}; letter-spacing:-.04em; color: {{ b.hCol }}; margin: {{ b.hMt }} 0 14px; border-top: {{ b.hBt }}; padding-top: {{ b.hPt }};">
+                    <span style="display: {{ b.cueDisplay }}; font-family:'Be Vietnam Pro',sans-serif; font-size:17px; line-height:1; vertical-align:middle; margin-right:16px; color: {{ b.foldCueCol }}; opacity: {{ b.foldCueOp }};">{{ b.foldCue }}</span>
+                    <sc-for list="{{ b.runs }}" as="r" hint-placeholder-count="1">
+                      <span style="font-style: {{ r.s }};">{{ r.t }}</span>
+                    </sc-for>
+                  </h1>
+                  <sc-if value="{{ b.showSub }}" hint-placeholder-val="{{ false }}">
+                    <div style="font-family:'Playfair Display',serif; font-style:italic; font-size:24px; line-height:1.3; color:#3E7A4E; margin:-4px 0 8px;">{{ lfPostSub }}</div>
+                  </sc-if>
+                </sc-if>
+                <sc-if value="{{ b.isH2 }}" hint-placeholder-val="{{ false }}">
+                  <h2 onClick="{{ b.toggleFold }}" style="cursor:pointer; font-family:'Playfair Display',serif; font-weight:400; font-size:27px; line-height:1.16; letter-spacing:-.022em; color:#172124; margin: {{ b.h2Mt }} 0 12px;">
+                    <span style="display:inline-block; font-family:'Be Vietnam Pro',sans-serif; font-size:13px; line-height:1; vertical-align:middle; margin-right:12px; color: {{ b.foldCueCol }}; opacity: {{ b.foldCueOp }};">{{ b.foldCue }}</span>
+                    <sc-for list="{{ b.runs }}" as="r" hint-placeholder-count="1">
+                      <span style="font-style: {{ r.s }};">{{ r.t }}</span>
+                    </sc-for>
+                  </h2>
+                </sc-if>
+                <sc-if value="{{ b.isH3 }}" hint-placeholder-val="{{ false }}">
+                  <h3 style="font-family:'Playfair Display',serif; font-style:italic; font-weight:400; font-size:20px; line-height:1.22; color:#3E7A4E; margin:32px 0 10px;">
+                    <sc-for list="{{ b.runs }}" as="r" hint-placeholder-count="1">
+                      <span>{{ r.t }}</span>
+                    </sc-for>
+                  </h3>
+                </sc-if>
+                <sc-if value="{{ b.isH4 }}" hint-placeholder-val="{{ false }}">
+                  <h4 style="font-family:'Be Vietnam Pro',sans-serif; font-weight:500; font-size:12px; letter-spacing:.16em; text-transform:uppercase; color:#8A6420; margin:32px 0 12px;">
+                    <sc-for list="{{ b.runs }}" as="r" hint-placeholder-count="1">
+                      <span>{{ r.t }}</span>
+                    </sc-for>
+                  </h4>
+                </sc-if>
+                <sc-if value="{{ b.isMeta }}" hint-placeholder-val="{{ false }}">
+                  <div style="font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:#B0B0A6; margin:0 0 26px;">
+                    <sc-for list="{{ b.runs }}" as="r" hint-placeholder-count="1">
+                      <span>{{ r.t }}</span>
+                    </sc-for>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ b.isP }}" hint-placeholder-val="{{ false }}">
+                  <div style="font-size:15.5px; line-height:1.68; color:#2E2A20; margin:0 0 14px; padding-left: {{ b.pad }}; text-wrap:pretty;">
+                    <sc-for list="{{ b.runs }}" as="r" hint-placeholder-count="1">
+                      <span style="font-weight: {{ r.w }}; font-style: {{ r.s }};">{{ r.t }}</span>
+                    </sc-for>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ b.isCont }}" hint-placeholder-val="{{ false }}">
+                  <div style="font-size:14.5px; line-height:1.66; color:#4B4A40; margin:0 0 8px; padding-left: {{ b.pad }};">
+                    <sc-for list="{{ b.runs }}" as="r" hint-placeholder-count="1">
+                      <span style="font-weight: {{ r.w }}; font-style: {{ r.s }};">{{ r.t }}</span>
+                    </sc-for>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ b.isLi }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:grid; grid-template-columns:16px minmax(0,1fr); gap:11px; margin:0 0 10px; padding-left: {{ b.pad }};">
+                    <div style="width: {{ b.dotW }}; height: {{ b.dotW }}; border-radius: {{ b.dotR }}; background: {{ b.dotBg }}; border: {{ b.dotBd }}; margin:9px 0 0 5px;"></div>
+                    <div style="font-size:15px; line-height:1.66; color:#2E2A20;">
+                      <sc-for list="{{ b.runs }}" as="r" hint-placeholder-count="1">
+                        <span style="font-weight: {{ r.w }}; font-style: {{ r.s }};">{{ r.t }}</span>
+                      </sc-for>
+                    </div>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ b.isNote }}" hint-placeholder-val="{{ false }}">
+                  <div style="background:#EAF1F4; border-left:2px solid #6FA8C0; margin:16px 0 20px;">
+                    <div onClick="{{ b.noteToggle }}" style="display:flex; align-items:center; justify-content:space-between; gap:11px; padding:9px 16px 7px; cursor:pointer;" style-hover="background:#E1EBF0;">
+                      <div style="font-size:8.5px; letter-spacing:.26em; text-transform:uppercase; color:#9DB6C0;">Ghi chú</div>
+                      <div style="font-size:12px; color:#9DB6C0;">{{ b.noteCue }}</div>
+                    </div>
+                    <sc-if value="{{ b.noteOpen }}" hint-placeholder-val="{{ false }}">
+                      <div style="padding:0 18px 16px; font-size:14.5px; line-height:1.7;">
+                        <sc-for list="{{ b.lines }}" as="ln" hint-placeholder-count="2">
+                          <div style="margin-bottom:4px;">
+                            <sc-for list="{{ ln.runs }}" as="r" hint-placeholder-count="1">
+                              <span style="font-weight: {{ r.w }}; font-style: {{ r.s }}; color: {{ r.col }}; background: {{ r.bg }}; padding:1px 2px; margin:0 -2px;">{{ r.t }}</span>
+                            </sc-for>
+                          </div>
+                        </sc-for>
+                      </div>
+                    </sc-if>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ b.isFormula }}" hint-placeholder-val="{{ false }}">
+                  <div style="background:#F1F4EF; border-left:2px solid #102F35; padding:14px 18px; margin:14px 0 16px; font-family:'Be Vietnam Pro',sans-serif; font-size:14px; letter-spacing:.02em; color:#102F35; font-variant-numeric:tabular-nums;">{{ b.v }}</div>
+                </sc-if>
+                <sc-if value="{{ b.isFig }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin:26px 0 30px; background:#FFFFFF; border:1px solid #EDEBE0; aspect-ratio: {{ b.ar }};">
+                    <div style="width:100%; height:100%; background: {{ b.bg }};"></div>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ b.isAside }}" hint-placeholder-val="{{ false }}">
+                  <div style="background:#F3EEE1; padding:24px 26px 20px; margin:22px 0 26px;">
+                    <sc-for list="{{ b.items }}" as="a" hint-placeholder-count="3">
+                      <div>
+                        <sc-if value="{{ a.isP }}" hint-placeholder-val="{{ false }}">
+                          <div style="font-size:14.5px; line-height:1.66; color:#3B3729; margin:0 0 10px; padding-left: {{ a.pad }};">
+                            <sc-for list="{{ a.runs }}" as="r" hint-placeholder-count="1">
+                              <span style="font-weight: {{ r.w }}; font-style: {{ r.s }};">{{ r.t }}</span>
+                            </sc-for>
+                          </div>
+                        </sc-if>
+                        <sc-if value="{{ a.isCont }}" hint-placeholder-val="{{ false }}">
+                          <div style="font-size:14px; line-height:1.62; color:#5C5745; margin:0 0 6px; padding-left: {{ a.pad }};">
+                            <sc-for list="{{ a.runs }}" as="r" hint-placeholder-count="1">
+                              <span style="font-weight: {{ r.w }}; font-style: {{ r.s }};">{{ r.t }}</span>
+                            </sc-for>
+                          </div>
+                        </sc-if>
+                        <sc-if value="{{ a.isLi }}" hint-placeholder-val="{{ false }}">
+                          <div style="display:grid; grid-template-columns:14px minmax(0,1fr); gap:10px; margin:0 0 8px; padding-left: {{ a.pad }};">
+                            <div style="width: {{ a.dotW }}; height: {{ a.dotW }}; border-radius: {{ a.dotR }}; background: {{ a.dotBg }}; border: {{ a.dotBd }}; margin:9px 0 0 4px;"></div>
+                            <div style="font-size:14.5px; line-height:1.62; color:#3B3729;">
+                              <sc-for list="{{ a.runs }}" as="r" hint-placeholder-count="1">
+                                <span style="font-weight: {{ r.w }}; font-style: {{ r.s }};">{{ r.t }}</span>
+                              </sc-for>
+                            </div>
+                          </div>
+                        </sc-if>
+                        <sc-if value="{{ a.isH4 }}" hint-placeholder-val="{{ false }}">
+                          <div style="font-weight:500; font-size:11.5px; letter-spacing:.16em; text-transform:uppercase; color:#7A5230; margin:6px 0 10px;">
+                            <sc-for list="{{ a.runs }}" as="r" hint-placeholder-count="1">
+                              <span>{{ r.t }}</span>
+                            </sc-for>
+                          </div>
+                        </sc-if>
+                        <sc-if value="{{ a.isFig }}" hint-placeholder-val="{{ false }}">
+                          <div style="margin:14px 0 16px; background:#FFFFFF; border:1px solid #E6DFCB; aspect-ratio: {{ a.ar }};">
+                            <div style="width:100%; height:100%; background: {{ a.bg }};"></div>
+                          </div>
+                        </sc-if>
+                        <sc-if value="{{ a.isFormula }}" hint-placeholder-val="{{ false }}">
+                          <div style="background:#FFFFFF; border-left:2px solid #7A5230; padding:12px 16px; margin:10px 0 12px; font-size:13.5px; color:#7A5230;">{{ a.v }}</div>
+                        </sc-if>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isTaste }}" hint-placeholder-val="{{ false }}">
+      <div style="background:#FCFCFA; color:#172124; min-height:100vh; font-family:'Be Vietnam Pro',sans-serif; font-weight:300;">
+        <div style="padding:40px 56px 0;">
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:10px; letter-spacing:.14em; text-transform:uppercase; margin-bottom:26px; color:#7C7C70;">
+            <div onClick="{{ crumbBack }}" style="cursor:pointer; padding-right:6px;">←</div>
+            <sc-for list="{{ crumbs }}" as="cb" hint-placeholder-count="4">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div onClick="{{ cb.jump }}" style="cursor: {{ cb.cursor }}; opacity: {{ cb.op }};">{{ cb.pre }}<span style="display:inline-block; color: {{ bwColor }}; transform: {{ bwTf }};">{{ cb.mid }}</span>{{ cb.post }}</div>
+                <sc-if value="{{ cb.notLast }}" hint-placeholder-val="{{ true }}">
+                  <div style="opacity:.4;">›</div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:56px; align-items:end; border-bottom:1px solid #102F35; padding-bottom:26px;">
+            <div>
+              <h1 style="font-family:'Playfair Display',serif; font-weight:400; font-size:78px; line-height:.88; letter-spacing:-.045em; margin:0; color:#102F35;">taste modality: sơn la</h1>
+              <div style="font-family:'Playfair Display',serif; font-style:italic; font-size:27px; line-height:1.3; color:#8A6420; margin-top:18px;">Experiment #1: Sơn La, Medium roast</div>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:14px; padding-bottom:6px;">
+              <div style="display:flex; justify-content:space-between; gap:16px; border-top:1px solid #E3E3DB; padding-top:9px;">
+                <div style="font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:#A2A296;">Hạt</div>
+                <div style="font-size:13.5px;">Sơn La · medium</div>
+              </div>
+              <div style="display:flex; justify-content:space-between; gap:16px; border-top:1px solid #E3E3DB; padding-top:9px;">
+                <div style="font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:#A2A296;">Nước</div>
+                <div style="font-size:13.5px; font-variant-numeric:tabular-nums;">91–91.5°C · 85±5ppm</div>
+              </div>
+              <div style="display:flex; justify-content:space-between; gap:16px; border-top:1px solid #E3E3DB; padding-top:9px;">
+                <div style="font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:#A2A296;">Pour</div>
+                <div style="font-size:13.5px; font-variant-numeric:tabular-nums;">1 : 2 : 3</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding:30px 56px 0;">
+          <div style="aspect-ratio:21/9; overflow:hidden; background:#EDE8DD;">
+            <img src="https://ktswblog.net/wp-content/uploads/2022/11/Amelie-Sipping-from-a-Teacup-1.jpeg" alt="" style="width:100%; height:100%; object-fit:cover; display:block;">
+          </div>
+          <div style="display:flex; gap:10px; align-items:baseline; margin-top:10px; font-size:11px; color:#A2A296;">
+            <div style="width:22px; height:1px; background:#F2A0A5; transform:translateY(-4px);"></div>
+            <div>ảnh features</div>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:minmax(0,760px); justify-content:start; padding:56px 56px 130px;">
+          <div style="display:flex; flex-direction:column; gap:52px;">
+
+            <div>
+              <h2 style="font-family:'Playfair Display',serif; font-style:italic; font-weight:400; font-size:32px; line-height:1.1; letter-spacing:-.02em; margin:0 0 22px; color:#102F35;">Bean character</h2>
+              <div style="display:flex; flex-direction:column; gap:16px;">
+                <div style="display:grid; grid-template-columns:18px minmax(0,1fr); gap:12px;">
+                  <div style="width:5px; height:5px; border-radius:50%; background:#172124; margin:9px 0 0 6px;"></div>
+                  <div style="font-size:15.5px; line-height:1.62;">Best character có thể khai thác: <em style="font-weight:600; font-style:italic; color:#8A6420;">vị caramel</em>, đóng góp từ</div>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:11px; padding-left:30px;">
+                  <div style="display:grid; grid-template-columns:18px minmax(0,1fr); gap:12px;">
+                    <div style="width:5px; height:5px; border-radius:50%; border:1px solid #172124; margin:9px 0 0 6px;"></div>
+                    <div style="font-size:15px; line-height:1.62;">Mùi: nhóm sugar-browning (caramelly, syrup), và</div>
+                  </div>
+                  <div style="display:grid; grid-template-columns:18px minmax(0,1fr); gap:12px;">
+                    <div style="width:5px; height:5px; border-radius:50%; border:1px solid #172124; margin:9px 0 0 6px;"></div>
+                    <div style="font-size:15px; line-height:1.62;">Vị: pleasant bitter (lactones)</div>
+                  </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns:18px minmax(0,1fr); gap:12px; margin-top:6px;">
+                  <div style="width:5px; height:5px; border-radius:50%; background:#172124; margin:9px 0 0 6px;"></div>
+                  <div style="font-size:15.5px; line-height:1.62;">Bean limitation: <em style="font-weight:600; font-style:italic; color:#8A6420;">high intensity, low depth</em></div>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:11px; padding-left:30px;">
+                  <div style="display:grid; grid-template-columns:18px minmax(0,1fr); gap:12px;">
+                    <div style="width:5px; height:5px; border-radius:50%; border:1px solid #172124; margin:9px 0 0 6px;"></div>
+                    <div style="font-size:15px; line-height:1.62;">Nồng độ mùi-vị mạnh / Cảm quan chung về đa dạng mùi-vị thấp</div>
+                  </div>
+                  <div style="display:grid; grid-template-columns:18px minmax(0,1fr); gap:12px;">
+                    <div style="width:5px; height:5px; border-radius:50%; border:1px solid #172124; margin:9px 0 0 6px;"></div>
+                    <div style="font-size:15px; line-height:1.62; font-style:italic;">Profile tổng thể → <span style="font-weight:600; color:#8A6420;">các yếu tố cần kiểm soát</span></div>
+                  </div>
+
+                  <div style="display:flex; flex-direction:column; gap:14px; padding-left:30px; border-left:1px solid #E3E3DB; margin-left:8px;">
+                    <div style="display:grid; grid-template-columns:14px minmax(0,1fr); gap:12px;">
+                      <div style="width:4px; height:4px; background:#172124; margin:10px 0 0 5px;"></div>
+                      <div style="font-size:14.5px; line-height:1.66;">
+                        <div>Ngọt (2-3/4) xuất phát từ cả mùi và vị</div>
+                        <div style="color:#4B4A40;">— mùi ngọt (3-4) có chiều sâu, nhờ intensity nên đọng tốt cả ở aftertaste</div>
+                        <div style="color:#4B4A40;">— vị ngọt (2) nằm sâu trong hạt, <em>NHƯNG</em> chiết suất ở phase cuối của pour nên đi kèm chiết suất vị đắng (unpleasant bitter)</div>
+                      </div>
+                    </div>
+                    <div style="display:grid; grid-template-columns:14px minmax(0,1fr); gap:12px;">
+                      <div style="width:4px; height:4px; background:#172124; margin:10px 0 0 5px;"></div>
+                      <div style="font-size:14.5px; line-height:1.66;">
+                        <div>Chua nhóm malic nhiều (3/4)</div>
+                        <div style="font-style:italic; color:#4B4A40;">→ chiết suất nhiều có thể tạo cảm giác harsh</div>
+                      </div>
+                    </div>
+                    <div style="display:grid; grid-template-columns:14px minmax(0,1fr); gap:12px;">
+                      <div style="width:4px; height:4px; background:#172124; margin:10px 0 0 5px;"></div>
+                      <div style="font-size:14.5px; line-height:1.66;">
+                        <div>Đắng dày (3-4/4), gồm cả:</div>
+                        <div style="color:#4B4A40;">— pleasant bitter ở phase đầu</div>
+                        <div style="color:#4B4A40;">— harsh bitter ở phase sau <em>→ dry mouthfeel rõ khi bị chiết suất nhiều</em></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h2 style="font-family:'Playfair Display',serif; font-style:italic; font-weight:400; font-size:32px; line-height:1.1; letter-spacing:-.02em; margin:0 0 22px; color:#102F35;">Pour test: 3 phases of flavor</h2>
+              <div style="display:flex; flex-direction:column; gap:20px;">
+                <div style="display:grid; grid-template-columns:34px minmax(0,1fr); gap:14px;">
+                  <div style="font-family:'Playfair Display',serif; font-size:26px; line-height:1; color:#F2A0A5; font-variant-numeric:tabular-nums;">01</div>
+                  <div style="font-size:15px; line-height:1.66;">
+                    <div><strong style="font-weight:600;">blooming</strong> ~ chua chiếm ưu thế</div>
+                    <div style="color:#4B4A40;">— chua nồng độ mạnh và hăng nhất → khó giảm</div>
+                    <div style="color:#4B4A40;">— vị đắng đặc trưng của cà phê (pleasant ~ giống vị cafe phin)</div>
+                  </div>
+                </div>
+                <div style="display:grid; grid-template-columns:34px minmax(0,1fr); gap:14px;">
+                  <div style="font-family:'Playfair Display',serif; font-size:26px; line-height:1; color:#3E7A4E; font-variant-numeric:tabular-nums;">02</div>
+                  <div style="font-size:15px; line-height:1.66;">
+                    <div><strong style="font-weight:600;">#2</strong> ~ cân bằng mùi-vị tốt, vị ngọt chưa ra nhiều</div>
+                    <div style="color:#4B4A40;">— chua cân bằng nhất (dễ chịu) <em>nhờ</em></div>
+                    <div style="font-style:italic; color:#4B4A40; padding-left:18px;">(i) nồng độ chua giảm + (ii) sự cân bằng của mùi và vị ngọt</div>
+                    <div style="color:#4B4A40;">— vị đắng đặc trưng (pleasant ~ giống vị espresso)</div>
+                  </div>
+                </div>
+                <div style="display:grid; grid-template-columns:34px minmax(0,1fr); gap:14px;">
+                  <div style="font-family:'Playfair Display',serif; font-size:26px; line-height:1; color:#8A6420; font-variant-numeric:tabular-nums;">03</div>
+                  <div style="font-size:15px; line-height:1.66;">
+                    <div><strong style="font-weight:600;">#3</strong> ~ ngọt và đắng chiếm ưu thế, nồng độ loãng</div>
+                    <div style="color:#4B4A40;">— hầu như không chua (hot), chua 1-2/4 (cold) nhờ ngọt cân bằng lại</div>
+                    <div style="color:#4B4A40;">— vị đắng thay đổi sang cảm giác unpleasant</div>
+                    <div style="font-style:italic; color:#4B4A40; padding-left:18px;">~ dry, astringent đọng ở cuống họng</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h2 style="font-family:'Playfair Display',serif; font-style:italic; font-weight:400; font-size:32px; line-height:1.1; letter-spacing:-.02em; margin:0 0 22px; color:#102F35;">Taste modality・Mục tiêu của pour</h2>
+
+              <div style="background:#F3EEE1; padding:26px 28px; margin-bottom:26px;">
+                <div style="font-weight:600; font-size:15.5px; line-height:1.5; color:#7A5230; margin-bottom:10px;">Cân bằng giữa chua và đắng / set sweet flavor aside as always good</div>
+                <div style="font-size:14.5px; line-height:1.7; color:#3B3729;">
+                  <div>— Nếu phải chọn giữa chua và đắng → chọn chua (lý tưởng giữ nồng độ chua mỏng, sáng)</div>
+                  <div>— Mùi ngọt làm được 2 việc: (i) tăng perceived pleasant bitterness, (ii) giảm perceived unpleasant bitterness ở hậu vị</div>
+                  <div>— Mùi-vị cuối quan trọng: (mùi cuối) aftertaste ngọt đọng lâu thì cảm giác, trí nhớ về (vị cuối) bitter có thể giảm</div>
+                </div>
+              </div>
+
+              <div style="display:flex; flex-direction:column; gap:16px;">
+                <div style="display:grid; grid-template-columns:18px minmax(0,1fr); gap:12px;">
+                  <div style="width:5px; height:5px; border-radius:50%; background:#172124; margin:9px 0 0 6px;"></div>
+                  <div style="font-size:15.5px; line-height:1.62;">Water tactic:</div>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:14px; padding-left:30px;">
+                  <div style="display:grid; grid-template-columns:18px minmax(0,1fr); gap:12px;">
+                    <div style="width:5px; height:5px; border-radius:50%; border:1px solid #172124; margin:9px 0 0 6px;"></div>
+                    <div style="font-size:15px; line-height:1.66;">
+                      <div><span style="border-bottom:1px solid #CFCFC4;">Nhiệt: 91-91.5*C</span>, thay cho nhiệt thông thường 92-93</div>
+                      <div style="color:#4B4A40;">— Nhiệt cao, chiết suất cao → tăng mùi nhưng trade off lớn là intensity của chua và đắng lên đáng kể (đặc biệt là đắng)</div>
+                    </div>
+                  </div>
+                  <div style="display:grid; grid-template-columns:18px minmax(0,1fr); gap:12px;">
+                    <div style="width:5px; height:5px; border-radius:50%; border:1px solid #172124; margin:9px 0 0 6px;"></div>
+                    <div style="font-size:15px; line-height:1.66;">
+                      <div><span style="border-bottom:1px solid #CFCFC4;">TDS 85±5ppm — 9-9.5pH</span></div>
+                      <div style="color:#4B4A40;">— TDS đủ cao buffer acid, đủ thấp để mùi metallic không aggressive (chemically)</div>
+                      <div style="color:#4B4A40;">— pH cao tăng ngọt, giảm chua (physically)</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns:18px minmax(0,1fr); gap:12px; margin-top:6px;">
+                  <div style="width:5px; height:5px; border-radius:50%; background:#172124; margin:9px 0 0 6px;"></div>
+                  <div style="font-size:15.5px; line-height:1.62;">Pour time:</div>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:12px; padding-left:30px;">
+                  <div style="display:grid; grid-template-columns:18px minmax(0,1fr); gap:12px;">
+                    <div style="width:5px; height:5px; border-radius:50%; border:1px solid #172124; margin:9px 0 0 6px;"></div>
+                    <div style="font-size:15px; line-height:1.66;">Bloom ở lượng tối thiểu (25gr) → kiểm soát chua, hạn chế chua harsh</div>
+                  </div>
+                  <div style="display:grid; grid-template-columns:18px minmax(0,1fr); gap:12px;">
+                    <div style="width:5px; height:5px; border-radius:50%; border:1px solid #172124; margin:9px 0 0 6px;"></div>
+                    <div style="font-size:15px; line-height:1.66;">Tỉ lệ pour 1 : 2 : 3</div>
+                  </div>
+                  <div style="display:grid; grid-template-columns:80px repeat(3,minmax(0,1fr)); gap:0 14px; margin-top:8px; max-width:420px; font-variant-numeric:tabular-nums;">
+                    <div style="font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#A2A296; border-bottom:1px solid #172124; padding-bottom:7px;">Liều</div>
+                    <div style="font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#A2A296; border-bottom:1px solid #172124; padding-bottom:7px;">Pour 1</div>
+                    <div style="font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#A2A296; border-bottom:1px solid #172124; padding-bottom:7px;">Pour 2</div>
+                    <div style="font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#A2A296; border-bottom:1px solid #172124; padding-bottom:7px;">Pour 3</div>
+                    <div style="font-size:15px; padding:11px 0; border-bottom:1px solid #E3E3DB;">10gr</div>
+                    <div style="font-size:15px; padding:11px 0; border-bottom:1px solid #E3E3DB;">25</div>
+                    <div style="font-size:15px; padding:11px 0; border-bottom:1px solid #E3E3DB;">60</div>
+                    <div style="font-size:15px; padding:11px 0; border-bottom:1px solid #E3E3DB;">85</div>
+                    <div style="font-size:15px; padding:11px 0; border-bottom:1px solid #E3E3DB;">12.5gr</div>
+                    <div style="font-size:15px; padding:11px 0; border-bottom:1px solid #E3E3DB;">25</div>
+                    <div style="font-size:15px; padding:11px 0; border-bottom:1px solid #E3E3DB;">85</div>
+                    <div style="font-size:15px; padding:11px 0; border-bottom:1px solid #E3E3DB;">195</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
     <sc-if value="{{ isCards }}" hint-placeholder-val="{{ false }}">
       <div style="background:#FDFBF2; color:#23211A; min-height:100vh;">
         <div style="background: {{ cardsBandBg }}; color: {{ cardsBandFg }}; padding:40px 56px 32px;">
@@ -1344,7 +1811,7 @@
             <div onClick="{{ crumbBack }}" style="cursor:pointer; padding-right:6px;">←</div>
             <sc-for list="{{ crumbs }}" as="cb" hint-placeholder-count="3">
               <div style="display:flex; align-items:center; gap:8px;">
-                <div onClick="{{ cb.jump }}" style="cursor: {{ cb.cursor }}; opacity: {{ cb.op }};">{{ cb.t }}</div>
+                <div onClick="{{ cb.jump }}" style="cursor: {{ cb.cursor }}; opacity: {{ cb.op }};">{{ cb.pre }}<span style="display:inline-block; color: {{ bwColor }}; transform: {{ bwTf }};">{{ cb.mid }}</span>{{ cb.post }}</div>
                 <sc-if value="{{ cb.notLast }}" hint-placeholder-val="{{ true }}">
                   <div style="opacity:.4;">›</div>
                 </sc-if>
@@ -1371,7 +1838,7 @@
             </div>
           </sc-for>
           <sc-if value="{{ barAdding }}" hint-placeholder-val="{{ false }}">
-            <input value="{{ tagDraft }}" onChange="{{ setTagDraft }}" onKeyDown="{{ barKey }}" onBlur="{{ barCommit }}" autoFocus="{{ true }}" list="flavor-groups" placeholder="thêm nhóm hương" style="width:170px; background:#FFFFFF; border:1px solid #3E7A4E; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-weight:300; font-size:12px; padding:6px 10px; outline:none;" />
+            <input value="{{ tagDraft }}" onChange="{{ setTagDraft }}" onKeyDown="{{ barKey }}" onBlur="{{ barCommit }}" autoFocus="{{ true }}" list="flavor-groups" placeholder="thêm nhóm hương" style="width:170px; background:#FFFFFF; border:1px solid #3E7A4E; color:#23211A; font-family:'Be Vietnam Pro',sans-serif; font-weight:300; font-size:12px; padding:6px 10px; outline:none;">
           </sc-if>
           <sc-if value="{{ barIdle }}" hint-placeholder-val="{{ true }}">
             <div onClick="{{ barOpen }}" style="font-family:'Be Vietnam Pro',sans-serif; font-size:12px; color:#B5AE99; border:1px dashed #DAD7C7; padding:6px 12px; cursor:pointer;" style-hover="color:#3E7A4E; border-color:#3E7A4E;">+ tag</div>
@@ -1502,7 +1969,7 @@
             <div onClick="{{ crumbBack }}" style="cursor:pointer; padding-right:6px;">←</div>
             <sc-for list="{{ crumbs }}" as="cb" hint-placeholder-count="3">
               <div style="display:flex; align-items:center; gap:8px;">
-                <div onClick="{{ cb.jump }}" style="cursor: {{ cb.cursor }}; opacity: {{ cb.op }};">{{ cb.t }}</div>
+                <div onClick="{{ cb.jump }}" style="cursor: {{ cb.cursor }}; opacity: {{ cb.op }};">{{ cb.pre }}<span style="display:inline-block; color: {{ bwColor }}; transform: {{ bwTf }};">{{ cb.mid }}</span>{{ cb.post }}</div>
                 <sc-if value="{{ cb.notLast }}" hint-placeholder-val="{{ true }}">
                   <div style="opacity:.4;">›</div>
                 </sc-if>
@@ -1677,7 +2144,7 @@
             <div onClick="{{ crumbBack }}" style="cursor:pointer; padding-right:6px;">←</div>
             <sc-for list="{{ crumbs }}" as="cb" hint-placeholder-count="3">
               <div style="display:flex; align-items:center; gap:8px;">
-                <div onClick="{{ cb.jump }}" style="cursor: {{ cb.cursor }}; opacity: {{ cb.op }};">{{ cb.t }}</div>
+                <div onClick="{{ cb.jump }}" style="cursor: {{ cb.cursor }}; opacity: {{ cb.op }};">{{ cb.pre }}<span style="display:inline-block; color: {{ bwColor }}; transform: {{ bwTf }};">{{ cb.mid }}</span>{{ cb.post }}</div>
                 <sc-if value="{{ cb.notLast }}" hint-placeholder-val="{{ true }}">
                   <div style="opacity:.4;">›</div>
                 </sc-if>
@@ -1755,7 +2222,7 @@
           <div onClick="{{ crumbBack }}" style="cursor:pointer; padding-right:6px;">←</div>
           <sc-for list="{{ crumbs }}" as="cb" hint-placeholder-count="3">
             <div style="display:flex; align-items:center; gap:8px;">
-              <div onClick="{{ cb.jump }}" style="cursor: {{ cb.cursor }}; opacity: {{ cb.op }};">{{ cb.t }}</div>
+              <div onClick="{{ cb.jump }}" style="cursor: {{ cb.cursor }}; opacity: {{ cb.op }};">{{ cb.pre }}<span style="display:inline-block; color: {{ bwColor }}; transform: {{ bwTf }};">{{ cb.mid }}</span>{{ cb.post }}</div>
               <sc-if value="{{ cb.notLast }}" hint-placeholder-val="{{ true }}">
                 <div style="opacity:.4;">›</div>
               </sc-if>
@@ -1929,7 +2396,8 @@ class Component extends DCLogic {
         { s: 'Toàn hệ thống', r: 'Trên mọi trang: đúng hai họ chữ — serif cho tiêu đề, sans cho mọi thứ còn lại.', e: 'Playfair Display · Be Vietnam Pro' },
         { s: 'Toàn hệ thống', r: 'Trong thân bài: nét mảnh 300; nhãn in hoa dùng nét 500.', e: '' },
         { s: 'Toàn hệ thống', r: 'Với font thân bài: phải có đủ dấu tiếng Việt.', e: '' },
-        { s: 'Toàn hệ thống', r: 'Với tên beӕn weirdo khi đặt bằng serif ở vị trí tên hoặc tiêu đề: chữ ӕ luôn phóng to hơn phần còn lại và tô màu hồng cánh hoa; các vị trí đặt bằng sans in hoa giữ nguyên một màu.', e: 'ӕ · scale 1.2–1.3 · #F2A0A5' },
+        { s: 'Toàn hệ thống', r: 'Với tên thương hiệu: chữ nhấn luôn phóng to hơn phần còn lại và tô màu riêng, ở mọi vị trí — sidebar, trang chủ, dải đường dẫn, tiêu đề, kể cả khi đặt bằng sans in hoa.', e: 'ӕ · scale 1.22 · #F2A0A5' },
+        { s: 'Toàn hệ thống', r: 'Với tên thương hiệu: chỉ khai báo một chỗ trong [[cms]] — đổi tên, chữ nhấn, màu, cỡ hoặc thay bằng ảnh thì mọi vị trí tự cập nhật theo.', e: 'Content › Text art' },
         { s: 'Toàn hệ thống', r: 'Với mọi số liệu: dùng chữ số cùng bề rộng.', e: 'tabular-nums' }
       ] },
       { n: '03', g: 'Khoảng cách & lưới', items: [
@@ -1943,7 +2411,11 @@ class Component extends DCLogic {
       { n: '04', g: 'Đặt tên trang', items: [
         { s: 'Toàn hệ thống', r: 'Với nhãn trang: gồm hai phần, ngăn bằng gạch ngang dài.', e: 'Sensory — Notes' },
         { s: 'Toàn hệ thống', r: 'Trong nhãn trang: phần trước gạch là module, phần sau gạch là dạng bài.', e: 'sensory · Notes' },
-        { s: 'Toàn hệ thống', r: 'Trong nhãn trang: ngày tháng nếu có thì đứng sau cùng, ngăn bằng dấu chấm giữa.', e: 'Article · 2026.02' }
+        { s: 'Toàn hệ thống', r: 'Trong nhãn trang: ngày tháng nếu có thì đứng sau cùng, ngăn bằng dấu chấm giữa.', e: 'Article · 2026.02' },
+        { s: 'Toàn hệ thống', r: 'Ở khối tiêu đề của mọi template: các thành phần nội dung phải giống nhau xuyên suốt — đường dẫn, tiêu đề, dòng dẫn phụ; không thêm dữ liệu chỉ có ở một trang.', e: 'đường dẫn › tiêu đề › dòng dẫn' },
+        { s: 'Toàn hệ thống', r: 'Với ngày tạo, tác giả và các dữ liệu vận hành khác: không đặt ở khối tiêu đề, chỉ hiện ở nơi quản lý nội dung.', e: 'không hiện ở trang đọc' },
+        { s: 'Toàn hệ thống', r: 'Tiêu đề bài chỉ khai báo một chỗ trong [[cms]]: trang module, dải đường dẫn và tiêu đề trong bài đều đọc cùng một giá trị.', e: 'Content › module › bài' },
+        { s: 'Toàn hệ thống', r: 'Với sapo: mặc định lấy tự động từ đoạn mở đầu của bài, rút còn một câu ngắn; sửa tay trong [[cms]] thì bản sửa được ưu tiên.', e: 'tự động ← → sửa tay' }
       ] },
       { n: '05', g: 'Điều hướng', items: [
         { s: 'Toàn hệ thống', r: 'Với mọi trang con: có dải đường dẫn phản ánh đúng hành trình người dùng.', e: '[[landing]] › [[home]] › sensory › Notes' },
@@ -1982,34 +2454,37 @@ class Component extends DCLogic {
         { s: 'Toàn hệ thống', r: 'Với mỗi bài dùng chung template: chỉ đổi màu, nhãn, tiêu đề và đoạn dẫn theo lối vào — nội dung và thao tác giữ nguyên.', e: 'một template, hai vai' },
         { s: 'Toàn hệ thống', r: 'Với đường dẫn: bài chính thức đi từ [[landing]] › [[home]] › module, bài mẫu đi từ [[secAdmin]] › Notes › Templates.', e: '' }
       ] },
-      { n: '10', g: '[[article]]', items: [
+      { n: '10', g: '[[notes]]', items: [
+        { s: 'Template', r: 'Với [[notes]]: lưới 12 cột lệch tầng, mỗi note một bề rộng và độ tụt khác nhau.', e: '' },
+        { s: 'Template', r: 'Với [[notes]]: rê chuột thì các note khác mờ đi, bấm thì note đó giãn hết bề ngang.', e: '' },
+        { s: 'Template', r: 'Với [[notes]]: khối màu đặc và câu trích chèn vào chỗ trống của lưới.', e: '' },
+        { s: 'Template', r: 'Ở danh sách [[notes]]: xếp theo thời gian, bài mới nhất đứng đầu.', e: 'mới → cũ' },
+        { s: 'Template', r: 'Ở [[notes]]: bài được ghim luôn đứng trên toàn bộ danh sách; phần còn lại giữ đúng thứ tự thời gian, bỏ ghim thì bài trở về đúng chỗ theo ngày.', e: 'ghim → rồi mới tới thời gian' },
+        { s: 'Template', r: 'Với bài được ghim: có nhãn ghim ở đầu thẻ, dùng màu hồng mận để tách khỏi nhãn loại bài.', e: '#C25C7C' }
+      ] },
+      { n: '11', g: '[[hours]]', items: [
+        { s: 'Template', r: 'Với [[hours]]: chuỗi ngày là phần chính, ô bấm giờ lệch sang phải.', e: '' },
+        { s: 'Template', r: 'Riêng [[hours]]: sửa hoạt động chỉ hai nhánh — đổi thời gian, hoặc xoá. Sửa tên là thao tác phụ.', e: '' },
+        { s: 'Template', r: 'Với [[hours]]: ngày trong 7 ngày gần nhất cho sửa, xoá, kéo thả; ngày cũ hơn chỉ hiện việc đã xong.', e: '' },
+        { s: 'Template', r: 'Với [[hours]]: tháng cũ tự thu gọn, không tách khỏi danh mục.', e: '' }
+      ] },
+      { n: '12', g: '[[article]]', items: [
         { s: 'Template', r: 'Với [[article]]: hai cột — cột lớn thân bài, cột nhỏ mục lục hoặc ghi chú bên lề.', e: '' },
         { s: 'Template', r: 'Với [[article]]: ảnh phụ thả trôi trong thân bài, không dồn xuống chân bài.', e: '' },
         { s: 'Template', r: 'Với [[article]]: ảnh chính ít nhất 1.7 lần ảnh phụ, tối đa 3–4 ảnh mỗi cụm.', e: '' }
       ] },
-      { n: '11', g: '[[report]]', items: [
+      { n: '13', g: '[[report]]', items: [
         { s: 'Template', r: 'Với [[report]]: cột chính là số liệu và bảng, cột phụ chỉ chứa ghi chú.', e: '' },
         { s: 'Template', r: 'Với [[report]]: kéo được vạch giữa hai cột để đổi tỉ lệ.', e: '' },
         { s: 'Template', r: 'Riêng [[report]]: ghi chú có hai chế độ — Explorations xếp trên xuống, Memo notes rải theo vị trí trong bài.', e: '' },
         { s: 'Template', r: 'Với [[report]]: bảng thêm được cột và dòng, kéo được bề rộng cột.', e: '' }
       ] },
-      { n: '12', g: '[[cards]]', items: [
+      { n: '14', g: '[[cards]]', items: [
         { s: 'Template', r: 'Riêng [[cards]]: mở được nhiều thẻ cùng lúc để đối chiếu — ngoại lệ của quy tắc 06.', e: 'có mở hết / gập hết' },
         { s: 'Template', r: 'Với [[cards]]: các thẻ cùng một cấp, gập mở độc lập, đổi được thứ tự.', e: '' },
         { s: 'Template', r: 'Riêng [[cards]]: bộ tag nhóm hương đặt cố định ở đầu trang, không rải theo từng thẻ.', e: '' },
         { s: 'Template', r: 'Với [[cards]]: màu thẻ lấy theo nhóm hương đầu tiên của thẻ đó.', e: '' }
       ] },
-      { n: '13', g: '[[notes]]', items: [
-        { s: 'Template', r: 'Với [[notes]]: lưới 12 cột lệch tầng, mỗi note một bề rộng và độ tụt khác nhau.', e: '' },
-        { s: 'Template', r: 'Với [[notes]]: rê chuột thì các note khác mờ đi, bấm thì note đó giãn hết bề ngang.', e: '' },
-        { s: 'Template', r: 'Với [[notes]]: khối màu đặc và câu trích chèn vào chỗ trống của lưới.', e: '' }
-      ] },
-      { n: '14', g: '[[hours]]', items: [
-        { s: 'Template', r: 'Với [[hours]]: chuỗi ngày là phần chính, ô bấm giờ lệch sang phải.', e: '' },
-        { s: 'Template', r: 'Riêng [[hours]]: sửa hoạt động chỉ hai nhánh — đổi thời gian, hoặc xoá. Sửa tên là thao tác phụ.', e: '' },
-        { s: 'Template', r: 'Với [[hours]]: ngày trong 7 ngày gần nhất cho sửa, xoá, kéo thả; ngày cũ hơn chỉ hiện việc đã xong.', e: '' },
-        { s: 'Template', r: 'Với [[hours]]: tháng cũ tự thu gọn, không tách khỏi danh mục.', e: '' }
-      ] }
     ] }
   ];
 
@@ -2098,6 +2573,8 @@ class Component extends DCLogic {
 
   componentDidMount() {
     this.watchRise();
+    this.loadLongform();
+    this.watchLfScroll();
 
     try {
       const raw = localStorage.getItem('cs_practice_logs_v1');
@@ -2262,12 +2739,36 @@ class Component extends DCLogic {
 
   componentWillUnmount() { this.disarm(); }
 
+  watchLfScroll() {
+    if (this._lfScrollBound) return;
+    this._lfScrollBound = true;
+    const sc = () => {
+      if (this._lfRaf) return;
+      this._lfRaf = requestAnimationFrame(() => {
+        this._lfRaf = null;
+        const el = document.scrollingElement || document.documentElement;
+        const y = el.scrollTop;
+        const deep = y > 260;
+        if (deep !== !!this.state.lfDeep) this.setState({ lfDeep: deep });
+      });
+    };
+    window.addEventListener('scroll', sc, { passive: true });
+    this._lfScroll = sc;
+  }
+
+  loadLongform() {
+    if (this._lfLoading) return;
+    this._lfLoading = true;
+    import('./longform.js').then(m => this.setState({ lf: m.blocks })).catch(() => {});
+  }
+
   SITE_DEF = {
     t1: 'A coffee study', t2: 'journal',
     blurb: 'Ghi chép quá trình học về cà phê — chia theo module, mỗi module là một tập bài ngắn. Đọc theo thứ tự hoặc nhặt bất kỳ đâu.',
     blurbShort: 'Ghi chép quá trình học về cà phê — chia theo module, mỗi module là một tập bài ngắn.',
     lEyebrow: 'coffee study journal — 2024 / 2026',
     lTitle1: 'beӕn weirdo', lTitle2: '#viettatlahkd',
+    bwText: 'beӕn weirdo', bwGlyph: 'ӕ', bwColor: '#F2A0A5', bwScale: '1.22', bwImg: '',
     lIntro1: 'Mỗi thứ học được đều bị viết lại thành một ghi chú ngắn, xếp vào một module. Ba module đang mở: giác quan, hoá sinh, rang. Bài mới nhất luôn nằm trên cùng của module tương ứng.',
     lIntro2: 'Không có bài nào ở đây là kết luận. Phần lớn là ghi chép giữa đường: đọc được gì, thử gì, sai ở đâu. Mục "còn chưa rõ" ở cuối mỗi bài thường là phần đáng đọc nhất.',
     lCta: 'xem mục lục',
@@ -2319,6 +2820,115 @@ class Component extends DCLogic {
     return v.replace(/\[\[([a-zA-Z]+)\]\]/g, (all, k) => (k in m ? m[k] : all));
   }
 
+  lfPost() {
+    const mods = this.mods();
+    for (const m of mods) {
+      const e = (m.entries || []).find(x => x.tpl === 'longform' || x.en === 'Lipids in Beans');
+      if (e) return { mod: m, entry: e };
+    }
+    return { mod: mods[0] || {}, entry: ((mods[0] || {}).entries || [])[0] || {} };
+  }
+
+  lfAutoSum() {
+    const b = (this.state.lf || []).find(x => x.k === 'p');
+    const t = b ? (b.runs || []).map(r => r.t).join('') : '';
+    if (!t) return '';
+    const cut = t.slice(0, 96);
+    return (cut.length < t.length ? cut.slice(0, cut.lastIndexOf(' ')) + '…' : cut);
+  }
+
+  lfPrep(list, depth) {
+    const S = { h1: '46px', h2: '30px', h3: '21px', h4: '17px' };
+    if (depth === 0) { this._h1n = 0; this._heads = []; this._curH1 = ''; this._curH2 = ''; this._sinceH1 = 99; }
+    const fold = this.state.lfFold || {};
+    return (list || []).map((b, i) => {
+      const hIdx = b.k === 'h1' ? this._h1n++ : -1;
+      let own1 = this._curH1, own2 = this._curH2, selfId = '';
+      const sinceH1 = this._sinceH1;
+      if (depth === 0) this._sinceH1 = b.k === 'h1' ? 0 : this._sinceH1 + 1;
+      if (depth === 0) {
+        if (b.k === 'h1' && hIdx > 0) { selfId = 'a' + i; this._curH1 = selfId; this._curH2 = ''; own1 = ''; own2 = ''; this._heads.push(selfId); }
+        else if (b.k === 'h2') { selfId = 'b' + i; this._curH2 = selfId; own1 = this._curH1; own2 = ''; this._heads.push(selfId); }
+      }
+      const parentFolded = !!(own1 && fold[own1]);
+      const hidden = b.k === 'h2' ? false : (parentFolded || (own2 && fold[own2]));
+      const folded = !!fold[selfId] || (b.k === 'h2' && parentFolded);
+      const ownH1 = own1;
+      const k = b.k;
+      let runs = (b.runs || []).map(r => ({ t: r.t, w: r.w, s: r.s }));
+      if (hIdx === 0 && this.state.longformFrom === 'module') {
+        const p = this.lfPost ? this.lfPost() : null;
+        const en = p && p.entry && p.entry.en;
+        runs = [{ t: en || 'Lipids in Beans', w: '300', s: 'normal' }];
+      }
+      return {
+        key: depth + '-' + i,
+        hIdx: String(hIdx),
+        disp: hidden ? 'none' : 'block',
+        foldCue: folded ? '▸' : '▾',
+        cueDisplay: selfId ? 'inline-block' : 'none',
+        hCursor: selfId ? 'pointer' : 'default',
+        foldCueOp: folded ? '1' : '.7',
+        foldCueCol: folded ? '#8A6420' : '#B5AE99',
+        toggleFold: selfId ? () => this.setState(st => {
+          const m = Object.assign({}, st.lfFold);
+          if (b.k === 'h2' && ownH1 && m[ownH1]) { delete m[ownH1]; delete m[selfId]; return { lfFold: m }; }
+          if (m[selfId]) delete m[selfId]; else m[selfId] = true;
+          return { lfFold: m };
+        }) : () => {},
+        hMt: hIdx === 0 ? '0' : '58px',
+        hFs: hIdx === 0 ? '70px' : '42px',
+        isTitle: hIdx === 0,
+        showSub: hIdx === 0 && this.state.longformFrom === 'module',
+        h2Mt: sinceH1 <= 2 ? '24px' : '42px',
+        hLh: hIdx === 0 ? '.94' : '1.04',
+        hCol: hIdx === 0 ? '#172124' : '#102F35',
+        hBt: hIdx === 0 ? '0' : '2px solid #102F35',
+        hPt: hIdx === 0 ? '0' : '22px',
+        isH1: k === 'h1', isH2: k === 'h2', isH3: k === 'h3', isH4: k === 'h4',
+        isP: k === 'p', isCont: k === 'cont', isLi: k === 'li', isFig: k === 'fig',
+        isAside: k === 'aside', isFormula: k === 'formula', isMeta: k === 'meta',
+        isNote: k === 'note',
+        noteOpen: !(this.state.lfNote || {})[depth + '-' + i],
+        noteCue: (this.state.lfNote || {})[depth + '-' + i] ? '+' : '−',
+        noteToggle: () => this.setState(st => ({ lfNote: Object.assign({}, st.lfNote, { [depth + '-' + i]: !(st.lfNote || {})[depth + '-' + i] }) })),
+        notePeek: (b.runs || []).map(r => r.t).join('').replace(/\n/g, ' ').slice(0, 46) + '…',
+        lines: (function () {
+          const groups = [[]];
+          (b.runs || []).forEach(r => { if (r.t === '\n') groups.push([]); else groups[groups.length - 1].push({ t: r.t, w: r.w, s: r.s }); });
+          return groups.filter(g => g.length).map((g, gi) => ({
+            key: gi,
+            runs: g.map(r => ({
+              t: r.t, w: r.w, s: r.s,
+              col: r.w === '600' ? '#0F3D4A' : '#2A4A55',
+              bg: r.w === '600' ? 'rgba(111,168,192,.22)' : 'transparent'
+            }))
+          }));
+        })(),
+        peekDisplay: (this.state.lfNote || {})[depth + '-' + i] ? 'none' : 'block',
+        runs,
+        hSize: S[k] || '17px',
+        pad: k === 'li' ? (b.lvl === 1 ? '0px' : b.lvl === 2 ? '26px' : '52px') : (b.ind ? '26px' : '0px'),
+        dotW: b.lvl === 3 ? '3px' : '4px',
+        dotR: b.lvl === 2 ? '50%' : '0',
+        dotBg: b.lvl === 1 ? '#172124' : b.lvl === 2 ? 'transparent' : '#8A6420',
+        dotBd: b.lvl === 2 ? '1px solid #172124' : '0',
+        bg: b.src ? 'url(' + b.src + ') center/contain no-repeat' : 'none',
+        ar: b.ar || '1.5',
+        v: b.v || '',
+        items: b.items ? this.lfPrep(b.items, depth + 1) : []
+      };
+    });
+  }
+
+  bwParts(txt) {
+    const t = txt !== undefined ? txt : (this.sv('bwText') || '');
+    const g = this.sv('bwGlyph') || 'ӕ';
+    const i = t.indexOf(g);
+    if (i < 0) return { pre: t, mid: '', post: '' };
+    return { pre: t.slice(0, i), mid: g, post: t.slice(i + g.length) };
+  }
+
   secName(g) {
     const s = this.state.site || {};
     return (s.sections && s.sections[g]) || g;
@@ -2365,6 +2975,10 @@ class Component extends DCLogic {
       sh: { w: '11px', h: '7px', r: '0', bd: '1px solid currentColor', bg: 'transparent', brw: '0', bbw: '1px', tf: 'none' } },
     { k: 'report', g: 'Admin', label: 'Field report', desc: 'khung ghi hiện trường', sc: 'report', from: 'reportFrom', sub: true,
       sh: { w: '11px', h: '9px', r: '0', bd: '1px solid currentColor', bg: 'transparent', brw: '1px', bbw: '1px', tf: 'none' } },
+    { k: 'longform', g: 'Admin', label: 'Long-form', desc: 'khung bài dịch dài', sc: 'longform', from: 'longformFrom', sub: true,
+      sh: { w: '11px', h: '11px', r: '0', bd: '1px solid currentColor', bg: 'transparent', brw: '1px', bbw: '4px', tf: 'none' } },
+    { k: 'taste', g: 'Admin', label: 'Memo', desc: 'khung ghi nếm thử', sc: 'taste', from: 'tasteFrom', sub: true,
+      sh: { w: '11px', h: '11px', r: '50% 0 50% 50%', bd: '1px solid currentColor', bg: 'transparent', brw: '1px', bbw: '1px', tf: 'none' } },
     { k: 'cards', g: 'Admin', label: 'Info cards', desc: 'khung thẻ gập', sc: 'cards', from: 'cardsFrom', sub: true,
       sh: { w: '11px', h: '4px', r: '0', bd: '1px solid currentColor', bg: 'transparent', brw: '1px', bbw: '1px', tf: 'none' } }
   ];
@@ -2528,6 +3142,7 @@ class Component extends DCLogic {
 
   notesData() {
     return [
+      { d: '2026.08.18', k: 'cảm nhận', pinned: true, sc: 'taste', t: 'taste modality: sơn la', mediaHint: 'ảnh features — tách trà, ánh sáng ấm', img: 'https://ktswblog.net/wp-content/uploads/2022/11/Amelie-Sipping-from-a-Teacup-1.jpeg', b: 'Experiment #1: Sơn La, Medium roast — best character là vị caramel, giới hạn của hạt là high intensity, low depth. Ba phase của pour, mục tiêu cân bằng chua và đắng, cùng water tactic và tỉ lệ pour đi kèm.', len: 'dài' },
       { d: '2026.02.14', k: 'quan sát', t: 'Vì sao cháo đun quá lâu thì vữa', mediaHint: 'ảnh — nồi trên bếp, hơi nước, mặt cháo', b: 'Hạt tinh bột hút nước rồi nở đến lúc vỡ hẳn thành tế bào, amylose thoát ra ngoài và làm cả nồi sánh đều. Đun tiếp thì chuỗi amylose bị cắt ngắn, độ sánh sụp xuống và nước tách khỏi hạt. Đúng cái ngưỡng ấy, cấu trúc chuyển từ "sánh" sang "vữa" — cùng một cơ chế với việc khuấy espresso quá tay.', len: 'dài' },
       { d: '2026.02.11', k: 'video', t: 'Một ngày không lời — 47 giây', b: 'Quay lại toàn bộ lịch trình sáng bằng một cú máy tĩnh đặt trên bàn: cân, nước, phin, sổ. Không tiếng, không nhạc. Xem lại thấy rõ ba khoảng chết mình không nhớ là mình có.', len: 'media' },
       { d: '2026.02.09', k: 'liên ngành', t: 'Từ tứ niệm xứ tới việc nếm', mediaHint: 'ảnh — bàn cupping, thìa và bát nếm', b: 'Việc quan sát cảm thọ mà không dán nhãn ngay hoá ra là kỹ thuật cupping: ghi nhận vị trước, gọi tên sau. Khi gọi tên quá sớm, mọi thứ đến sau đều bị bẻ cong để khớp với cái tên đã gọi.', len: 'vừa' },
@@ -2588,7 +3203,7 @@ class Component extends DCLogic {
         shot2: 'nhân xanh chụp từ trên, nền rêu',
         shot3: 'thớ tế bào phóng đại',
         entries: [
-          { n: '05', en: 'Lipids in Beans', vi: 'Chất béo, thể chất của nước, và sự ôi hoá', kind: 'note', date: '2025.12' },
+          { n: '05', en: 'Lipids in Beans', vi: 'Chất béo, thể chất của nước, và sự ôi hoá', kind: 'note', date: '2025.12', tpl: 'longform' },
           { n: '01', en: 'Bean Composition', vi: 'Thành phần hoá học của một hạt nhân xanh', kind: 'note', date: '2026.04' },
           { n: '02', en: 'Cell Wall: Lignin', vi: 'Cấu trúc gỗ hoá quyết định độ giòn khi rang', kind: 'note', date: '2026.03' },
           { n: '03', en: 'Chlorogenic Acids (CGA)', vi: 'Nguồn gốc của vị chát và phần lớn vị chua', kind: 'essay', date: '2026.02' },
@@ -2629,8 +3244,12 @@ class Component extends DCLogic {
       isSequence: m.layout === 'sequence',
       top3: m.entries.slice(0, 3),
       entries: m.entries.map((e, i) => Object.assign({}, e, {
-        tint: i % 2 === 0 ? m.tint : m.tint2,
-        go: (m.id === 'sensory' && e.en === 'Sensory Lexicon')
+        tint: (m.id === 'biochem' && (e.tpl === 'longform' || e.en === 'Lipids in Beans'))
+          ? 'url(assets/longform/image.png) center/cover no-repeat'
+          : (i % 2 === 0 ? m.tint : m.tint2),
+        go: (m.id === 'biochem' && (e.tpl === 'longform' || e.en === 'Lipids in Beans'))
+          ? () => this.setState({ screen: 'longform', longformFrom: 'module', lfEntry: m.id + '|' + e.n })
+          : (m.id === 'sensory' && e.en === 'Sensory Lexicon')
           ? () => this.setState({ screen: 'cards', cardsFrom: 'module' })
           : (m.id === 'roasting' && e.en === 'Heat Transfer')
             ? () => this.setState({ screen: 'report', reportFrom: 'module' })
@@ -2828,7 +3447,8 @@ class Component extends DCLogic {
     const clock = s => [Math.floor(s / 3600), Math.floor(s % 3600 / 60), s % 60]
       .map(v => String(v).padStart(2, '0')).join(':');
 
-    const allNotes = this.notesData();
+    const allNotes = this.notesData().slice().sort((a, b) =>
+      (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || (a.d < b.d ? 1 : a.d > b.d ? -1 : 0));
     const nf = this.state.noteFilter;
     const noteFilters = ['tất cả'].concat(['quan sát', 'video', 'cảm nhận', 'liên ngành']).map(f => ({
       f, on: f === nf, n: f === 'tất cả' ? allNotes.length : allNotes.filter(x => x.k === f).length,
@@ -2905,17 +3525,24 @@ class Component extends DCLogic {
         isOpen, notOpen: !isOpen,
         subSlot: n.portrait ? 'ảnh phụ — khung hình cắt ra từ clip' : 'ảnh phụ — chi tiết bổ trợ cho bài',
         subTop: isOpen ? (n.portrait ? '340px' : '260px') : '0px',
-        cueLabel: isOpen ? 'Bấm ra ngoài để thu lại' : 'Bấm để mở',
+        cueLabel: n.sc ? 'Bấm để mở bài đầy đủ →' : (isOpen ? 'Bấm ra ngoài để thu lại' : 'Bấm để mở'),
+        pinned: !!n.pinned, notPinned: !n.pinned,
+        block: n.img ? 'url(' + n.img + ') center/cover no-repeat' : noteBlock[n.k],
+        mediaLabel: n.img ? '' : (n.len === 'media' ? (n.portrait ? 'video dọc — clip quay dọc' : 'video ngang — clip ngắn không tiếng') : (n.mediaHint || 'ảnh — cận cảnh chủ thể')),
         enter: () => this.setState({ hoverNote: i }),
         leave: () => { clearTimeout(this._hoverT); this.setState({ hoverNote: null }); },
-        toggle: e => { if (e && e.stopPropagation) e.stopPropagation(); this.setState(s => ({ openNote: s.openNote === n.t ? null : n.t })); }
+        toggle: e => {
+          if (e && e.stopPropagation) e.stopPropagation();
+          if (n.sc) { this.setState({ screen: n.sc, tasteFrom: 'notes', openNote: null }); return; }
+          this.setState(s => ({ openNote: s.openNote === n.t ? null : n.t }));
+        }
       }));
       fillers.filter(x => x.after === i).forEach(x => notes.push({
         isNote: false, isField: x.kind === 'slot', isQuote: x.kind === 'quote', isCount: x.kind === 'count',
         col: x.c, mt: x.mt, ml: x.ml, z: x.z, fpl: x.pl || '14px', opacity: opn !== null ? '.18' : '1',
         fbg: x.bg, fh: x.h, ftext: x.t, fslot: x.t,
         countN: String(filtered.length).padStart(2, '0'),
-        t: '', b: '', k: '', d: '', num: '', color: '#12120F', block: '#EDEDE7',
+        t: '', b: '', k: '', d: '', num: '', color: '#12120F', block: '#EDEDE7', pinned: false, notPinned: true,
         ar: '1/1', mediaLabel: '', size: '16px', titleColor: '#12120F', shift: 'none',
         washSize: '0% 100%', ruleW: '0px', clamp: '2', bodyOpacity: '1', bodySize: '14px',
         bodyOverflow: 'hidden', bodyDisplay: '-webkit-box', isOpen: false, notOpen: true, cueLabel: '',
@@ -2961,6 +3588,12 @@ class Component extends DCLogic {
           article: this.state.articleFrom === 'module'
             ? [home, index, modCrumb('biochem'), { t: 'Chlorogenic Acids · 2026.02' }]
             : [admin, { t: 'Notes' }, { t: 'Templates' }, { t: 'Article' }],
+          longform: this.state.longformFrom === 'module'
+            ? [home, index, modCrumb((this.lfPost().mod || {}).id || 'biochem'), { t: ((this.lfPost().entry || {}).en || '') + ' · ' + ((this.lfPost().entry || {}).date || '') }]
+            : [admin, { t: 'Notes' }, { t: 'Templates' }, { t: nl('longform') }],
+          taste: this.state.tasteFrom === 'admin'
+            ? [admin, { t: 'Notes' }, { t: 'Templates' }, { t: nl('taste') }]
+            : [home, { t: 'beӕn weirdo — ' + nl('notes'), go: () => this.setState({ screen: 'notes' }) }, { t: 'taste modality: sơn la' }],
           notes: [home, { t: 'beӕn weirdo — ' + nl('notes') }],
           hours: [home, { t: 'beӕn weirdo — ' + nl('hours') }],
           archive: [admin, { t: 'Notes' }, { t: nl('archive') }],
@@ -2974,6 +3607,7 @@ class Component extends DCLogic {
           fg: i === list.length - 1 ? 'currentColor' : 'currentColor',
           op: i === list.length - 1 ? '1' : '.6',
           cursor: c.go ? 'pointer' : 'default',
+          pre: this.bwParts(c.t).pre, mid: this.bwParts(c.t).mid, post: this.bwParts(c.t).post,
           jump: c.go || (() => {})
         }));
       }).call(this),
@@ -2991,6 +3625,10 @@ class Component extends DCLogic {
             ? this.setState({ screen: 'module', moduleId: 'biochem' })
             : this.setState({ screen: 'landing' }),
           notes: () => this.setState({ screen: 'landing' }),
+          taste: () => this.setState({ screen: this.state.tasteFrom === 'admin' ? 'logic' : 'notes' }),
+          longform: () => this.state.longformFrom === 'module'
+            ? this.setState({ screen: 'module', moduleId: (this.lfPost().mod || {}).id || 'biochem' })
+            : this.setState({ screen: 'logic' }),
           hours: () => this.setState({ screen: 'landing' }),
           archive: () => this.setState({ screen: 'home' }),
           art: () => this.setState({ screen: 'landing' }),
@@ -3040,10 +3678,20 @@ class Component extends DCLogic {
       setSiteBlurbShort: e => this.setSv('blurbShort', e.target.value),
       lEyebrow: this.sv('lEyebrow'),
       setLEyebrow: e => this.setSv('lEyebrow', e.target.value),
+      bwText: this.sv('bwText'), setBwText: e => this.setSv('bwText', e.target.value),
+      bwGlyph: this.sv('bwGlyph'), setBwGlyph: e => this.setSv('bwGlyph', e.target.value),
+      bwColor: this.sv('bwColor'), setBwColor: e => this.setSv('bwColor', e.target.value),
+      bwScaleVal: this.sv('bwScale'), setBwScale: e => this.setSv('bwScale', e.target.value),
+      bwTf: 'scale(' + (this.sv('bwScale') || 1) + ')',
+      bwPre: this.bwParts().pre, bwMid: this.bwParts().mid, bwPost: this.bwParts().post,
+      bwImg: this.sv('bwImg'),
+      bwThumb: 'url(' + (this.sv('bwImg') || '') + ') left center/contain no-repeat',
+      bwHasImg: !!this.sv('bwImg'), bwNoImg: !this.sv('bwImg'),
+      upBw: e => this.upload('bwImg', e), clearBw: () => this.setSv('bwImg', ''),
       lTitle1: this.sv('lTitle1'),
-      lT1pre: this.sv('lTitle1').split('ӕ')[0],
-      lT1ae: this.sv('lTitle1').indexOf('ӕ') >= 0 ? 'ӕ' : '',
-      lT1post: this.sv('lTitle1').indexOf('ӕ') >= 0 ? this.sv('lTitle1').split('ӕ').slice(1).join('ӕ') : '',
+      lT1pre: this.bwParts(this.sv('lTitle1')).pre,
+      lT1ae: this.bwParts(this.sv('lTitle1')).mid,
+      lT1post: this.bwParts(this.sv('lTitle1')).post,
       setLTitle1: e => this.setSv('lTitle1', e.target.value),
       lTitle2: this.sv('lTitle2'),
       setLTitle2: e => this.setSv('lTitle2', e.target.value),
@@ -3133,6 +3781,9 @@ class Component extends DCLogic {
         addEntry: () => this.addEntry(m.id),
         entries: m.entries.map(e => ({
           n: e.n, en: e.en, vi: e.vi, date: e.date,
+          viHint: (m.id === 'biochem' && (e.tpl === 'longform' || e.en === 'Lipids in Beans'))
+            ? 'tự động: ' + this.lfAutoSum()
+            : 'sapo ngắn cho bài',
           setEn: ev => this.editEntry(m.id, e.n, { en: ev.target.value }),
           setVi: ev => this.editEntry(m.id, e.n, { vi: ev.target.value }),
           setDate: ev => this.editEntry(m.id, e.n, { date: ev.target.value }),
@@ -3159,7 +3810,7 @@ class Component extends DCLogic {
       cardsLine1: 'Tham khảo: Sensory Lexicon, 2016 Edition',
       cardsLine2: this.state.cardsFrom === 'module'
         ? 'Thang rút ngắn 0-8, trên thang gốc 0-15'
-        : 'Mẫu info cards — bấm một thẻ để mở, kéo ↑↓ để đổi thứ tự.',
+        : 'Mẫu info cards — kéo thẻ để đổi thứ tự.',
       isReport: this.state.screen === 'report',
       goReport: () => this.setState({ screen: 'report', reportFrom: 'admin' }),
       reportLabel: this.state.reportFrom === 'module' ? 'Roasting — Field report' : 'Bài mẫu — Field report',
@@ -3236,6 +3887,44 @@ class Component extends DCLogic {
         { h: 'Ghi chú thí nghiệm', p: 'Rang cùng một lô Sơn La ở ba mức phát triển 15%, 20% và 25%, cupping mù ba mẫu. Mẫu 15% chua sắc và khô ở hậu vị; mẫu 20% cân bằng nhất; mẫu 25% ngọt hơn nhưng mất hết nét trái cây. Ranh giới hẹp hơn tôi tưởng — chỉ ba mươi giây phát triển đã đổi hẳn kết luận.', fig: false },
         { h: 'Còn chưa rõ', p: 'Con số 6–8% là tổng lượng CGA, nhưng tỉ lệ giữa các đồng phân trong đó thay đổi theo giống, độ cao và cách sơ chế — và chính tỉ lệ ấy mới quyết định vị chát nặng hay nhẹ. Chưa có cách nào đo được ở quy mô quán. Ghi lại đây để lần sau đọc tiếp.', fig: false }
       ],
+      isLongform: this.state.screen === 'longform',
+      lfBlocks: this.lfPrep(this.state.lf, 0),
+      lfIndex: (this.state.lf || []).map((b, bi) => Object.assign({}, b, { bi })).filter(b => b.k === 'h1').slice(1).map((b, i) => ({
+        secId: 'a' + b.bi,
+        n: String(i + 1).padStart(2, '0'),
+        t: (b.runs || []).map(r => r.t).join(''),
+        go: () => {
+          const fold = Object.assign({}, this.state.lfFold);
+          delete fold['a' + b.bi];
+          this.setState({ lfFold: fold });
+          const el = document.querySelector('[data-lf-h1="' + (i + 1) + '"]');
+          if (el) {
+            const sc = document.scrollingElement || document.documentElement;
+            const from = sc.scrollTop;
+            const to = el.getBoundingClientRect().top + from - 24;
+            sc.scrollTop = to;
+          }
+          this.setState({ lfNav: false });
+        }
+      })),
+      lfIsPost: this.state.longformFrom === 'module',
+      lfPostTitle: (this.lfPost().entry || {}).en || '',
+      lfPostSub: ((this.lfPost().entry || {}).vi || '').trim() || this.lfAutoSum(),
+      lfAutoSumTxt: this.lfAutoSum(),
+      lfTitle: 'Tổng quan Lipid / bài dịch',
+      lfShift: this.state.lfDeep ? 'translateY(-15vh)' : 'translateY(0)',
+      lfAnyFolded: Object.keys(this.state.lfFold || {}).some(k => (this.state.lfFold || {})[k]),
+      lfAllLabel: Object.keys(this.state.lfFold || {}).some(k => (this.state.lfFold || {})[k]) ? 'xổ hết' : 'thu hết',
+      lfAllCue: Object.keys(this.state.lfFold || {}).some(k => (this.state.lfFold || {})[k]) ? '▾' : '▸',
+      lfOpenAll: () => this.setState({ lfFold: {} }),
+      lfFoldAll: () => { const m = {}; (this._heads || []).forEach(k => { m[k] = true; }); this.setState({ lfFold: m }); },
+      lfRailDisplay: this.state.lfNav ? 'none' : 'flex',
+      lfPanelDisplay: this.state.lfNav ? 'flex' : 'none',
+      openLfNav: () => this.setState({ lfNav: true }),
+      closeLfNav: () => this.setState({ lfNav: false }),
+      isTaste: this.state.screen === 'taste',
+      tasteIsTpl: this.state.tasteFrom === 'admin',
+      tasteBadge: this.state.tasteFrom === 'admin' ? 'bài mẫu — khung ghi nếm thử · nhân bản để dùng lại' : '',
       isHours: this.state.screen === 'hours',
       isNotes: this.state.screen === 'notes',
       goHours: () => this.setState({ screen: 'hours' }),
