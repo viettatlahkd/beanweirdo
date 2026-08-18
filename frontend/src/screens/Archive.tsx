@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { postDescription } from '../lib/postText'
 import { Breadcrumbs } from '../components/Breadcrumbs'
 import { PostExcerpt } from '../components/PostExcerpt'
 import { useModules } from '../data/useModules'
@@ -111,7 +112,7 @@ export function Archive() {
               {mod?.title ?? p.module_id}
             </div>
             <div style={{ fontFamily: serif, fontSize: 20, letterSpacing: '-.015em' }}>{p.en}</div>
-            <div style={{ fontSize: 12.5, color: ink.muted }}>{p.vi}</div>
+            <div style={{ fontSize: 12.5, color: ink.muted }}>{postDescription(p)}</div>
             <div
               style={{
                 fontFamily: sans,

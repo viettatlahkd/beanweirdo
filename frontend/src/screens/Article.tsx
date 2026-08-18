@@ -1,6 +1,7 @@
 import { PostRenderer } from 'post-renderer'
 import type { ArticlePostData, CardData, CardsPostData, ReportBlock, ReportPostData, SectionData } from 'post-renderer'
 import { usePost } from '../data/usePost'
+import { postDescription } from '../lib/postText'
 import type { ModuleRow } from '../data/useModules'
 import type { PostRow } from '../data/usePublishedPosts'
 import { usePublishedPosts } from '../data/usePublishedPosts'
@@ -55,7 +56,7 @@ function toArticleData(post: PostRow, moduleTitle: string, related: PostRow[]): 
     moduleTitle,
     title,
     titleItalic,
-    lead: post.lead ?? post.vi,
+    lead: postDescription(post),
     platePrimary: { ...PLATE_FALLBACK.primary, imageUrl: null },
     plateSecondary: { ...PLATE_FALLBACK.secondary, imageUrl: null },
     heroPlate: {
@@ -88,10 +89,12 @@ function toCardsData(post: PostRow, mod: ModuleRow | undefined): CardsPostData {
 
   return {
     title: post.en,
+    // The header's side lines are the deck's references, not the post's own
+    // subtitle — that belongs to `lead`, which the listings read.
     intro:
       cards.length > 0
-        ? [post.lead ?? post.vi, 'Thang rút ngắn 0-8, trên thang gốc 0-15']
-        : [post.vi, 'Chưa có mục nào trong glossary này.'],
+        ? (post.further_reading ?? [postDescription(post)])
+        : [postDescription(post), 'Chưa có mục nào trong glossary này.'],
     cards,
     band: mod ? { bg: mod.accent, fg: mod.on_color } : undefined,
     groupHues,

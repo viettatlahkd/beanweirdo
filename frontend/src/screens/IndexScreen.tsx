@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react'
+import { postDescription } from '../lib/postText'
 import { useMemo } from 'react'
 import type { ModuleRow } from '../data/useModules'
 import { useModules } from '../data/useModules'
@@ -194,7 +195,7 @@ function Ledger({ modules, postsByModule }: ModulesProps) {
               >
                 <div style={{ fontFamily: sans, fontSize: 11, color: ink.faint }}>{e.n}</div>
                 <div style={{ fontFamily: serif, fontSize: 23, letterSpacing: '-.015em' }}>{e.en}</div>
-                <div style={{ fontSize: 13, color: ink.soft, lineHeight: 1.2 }}>{e.vi}</div>
+                <div style={{ fontSize: 13, color: ink.soft, lineHeight: 1.2 }}>{postDescription(e)}</div>
                 <div
                   style={{
                     fontFamily: sans,
@@ -345,7 +346,7 @@ function Columns({ modules, postsByModule }: ModulesProps) {
                     <div
                       style={{ fontSize: 12.5, lineHeight: 1.2, marginTop: 3, opacity: 0.82 }}
                     >
-                      {e.vi}
+                      {postDescription(e)}
                     </div>
                   </div>
                 </div>

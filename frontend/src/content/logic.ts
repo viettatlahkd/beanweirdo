@@ -76,7 +76,10 @@ export const LOGIC: LogicPart[] = [
     { n: '04', g: 'Đặt tên trang', items: [
       { s: 'Toàn hệ thống', r: 'Với nhãn trang: gồm hai phần, ngăn bằng gạch ngang dài.', e: 'Sensory — Notes' },
       { s: 'Toàn hệ thống', r: 'Trong nhãn trang: phần trước gạch là module, phần sau gạch là dạng bài.', e: 'sensory · Notes' },
-      { s: 'Toàn hệ thống', r: 'Trong nhãn trang: ngày tháng nếu có thì đứng sau cùng, ngăn bằng dấu chấm giữa.', e: 'Article · 2026.02' }
+      { s: 'Toàn hệ thống', r: 'Trong nhãn trang: ngày tháng nếu có thì đứng sau cùng, ngăn bằng dấu chấm giữa.', e: 'Article · 2026.02' },
+      { s: 'Toàn hệ thống', r: 'Với tiêu đề bài: khai báo đúng một chỗ. Tên hiện trong danh mục module và tên trên trang bài luôn là cùng một trường — không chép thành hai bản.', e: 'một tên, mọi nơi' },
+      { s: 'Toàn hệ thống', r: 'Với phần mô tả bài trong danh mục: nếu bài có sapo thì lấy thẳng sapo ra; nếu không có thì tóm nội dung bài thành một cụm từ khoá ngắn.', e: 'sapo → mô tả, hoặc key phrase' },
+      { s: 'Toàn hệ thống', r: 'Với mô tả rút từ sapo: sửa sapo thì mọi danh mục tự đổi theo, không phải sửa lại từng chỗ; cụm từ khoá viết tay chỉ dùng khi bài chưa có sapo.', e: 'sapo tự động ← → sửa tay' }
     ] },
     { n: '05', g: 'Điều hướng', items: [
       { s: 'Toàn hệ thống', r: 'Với mọi trang con: có dải đường dẫn phản ánh đúng hành trình người dùng.', e: '[[landing]] › [[home]] › sensory › Notes' },

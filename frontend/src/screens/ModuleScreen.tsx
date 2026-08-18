@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react'
+import { postDescription } from '../lib/postText'
 import { Breadcrumbs } from '../components/Breadcrumbs'
 import type { ModuleRow } from '../data/useModules'
 import { useModules } from '../data/useModules'
@@ -130,7 +131,7 @@ function Band({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
                     margin: '5px 0 8px',
                   }}
                 >
-                  {e.vi}
+                  {postDescription(e)}
                 </div>
                 <div style={{ display: 'flex', gap: 12, ...meta }}>
                   <div>{e.n}</div>
@@ -293,7 +294,7 @@ function Specimen({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
               >
                 {e.en}
               </div>
-              <div style={{ fontSize: 13, color: ink.soft, lineHeight: 1.3 }}>{e.vi}</div>
+              <div style={{ fontSize: 13, color: ink.soft, lineHeight: 1.3 }}>{postDescription(e)}</div>
               <div
                 style={{
                   marginTop: 'auto',
@@ -402,7 +403,7 @@ function Sequence({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
             >
               {e.en}
             </div>
-            <div style={{ fontSize: 13.5, color: ink.soft, lineHeight: 1.3 }}>{e.vi}</div>
+            <div style={{ fontSize: 13.5, color: ink.soft, lineHeight: 1.3 }}>{postDescription(e)}</div>
             <div style={{ ...meta, textAlign: 'right' }}>
               {e.kind}
               <br />
