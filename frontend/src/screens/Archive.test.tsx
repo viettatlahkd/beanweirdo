@@ -71,10 +71,38 @@ describe('Archive', () => {
 
     render(<Archive />)
 
-    expect(usePublishedPosts).toHaveBeenCalledWith({ orderBy: 'date_label', ascending: false })
+    // Archive is the one listing that asks for archived rows too.
+    expect(usePublishedPosts).toHaveBeenCalledWith({
+      orderBy: 'date_label',
+      ascending: false,
+      includeArchived: true,
+    })
     expect(await screen.findByText('Chlorogenic Acids (CGA)')).toBeInTheDocument()
     expect(screen.getByText('biochemistry 101')).toBeInTheDocument()
     expect(screen.getByText('1 notes — sắp theo thời gian')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByText('Chlorogenic Acids (CGA)'))
+    expect(openArticle).toHaveBeenCalledWith('p1')
+  })
+
+  it('lists an archived post but does not let it be opened — there is nothing at the other end', async () => {
+    useNav.mockReturnValue({ openArticle })
+    useModules.mockReturnValue({ data: [biochem], loading: false, error: null })
+    usePublishedPosts.mockReturnValue({
+      data: [post, { ...post, id: 'p2', en: 'Bean Composition', status: 'archived' }],
+      loading: false,
+      error: null,
+    })
+
+    render(<Archive />)
+    openArticle.mockClear()
+
+    expect(await screen.findByText('Bean Composition')).toBeInTheDocument()
+    // The count reflects the reading list, with the archive noted beside it.
+    expect(screen.getByText(/1 notes — sắp theo thời gian · 1 lưu trữ/)).toBeInTheDocument()
+
+    await userEvent.click(screen.getByText('Bean Composition'))
+    expect(openArticle).not.toHaveBeenCalled()
 
     await userEvent.click(screen.getByText('Chlorogenic Acids (CGA)'))
     expect(openArticle).toHaveBeenCalledWith('p1')

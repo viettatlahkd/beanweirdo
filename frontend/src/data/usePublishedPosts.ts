@@ -39,6 +39,14 @@ export type PostRow = {
 export type UsePostsOptions = {
   /** Restrict to one module's posts. Omit to fetch across every module. */
   moduleId?: string
+  /**
+   * Include archived rows alongside published ones.
+   *
+   * Only the Archive screen wants this: archived posts stay listed there as a
+   * record of what exists, but they are not part of the site's reading list and
+   * every other listing must leave them out.
+   */
+  includeArchived?: boolean
   orderBy?: 'sort_order' | 'date_label' | 'created_at'
   ascending?: boolean
   /** Set false to skip the fetch entirely (e.g. while a dependency isn't ready yet). Defaults to true. */
@@ -58,7 +66,13 @@ export type UsePostsResult = {
  * 'published'.
  */
 export function usePublishedPosts(options: UsePostsOptions = {}): UsePostsResult {
-  const { moduleId, orderBy = 'sort_order', ascending = true, enabled = true } = options
+  const {
+    moduleId,
+    orderBy = 'sort_order',
+    ascending = true,
+    enabled = true,
+    includeArchived = false,
+  } = options
   const [data, setData] = useState<PostRow[]>([])
   const [loading, setLoading] = useState(enabled)
   const [error, setError] = useState<string | null>(null)
@@ -74,7 +88,9 @@ export function usePublishedPosts(options: UsePostsOptions = {}): UsePostsResult
     let cancelled = false
     setLoading(true)
 
-    let query = supabase.from('posts').select('*').eq('status', 'published')
+    let query = includeArchived
+      ? supabase.from('posts').select('*').in('status', ['published', 'archived'])
+      : supabase.from('posts').select('*').eq('status', 'published')
     if (moduleId) query = query.eq('module_id', moduleId)
 
     query.order(orderBy, { ascending }).then(({ data, error }) => {
@@ -92,7 +108,7 @@ export function usePublishedPosts(options: UsePostsOptions = {}): UsePostsResult
     return () => {
       cancelled = true
     }
-  }, [moduleId, orderBy, ascending, enabled])
+  }, [moduleId, orderBy, ascending, enabled, includeArchived])
 
   return { data, loading, error }
 }
