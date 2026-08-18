@@ -7,7 +7,13 @@ import { useNav } from '../lib/nav'
 
 const status = { fontFamily: sans, fontSize: 13, color: ink.muted, padding: '140px 56px' }
 
-type MemoBody = { specs?: { k: string; v: string }[]; sections?: MemoSection[] }
+type MemoBody = {
+  /** The short line under the title. Distinct from the note's blurb, which is
+   *  written for the Ghi 01 card and is far too long to sit under a heading. */
+  subtitle?: string
+  specs?: { k: string; v: string }[]
+  sections?: MemoSection[]
+}
 
 /**
  * A memo note, read on its own template.
@@ -34,7 +40,7 @@ export function MemoScreen() {
   const body = (memo.body ?? {}) as MemoBody
   const post: MemoPostData = {
     title: memo.t,
-    subtitle: memo.b,
+    subtitle: body.subtitle,
     specs: body.specs,
     img: memo.img,
     imgCaption: memo.mediaHint ?? undefined,
