@@ -25,7 +25,7 @@ const articlePost: ArticlePostData = {
 const cardsPost: CardsPostData = {
   title: 'A Cards Title',
   intro: ['Intro line one.'],
-  cards: [{ n: '01', hue: '#F2A0A5', group: 'g', title: 'Term', sub: 'Definition', tag: 'tag', parts: [] }],
+  cards: [{ n: '01', hue: '#F2A0A5', groups: ['g'], title: 'Term', sub: 'Definition', tag: 'tag', parts: [] }],
 }
 
 const reportPost: ReportPostData = {

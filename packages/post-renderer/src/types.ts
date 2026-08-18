@@ -86,10 +86,15 @@ export type CardPart =
 export type CardData = {
   /** index label, e.g. "01" */
   n: string
-  /** accent color for the left bar and the TOC dot */
+  /** accent color for the left bar and the TOC dot — the first group's hue */
   hue: string
-  /** filter-bar group this card belongs to, e.g. "hoa" (flower) */
-  group: string
+  /**
+   * Every flavour group this card belongs to. A note usually sits in several
+   * at once — an apple is Other Fruit *and* Green/Vegetative *and* Sour — and
+   * the tag bar counts it under each. The card's own colour comes from the
+   * first (System conventions, rule 12).
+   */
+  groups: string[]
   /** the glossary term */
   title: string
   /** short one-line definition shown under the term */
@@ -101,9 +106,20 @@ export type CardData = {
 
 export type CardsPostData = {
   title: string
-  /** intro copy lines under the header title (design source shows two) */
+  /** intro copy lines beside the header title (design source shows two) */
   intro: string[]
   cards: CardData[]
+  /**
+   * The colour block at the head of the page.
+   *
+   * A template is a blank; a post is that blank filled in under a module, and
+   * it takes the module's colours with it — never the template's own
+   * (System conventions, rule 09). Omitted only by the standalone samples
+   * under Admin › Templates, which are free to keep their own.
+   */
+  band?: { bg: string; fg: string }
+  /** Group → hue, so the filter bar can colour groups this card set doesn't lead with. */
+  groupHues?: Record<string, string>
 }
 
 // ---------------------------------------------------------------------------

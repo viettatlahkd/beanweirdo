@@ -110,6 +110,7 @@ export const LOGIC: LogicPart[] = [
 
   { p: 'C', part: 'Riêng theo template', note: 'Mỗi template có logic riêng, không áp dàn trải sang template khác.', groups: [
     { n: '09', g: 'Bài mẫu → bài chính thức', items: [
+      { s: 'Toàn hệ thống', r: 'Với từ "template": luôn hiểu là bài mẫu — một cái khung rỗng để dựng, không phải nội dung. Mọi bài thật đều là một bản sao của khung đó, đặt dưới một module.', e: 'template = mẫu' },
       { s: 'Toàn hệ thống', r: 'Với bài mẫu trong [[secAdmin]]: được tự do chọn màu, vì nó chỉ là khung để dựng.', e: 'Templates giữ màu riêng' },
       { s: 'Module', r: 'Khi clone bài mẫu sang module chính thức: bắt buộc đổi toàn bộ màu sang theme của module đó, không giữ màu của bản mẫu.', e: 'accent · tint · tint2 của module' },
       { s: 'Module', r: 'Khi một bài mẫu được nhân bản thành bài chính thức dưới module: khối màu đầu trang phải lấy đúng accent của module đó.', e: 'sensory → #F2A0A5' },

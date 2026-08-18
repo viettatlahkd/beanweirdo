@@ -92,7 +92,7 @@ describe('EditorCanvas — cards', () => {
   const card: CardData = {
     n: '01',
     hue: '#F2A0A5',
-    group: 'hoa',
+    groups: ['hoa'],
     title: 'Hoa nhài',
     sub: 'định nghĩa',
     tag: 'hương hoa · floral',

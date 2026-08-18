@@ -1,6 +1,7 @@
 import { PostRenderer } from 'post-renderer'
 import type { ArticlePostData, CardData, CardsPostData, ReportBlock, ReportPostData, SectionData } from 'post-renderer'
 import { usePost } from '../data/usePost'
+import type { ModuleRow } from '../data/useModules'
 import type { PostRow } from '../data/usePublishedPosts'
 import { usePublishedPosts } from '../data/usePublishedPosts'
 import { useModules } from '../data/useModules'
@@ -72,13 +73,28 @@ function toArticleData(post: PostRow, moduleTitle: string, related: PostRow[]): 
   }
 }
 
-/** No real "cards" content is seeded yet — structurally wired so it can't crash. */
-function toCardsData(post: PostRow): CardsPostData {
+/**
+ * A post written on the cards template.
+ *
+ * The colour block takes the module's accent, never the template's own — a
+ * template is a blank, and filling it in under a module means wearing that
+ * module's colours (System conventions, rule 09).
+ */
+function toCardsData(post: PostRow, mod: ModuleRow | undefined): CardsPostData {
   const cards = Array.isArray(post.body) ? (post.body as CardData[]) : []
+  // Groups the deck doesn't lead with still need a colour in the filter bar.
+  const groupHues: Record<string, string> = {}
+  for (const c of cards) if (c.groups?.[0] && c.hue) groupHues[c.groups[0]] = c.hue
+
   return {
     title: post.en,
-    intro: cards.length > 0 ? [post.vi] : [post.vi, 'Chưa có mục nào trong glossary này.'],
+    intro:
+      cards.length > 0
+        ? [post.lead ?? post.vi, 'Thang rút ngắn 0-8, trên thang gốc 0-15']
+        : [post.vi, 'Chưa có mục nào trong glossary này.'],
     cards,
+    band: mod ? { bg: mod.accent, fg: mod.on_color } : undefined,
+    groupHues,
   }
 }
 
@@ -124,14 +140,16 @@ export function Article() {
     return <div style={status}>Không tìm thấy bài viết.</div>
   }
 
+  const module_ = modules.find((m) => m.id === post.module_id)
+  const moduleTitle = module_?.title ?? post.module_id
+
   if (post.template === 'cards') {
-    return <PostRenderer template="cards" post={toCardsData(post)} />
+    return <PostRenderer template="cards" post={toCardsData(post, module_)} />
   }
   if (post.template === 'report') {
     return <PostRenderer template="report" post={toReportData(post)} />
   }
 
-  const moduleTitle = modules.find((m) => m.id === post.module_id)?.title ?? post.module_id
   const related = siblings.data.filter((p) => p.id !== post.id)
 
   return (

@@ -18,12 +18,15 @@ export type CardsProps = CardsOverrides & {
 
 type Group = { group: string; hue: string; count: number }
 
-function groupsOf(cards: CardData[]): Group[] {
+/** Every group across the deck, each counting all the cards that mention it. */
+function groupsOf(cards: CardData[], hues: Record<string, string> = {}): Group[] {
   const byGroup = new Map<string, Group>()
   for (const c of cards) {
-    const existing = byGroup.get(c.group)
-    if (existing) existing.count += 1
-    else byGroup.set(c.group, { group: c.group, hue: c.hue, count: 1 })
+    for (const g of c.groups) {
+      const existing = byGroup.get(g)
+      if (existing) existing.count += 1
+      else byGroup.set(g, { group: g, hue: hues[g] ?? c.hue, count: 1 })
+    }
   }
   return [...byGroup.values()]
 }
@@ -37,9 +40,9 @@ export function Cards({ post, ...overrides }: CardsProps) {
   const [openIndexes, setOpenIndexes] = useState<Set<number>>(() => new Set())
   const [activeGroup, setActiveGroup] = useState<string | null>(null)
 
-  const groups = useMemo(() => groupsOf(post.cards), [post.cards])
+  const groups = useMemo(() => groupsOf(post.cards, post.groupHues), [post.cards, post.groupHues])
   const visibleCards = useMemo(
-    () => (activeGroup ? post.cards.filter((c) => c.group === activeGroup) : post.cards),
+    () => (activeGroup ? post.cards.filter((c) => c.groups.includes(activeGroup)) : post.cards),
     [post.cards, activeGroup],
   )
 
@@ -54,7 +57,13 @@ export function Cards({ post, ...overrides }: CardsProps) {
 
   return (
     <div style={{ background: paper.cream, color: ink.base, minHeight: '100vh' }}>
-      <div style={{ background: '#E4F0DF', color: '#1F3323', padding: '40px 56px 32px' }}>
+      <div
+        style={{
+          background: post.band?.bg ?? '#E4F0DF',
+          color: post.band?.fg ?? '#1F3323',
+          padding: '40px 56px 32px',
+        }}
+      >
         <div
           style={{
             display: 'flex',
@@ -72,6 +81,7 @@ export function Cards({ post, ...overrides }: CardsProps) {
               lineHeight: 0.9,
               letterSpacing: '-.04em',
               margin: 0,
+              textTransform: 'lowercase',
             }}
           >
             {post.title}

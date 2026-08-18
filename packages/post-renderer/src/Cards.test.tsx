@@ -10,7 +10,7 @@ const post: CardsPostData = {
     {
       n: '01',
       hue: '#F2A0A5',
-      group: 'hoa',
+      groups: ['hoa'],
       title: 'Floral',
       sub: 'Hương hoa nổi trên nền chua nhẹ.',
       tag: 'hương hoa · sourness',
@@ -30,7 +30,7 @@ const post: CardsPostData = {
     {
       n: '02',
       hue: '#F0B45C',
-      group: 'ngọt',
+      groups: ['ngọt'],
       title: 'Honeyed',
       sub: 'Vị ngọt mật ong, hậu vị kéo dài.',
       tag: 'hương ngọt · sweetness',
