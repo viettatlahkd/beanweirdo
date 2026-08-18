@@ -5,14 +5,15 @@ import { vi } from 'vitest'
 
 /**
  * A stand-in for a Supabase PostgrestFilterBuilder chain. Every chain method
- * (select/eq/order/insert/update/delete/maybeSingle/single) returns itself,
+ * (select/eq/order/insert/upsert/update/delete/limit/maybeSingle/single)
+ * returns itself,
  * and the object is thenable so `await builder.foo().bar()` resolves with
  * `result` regardless of how many links are in the chain — good enough for
  * handler tests that only care about the final `{ data, error, count }`.
  */
 export function queryBuilder(result: { data?: unknown; error?: unknown; count?: number | null }) {
   const builder: any = {}
-  for (const method of ['select', 'eq', 'order', 'insert', 'update', 'delete', 'maybeSingle', 'single']) {
+  for (const method of ['select', 'eq', 'order', 'insert', 'upsert', 'update', 'delete', 'limit', 'maybeSingle', 'single']) {
     builder[method] = vi.fn(() => builder)
   }
   builder.then = (resolve: (v: unknown) => unknown, reject?: (e: unknown) => unknown) =>

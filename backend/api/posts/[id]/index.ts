@@ -35,6 +35,10 @@ interface PatchPostBody {
   lead?: unknown
   pullQuote?: unknown
   furtherReading?: unknown
+  /** The CMS's entry rows edit the display number and date label in place. */
+  n?: unknown
+  dateLabel?: unknown
+  sortOrder?: unknown
 }
 
 const PATCHABLE: Array<{ jsonKey: keyof PatchPostBody; column: keyof PostRow }> = [
@@ -46,6 +50,9 @@ const PATCHABLE: Array<{ jsonKey: keyof PatchPostBody; column: keyof PostRow }> 
   { jsonKey: 'lead', column: 'lead' },
   { jsonKey: 'pullQuote', column: 'pull_quote' },
   { jsonKey: 'furtherReading', column: 'further_reading' },
+  { jsonKey: 'n', column: 'n' },
+  { jsonKey: 'dateLabel', column: 'date_label' },
+  { jsonKey: 'sortOrder', column: 'sort_order' },
 ]
 
 async function handlePatch(req: VercelRequest, res: VercelResponse, id: string): Promise<void> {

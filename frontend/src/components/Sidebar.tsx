@@ -1,8 +1,12 @@
 import type { CSSProperties, ReactNode } from 'react'
-import { modules } from '../content/modules'
+import { NAV, TEMPLATES_HEAD, type Glyph, type NavItem } from '../content/navItems'
+import type { NavGroup } from '../content/site'
+import { useModules, type ModuleRow } from '../data/useModules'
+import { usePublishedPosts, type PostRow } from '../data/usePublishedPosts'
+import { useSiteCopy } from '../data/useSiteCopy'
 import { layout, paper, sans, serif } from '../design/tokens'
 import { Hover, useHover } from '../lib/Hover'
-import { useNav } from '../lib/nav'
+import { useNav, type Nav } from '../lib/nav'
 
 const row: CSSProperties = {
   display: 'flex',
@@ -20,13 +24,11 @@ const glyphSlot: CSSProperties = {
   flex: 'none',
 }
 
-const labelText: CSSProperties = { fontSize: 13 }
-
 /**
  * The sidebar carries its own two-tone theme: cream everywhere except on
- * Hours/Notes ("Ghi" / "bite-size"), where it goes dark navy to match those
- * screens' own visual language. Every glyph below draws in `currentColor` so
- * it repaints for free when the row's text color swaps.
+ * Ghi 01/Ghi 02 (Notes/Hours), where it goes dark navy to match those screens'
+ * own visual language. Every glyph below draws in `currentColor` so it repaints
+ * for free when the row's text color swaps.
  */
 function theme(dark: boolean) {
   return {
@@ -38,10 +40,29 @@ function theme(dark: boolean) {
   }
 }
 
+/** A nav glyph rendered from its border/background spec. */
+function Mark({ shape }: { shape: Glyph }) {
+  return (
+    <div
+      style={{
+        width: shape.w,
+        height: shape.h,
+        borderRadius: shape.r,
+        border: shape.bd,
+        borderRightWidth: shape.brw,
+        borderBottomWidth: shape.bbw,
+        background: shape.bg,
+        transform: shape.tf,
+      }}
+    />
+  )
+}
+
 function Row({
   glyph,
   label,
   count,
+  sub,
   muted,
   hoverBg,
   onClick,
@@ -49,18 +70,38 @@ function Row({
   glyph: ReactNode
   label: string
   count?: ReactNode
+  /** Template pages sit one level in, marked by a short dash instead of a glyph. */
+  sub?: boolean
   muted: string
   hoverBg: string
   onClick: () => void
 }) {
   return (
-    <Hover
-      style={{ ...row, color: muted }}
-      hoverStyle={{ background: hoverBg }}
-      onClick={onClick}
-    >
-      <div style={glyphSlot}>{glyph}</div>
-      <div style={{ ...labelText, ...(count !== undefined ? { flex: 1 } : null) }}>{label}</div>
+    <Hover style={{ ...row, color: muted }} hoverStyle={{ background: hoverBg }} onClick={onClick}>
+      <div style={glyphSlot}>{sub ? null : glyph}</div>
+      <div
+        style={{
+          fontSize: 13,
+          display: 'flex',
+          alignItems: 'baseline',
+          gap: 9,
+          ...(count !== undefined ? { flex: 1 } : null),
+        }}
+      >
+        {sub && (
+          <div
+            style={{
+              width: 9,
+              height: 1,
+              background: 'currentColor',
+              opacity: 0.5,
+              flex: 'none',
+              marginBottom: 4,
+            }}
+          />
+        )}
+        <div>{label}</div>
+      </div>
       {count !== undefined && (
         <div style={{ fontFamily: sans, fontSize: 10, color: '#B5AE99', paddingRight: 18 }}>
           {count}
@@ -70,15 +111,130 @@ function Row({
   )
 }
 
+function SectionLabel({ children }: { children: ReactNode }) {
+  return (
+    <div style={{ padding: '0 22px 8px', whiteSpace: 'nowrap', display: 'flex', gap: 30 }}>
+      <div style={{ width: 20, flex: 'none' }} />
+      <div
+        style={{
+          fontSize: 9.5,
+          letterSpacing: '.18em',
+          textTransform: 'uppercase',
+          color: '#B5AE99',
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  )
+}
+
+/** Where a nav item lands, including resetting a template page's provenance. */
+function go(nav: Nav, item: NavItem): () => void {
+  switch (item.screen) {
+    case 'landing':
+      return nav.goLanding
+    case 'home':
+      return nav.goHome
+    case 'notes':
+      return nav.goNotes
+    case 'hours':
+      return nav.goHours
+    case 'cms':
+      return nav.goCms
+    case 'art':
+      return nav.goArt
+    case 'logic':
+      return nav.goLogic
+    case 'archive':
+      return nav.goArchive
+    case 'article':
+      return () => nav.openArticle(undefined, 'admin')
+    case 'report':
+      return () => nav.goReport('admin')
+    case 'cards':
+      return () => nav.goCards('admin')
+    default:
+      return nav.goLanding
+  }
+}
+
 /**
  * The only navigation in the app. It sits at 64px — a margin rather than a
  * panel — and opens to 268px on hover, floating a sheet over the page.
+ *
+ * Three sections: Public (the reader's site, with the modules inline), Practice
+ * (the personal journal), and Admin (the backend surfaces plus the three blank
+ * templates). The section names are renameable from the CMS site map.
  */
 export function Sidebar() {
   const nav = useNav()
   const { on, bind } = useHover()
+  const { data: modules } = useModules()
+  const { data: posts } = usePublishedPosts()
+  const { site } = useSiteCopy()
   const dark = nav.screen === 'notes' || nav.screen === 'hours'
   const t = theme(dark)
+
+  const countFor = (m: ModuleRow) => posts.filter((p: PostRow) => p.module_id === m.id).length
+  /** A module with nothing published isn't on the reader's site yet. */
+  const published = modules.filter((m) => countFor(m) > 0)
+
+  const section = (group: NavGroup) => {
+    const items = NAV.filter((n) => n.group === group)
+    const rows: ReactNode[] = []
+    let templatesEmitted = false
+
+    for (const item of items) {
+      // The modules sit between "Mục lục" and "Ghi 01" in Public.
+      if (group === 'Public' && item.key === 'notes') {
+        for (const m of published) {
+          rows.push(
+            <Row
+              key={`mod-${m.id}`}
+              onClick={() => nav.openModule(m.id)}
+              label={m.title}
+              count={countFor(m)}
+              muted={t.muted}
+              hoverBg={t.hover}
+              glyph={
+                <div style={{ width: 10, height: 10, borderRadius: '50%', background: m.accent }} />
+              }
+            />,
+          )
+        }
+      }
+
+      if (item.sub && !templatesEmitted) {
+        templatesEmitted = true
+        const first = items.find((x) => x.sub)
+        rows.push(
+          <Row
+            key="templates-head"
+            onClick={first ? go(nav, first) : nav.goLanding}
+            label={TEMPLATES_HEAD.label}
+            muted={t.muted}
+            hoverBg={t.hover}
+            glyph={<Mark shape={TEMPLATES_HEAD.shape} />}
+          />,
+        )
+      }
+
+      rows.push(
+        <Row
+          key={item.key}
+          onClick={go(nav, item)}
+          label={item.label}
+          sub={item.sub}
+          muted={t.muted}
+          hoverBg={t.hover}
+          glyph={<Mark shape={item.shape} />}
+        />,
+      )
+    }
+
+    return rows
+  }
 
   return (
     <div
@@ -92,7 +248,10 @@ export function Sidebar() {
         background: t.bg,
         color: t.fg,
         boxShadow: on ? '22px 0 50px -34px rgba(35,33,26,.45)' : undefined,
-        overflow: 'hidden',
+        overflowX: 'hidden',
+        // The Admin section makes the list taller than the shortest laptop.
+        overflowY: 'auto',
+        scrollbarWidth: 'none',
         zIndex: 60,
         transition: 'width .3s cubic-bezier(.4,0,.2,1)',
         display: 'flex',
@@ -112,134 +271,40 @@ export function Sidebar() {
         <div
           style={{ width: 20, height: 20, borderRadius: '50%', background: '#F2A0A5', flex: 'none' }}
         />
-        <div style={{ fontFamily: serif, fontSize: 23, letterSpacing: '-.01em' }}>coffee study</div>
+        <div style={{ fontFamily: serif, fontSize: 23, letterSpacing: '-.01em' }}>
+          be
+          <span
+            style={{
+              display: 'inline-block',
+              transform: 'scale(1.3)',
+              transformOrigin: '50% 82%',
+              color: '#F2A0A5',
+              margin: '0 -.02em',
+            }}
+          >
+            ӕ
+          </span>
+          n weirdo
+        </div>
       </div>
 
       <div style={{ height: 1, background: t.rule, margin: '0 0 20px' }} />
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-        <Row
-          onClick={nav.goArt}
-          label="Design system"
-          muted={t.muted}
-          hoverBg={t.hover}
-          glyph={
-            <div
-              style={{ width: 8, height: 8, border: '1px solid currentColor', transform: 'rotate(45deg)' }}
-            />
-          }
-        />
-        <Row
-          onClick={nav.goLanding}
-          label="Trang chủ"
-          muted={t.muted}
-          hoverBg={t.hover}
-          glyph={
-            <div style={{ width: 10, height: 10, borderRadius: '50%', border: '1px solid currentColor' }} />
-          }
-        />
-        <Row
-          onClick={nav.goHome}
-          label="Mục lục"
-          muted={t.muted}
-          hoverBg={t.hover}
-          glyph={<div style={{ width: 10, height: 1, background: 'currentColor' }} />}
-        />
-
-        {modules.map((m) => (
-          <Row
-            key={m.id}
-            onClick={() => nav.openModule(m.id)}
-            label={m.title}
-            count={m.entries.length}
-            muted={t.muted}
-            hoverBg={t.hover}
-            glyph={<div style={{ width: 10, height: 10, borderRadius: '50%', background: m.accent }} />}
-          />
-        ))}
-
-        <Row
-          onClick={nav.goNotes}
-          label="bite-size"
-          muted={t.muted}
-          hoverBg={t.hover}
-          glyph={<div style={{ width: 9, height: 9, background: '#6FA8C0' }} />}
-        />
-        <Row
-          onClick={nav.goArchive}
-          label="Archive"
-          muted={t.muted}
-          hoverBg={t.hover}
-          glyph={<div style={{ width: 8, height: 8, border: '1px solid currentColor' }} />}
-        />
-        <Row
-          onClick={nav.openArticle}
-          label="Bài mẫu — CGA"
-          muted={t.muted}
-          hoverBg={t.hover}
-          glyph={
-            <div
-              style={{
-                width: 11,
-                height: 7,
-                borderTop: '1px solid currentColor',
-                borderBottom: '1px solid currentColor',
-              }}
-            />
-          }
-        />
+        <SectionLabel>{site.sections.Public}</SectionLabel>
+        {section('Public')}
       </div>
 
-      {/* Practice sits below a rule — it is not a peer of the modules. */}
-      <div style={{ margin: '24px 0 0' }}>
-        <div style={{ height: 1, background: t.rule, marginBottom: 14 }} />
-        <div style={{ padding: '0 22px 8px', whiteSpace: 'nowrap', display: 'flex', gap: 30 }}>
-          <div style={{ width: 20, flex: 'none' }} />
-          <div
-            style={{
-              fontSize: 9.5,
-              letterSpacing: '.18em',
-              textTransform: 'uppercase',
-              color: '#B5AE99',
-            }}
-          >
-            Practice
-          </div>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-          <Row
-            onClick={nav.goHours}
-            label="Ghi — daily journal"
-            muted={t.muted}
-            hoverBg={t.hover}
-            glyph={
-              <div
-                style={{
-                  width: 9,
-                  height: 9,
-                  border: '1px solid currentColor',
-                  borderRadius: '50%',
-                  position: 'relative',
-                }}
-              >
-                <div
-                  style={{
-                    position: 'absolute',
-                    left: 3,
-                    top: 1,
-                    width: 1,
-                    height: 3,
-                    background: 'currentColor',
-                  }}
-                />
-              </div>
-            }
-          />
-        </div>
+      <div style={{ margin: '16px 0 0' }}>
+        <div style={{ height: 1, background: t.rule, marginBottom: 10 }} />
+        <SectionLabel>{site.sections.Practice}</SectionLabel>
+        {section('Practice')}
       </div>
 
-      <div style={{ marginTop: 'auto', padding: '0 22px', whiteSpace: 'nowrap' }}>
-        <div style={{ width: 20, height: 1, background: '#EBE5D3' }} />
+      <div style={{ margin: '16px 0 0' }}>
+        <div style={{ height: 1, background: t.rule, marginBottom: 10 }} />
+        <SectionLabel>{site.sections.Admin}</SectionLabel>
+        {section('Admin')}
       </div>
     </div>
   )

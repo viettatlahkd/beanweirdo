@@ -1,4 +1,6 @@
 import type { CSSProperties } from 'react'
+import { Breadcrumbs } from '../components/Breadcrumbs'
+import { useSiteCopy } from '../data/useSiteCopy'
 import { modules } from '../content/modules'
 import {
   colorRules,
@@ -39,21 +41,12 @@ function RuleList({ items }: { items: { n: string; t: string }[] }) {
  * spacing rhythm, grid rules, and the per-module theme table.
  */
 export function DesignSystem() {
+  const { site } = useSiteCopy()
+
   return (
     <div>
-      <div style={{ background: '#F7DCD3', color: ink.base, padding: '70px 56px 56px' }}>
-        <div
-          style={{
-            fontFamily: sans,
-            fontSize: 10,
-            letterSpacing: '.18em',
-            textTransform: 'uppercase',
-            marginBottom: 26,
-            color: '#8A6B62',
-          }}
-        >
-          Design system — v4 / garden
-        </div>
+      <div style={{ background: '#F7DCD3', color: ink.base, padding: '44px 56px 56px' }}>
+        <Breadcrumbs color="#8A6B62" />
         <div
           style={{
             display: 'grid',
@@ -71,14 +64,12 @@ export function DesignSystem() {
               margin: 0,
             }}
           >
-            Garden colours,
+            {site.artT1}
             <br />
-            <span style={{ fontStyle: 'italic', color: ink.green }}>quiet paper</span>
+            <span style={{ fontStyle: 'italic', color: ink.green }}>{site.artT2}</span>
           </h1>
           <div style={{ fontSize: 14, lineHeight: 1.45, marginTop: 36, color: ink.mid }}>
-            Bảng màu lấy từ vườn hơn là từ màn hình: hồng cánh hoa, xanh lá non, mơ chín, xanh trời
-            nhạt. Đủ tươi để thấy vui, đủ dịu để đọc lâu. Nền kem giữ nhịp; mỗi module sở hữu một
-            mảng màu lớn của riêng nó.
+            {site.artIntro}
           </div>
         </div>
       </div>

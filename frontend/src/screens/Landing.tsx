@@ -1,9 +1,11 @@
 import type { CSSProperties } from 'react'
 import { useMemo } from 'react'
+import { splitAesc } from '../content/site'
 import type { ModuleRow } from '../data/useModules'
 import { useModules } from '../data/useModules'
 import type { PostRow } from '../data/usePublishedPosts'
 import { usePublishedPosts } from '../data/usePublishedPosts'
+import { useSiteCopy } from '../data/useSiteCopy'
 import { garden, ink, layout, paper, sans, serif } from '../design/tokens'
 import { Hover } from '../lib/Hover'
 import { Rise } from '../lib/Rise'
@@ -199,13 +201,13 @@ export function Landing() {
   const { data: modules } = useModules()
   const { data: posts } = usePublishedPosts({ orderBy: 'sort_order', ascending: true })
   const postsByModule = useMemo(() => groupByModule(posts), [posts])
+  const { site } = useSiteCopy()
+  const title = splitAesc(site.lTitle1)
 
   return (
     <div>
       <div style={{ padding: '80px 56px 64px', maxWidth: layout.page }}>
-        <div style={{ ...eyebrow, color: ink.muted, marginBottom: 28 }}>
-          coffee study journal — 2024 / 2026
-        </div>
+        <div style={{ ...eyebrow, color: ink.muted, marginBottom: 28 }}>{site.lEyebrow}</div>
         <h1
           style={{
             fontFamily: serif,
@@ -215,7 +217,7 @@ export function Landing() {
             margin: '0 0 24px',
           }}
         >
-          be
+          {title.pre}
           <span
             style={{
               display: 'inline-block',
@@ -224,11 +226,11 @@ export function Landing() {
               color: garden.blush,
             }}
           >
-            ӕ
+            {title.ae}
           </span>
-          n weirdo
+          {title.post}
           <br />
-          <span style={{ fontStyle: 'italic', color: ink.green }}>bằng cách viết ra</span>
+          <span style={{ fontStyle: 'italic', color: ink.green }}>{site.lTitle2}</span>
         </h1>
         <div
           style={{
@@ -238,14 +240,8 @@ export function Landing() {
             alignItems: 'start',
           }}
         >
-          <div style={{ fontSize: 15, lineHeight: 1.5, color: ink.strong }}>
-            Mỗi thứ học được đều bị viết lại thành một ghi chú ngắn, xếp vào một module. Ba module
-            đang mở: giác quan, hoá sinh, rang. Bài mới nhất luôn nằm trên cùng của module tương ứng.
-          </div>
-          <div style={{ fontSize: 13.5, lineHeight: 1.45, color: ink.soft }}>
-            Không có bài nào ở đây là kết luận. Phần lớn là ghi chép giữa đường: đọc được gì, thử gì,
-            sai ở đâu. Mục "còn chưa rõ" ở cuối mỗi bài thường là phần đáng đọc nhất.
-          </div>
+          <div style={{ fontSize: 15, lineHeight: 1.5, color: ink.strong }}>{site.lIntro1}</div>
+          <div style={{ fontSize: 13.5, lineHeight: 1.45, color: ink.soft }}>{site.lIntro2}</div>
           <Hover
             onClick={nav.goHome}
             style={{
@@ -257,7 +253,7 @@ export function Landing() {
             }}
             hoverStyle={{ color: ink.base }}
           >
-            xem mục lục {posts.length} bài →
+            {site.lCta} {posts.length} bài →
           </Hover>
         </div>
       </div>

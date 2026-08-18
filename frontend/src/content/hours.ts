@@ -114,3 +114,33 @@ export function seedLogs(): LogEntry[] {
   }
   return out
 }
+
+/**
+ * The header quote rotates daily. Real quotes only — a made-up line under a
+ * real name is worse than no quote (System conventions, rule 06). Add new ones
+ * to the end; the index wraps, so the rotation just gets longer.
+ */
+export const QUOTES: { t: string; w: string }[] = [
+  { t: '“We are what we repeatedly do.”', w: 'Will Durant' },
+  { t: '“Small daily improvements are the key to staggering long-term results.”', w: 'Robin Sharma' },
+  {
+    t: '“Amateurs sit and wait for inspiration, the rest of us just get up and go to work.”',
+    w: 'Stephen King',
+  },
+  { t: '“What gets measured gets managed.”', w: 'Peter Drucker' },
+  { t: '“It is not that we have a short time to live, but that we waste a lot of it.”', w: 'Seneca' },
+  {
+    t: '“Discipline is choosing between what you want now and what you want most.”',
+    w: 'Abraham Lincoln',
+  },
+  { t: '“Nothing will work unless you do.”', w: 'Maya Angelou' },
+]
+
+/** Days since the epoch, in local terms — same day ⇒ same quote. */
+export function dayIndex(now: Date = new Date()) {
+  return Math.floor(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) / 86400000)
+}
+
+export function quoteOfTheDay(now: Date = new Date()) {
+  return QUOTES[dayIndex(now) % QUOTES.length]
+}

@@ -84,7 +84,8 @@ describe('IndexScreen', () => {
 
     expect(await screen.findByText('Senses of Flavors')).toBeInTheDocument()
     await userEvent.click(screen.getByText('Senses of Flavors'))
-    expect(openArticle).toHaveBeenCalledWith('post-1')
+    // The second argument records the door the reader came through — see `Origin`.
+    expect(openArticle).toHaveBeenCalledWith('post-1', 'module')
   })
 
   it('variant B (columns) also renders real posts per module', async () => {

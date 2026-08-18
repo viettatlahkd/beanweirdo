@@ -4,9 +4,12 @@ import type { ModuleRow } from '../data/useModules'
 import { useModules } from '../data/useModules'
 import type { PostRow } from '../data/usePublishedPosts'
 import { usePublishedPosts } from '../data/usePublishedPosts'
+import { Breadcrumbs } from '../components/Breadcrumbs'
+import { useSiteCopy } from '../data/useSiteCopy'
 import { garden, ink, paper, sans, serif } from '../design/tokens'
 import { Hover } from '../lib/Hover'
 import { rowPad, useNav, useSettings } from '../lib/nav'
+import { openPost } from '../lib/openPost'
 
 const label: CSSProperties = {
   fontFamily: sans,
@@ -24,12 +27,27 @@ const switcher: CSSProperties = {
   paddingBottom: 3,
 }
 
-/** The three opening plates — one per module concept, in module order. */
-const plates = [
-  { bg: garden.blush, fg: '#3B2A2B', caption: 'ảnh mở đầu — vật thể đơn' },
-  { bg: garden.leaf, fg: '#1F3323', caption: 'mặt cắt' },
-  { bg: 'oklch(0.50 0.135 14)', fg: '#3B2E19', caption: 'dải rang' },
+/**
+ * The three opening plates — one per module concept, in module order. Caption
+ * and photo both come from the CMS; the colour is what shows until a photo is
+ * uploaded, so an empty site still reads as designed.
+ */
+const plateFallback = [
+  { bg: garden.blush, fg: '#3B2A2B' },
+  { bg: garden.leaf, fg: '#1F3323' },
+  { bg: 'oklch(0.50 0.135 14)', fg: '#3B2E19' },
 ]
+
+function usePlates() {
+  const { site } = useSiteCopy()
+  const captions = [site.plate1, site.plate2, site.plate3]
+  const photos = [site.plateImg1, site.plateImg2, site.plateImg3]
+  return plateFallback.map((p, i) => ({
+    ...p,
+    caption: captions[i],
+    background: photos[i] ? `url(${photos[i]}) center/cover no-repeat` : p.bg,
+  }))
+}
 
 /** Groups posts by `module_id`, preserving each module's `sort_order`. */
 function groupByModule(posts: PostRow[]): Map<string, PostRow[]> {
@@ -49,10 +67,14 @@ function Ledger({ modules, postsByModule }: ModulesProps) {
   const nav = useNav()
   const { density, showPlates } = useSettings()
   const pad = rowPad(density)
+  const { site } = useSiteCopy()
+  const plates = usePlates()
 
   return (
     <div>
-      <div style={{ padding: '76px 56px 38px', maxWidth: 1240 }}>
+      <div style={{ padding: '44px 56px 38px', maxWidth: 1240 }}>
+        <Breadcrumbs color={ink.muted} />
+
         <div
           style={{
             display: 'grid',
@@ -70,14 +92,13 @@ function Ledger({ modules, postsByModule }: ModulesProps) {
               margin: 0,
             }}
           >
-            A coffee study
+            {site.t1}
             <br />
-            <span style={{ fontStyle: 'italic', color: ink.green }}>journal</span>
+            <span style={{ fontStyle: 'italic', color: ink.green }}>{site.t2}</span>
           </h1>
           <div style={{ paddingBottom: 14 }}>
             <div style={{ fontSize: 14, lineHeight: 1.45, color: ink.mid, marginBottom: 14 }}>
-              Ghi chép quá trình học về cà phê — chia theo module, mỗi module là một tập bài ngắn.
-              Đọc theo thứ tự hoặc nhặt bất kỳ đâu.
+              {site.blurb}
             </div>
             <Hover
               onClick={nav.toggleVariant}
@@ -103,7 +124,7 @@ function Ledger({ modules, postsByModule }: ModulesProps) {
               key={p.caption}
               style={{
                 aspectRatio: '16/9',
-                background: p.bg,
+                background: p.background,
                 display: 'flex',
                 alignItems: 'flex-end',
                 padding: 16,
@@ -158,7 +179,7 @@ function Ledger({ modules, postsByModule }: ModulesProps) {
             {entries.map((e) => (
               <Hover
                 key={e.id}
-                onClick={() => nav.openArticle(e.id)}
+                onClick={() => openPost(nav, e)}
                 style={{
                   display: 'grid',
                   gridTemplateColumns: '44px minmax(0,1fr) minmax(0,1.05fr) 72px 56px',
@@ -205,9 +226,12 @@ function Ledger({ modules, postsByModule }: ModulesProps) {
 function Columns({ modules, postsByModule }: ModulesProps) {
   const nav = useNav()
   const { showPlates } = useSettings()
+  const { site } = useSiteCopy()
 
   return (
-    <div style={{ padding: '76px 56px 130px', maxWidth: 1340 }}>
+    <div style={{ padding: '44px 56px 130px', maxWidth: 1340 }}>
+      <Breadcrumbs color={ink.muted} />
+
       <h1
         style={{
           fontFamily: serif,
@@ -217,7 +241,7 @@ function Columns({ modules, postsByModule }: ModulesProps) {
           margin: '0 0 16px',
         }}
       >
-        A coffee study <span style={{ fontStyle: 'italic', color: ink.green }}>journal</span>
+        {site.t1} <span style={{ fontStyle: 'italic', color: ink.green }}>{site.t2}</span>
       </h1>
       <div
         style={{
@@ -228,7 +252,7 @@ function Columns({ modules, postsByModule }: ModulesProps) {
           marginBottom: 14,
         }}
       >
-        Ghi chép quá trình học về cà phê — chia theo module, mỗi module là một tập bài ngắn.
+        {site.blurbShort}
       </div>
       <Hover
         onClick={nav.toggleVariant}
@@ -295,7 +319,7 @@ function Columns({ modules, postsByModule }: ModulesProps) {
               {entries.map((e) => (
                 <div
                   key={e.id}
-                  onClick={() => nav.openArticle(e.id)}
+                  onClick={() => openPost(nav, e)}
                   style={{
                     display: 'flex',
                     gap: 12,

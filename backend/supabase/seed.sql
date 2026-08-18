@@ -23,15 +23,15 @@ values
     'Sáu bài ngắn về thành phần hoá học của hạt nhân xanh và những gì xảy ra khi chúng gặp nhiệt. Theme hình ảnh: mặt cắt — quả chín bổ đôi, nhân trong lớp nhầy, thớ tế bào phóng đại.',
     'Xanh lá non cạnh xanh rêu đậm. Chụp thẳng góc, ánh sáng phẳng, vật thể đặt giữa khung.',
     'Specimen — khối màu chiếm nửa trái, nửa phải là lưới ảnh vuông; bài viết xếp thành khay ba cột.',
-    'mặt cắt — quả chín bổ đôi', 'nhân xanh chụp từ trên, nền rêu', 'thớ tế bào phóng đại', 2
+    'mặt cắt — quả chín bổ đôi', 'nhân xanh chụp từ trên, nền rêu', 'thớ tế bào phóng đại', 3
   ),
   (
-    'roasting', 'roasting', '#F0B45C', '#3B2E19', '#F9EBD2', '#F3DCAE', 'sequence', 'process',
+    'roasting', 'roasting 101', '#F0B45C', '#3B2E19', '#F9EBD2', '#F3DCAE', 'sequence', 'process',
     'Nhiệt, thời gian, và những gì đọc được từ một đường cong.',
     'Nhiệt đi vào hạt bằng cách nào, mỗi giai đoạn làm gì, và cách ghi lại một mẻ rang để lần sau lặp được. Theme hình ảnh: quá trình và biến đổi — dải màu hạt chuyển dần, khói mảnh, mặt đồng hồ nhiệt.',
     'Mơ chín chuyển dần sang nâu quế theo trình tự rang — màu tự nó kể quá trình.',
     'Sequence — tiêu đề cực lớn trên khối mơ, dải bốn ảnh chuyển màu, danh mục là hàng đánh số lớn.',
-    'dải hạt chuyển màu theo mức rang', 'trang log rang viết tay', 'khói mảnh trên nền sáng', 3
+    'dải hạt chuyển màu theo mức rang', 'trang log rang viết tay', 'khói mảnh trên nền sáng', 2
   )
 on conflict (id) do nothing;
 
