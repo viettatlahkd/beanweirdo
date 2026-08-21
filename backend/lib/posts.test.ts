@@ -5,7 +5,6 @@ function row(overrides: Partial<PostRow> = {}): PostRow {
   return {
     id: 'p1',
     module_id: 'sensory',
-    n: '01',
     en: 'Title',
     vi: 'Mô tả',
     kind: 'essay',

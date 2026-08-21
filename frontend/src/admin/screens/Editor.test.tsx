@@ -90,7 +90,6 @@ describe('EditorCanvas — article', () => {
 
 describe('EditorCanvas — cards', () => {
   const card: CardData = {
-    n: '01',
     hue: '#F2A0A5',
     groups: ['hoa'],
     title: 'Hoa nhài',

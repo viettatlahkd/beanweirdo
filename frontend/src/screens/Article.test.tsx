@@ -25,7 +25,6 @@ const { Article } = await import('./Article')
 const cgaPost: PostRow = {
   id: 'p1',
   module_id: 'biochem',
-  n: '03',
   en: 'Chlorogenic Acids (CGA)',
   vi: 'Nguồn gốc của vị chát và phần lớn vị chua',
   kind: 'essay',

@@ -55,7 +55,6 @@ const sensory: ModuleRow = {
 const post: PostRow = {
   id: 'post-1',
   module_id: 'sensory',
-  n: '01',
   en: 'Senses of Flavors',
   vi: 'mô tả',
   kind: 'note',

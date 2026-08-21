@@ -28,7 +28,6 @@ afterEach(() => {
 const SAMPLE_ROW = {
   id: 'p1',
   module_id: 'sensory',
-  n: '01',
   en: 'Title',
   vi: 'Mô tả',
   kind: 'essay',
