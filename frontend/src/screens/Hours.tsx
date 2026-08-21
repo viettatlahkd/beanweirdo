@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { useMemo, useState, type CSSProperties } from 'react'
 import { ActivityRow } from '../components/ActivityRow'
 import { TagBar, TimerAddTag, type TagFilter } from '../components/TagBar'
 import { Breadcrumbs } from '../components/Breadcrumbs'
@@ -6,6 +6,7 @@ import { RECENT_DAYS, kindColorMap, projectColorMap, quoteOfTheDay, todayStr } f
 import { useHours } from '../data/useHours'
 import { serif } from '../design/tokens'
 import { Hover } from '../lib/Hover'
+import { MAX_SESSION_HOURS, useSessionTimer } from '../lib/useSessionTimer'
 import {
   buildAllDays,
   byKind as computeByKind,
@@ -69,42 +70,18 @@ export function Hours() {
   const [tagFilter, setTagFilter] = useState<TagFilter>(null)
   const [newId, setNewId] = useState<string | null>(null)
   const [dKind, setDKind] = useState<string>('đọc')
-  const [tMode, setTMode] = useState<'up' | 'down'>('up')
-  const [tRunning, setTRunning] = useState(false)
-  const [tSec, setTSec] = useState(0)
-  const [tTarget, setTTarget] = useState(1500)
   const [tName, setTName] = useState('')
-
-  const modeRef = useRef(tMode)
-  modeRef.current = tMode
-  const tickRef = useRef<number | null>(null)
-
-  function disarm() {
-    if (tickRef.current !== null) {
-      clearInterval(tickRef.current)
-      tickRef.current = null
-    }
-  }
-  function arm() {
-    disarm()
-    tickRef.current = window.setInterval(() => {
-      if (modeRef.current === 'up') {
-        setTSec((s) => s + 1)
-        return
-      }
-      setTSec((s) => {
-        const next = s - 1
-        if (next <= 0) {
-          disarm()
-          beep()
-          setTRunning(false)
-          return 0
-        }
-        return next
-      })
-    }, 1000)
-  }
-  useEffect(() => disarm, [])
+  // The clock reads the time rather than counting ticks — see useSessionTimer.
+  const timer = useSessionTimer({ onFinish: beep })
+  const {
+    mode: tMode,
+    target: tTarget,
+    running: tRunning,
+    sec: tSec,
+    usedSec: tUsedSec,
+    onScreenOnly,
+    suspended,
+  } = timer
 
   const kindColor = useMemo(() => kindColorMap(allKinds), [allKinds])
   const projectColor = useMemo(() => projectColorMap(projects), [projects])
@@ -127,13 +104,15 @@ export function Hours() {
 
   function saveTimer(mins: number) {
     if (!mins || mins < 1) return
-    disarm()
     const now = new Date()
-    const at = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0')
+    // A session that ran across tabs still started when it started — the row is
+    // stamped with the wall-clock time the stopwatch was set going.
+    const startedAt = new Date(now.getTime() - mins * 60_000)
+    const at =
+      String(startedAt.getHours()).padStart(2, '0') + ':' + String(startedAt.getMinutes()).padStart(2, '0')
     void add({ date: today, name: tName.trim() || 'Phiên không tên', kind: dKind, mins, at, done: true })
     setTName('')
-    setTRunning(false)
-    setTSec(tMode === 'down' ? tTarget : 0)
+    timer.reset()
   }
 
   const all = useMemo(() => buildAllDays(logs), [logs])
@@ -210,7 +189,6 @@ export function Hours() {
     }
   })
 
-  const tUsedSec = tMode === 'up' ? tSec : Math.max(0, tTarget - tSec)
   const tArc =
     tMode === 'down' && tTarget
       ? Math.round((1 - tSec / tTarget) * 100) + '%'
@@ -546,12 +524,7 @@ export function Hours() {
           <div style={{ background: 'linear-gradient(168deg, #143C43 0%, #0D272C 100%)', color: '#F4F4EF', padding: '26px 24px 24px' }}>
             <div style={{ display: 'flex', gap: 18, marginBottom: 22, fontWeight: 500, fontSize: 9.5, letterSpacing: '.2em', textTransform: 'uppercase' }}>
               <div
-                onClick={() => {
-                  disarm()
-                  setTMode('up')
-                  setTRunning(false)
-                  setTSec(0)
-                }}
+                onClick={() => timer.setMode('up')}
                 style={{
                   cursor: 'pointer',
                   paddingBottom: 4,
@@ -562,12 +535,7 @@ export function Hours() {
                 Bấm giờ
               </div>
               <div
-                onClick={() => {
-                  disarm()
-                  setTMode('down')
-                  setTRunning(false)
-                  setTSec(tTarget)
-                }}
+                onClick={() => timer.setMode('down')}
                 style={{
                   cursor: 'pointer',
                   paddingBottom: 4,
@@ -582,8 +550,17 @@ export function Hours() {
             <div style={{ fontFamily: serif, fontSize: 66, lineHeight: 0.9, letterSpacing: '-.04em', fontVariantNumeric: 'tabular-nums' }}>
               {clockFmt(tSec)}
             </div>
-            <div style={{ height: 2, background: 'rgba(244,244,239,.22)', margin: '16px 0 20px' }}>
+            <div style={{ height: 2, background: 'rgba(244,244,239,.22)', margin: '16px 0 10px' }}>
               <div style={{ height: 2, width: tArc, background: '#F2A0A5' }} />
+            </div>
+            <div style={{ fontSize: 11, color: 'rgba(244,244,239,.6)', marginBottom: 18, minHeight: 15 }}>
+              {tRunning || suspended
+                ? onScreenOnly
+                  ? suspended
+                    ? 'Đang tạm dừng — bạn đã rời màn này.'
+                    : 'Đang chạy — dừng khi bạn rời màn này.'
+                  : 'Đang chạy — vẫn tính khi bạn rời màn này.'
+                : ''}
             </div>
 
             {tMode === 'down' && (
@@ -594,13 +571,7 @@ export function Hours() {
                     return (
                       <div
                         key={m}
-                        onClick={() => {
-                          disarm()
-                          setTTarget(m * 60)
-                          setTSec(m * 60)
-                          setTMode('down')
-                          setTRunning(false)
-                        }}
+                        onClick={() => timer.setTarget(m * 60)}
                         style={{
                           flex: 1,
                           textAlign: 'center',
@@ -666,29 +637,50 @@ export function Hours() {
 
             <div style={{ display: 'flex', gap: 8 }}>
               <Hover
-                onClick={() => {
-                  const run = !tRunning
-                  if (run) arm()
-                  else disarm()
-                  setTRunning(run)
-                }}
+                onClick={() => (tRunning ? timer.pause() : timer.start())}
                 style={{ flex: 1, textAlign: 'center', fontSize: 11, letterSpacing: '.18em', textTransform: 'uppercase', padding: 13, background: '#F2A0A5', color: '#3B2A2B', cursor: 'pointer' }}
                 hoverStyle={{ background: '#F6B4B8' }}
               >
                 {tRunning ? 'Tạm dừng' : tSec ? 'Tiếp tục' : 'Bắt đầu'}
               </Hover>
               <Hover
-                onClick={() => {
-                  disarm()
-                  setTRunning(false)
-                  setTSec(tMode === 'down' ? tTarget : 0)
-                }}
+                onClick={() => timer.reset()}
                 style={{ flex: 'none', fontSize: 11, letterSpacing: '.14em', textTransform: 'uppercase', padding: '13px 15px', border: '1px solid rgba(244,244,239,.35)', cursor: 'pointer' }}
                 hoverStyle={{ border: '1px solid #F4F4EF' }}
               >
                 Đặt lại
               </Hover>
             </div>
+
+            {/* The rule, stated where it applies. Off by default: a stopwatch
+                that stops when you look away is a surprise, and the case that
+                sent this back from QA was four hours of work in another tab
+                logged as thirteen minutes. */}
+            <Hover
+              onClick={() => timer.setOnScreenOnly(!onScreenOnly)}
+              role="switch"
+              aria-checked={onScreenOnly}
+              style={{
+                marginTop: 14,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 9,
+                cursor: 'pointer',
+                color: onScreenOnly ? '#F2A0A5' : 'rgba(244,244,239,.6)',
+              }}
+              hoverStyle={{ color: '#F2A0A5' }}
+            >
+              <div
+                style={{
+                  width: 13,
+                  height: 13,
+                  flex: 'none',
+                  border: '1px solid currentColor',
+                  background: onScreenOnly ? 'currentColor' : 'transparent',
+                }}
+              />
+              <div style={{ fontSize: 11.5, lineHeight: 1.4 }}>Chỉ tính khi đang mở màn này</div>
+            </Hover>
 
             <Hover
               onClick={() => saveTimer(Math.round(tUsedSec / 60))}
@@ -711,7 +703,10 @@ export function Hours() {
           </div>
 
           <div style={{ marginTop: 22, fontSize: 12.5, lineHeight: 1.6, color: '#6A6F63' }}>
-            Phiên đếm lên chạy tới khi bạn dừng. Hẹn giờ dùng cho việc cần giới hạn — hết giờ có tiếng báo, rồi bấm tick để ghi vào ngày.
+            Phiên đếm lên chạy tới khi bạn dừng — kể cả khi bạn sang tab khác, đóng trang rồi mở lại, hay đi
+            sang màn hình khác; giờ được tính từ lúc bấm bắt đầu. Bật “chỉ tính khi đang mở màn này” nếu bạn
+            muốn ngược lại. Một phiên bỏ quên quá {MAX_SESSION_HOURS} tiếng sẽ tự dừng ở mốc đó. Hẹn giờ dùng
+            cho việc cần giới hạn — hết giờ có tiếng báo, rồi bấm tick để ghi vào ngày.
           </div>
         </div>
       </div>
