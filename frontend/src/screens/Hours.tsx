@@ -699,8 +699,22 @@ export function Hours() {
           ))}
         </div>
 
-        <div style={{ flex: '0 1 316px', minWidth: 262, position: 'sticky', top: 32 }}>
-          <div style={{ background: 'linear-gradient(168deg, #143C43 0%, #0D272C 100%)', color: '#F4F4EF', padding: '26px 24px 24px' }}>
+        {/* The rail was a fixed 316px, set when it held a clock, one row of
+            tags and two buttons. It now holds two tag rows, five countdown
+            chips and a switch, and at that width the chips wrapped onto three
+            lines while the day list beside it had room to spare. It scales with
+            the window instead: never under 320 so the countdown row fits on one
+            line, never over 440 so it stays the narrower column — the day list
+            is the main event (rule 14.01) and this sits beside it. */}
+        <div
+          style={{
+            flex: '0 1 clamp(320px, 30%, 440px)',
+            minWidth: 300,
+            position: 'sticky',
+            top: 32,
+          }}
+        >
+          <div style={{ background: 'linear-gradient(168deg, #143C43 0%, #0D272C 100%)', color: '#F4F4EF', padding: '28px 26px 26px' }}>
             <div style={{ display: 'flex', gap: 18, marginBottom: 22, fontWeight: 500, fontSize: 9.5, letterSpacing: '.2em', textTransform: 'uppercase' }}>
               <div
                 onClick={() => timer.setMode('up')}
