@@ -16,19 +16,80 @@ export type CardsProps = CardsOverrides & {
   post: CardsPostData
 }
 
-type Group = { group: string; hue: string; count: number }
+type GroupMeta = {
+  /** the dot and, when selected, the chip's edge */
+  hue: string
+  /** the label colour when the chip is selected — a darkened hue */
+  ink: string
+  /** the chip's fill when selected — a washed-out hue */
+  wash: string
+}
 
-/** Every group across the deck, each counting all the cards that mention it. */
+type Group = GroupMeta & { group: string; count: number }
+
+/**
+ * The SCA flavour wheel's fourteen groups, each with the three colours a chip
+ * needs. This is a fixed vocabulary, not user data, so it lives here rather
+ * than in the post body — a deck that leads with Berry and one that leads with
+ * Citrus must still paint Berry the same red.
+ */
+const FLAVOR_GROUPS: Record<string, GroupMeta> = {
+  Berry: { hue: '#D93A6A', ink: '#8E1E42', wash: '#FBE4EC' },
+  'Dried Fruit': { hue: '#C4603F', ink: '#7A3520', wash: '#FAE7DE' },
+  'Other Fruit': { hue: '#F2703A', ink: '#8F3A14', wash: '#FDE8DC' },
+  'Citrus Fruit': { hue: '#F0C020', ink: '#7A5A04', wash: '#FCF3D4' },
+  Floral: { hue: '#C361C9', ink: '#753A7A', wash: '#F8E6FA' },
+  Sweet: { hue: '#F0A93C', ink: '#8A5510', wash: '#FDEED6' },
+  'Nutty/Cocoa': { hue: '#A87B4C', ink: '#5C3D1E', wash: '#F4E9DB' },
+  Spices: { hue: '#E14B2A', ink: '#8A2A13', wash: '#FBE3DC' },
+  Roasted: { hue: '#8A6248', ink: '#4A2E1D', wash: '#EFE5DB' },
+  'Green/Vegetative': { hue: '#4FAE63', ink: '#256B37', wash: '#E4F4E6' },
+  Sour: { hue: '#B9D62B', ink: '#5A6B0C', wash: '#F2F8D8' },
+  Fermented: { hue: '#8B74D9', ink: '#4C3A8E', wash: '#EDE9FB' },
+  'Papery/Musty': { hue: '#9C9684', ink: '#585345', wash: '#F0EEE6' },
+  Chemical: { hue: '#3D9AB0', ink: '#1E5A69', wash: '#E0F1F5' },
+}
+
+/** Groups outside the wheel cycle this palette, so they still read as distinct. */
+const SPARE_PALETTE: GroupMeta[] = [
+  { hue: '#6FBF5C', ink: '#3B6B2E', wash: '#F1EFE6' },
+  { hue: '#F0C020', ink: '#7A5A04', wash: '#F1EFE6' },
+  { hue: '#E8628C', ink: '#8E1E42', wash: '#F1EFE6' },
+  { hue: '#3D9AB0', ink: '#1E5A69', wash: '#F1EFE6' },
+  { hue: '#8B74D9', ink: '#4C3A8E', wash: '#F1EFE6' },
+]
+
+/**
+ * A group's three colours: from the wheel when it is one of the fourteen,
+ * otherwise from the spare palette by position. `groupHues` still wins, so a
+ * post can recolour a group's dot without touching this table.
+ */
+function metaFor(group: string, extraIndex: number, hues: Record<string, string>): GroupMeta {
+  const base = FLAVOR_GROUPS[group] ?? SPARE_PALETTE[extraIndex % SPARE_PALETTE.length]
+  return hues[group] ? { ...base, hue: hues[group] } : base
+}
+
+/**
+ * Every group across the deck, each counting all the cards that mention it.
+ * The wheel's own order comes first — a reader scanning the bar should meet
+ * Berry before Chemical however the deck happens to be written — and any group
+ * outside the wheel follows in the order the deck introduces it.
+ */
 function groupsOf(cards: CardData[], hues: Record<string, string> = {}): Group[] {
-  const byGroup = new Map<string, Group>()
+  const counts = new Map<string, number>()
+  const extras: string[] = []
   for (const c of cards) {
     for (const g of c.groups) {
-      const existing = byGroup.get(g)
-      if (existing) existing.count += 1
-      else byGroup.set(g, { group: g, hue: hues[g] ?? c.hue, count: 1 })
+      counts.set(g, (counts.get(g) ?? 0) + 1)
+      if (!(g in FLAVOR_GROUPS) && !extras.includes(g)) extras.push(g)
     }
   }
-  return [...byGroup.values()]
+  const ordered = [...Object.keys(FLAVOR_GROUPS).filter((g) => counts.has(g)), ...extras]
+  return ordered.map((group) => ({
+    group,
+    count: counts.get(group) ?? 0,
+    ...metaFor(group, extras.indexOf(group), hues),
+  }))
 }
 
 /**
@@ -39,6 +100,8 @@ function groupsOf(cards: CardData[], hues: Record<string, string> = {}): Group[]
 export function Cards({ post, ...overrides }: CardsProps) {
   const [openIndexes, setOpenIndexes] = useState<Set<number>>(() => new Set())
   const [activeGroup, setActiveGroup] = useState<string | null>(null)
+  const [hoverCard, setHoverCard] = useState<number | null>(null)
+  const [clearHover, setClearHover] = useState(false)
 
   const groups = useMemo(() => groupsOf(post.cards, post.groupHues), [post.cards, post.groupHues])
   const visibleCards = useMemo(
@@ -107,36 +170,57 @@ export function Cards({ post, ...overrides }: CardsProps) {
           flexWrap: 'wrap',
         }}
       >
-        {groups.map((g) => (
-          <div
-            key={g.group}
-            role="button"
-            onClick={() => setActiveGroup((prev) => (prev === g.group ? null : g.group))}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 8,
-              background: activeGroup === g.group ? '#E4F0DF' : '#FFFFFF',
-              border: `1px solid ${paper.rule}`,
-              padding: '6px 12px',
-              cursor: 'pointer',
-            }}
-          >
-            <div style={{ width: 8, height: 8, borderRadius: '50%', background: g.hue, flex: 'none' }} />
-            <div style={{ fontFamily: sans, fontSize: 12, color: ink.base }}>{g.group}</div>
-            <div style={{ fontFamily: sans, fontSize: 10.5, color: ink.base, opacity: 0.5 }}>{g.count}</div>
-          </div>
-        ))}
+        {groups.map((g) => {
+          // Selected, the chip fills with the group's own wash and takes its
+          // hue as an edge — so the bar says which group is on by colour, not
+          // only by contrast.
+          const on = activeGroup === g.group
+          return (
+            <div
+              key={g.group}
+              role="button"
+              aria-pressed={on}
+              onClick={() => setActiveGroup((prev) => (prev === g.group ? null : g.group))}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                background: on ? g.wash : '#FFFFFF',
+                border: `1px solid ${on ? g.hue : paper.rule}`,
+                padding: '6px 12px',
+                cursor: 'pointer',
+              }}
+            >
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: g.hue, flex: 'none' }} />
+              <div style={{ fontFamily: sans, fontSize: 12, color: on ? g.ink : '#4B463A' }}>
+                {g.group}
+              </div>
+              <div
+                style={{
+                  fontFamily: sans,
+                  fontSize: 10.5,
+                  color: g.ink,
+                  opacity: 0.5,
+                  fontVariantNumeric: 'tabular-nums',
+                }}
+              >
+                {g.count}
+              </div>
+            </div>
+          )
+        })}
         {activeGroup && (
           <div
             role="button"
             onClick={() => setActiveGroup(null)}
+            onMouseEnter={() => setClearHover(true)}
+            onMouseLeave={() => setClearHover(false)}
             style={{
               fontFamily: sans,
               fontSize: 11,
               letterSpacing: '.14em',
               textTransform: 'uppercase',
-              color: '#8A8A7C',
+              color: clearHover ? '#C25C2E' : '#8A8A7C',
               cursor: 'pointer',
               marginLeft: 4,
             }}
@@ -188,7 +272,16 @@ export function Cards({ post, ...overrides }: CardsProps) {
                   role="button"
                   aria-expanded={open}
                   onClick={() => toggle(i)}
-                  style={{ display: 'flex', alignItems: 'flex-start', gap: 0, padding: '18px 4px 16px', cursor: 'pointer' }}
+                  onMouseEnter={() => setHoverCard(i)}
+                  onMouseLeave={() => setHoverCard((prev) => (prev === i ? null : prev))}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 0,
+                    padding: '18px 4px 16px',
+                    cursor: 'pointer',
+                    background: hoverCard === i ? '#FBF8EC' : undefined,
+                  }}
                 >
                   <div style={{ fontFamily: sans, fontSize: 12, color: ink.base, paddingTop: 8, width: 16, flex: 'none' }}>
                     {open ? '▾' : '▸'}

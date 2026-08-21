@@ -40,6 +40,45 @@ const post: CardsPostData = {
 }
 
 describe('Cards', () => {
+  it('lists flavour-wheel groups in the wheel order, not the deck order', () => {
+    // The deck leads with Sour; the wheel puts Citrus Fruit long before it.
+    const wheelPost: CardsPostData = {
+      ...post,
+      cards: [
+        { ...post.cards[0], groups: ['Sour'] },
+        { ...post.cards[1], groups: ['Citrus Fruit'] },
+      ],
+    }
+    render(<Cards post={wheelPost} />)
+    const chips = screen.getAllByRole('button', { pressed: false })
+    const labels = chips.map((c) => c.textContent ?? '')
+    const citrus = labels.findIndex((t) => t.includes('Citrus Fruit'))
+    const sour = labels.findIndex((t) => t.includes('Sour'))
+    expect(citrus).toBeGreaterThanOrEqual(0)
+    expect(citrus).toBeLessThan(sour)
+  })
+
+  it('paints a selected chip in its own group colour, not one shared colour', () => {
+    const wheelPost: CardsPostData = {
+      ...post,
+      cards: [
+        { ...post.cards[0], groups: ['Berry'] },
+        { ...post.cards[1], groups: ['Floral'] },
+      ],
+    }
+    render(<Cards post={wheelPost} />)
+    const chipFor = (name: string) =>
+      screen.getAllByRole('button').find((el) => (el.textContent ?? '').includes(name))!
+
+    fireEvent.click(chipFor('Berry'))
+    // Berry's wash, rgb(251, 228, 236) === #FBE4EC
+    expect(chipFor('Berry')).toHaveStyle({ background: 'rgb(251, 228, 236)' })
+
+    fireEvent.click(chipFor('Floral'))
+    // Floral's own wash, #F8E6FA — a different colour, not a shared green
+    expect(chipFor('Floral')).toHaveStyle({ background: 'rgb(248, 230, 250)' })
+  })
+
   it('renders the header title and intro lines', () => {
     render(<Cards post={post} />)
     expect(screen.getByRole('heading', { name: 'sensory lexicon' })).toBeInTheDocument()
