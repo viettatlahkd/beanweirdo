@@ -269,6 +269,7 @@ export function ActivityRow({
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 onKeyDown={(e) => {
+                  if (e.nativeEvent.isComposing) return
                   if (e.key === 'Enter') commit()
                   if (e.key === 'Escape') setEditing(null)
                 }}
@@ -300,6 +301,10 @@ export function ActivityRow({
               value={name}
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => {
+                // A name is where Vietnamese actually gets typed: while the
+                // input method is mid-letter, Enter finishes the letter, not
+                // the edit.
+                if (e.nativeEvent.isComposing) return
                 if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
                 if (e.key === 'Escape') onAbandon()
               }}
@@ -345,6 +350,7 @@ export function ActivityRow({
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => {
+              if (e.nativeEvent.isComposing) return
               if (e.key === 'Enter') commit()
               if (e.key === 'Escape') setEditing(null)
             }}

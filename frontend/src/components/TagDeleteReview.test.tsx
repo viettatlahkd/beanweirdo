@@ -54,7 +54,7 @@ describe('TagDeleteReview', () => {
     // The other two are still open questions.
     expect(screen.getByText('Hoạt động (2)')).toBeInTheDocument()
 
-    await u.click(screen.getByRole('button', { name: 'Xoá tag, 2 còn lại vào Khác' }))
+    await u.click(screen.getByRole('button', { name: 'Xoá tag, 2 còn lại vào khác' }))
     expect(props.onConfirm).toHaveBeenCalledWith({ moves: [{ to: 'đọc', ids: ['a'] }] })
   })
 
@@ -76,7 +76,7 @@ describe('TagDeleteReview', () => {
     const u = userEvent.setup()
     const props = review()
 
-    await u.click(screen.getByRole('button', { name: 'Xoá tag, 3 còn lại vào Khác' }))
+    await u.click(screen.getByRole('button', { name: 'Xoá tag, 3 còn lại vào khác' }))
     expect(props.onConfirm).toHaveBeenCalledWith({ moves: [] })
   })
 
