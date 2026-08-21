@@ -64,3 +64,55 @@ Trên trang đang chạy, dữ liệu production:
 - Mục "Mô hình nội dung" — đoạn nói module đặc biệt "không nằm chung lưới với
   các module kiến thức trên trang chủ" vẫn đúng, nhưng cần nói rõ chúng **có**
   nằm ở Mục lục và sidebar.
+
+---
+
+# Bổ sung · Số thứ tự bài đánh theo danh sách đang hiển thị
+
+## Đã đổi
+- [ĐỔI HÀNH VI] Số hiện cạnh mỗi bài nay là **vị trí trong danh sách đang
+  hiển thị**, không còn lấy từ cột `posts.n`.
+  - Trước: `Sensory Lexicon` hiện `03`, `Lipid: Tổng quan` hiện `05` — vì đó
+    là vị trí lúc soạn, tính trên toàn bộ bài trong module kể cả bài đã lưu
+    trữ. Năm trong sáu bài đã lưu trữ, nên bài duy nhất còn đăng tự giới thiệu
+    mình là "05".
+  - Sau: cả hai hiện `01`.
+- [SỬA LỖI] `Article.tsx` tra cứu bài dự phòng bằng `p.n === '03'` — một
+  chuỗi cứng. Chỉ cần lưu trữ hoặc kéo-thả đổi thứ tự một lần là nó trỏ vào
+  hư không. Nay lấy bài đã đăng đầu tiên của module.
+
+## Phạm vi — tám chỗ in số
+| Chỗ | Đánh số theo |
+|---|---|
+| Mục lục — dạng danh sách | bài đã đăng của module |
+| Mục lục — dạng cột | bài đã đăng của module |
+| Trang module — band / specimen / sequence | bài đã đăng của module |
+| Trang bài — dòng eyebrow | vị trí trong danh sách anh em đã đăng |
+| CMS — sơ đồ trang | danh sách đang hiện |
+| CMS — hàng kéo-thả | danh sách đang hiện |
+
+## Đụng dữ liệu
+- Không đổi schema. `posts.n` vẫn còn và vẫn được `PUT /api/posts` ghi khi
+  kéo-thả đổi thứ tự — nhưng **không màn hình nào in nó ra nữa**.
+- Kéo theo: `posts.n` giờ trùng lặp với `sort_order`. Đề nghị chủ site quyết
+  có bỏ cột không — chưa làm gì.
+
+## Luật đề xuất
+- "Số hiện cạnh một bài là vị trí của nó trong danh sách người đọc đang nhìn,
+  đếm từ 01. Không bao giờ in thẳng `posts.n` — đó là thứ tự lúc soạn, tính
+  trên mọi bài bất kể trạng thái."
+- "Khi chưa biết bài nằm ở đâu trong danh sách thì bỏ số đi, đừng đoán."
+
+## Kiểm chứng
+Trên trang đang chạy, Mục lục:
+```
+sensory           01 · Sensory Lexicon        (trước: 03)
+biochemistry 101  01 · Lipid: Tổng quan       (trước: 05)
+Ghi 01            01 · taste modality: sơn la
+roasting 101      (chưa có bài đã đăng)
+```
+Trang module biochemistry: `01`. Test 170 FE + 137 BE, xanh.
+
+**Chưa quan sát được trên site:** dòng eyebrow ở trang bài chỉ áp cho bài dạng
+`article`, mà ba bài đang đăng đều là `cards`, `longform`, `memo`. Phần đó do
+test bao, không phải do nhìn tận mắt.

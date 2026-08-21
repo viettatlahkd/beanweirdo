@@ -23,3 +23,14 @@ export function postDescription(post: TitledPost): string {
   const subtitle = post.lead?.trim()
   return subtitle || post.vi
 }
+
+/**
+ * The number a reader sees beside a post: its place in the list currently on
+ * screen, counted from one.
+ *
+ * Deliberately not `posts.n`. That column records the running order at
+ * authoring time, over every post in the module whatever its status — so with
+ * five of six archived, the one still published introduced itself as "05".
+ * A number the reader can count along with has to come from what is shown.
+ */
+export const displayNumber = (index: number): string => String(index + 1).padStart(2, '0')

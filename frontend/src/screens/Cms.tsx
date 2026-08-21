@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
 import { Breadcrumbs } from '../components/Breadcrumbs'
 import { NAV } from '../content/navItems'
+import { displayNumber } from '../lib/postText'
 import { SITE_DEFAULTS, type NavGroup, type SiteCopy, type SiteOverrides } from '../content/site'
 import {
   createModule,
@@ -342,7 +343,7 @@ export function Cms() {
           rows.push({
             label: m.title,
             desc: `module · ${m.concept}`,
-            kids: postsOf(m.id).map((p) => `${p.n} · ${p.en}`),
+            kids: postsOf(m.id).map((p, i) => `${displayNumber(i)} · ${p.en}`),
           })
         }
       }
@@ -913,7 +914,7 @@ export function Cms() {
                       </Hover>
                     </div>
 
-                    {entries.map((e) => (
+                    {entries.map((e, i) => (
                       <div
                         key={e.id}
                         draggable
@@ -942,7 +943,7 @@ export function Cms() {
                             ⠿
                           </Hover>
                           <div style={{ fontFamily: sans, fontSize: 10.5, letterSpacing: '.12em', color: ink.faint }}>
-                            {e.n}
+                            {displayNumber(i)}
                           </div>
                         </div>
                         <input

@@ -51,14 +51,17 @@ describe('Article', () => {
   it('renders a real post through PostRenderer, splitting a trailing parenthetical into italics', async () => {
     useNav.mockReturnValue({ postId: 'p1', openModule, openArticle })
     useModules.mockReturnValue({ data: [{ id: 'biochem', title: 'biochemistry 101' }], loading: false, error: null })
-    usePublishedPosts.mockReturnValue({ data: [], loading: false, error: null })
+    // The post is of course in its own module's published list — the number
+    // beside it is its place in that list.
+    usePublishedPosts.mockReturnValue({ data: [cgaPost], loading: false, error: null })
     usePost.mockReturnValue({ data: cgaPost, loading: false, error: null })
 
     render(<Article />)
 
     const title = await screen.findByTestId('article-title')
     expect(title.textContent).toBe('Chlorogenic Acids (CGA)')
-    expect(screen.getByText('03 — essay — 2026.02')).toBeInTheDocument()
+    // '01', not the stored n of '03': it is the only published post in biochem.
+    expect(screen.getByText('01 — essay — 2026.02')).toBeInTheDocument()
     expect(screen.getByText('Một họ hợp chất phenolic.')).toBeInTheDocument()
 
     await userEvent.click(screen.getByText('← biochemistry 101'))
@@ -119,4 +122,16 @@ describe('Article', () => {
     expect(await screen.findByTestId('article-title')).toHaveTextContent('Chlorogenic Acids (CGA)')
     expect(usePost).toHaveBeenCalledWith('p1')
   })
+
+  it('leaves the number out when it cannot place the post in a list', async () => {
+    // Numbering from a list this post is not in would print a confident lie.
+    useNav.mockReturnValue({ postId: 'p1', openModule, openArticle })
+    useModules.mockReturnValue({ data: [{ id: 'biochem', title: 'biochemistry 101' }], loading: false, error: null })
+    usePublishedPosts.mockReturnValue({ data: [], loading: false, error: null })
+    usePost.mockReturnValue({ data: cgaPost, loading: false, error: null })
+    render(<Article />)
+    expect(await screen.findByText('essay — 2026.02')).toBeInTheDocument()
+    expect(screen.queryByText(/^\d\d — essay/)).not.toBeInTheDocument()
+  })
+
 })
