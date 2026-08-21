@@ -101,11 +101,9 @@ export function Hours() {
   /** The tag whose deletion is being worked out, if any. */
   const [deleting, setDeleting] = useState<TagTarget | null>(null)
   const [newId, setNewId] = useState<string | null>(null)
-  const [dKind, setDKind] = useState<string>('đọc')
-  /** The project the timer files its session under — null when it belongs to none. */
-  const [dProject, setDProject] = useState<string | null>(null)
-  const [tName, setTName] = useState('')
-  // The clock reads the time rather than counting ticks — see useSessionTimer.
+  // The clock reads the time rather than counting ticks, and it carries the
+  // session's name and tags so a reload gives back the whole session — see
+  // useSessionTimer.
   const timer = useSessionTimer({ onFinish: beep })
   const {
     mode: tMode,
@@ -115,6 +113,12 @@ export function Hours() {
     usedSec: tUsedSec,
     onScreenOnly,
     suspended,
+    name: tName,
+    kind: dKind,
+    project: dProject,
+    setName: setTName,
+    setKind: setDKind,
+    setProject: setDProject,
   } = timer
 
   // The unclassified bucket has no row in `activity_kinds`, so the stats have
@@ -156,7 +160,6 @@ export function Hours() {
       at,
       done: true,
     })
-    setTName('')
     timer.reset()
   }
 

@@ -169,3 +169,82 @@ describe('useSessionTimer', () => {
     expect(result.current.running).toBe(false)
   })
 })
+
+describe('useSessionTimer — the session, not just the clock', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    vi.useFakeTimers()
+    vi.setSystemTime(START)
+    setVisibility('visible')
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('brings the name and both tags back through a reload', () => {
+    const first = renderHook(() => useSessionTimer())
+    act(() => {
+      first.result.current.setName('NAUCode: Onb review')
+      first.result.current.setKind('work')
+      first.result.current.setProject('Sao đâu')
+      first.result.current.start()
+    })
+    skip(90 * 60_000)
+    first.unmount()
+
+    const { result } = renderHook(() => useSessionTimer())
+
+    // The whole session comes back, not a bare number with nothing to file it as.
+    expect(result.current.running).toBe(true)
+    expect(result.current.sec).toBe(90 * 60)
+    expect(result.current.name).toBe('NAUCode: Onb review')
+    expect(result.current.kind).toBe('work')
+    expect(result.current.project).toBe('Sao đâu')
+  })
+
+  it('clears the name on reset but keeps the tags for the next session', () => {
+    const { result } = renderHook(() => useSessionTimer())
+    act(() => {
+      result.current.setName('đọc chương 4')
+      result.current.setKind('đọc')
+      result.current.setProject('Sao đâu')
+      result.current.start()
+    })
+    skip(600_000)
+    act(() => result.current.reset())
+
+    expect(result.current.name).toBe('')
+    // The next session is usually the same work for the same project.
+    expect(result.current.kind).toBe('đọc')
+    expect(result.current.project).toBe('Sao đâu')
+    expect(result.current.sec).toBe(0)
+  })
+
+  it('starts with no name, the default kind and no project', () => {
+    const { result } = renderHook(() => useSessionTimer())
+    expect(result.current.name).toBe('')
+    expect(result.current.kind).toBe('đọc')
+    expect(result.current.project).toBeNull()
+  })
+
+  it('lets a project be cleared back to none', () => {
+    const { result } = renderHook(() => useSessionTimer())
+    act(() => result.current.setProject('Sao đâu'))
+    act(() => result.current.setProject(null))
+    expect(result.current.project).toBeNull()
+  })
+
+  it('keeps the session readable when a stored record predates these fields', () => {
+    // A tab left open across the deploy that added them.
+    localStorage.setItem(
+      TIMER_KEY,
+      JSON.stringify({ mode: 'up', target: 1500, base: 300, since: null, suspended: false, onScreenOnly: false }),
+    )
+    const { result } = renderHook(() => useSessionTimer())
+
+    expect(result.current.sec).toBe(300)
+    expect(result.current.name).toBe('')
+    expect(result.current.kind).toBe('đọc')
+    expect(result.current.project).toBeNull()
+  })
+})

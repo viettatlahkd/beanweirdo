@@ -35,6 +35,9 @@ const hours = (over: Partial<UseHoursResult> = {}): UseHoursResult => ({
 
 describe('Hours — the timer rail files under both tag systems', () => {
   beforeEach(() => {
+    // The rail's tag choices now ride in localStorage with the clock, so one
+    // test's picks would otherwise be the next one's starting state.
+    localStorage.clear()
     add.mockClear()
     addTag.mockClear()
     useHours.mockReturnValue(hours())
