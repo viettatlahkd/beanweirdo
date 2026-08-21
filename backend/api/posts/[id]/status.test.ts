@@ -29,7 +29,6 @@ function fullRow(status: string, previousStatus: string | null = null) {
   return {
     id: 'p1',
     module_id: 'sensory',
-    n: '01',
     en: 'T',
     vi: 'V',
     kind: 'essay',

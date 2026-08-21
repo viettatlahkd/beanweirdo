@@ -40,8 +40,17 @@ export interface PostRow {
 // `body` is selected but never returned: it is where a post keeps its pictures,
 // and the listing wants one of them. Sending the whole thing to the browser to
 // find a thumbnail would mean shipping a 100KB article to draw a 44px square.
+/**
+ * Kept as one literal string because Supabase types the query from it; an
+ * array joined at runtime widens to `string` and the row type is lost.
+ *
+ * That makes this list unchecked, and a column dropped from the database once
+ * survived here — every request to the admin listing answered 500. Whenever a
+ * column goes, grep this file before trusting the tests: they mock Supabase
+ * and cannot see the real schema.
+ */
 export const POST_SUMMARY_COLUMNS =
-  'id, module_id, n, en, vi, kind, date_label, status, template, hero_image_url, sort_order, created_at, updated_at, published_at, body'
+  'id, module_id, en, vi, kind, date_label, status, template, hero_image_url, sort_order, created_at, updated_at, published_at, body'
 
 export const POST_DETAIL_COLUMNS = '*'
 

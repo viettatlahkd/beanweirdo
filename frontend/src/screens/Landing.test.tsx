@@ -58,7 +58,6 @@ function makePost(overrides: Partial<PostRow>): PostRow {
   return {
     id: 'post-1',
     module_id: 'sensory',
-    n: '01',
     en: 'Senses of Flavors',
     vi: 'mô tả',
     kind: 'note',

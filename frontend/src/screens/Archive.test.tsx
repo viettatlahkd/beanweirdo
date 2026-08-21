@@ -41,7 +41,6 @@ const biochem: ModuleRow = {
 const post: PostRow = {
   id: 'p1',
   module_id: 'biochem',
-  n: '03',
   en: 'Chlorogenic Acids (CGA)',
   vi: 'Nguồn gốc của vị chát',
   kind: 'essay',
