@@ -113,12 +113,12 @@ export const LOGIC: LogicPart[] = [
 
   { p: 'C', part: 'Riêng theo template', note: 'Mỗi template có logic riêng, không áp dàn trải sang template khác.', groups: [
     { n: '09', g: 'Bài mẫu → bài chính thức', items: [
-      { s: 'Toàn hệ thống', r: 'Với từ "template": luôn hiểu là bài mẫu — một cái khung rỗng để dựng, không phải nội dung. Mọi bài thật đều là một bản sao của khung đó, đặt dưới một module.', e: 'template = mẫu' },
+      { s: 'Toàn hệ thống', r: 'Với từ "template": là nội dung được lưu lại để dùng lại, không phải khung rỗng. Một mẫu thường được dựng từ một bài thật, nên nó có sẵn nội dung. Tạo bài từ mẫu là sao chép nội dung đó sang một bài mới, đặt dưới một module.', e: 'template = mẫu' },
       { s: 'Toàn hệ thống', r: 'Với bài mẫu trong [[secAdmin]]: được tự do chọn màu, vì nó chỉ là khung để dựng.', e: 'Templates giữ màu riêng' },
       { s: 'Module', r: 'Khi clone bài mẫu sang module chính thức: bắt buộc đổi toàn bộ màu sang theme của module đó, không giữ màu của bản mẫu.', e: 'accent · tint · tint2 của module' },
       { s: 'Module', r: 'Khi một bài mẫu được nhân bản thành bài chính thức dưới module: khối màu đầu trang phải lấy đúng accent của module đó.', e: 'sensory → #F2A0A5' },
-      { s: 'Toàn hệ thống', r: 'Với mỗi bài dùng chung template: chỉ đổi màu, nhãn, tiêu đề và đoạn dẫn theo lối vào — nội dung và thao tác giữ nguyên.', e: 'một template, hai vai' },
-      { s: 'Toàn hệ thống', r: 'Với đường dẫn: bài chính thức đi từ [[landing]] › [[home]] › module, bài mẫu đi từ [[secAdmin]] › Notes › Templates.', e: '' },
+      { s: 'Toàn hệ thống', r: 'Bài tạo từ mẫu sở hữu nội dung của nó kể từ lúc tạo: sửa bài không đụng đến mẫu, sửa mẫu không với tới bài đã tạo. Một mẫu được clone nhiều lần thành nhiều bài khác nhau — khác tiêu đề, và khác cả nội dung.', e: 'một template, hai vai' },
+      { s: 'Toàn hệ thống', r: 'Với đường dẫn: bài chính thức đi từ [[landing]] › [[home]] › module, bài mẫu đi từ [[secAdmin]] › Templates.', e: '' },
       { s: 'Toàn hệ thống', r: 'Hai điều không template nào được từ chối, kể cả template viết sau này: đường dẫn quay lại ở đầu trang, và khối màu lấy từ module chứa bài. Ngoài hai điều đó, một template được trình bày khác hẳn mọi template còn lại — đó là lý do có nhiều template.', e: 'Bài dài và bài ghi chú dùng dải màu mỏng hơn bài thường, nhưng vẫn là màu của module.' },
       { s: 'Toàn hệ thống', r: 'Với đường dẫn của một bài: đoạn cuối là tên bài, không phải một chữ chung như "Bài viết".', e: 'Trang chủ › Mục lục › sensory › Sensory Lexicon' },
       { s: 'Toàn hệ thống', r: 'Hệ thống không đổi chữ hoa/thường của tiêu đề bài ở bất kỳ vị trí nào — lưu sao hiện vậy. Viết hoa hay viết thường là quyết định của người soạn bài.', e: '' },
