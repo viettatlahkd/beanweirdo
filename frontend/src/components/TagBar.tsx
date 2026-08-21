@@ -99,6 +99,7 @@ function TagChip({
           value={draft}
           onChange={(e) => onDraft(e.target.value)}
           onKeyDown={(e) => {
+            if (e.nativeEvent.isComposing) return
             if (e.key === 'Enter') onCommit()
             if (e.key === 'Escape') onCancel()
           }}
@@ -158,6 +159,60 @@ function TagChip({
         {count}
       </div>
     </div>
+  )
+}
+
+/**
+ * The `+` that opens a field for a new tag, and the field itself.
+ *
+ * This lives at module scope on purpose. It used to be declared inside
+ * `TagBar`, which made it a different component type on every render — so
+ * every keystroke tore the input out of the DOM and put a fresh one back.
+ * Latin text survived that; Vietnamese did not, because an input method
+ * composes a letter over several keystrokes and the half-finished composition
+ * died with the old node. Typing `ưu` came out as `ưư`.
+ */
+function AddControl({
+  open,
+  label,
+  draft,
+  onDraft,
+  onOpen,
+  onCommit,
+  onCancel,
+}: {
+  open: boolean
+  label: string
+  draft: string
+  onDraft: (v: string) => void
+  onOpen: () => void
+  onCommit: () => void
+  onCancel: () => void
+}) {
+  if (open) {
+    return (
+      <input
+        value={draft}
+        onChange={(e) => onDraft(e.target.value)}
+        onKeyDown={(e) => {
+          // While the input method is still composing a letter, Enter and
+          // Escape belong to it, not to us.
+          if (e.nativeEvent.isComposing) return
+          if (e.key === 'Enter') onCommit()
+          if (e.key === 'Escape') onCancel()
+        }}
+        onBlur={onCommit}
+        autoFocus
+        placeholder={label}
+        style={draftInput}
+      />
+    )
+  }
+
+  return (
+    <Hover onClick={onOpen} style={addButton} hoverStyle={{ color: '#3E7A4E', borderColor: '#3E7A4E' }}>
+      +
+    </Hover>
   )
 }
 
@@ -237,37 +292,6 @@ export function TagBar({
   const bucketCount = countTask(UNCLASSIFIED)
   const taskTags = kinds.includes(UNCLASSIFIED) || bucketCount === 0 ? kinds : kinds.concat([UNCLASSIFIED])
 
-  const AddControl = ({ system, label }: { system: TagSystem; label: string }) =>
-    adding === system ? (
-      <input
-        value={draft}
-        onChange={(e) => setDraft(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') commitAdd()
-          if (e.key === 'Escape') {
-            setAdding(null)
-            setDraft('')
-          }
-        }}
-        onBlur={commitAdd}
-        autoFocus
-        placeholder={label}
-        style={draftInput}
-      />
-    ) : (
-      <Hover
-        onClick={() => {
-          setEditing(null)
-          setAdding(system)
-          setDraft('')
-        }}
-        style={addButton}
-        hoverStyle={{ color: '#3E7A4E', borderColor: '#3E7A4E' }}
-      >
-        +
-      </Hover>
-    )
-
   return (
     <div
       style={{
@@ -315,7 +339,22 @@ export function TagBar({
             />
           )
         })}
-        <AddControl system="project" label="project mới" />
+        <AddControl
+          open={adding === 'project'}
+          label="project mới"
+          draft={draft}
+          onDraft={setDraft}
+          onOpen={() => {
+            setEditing(null)
+            setAdding('project')
+            setDraft('')
+          }}
+          onCommit={commitAdd}
+          onCancel={() => {
+            setAdding(null)
+            setDraft('')
+          }}
+        />
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 9, flexWrap: 'wrap' }}>
@@ -353,7 +392,22 @@ export function TagBar({
             />
           )
         })}
-        <AddControl system="task" label="loại mới" />
+        <AddControl
+          open={adding === 'task'}
+          label="loại mới"
+          draft={draft}
+          onDraft={setDraft}
+          onOpen={() => {
+            setEditing(null)
+            setAdding('task')
+            setDraft('')
+          }}
+          onCommit={commitAdd}
+          onCancel={() => {
+            setAdding(null)
+            setDraft('')
+          }}
+        />
 
         {filter && (
           <Hover
@@ -412,6 +466,7 @@ export function TimerAddTag({
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         onKeyDown={(e) => {
+          if (e.nativeEvent.isComposing) return
           if (e.key === 'Enter') commit()
           if (e.key === 'Escape') {
             setAdding(false)

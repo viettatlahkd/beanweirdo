@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom/vitest'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import type { LogEntry } from '../content/hours'
@@ -8,7 +8,7 @@ import { TagBar } from './TagBar'
 const logs: LogEntry[] = [
   { id: 'a', date: '2026-08-20', name: 'đọc paper', kind: 'đọc', project: 'Sao đâu', mins: 40, at: '09:00' },
   { id: 'b', date: '2026-08-20', name: 'onboarding', kind: 'work', project: null, mins: 13, at: '15:51' },
-  { id: 'c', date: '2026-08-19', name: 'cũ', kind: 'Khác', project: null, mins: 30, at: '10:00' },
+  { id: 'c', date: '2026-08-19', name: 'cũ', kind: 'khác', project: null, mins: 30, at: '10:00' },
 ]
 
 function bar(over: Partial<Parameters<typeof TagBar>[0]> = {}) {
@@ -109,16 +109,70 @@ describe('TagBar — editing a tag in place', () => {
     const u = userEvent.setup()
     const props = bar()
 
-    const bucket = screen.getByText('Khác')
+    const bucket = screen.getByText('khác')
     expect(bucket).toBeInTheDocument()
 
     await u.dblClick(bucket)
-    expect(screen.queryByLabelText('Đổi tên Khác')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Đổi tên khác')).not.toBeInTheDocument()
     expect(props.onRename).not.toHaveBeenCalled()
   })
 
   it('hides the bucket when nothing is sitting in it', () => {
-    bar({ logs: logs.filter((l) => l.kind !== 'Khác') })
-    expect(screen.queryByText('Khác')).not.toBeInTheDocument()
+    bar({ logs: logs.filter((l) => l.kind !== 'khác') })
+    expect(screen.queryByText('khác')).not.toBeInTheDocument()
+  })
+})
+
+describe('TagBar — the field survives typing, which is what Vietnamese needs', () => {
+  it('keeps the very same input element across keystrokes', async () => {
+    const u = userEvent.setup()
+    bar()
+
+    await u.click(screen.getAllByText('+')[0])
+    const first = screen.getByPlaceholderText('project mới')
+
+    await u.type(screen.getByPlaceholderText('project mới'), 'ca')
+    const afterTwo = screen.getByPlaceholderText('project mới')
+    await u.type(screen.getByPlaceholderText('project mới'), 'phe')
+    const afterFive = screen.getByPlaceholderText('project mới')
+
+    // Not "an input with the same value" — the identical DOM node. A remount
+    // between keystrokes is what threw away the input method's half-composed
+    // letter and turned `ưu` into `ưư`.
+    expect(afterTwo).toBe(first)
+    expect(afterFive).toBe(first)
+    expect(first).toHaveValue('caphe')
+  })
+
+  it('leaves Enter to the input method while a letter is still being composed', async () => {
+    const u = userEvent.setup()
+    const props = bar()
+
+    await u.click(screen.getAllByText('+')[0])
+    const input = screen.getByPlaceholderText('project mới')
+    await u.type(input, 'ca')
+
+    // Telex: the `w` that turns `a` into `ă` is mid-composition. Enter here
+    // finishes the letter; it must not also submit the tag.
+    fireEvent.keyDown(input, { key: 'Enter', isComposing: true })
+    expect(props.onAdd).not.toHaveBeenCalled()
+
+    fireEvent.keyDown(input, { key: 'Enter' })
+    expect(props.onAdd).toHaveBeenCalledWith('ca', 'project')
+  })
+
+  it('does the same for the rename field on a chip', async () => {
+    const u = userEvent.setup()
+    const props = bar()
+
+    await u.dblClick(screen.getByText('work'))
+    const input = screen.getByLabelText('Đổi tên work')
+    const before = input
+
+    await u.type(input, 'x')
+    expect(screen.getByLabelText('Đổi tên work')).toBe(before)
+
+    fireEvent.keyDown(input, { key: 'Enter', isComposing: true })
+    expect(props.onRename).not.toHaveBeenCalled()
   })
 })

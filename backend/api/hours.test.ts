@@ -388,7 +388,7 @@ describe('DELETE /api/hours?resource=kinds — deleting a tag', () => {
     expect(move.update).toHaveBeenCalledWith({ kind: 'đọc' })
     expect(move.in).toHaveBeenCalledWith('id', ['log-1', 'log-2'])
     // Anything still wearing the tag is unclassified, not deleted.
-    expect(rest.update).toHaveBeenCalledWith({ kind: 'Khác' })
+    expect(rest.update).toHaveBeenCalledWith({ kind: 'khác' })
     expect(rest.eq).toHaveBeenCalledWith('kind', 'work')
     expect(drop.delete).toHaveBeenCalled()
     expect(res.statusCode).toBe(200)
@@ -438,7 +438,7 @@ describe('DELETE /api/hours?resource=kinds — deleting a tag', () => {
       res,
     )
 
-    expect(rest.update).toHaveBeenCalledWith({ kind: 'Khác' })
+    expect(rest.update).toHaveBeenCalledWith({ kind: 'khác' })
   })
 
   it('rejects a malformed moves list before touching anything', async () => {

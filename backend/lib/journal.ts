@@ -69,7 +69,7 @@ export const TAG_COLUMN: Record<TagSystem, 'kind' | 'project'> = {
  * NULL, so the alternative was inventing a tag per deletion or refusing to
  * delete tags that are in use; this keeps the hours in the totals either way.
  */
-export const UNCLASSIFIED = 'Khác'
+export const UNCLASSIFIED = 'khác'
 
 export interface ActivityKindRow {
   id: string

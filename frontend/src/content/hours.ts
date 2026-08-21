@@ -25,11 +25,16 @@ export const KINDS = ['đọc', 'thực hành', 'viết', 'quan sát']
  * Where an activity lands when the tag it wore was deleted and nothing was
  * chosen to replace it.
  *
+ * Lower-case, like every other tag in the journal — `đọc`, `thực hành`,
+ * `viết`. It sits in the same row of chips as those and reads as one of them,
+ * so capitalising it made it look like a proper noun rather than the absence
+ * of a choice.
+ *
  * Not a tag anyone creates, and not something the tag bar offers to file new
  * work under — it exists so the reports can say "this happened, and it was
  * never classified" instead of dropping the hours or refusing the deletion.
  */
-export const UNCLASSIFIED = 'Khác'
+export const UNCLASSIFIED = 'khác'
 
 /**
  * `kinds` for the statistics: the tag list, plus the unclassified bucket when

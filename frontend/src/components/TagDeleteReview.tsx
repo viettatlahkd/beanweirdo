@@ -188,6 +188,7 @@ export function TagDeleteReview({
                   value={draft}
                   onChange={(e) => setDraft(e.target.value)}
                   onKeyDown={(e) => {
+                    if (e.nativeEvent.isComposing) return
                     if (e.key === 'Enter') commitDraft()
                     if (e.key === 'Escape') {
                       setDrafting(false)
