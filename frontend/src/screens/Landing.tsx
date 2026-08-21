@@ -2,7 +2,7 @@ import type { CSSProperties } from 'react'
 import { useMemo } from 'react'
 import { splitAesc } from '../content/site'
 import type { ModuleRow } from '../data/useModules'
-import { readingModules, useModules } from '../data/useModules'
+import { landingModules, useModules } from '../data/useModules'
 import type { PostRow } from '../data/usePublishedPosts'
 import { usePublishedPosts } from '../data/usePublishedPosts'
 import { useSiteCopy } from '../data/useSiteCopy'
@@ -199,7 +199,7 @@ function ImageBand({ m }: { m: ModuleRow }) {
 export function Landing() {
   const nav = useNav()
   const { data: allModules } = useModules()
-  const modules = readingModules(allModules)
+  const modules = landingModules(allModules)
   const { data: posts } = usePublishedPosts({ orderBy: 'sort_order', ascending: true })
   const postsByModule = useMemo(() => groupByModule(posts), [posts])
   const { site } = useSiteCopy()

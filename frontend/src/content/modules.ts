@@ -1,17 +1,6 @@
 import { garden } from '../design/tokens'
 
 export type ModuleLayout = 'band' | 'specimen' | 'sequence'
-export type EntryKind = 'note' | 'essay' | 'ref' | 'log'
-
-export type Entry = {
-  n: string
-  /** English title — the one that gets set in Playfair */
-  en: string
-  /** Vietnamese description underneath */
-  vi: string
-  kind: EntryKind
-  date: string
-}
 
 export type Module = {
   id: string
@@ -31,7 +20,6 @@ export type Module = {
   shot1: string
   shot2: string
   shot3: string
-  entries: Entry[]
 }
 
 export const modules: Module[] = [
@@ -53,15 +41,7 @@ export const modules: Module[] = [
     shot1: 'macro hương vị — lát cam cắt ngang',
     shot2: 'cánh hoa khô, nền kem',
     shot3: 'bề mặt ướt — giọt trên vỏ quả',
-    entries: [
-      { n: '01', en: 'Senses of Flavors', vi: 'Năm giác quan cùng tham gia vào một ngụm cà phê', kind: 'note', date: '2026.05' },
-      { n: '02', en: 'Taste Perception', vi: 'Ngưỡng cảm nhận, và cách vị giác đánh lừa ta', kind: 'essay', date: '2026.04' },
-      { n: '03', en: 'Sensory Lexicon', vi: 'Bộ từ vựng mô tả hương vị và giới hạn của nó', kind: 'ref', date: '2026.03' },
-      { n: '04', en: 'Cupping Form', vi: 'Đọc bảng điểm cupping như đọc một biểu đồ', kind: 'note', date: '2026.02' },
-      { n: '05', en: 'Flavor as Human Sense', vi: 'Hương vị là ký ức hay là hoá học', kind: 'essay', date: '2026.01' },
-      { n: '06', en: 'sens.ercise', vi: 'Bài tập rèn khứu giác hằng tuần', kind: 'log', date: '2025.12' },
-    ],
-  },
+    },
   {
     id: 'biochem',
     title: 'biochemistry 101',
@@ -80,15 +60,7 @@ export const modules: Module[] = [
     shot1: 'mặt cắt — quả chín bổ đôi',
     shot2: 'nhân xanh chụp từ trên, nền rêu',
     shot3: 'thớ tế bào phóng đại',
-    entries: [
-      { n: '01', en: 'Bean Composition', vi: 'Thành phần hoá học của một hạt nhân xanh', kind: 'note', date: '2026.04' },
-      { n: '02', en: 'Cell Wall: Lignin', vi: 'Cấu trúc gỗ hoá quyết định độ giòn khi rang', kind: 'note', date: '2026.03' },
-      { n: '03', en: 'Chlorogenic Acids (CGA)', vi: 'Nguồn gốc của vị chát và phần lớn vị chua', kind: 'essay', date: '2026.02' },
-      { n: '04', en: 'Carbohydrates', vi: 'Đường, polysaccharide và cái ngọt ở hậu vị', kind: 'note', date: '2026.01' },
-      { n: '05', en: 'Lipids in Beans', vi: 'Chất béo, thể chất của nước, và sự ôi hoá', kind: 'note', date: '2025.12' },
-      { n: '06', en: 'Melanoidins', vi: 'Sản phẩm cuối của Maillard và màu nâu của nước', kind: 'ref', date: '2025.11' },
-    ],
-  },
+    },
   {
     id: 'roasting',
     title: 'roasting',
@@ -106,32 +78,5 @@ export const modules: Module[] = [
     shot1: 'dải hạt chuyển màu theo mức rang',
     shot2: 'trang log rang viết tay',
     shot3: 'khói mảnh trên nền sáng',
-    entries: [
-      { n: '01', en: 'Heat Transfer', vi: 'Ba đường nhiệt đi vào hạt: dẫn, đối lưu, bức xạ', kind: 'note', date: '2026.05' },
-      { n: '02', en: 'Drying Phase', vi: 'Giai đoạn thoát ẩm, và vì sao đừng vội', kind: 'note', date: '2026.04' },
-      { n: '03', en: 'Maillard Stage', vi: 'Nơi phần lớn hương thơm được sinh ra', kind: 'essay', date: '2026.03' },
-      { n: '04', en: 'First Crack & Development', vi: 'Đo thời gian phát triển bằng gì cho đúng', kind: 'note', date: '2026.02' },
-      { n: '05', en: 'Roast Defects', vi: 'Baked, scorched, tipping — nhận diện qua ly', kind: 'ref', date: '2026.01' },
-      { n: '06', en: 'Profile Logging', vi: 'Ghi log rang như ghi nhật ký thí nghiệm', kind: 'log', date: '2025.12' },
-    ],
-  },
+    },
 ]
-
-/** Every entry across every module, newest first — backs the Archive screen. */
-export const allPosts = modules
-  .flatMap((m) =>
-    m.entries.map((e) => ({
-      date: e.date,
-      mod: m.title,
-      accent: m.accent,
-      on: m.on,
-      en: e.en,
-      vi: e.vi,
-      kind: e.kind,
-    })),
-  )
-  .sort((a, b) => (a.date < b.date ? 1 : -1))
-
-/** Alternate the two tints down a list so consecutive thumbnails differ. */
-export const withTints = (m: Module) =>
-  m.entries.map((e, i) => ({ ...e, tint: i % 2 === 0 ? m.tint : m.tint2 }))

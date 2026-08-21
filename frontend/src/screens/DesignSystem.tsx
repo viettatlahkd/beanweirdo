@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react'
 import { Breadcrumbs } from '../components/Breadcrumbs'
 import { useSiteCopy } from '../data/useSiteCopy'
-import { modules } from '../content/modules'
+import { indexModules, useModules } from '../data/useModules'
 import {
   colorRules,
   gridRules,
@@ -36,12 +36,23 @@ function RuleList({ items }: { items: { n: string; t: string }[] }) {
   )
 }
 
+/** Stands in for a field the CMS has not filled yet. */
+function Unset() {
+  return (
+    <span style={{ color: ink.faint, fontStyle: 'italic' }}>chưa đặt — điền trong Content management</span>
+  )
+}
+
 /**
  * Its own tab, deliberately not the homepage — tokens only: palette, type,
  * spacing rhythm, grid rules, and the per-module theme table.
  */
 export function DesignSystem() {
   const { site } = useSiteCopy()
+  const { data: allModules } = useModules()
+  // The same list the index shows — the journals included, since a special
+  // module is still a module. Ghi 02 is private, so it is not here.
+  const modules = indexModules(allModules)
 
   return (
     <div>
@@ -259,12 +270,16 @@ export function DesignSystem() {
                       marginTop: 4,
                     }}
                   >
-                    {m.concept} / {m.layout}
+                    {m.concept ? `${m.concept} / ${m.layout}` : 'module đặc biệt'}
                   </div>
                 </div>
               </div>
-              <div style={{ fontSize: 13, lineHeight: 1.4, color: ink.soft }}>{m.treatment}</div>
-              <div style={{ fontSize: 13, lineHeight: 1.4, color: ink.soft }}>{m.layoutNote}</div>
+              <div style={{ fontSize: 13, lineHeight: 1.4, color: ink.soft }}>
+                {m.treatment || <Unset />}
+              </div>
+              <div style={{ fontSize: 13, lineHeight: 1.4, color: ink.soft }}>
+                {m.layout_note || <Unset />}
+              </div>
             </div>
           ))}
         </div>

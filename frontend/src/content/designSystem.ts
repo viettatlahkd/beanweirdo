@@ -4,7 +4,7 @@ export const swatches = [
   { name: 'cream paper', hex: '#FDFBF2', fg: '#4B463A' },
   { name: 'blush', hex: '#F2A0A5', fg: '#3B2A2B' },
   { name: 'leaf', hex: '#7FB87E', fg: '#1F3323' },
-  { name: 'apricot', hex: 'oklch(0.50 0.135 14)', fg: '#3B2E19' },
+  { name: 'apricot', hex: '#F0B45C', fg: '#3B2E19' },
   { name: 'moss', hex: '#2B4B33', fg: '#E4F0DF' },
   { name: 'petal tint', hex: '#FBE7E5', fg: '#4B463A' },
   { name: 'leaf tint', hex: '#E4F0DF', fg: '#4B463A' },
