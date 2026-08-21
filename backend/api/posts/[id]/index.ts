@@ -50,7 +50,6 @@ const PATCHABLE: Array<{ jsonKey: keyof PatchPostBody; column: keyof PostRow }> 
   { jsonKey: 'lead', column: 'lead' },
   { jsonKey: 'pullQuote', column: 'pull_quote' },
   { jsonKey: 'furtherReading', column: 'further_reading' },
-  { jsonKey: 'n', column: 'n' },
   { jsonKey: 'dateLabel', column: 'date_label' },
   { jsonKey: 'sortOrder', column: 'sort_order' },
 ]

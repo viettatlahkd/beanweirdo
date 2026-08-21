@@ -29,7 +29,6 @@ export type StatusAction =
 export type PostSummary = {
   id: string
   moduleId: string
-  n: number
   en: string
   vi: string
   kind: PostKind
@@ -174,7 +173,6 @@ export async function updatePost(
     lead: string
     pullQuote: string
     furtherReading: string[]
-    n: string
     dateLabel: string
     sortOrder: number
   }>,

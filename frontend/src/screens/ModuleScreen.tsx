@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import { postDescription } from '../lib/postText'
+import { displayNumber, postDescription } from '../lib/postText'
 import { Breadcrumbs } from '../components/Breadcrumbs'
 import type { ModuleRow } from '../data/useModules'
 import { useModules } from '../data/useModules'
@@ -98,7 +98,7 @@ function Band({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
             gap: '0 44px',
           }}
         >
-          {entries.map((e) => (
+          {entries.map((e, i) => (
             <Hover
               key={e.id}
               onClick={() => openPost(nav, e)}
@@ -144,7 +144,7 @@ function Band({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
                   {postDescription(e)}
                 </div>
                 <div style={{ display: 'flex', gap: 12, ...meta }}>
-                  <div>{e.n}</div>
+                  <div>{displayNumber(i)}</div>
                   <div>{e.kind}</div>
                   <div>{e.date_label}</div>
                 </div>
@@ -255,7 +255,7 @@ function Specimen({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
             borderBottom: `1px solid ${paper.rule}`,
           }}
         >
-          {entries.map((e) => (
+          {entries.map((e, i) => (
             <Hover
               key={e.id}
               onClick={() => openPost(nav, e)}
@@ -277,7 +277,7 @@ function Specimen({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
                   marginBottom: 11,
                 }}
               >
-                <div style={{ fontFamily: sans, fontSize: 10, color: ink.faint }}>{e.n}</div>
+                <div style={{ fontFamily: sans, fontSize: 10, color: ink.faint }}>{displayNumber(i)}</div>
                 <div
                   style={{
                     fontFamily: sans,
@@ -395,7 +395,7 @@ function Sequence({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
       )}
 
       <div style={{ padding: '34px 56px 120px', maxWidth: 1240 }}>
-        {posts.map((e) => (
+        {posts.map((e, i) => (
           <Hover
             key={e.id}
             onClick={() => openPost(nav, e)}
@@ -410,7 +410,7 @@ function Sequence({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
             }}
             hoverStyle={rowHover}
           >
-            <div style={{ fontFamily: serif, fontSize: 38, color: '#D99C55' }}>{e.n}</div>
+            <div style={{ fontFamily: serif, fontSize: 38, color: '#D99C55' }}>{displayNumber(i)}</div>
             <div
               style={{
                 fontFamily: serif,

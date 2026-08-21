@@ -11,7 +11,7 @@ import type {
   SectionData,
 } from 'post-renderer'
 import { usePost } from '../data/usePost'
-import { postDescription, postTitle } from '../lib/postText'
+import { displayNumber, postDescription, postTitle } from '../lib/postText'
 import type { ModuleRow } from '../data/useModules'
 import type { PostRow } from '../data/usePublishedPosts'
 import { usePublishedPosts } from '../data/usePublishedPosts'
@@ -57,12 +57,23 @@ function splitTitle(en: string): { title: string; titleItalic?: string } {
   return { title: en }
 }
 
-function toArticleData(post: PostRow, moduleTitle: string, related: PostRow[]): ArticlePostData {
+function toArticleData(
+  post: PostRow,
+  moduleTitle: string,
+  related: PostRow[],
+  /** Place in the module's published list; -1 while that list is still loading. */
+  position: number,
+): ArticlePostData {
   const { title, titleItalic } = splitTitle(post.en)
   const sections = Array.isArray(post.body) && post.body.length > 0 ? (post.body as SectionData[]) : EMPTY_SECTIONS
 
   return {
-    eyebrow: `${post.n} — ${post.kind} — ${post.date_label}`,
+    // No number rather than a wrong one: until the sibling list arrives there
+    // is no way to know where this post sits in it.
+    eyebrow:
+      position >= 0
+        ? `${displayNumber(position)} — ${post.kind} — ${post.date_label}`
+        : `${post.kind} — ${post.date_label}`,
     moduleTitle,
     title,
     titleItalic,
@@ -161,10 +172,12 @@ export function Article() {
   const { data: modules } = useModules()
 
   // The sidebar's static "sample post" link has no id to hand over — fall
-  // back to the one post with a full essay written (biochem / 03 / CGA).
+  // back to the module's first published post. Looking one up by `posts.n`
+  // used to work here, but that column is the authoring order, so a single
+  // archive or reorder would have pointed this at nothing.
   const needsFallback = !nav.postId
   const fallback = usePublishedPosts({ moduleId: 'biochem', enabled: needsFallback })
-  const fallbackId = fallback.data.find((p) => p.n === '03')?.id ?? null
+  const fallbackId = fallback.data[0]?.id ?? null
   const effectivePostId = nav.postId ?? fallbackId
 
   const { data: post, loading, error } = usePost(effectivePostId)
@@ -203,11 +216,12 @@ export function Article() {
   }
 
   const related = siblings.data.filter((p) => p.id !== post.id)
+  const position = siblings.data.findIndex((p) => p.id === post.id)
 
   return (
     <PostRenderer
       template="article"
-      post={toArticleData(post, moduleTitle, related)}
+      post={toArticleData(post, moduleTitle, related, position)}
       renderEyebrow={(eyebrowModuleTitle) => (
         <span onClick={() => nav.openModule(post.module_id)} style={{ cursor: 'pointer' }}>
           ← {eyebrowModuleTitle}

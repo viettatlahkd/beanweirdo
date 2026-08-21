@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import { postDescription } from '../lib/postText'
+import { displayNumber, postDescription } from '../lib/postText'
 import { useMemo } from 'react'
 import type { ModuleRow } from '../data/useModules'
 import { indexModules, useModules } from '../data/useModules'
@@ -178,7 +178,7 @@ function Ledger({ modules, postsByModule }: ModulesProps) {
               {m.blurb}
             </div>
 
-            {entries.map((e) => (
+            {entries.map((e, i) => (
               <Hover
                 key={e.id}
                 onClick={() => openPost(nav, e)}
@@ -194,7 +194,7 @@ function Ledger({ modules, postsByModule }: ModulesProps) {
                 }}
                 hoverStyle={{ background: paper.white, borderLeft: `3px solid ${ink.green}` }}
               >
-                <div style={{ fontFamily: sans, fontSize: 11, color: ink.faint }}>{e.n}</div>
+                <div style={{ fontFamily: sans, fontSize: 11, color: ink.faint }}>{displayNumber(i)}</div>
                 <div style={{ fontFamily: serif, fontSize: 23, letterSpacing: '-.015em' }}>{e.en}</div>
                 <div style={{ fontSize: 13, color: ink.soft, lineHeight: 1.2 }}>{postDescription(e)}</div>
                 <div
@@ -318,7 +318,7 @@ function Columns({ modules, postsByModule }: ModulesProps) {
                 </div>
               )}
 
-              {entries.map((e) => (
+              {entries.map((e, i) => (
                 <div
                   key={e.id}
                   onClick={() => openPost(nav, e)}
@@ -331,7 +331,7 @@ function Columns({ modules, postsByModule }: ModulesProps) {
                   }}
                 >
                   <div style={{ fontFamily: sans, fontSize: 10, opacity: 0.6, paddingTop: 6 }}>
-                    {e.n}
+                    {displayNumber(i)}
                   </div>
                   <div style={{ flex: 1 }}>
                     <div
