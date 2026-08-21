@@ -50,8 +50,13 @@ function theme(dark: boolean) {
     bg: dark ? '#102F35' : paper.cream,
     fg: dark ? '#F4F4EF' : '#23211A',
     muted: dark ? '#9BB0AE' : '#5C5745',
-    hover: dark ? 'rgba(255,255,255,.08)' : '#F6F2E2',
-    rule: dark ? '#1E464A' : '#EBE5D3',
+    // On the dark ground these two were carried straight over from the design,
+    // where only Ghi 01 ever went dark. #1E464A against #102F35 is 1.37:1 — a
+    // divider nobody can see is not dividing anything. #38808A reaches 3.12:1.
+    // The hover lifts to .10 alpha, as far as it can go before the muted row
+    // text on top of it drops under 4.5:1.
+    hover: dark ? 'rgba(255,255,255,.10)' : '#F6F2E2',
+    rule: dark ? '#38808A' : '#EBE5D3',
   }
 }
 
@@ -199,7 +204,7 @@ export function Sidebar() {
   const countFor = (m: ModuleRow) => posts.filter((p: PostRow) => p.module_id === m.id).length
 
   const section = (group: NavGroup) => {
-    const items = NAV.filter((n) => n.group === group)
+    const items = NAV.filter((n) => n.group === group && !n.hiddenFromSidebar)
     const rows: ReactNode[] = []
 
     for (const item of items) {
