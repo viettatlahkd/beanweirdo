@@ -2,7 +2,16 @@ import { useEffect, useState } from 'react'
 import { PostRenderer } from 'post-renderer'
 import { getPost, listModules, type Module, type PostDetail } from '../lib/apiClient'
 import { ink, paper } from '../../design/tokens'
-import { resolveTemplate, toArticleData, toCardsData, toReportData } from '../lib/postData'
+import { resolveTemplate } from '../lib/postData'
+import {
+  fromAdminModule,
+  fromAdminPost,
+  toArticleData,
+  toCardsData,
+  toLongformData,
+  toMemoData,
+  toReportData,
+} from '../../lib/postToRenderer'
 
 /**
  * Read-only preview: no render-prop overrides at all. This is the proof of
@@ -36,7 +45,8 @@ function PreviewContent({ postId }: { postId: string }) {
   if (!post) return <div style={{ padding: 32, color: ink.muted, fontSize: 13 }}>Đang tải...</div>
 
   const template = resolveTemplate(post)
-  const activeModule = modules.find((m) => m.id === post.moduleId)
+  const mod = fromAdminModule(modules.find((m) => m.id === post.moduleId))
+  const source = fromAdminPost(post)
 
   return (
     <div style={{ minHeight: '100vh', background: paper.cream, padding: '32px 24px' }}>
@@ -44,12 +54,22 @@ function PreviewContent({ postId }: { postId: string }) {
         Bài đang ở <b style={{ color: ink.strong, fontWeight: 500 }}>{post.status}</b>, chỉ bạn xem được link này — render bằng đúng component công khai, không có ô sửa nào.
       </div>
       <div style={{ maxWidth: 1320, margin: '0 auto', border: `1px solid ${paper.rule}`, overflow: 'hidden', background: paper.white }}>
+        {/* Every template, through the same adapters the public journal uses.
+            Two of the five used to fall through to `article` here, so a memo
+            previewed as an essay. */}
         {template === 'cards' ? (
-          <PostRenderer template="cards" post={toCardsData(post)} />
+          <PostRenderer template="cards" post={toCardsData(source, mod)} />
         ) : template === 'report' ? (
-          <PostRenderer template="report" post={toReportData(post)} />
+          <PostRenderer template="report" post={toReportData(source, mod)} />
+        ) : template === 'longform' ? (
+          <PostRenderer template="longform" post={toLongformData(source, mod)} />
+        ) : template === 'memo' ? (
+          <PostRenderer template="memo" post={toMemoData(source, mod)} />
         ) : (
-          <PostRenderer template="article" post={toArticleData(post, activeModule)} />
+          <PostRenderer
+            template="article"
+            post={toArticleData(source, mod?.title ?? post.moduleId, [], -1, mod)}
+          />
         )}
       </div>
     </div>
