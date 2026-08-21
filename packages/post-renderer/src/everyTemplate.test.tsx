@@ -26,8 +26,8 @@ const CASES: Record<string, PostRendererProps> = {
       band: BAND, eyebrow: '01 — essay — 2026.02', moduleTitle: 'biochem', title: 'Bài',
       lead: 'dẫn', sections: [], pull: '', relatedHeading: '', related: [],
       furtherReadingHeading: '', furtherReading: [],
-      platePrimary: { caption: '', imageUrl: null }, plateSecondary: { caption: '', imageUrl: null },
-      heroPlate: { caption: '', imageUrl: null }, detailPlate: { caption: '', imageUrl: null },
+      platePrimary: { caption: '', tint: '#EEE', imageUrl: null }, plateSecondary: { caption: '', tint: '#EEE', imageUrl: null },
+      heroPlate: { caption: '', tint: '#EEE', imageUrl: null }, detailPlate: { caption: '', tint: '#EEE', imageUrl: null },
     },
   },
   cards: { template: 'cards', post: { band: BAND, title: 'Bài', intro: [''], cards: [] } },
@@ -49,7 +49,7 @@ describe('rules every template obeys', () => {
 
     it(`${name}: wears its module's colours`, () => {
       const { container } = render(<PostRenderer {...CASES[name]} breadcrumb={CRUMB} />)
-      const painted = [...container.querySelectorAll<HTMLElement>('div')].some(
+      const painted = Array.from(container.querySelectorAll<HTMLElement>('div')).some(
         (d) => d.style.background === BAND.bg || d.style.backgroundColor === BAND.bg,
       )
       expect(painted).toBe(true)
