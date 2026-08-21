@@ -66,7 +66,21 @@ function InlinePicker({
   onClose: () => void
 }) {
   const ref = useRef<HTMLSelectElement>(null)
-  useEffect(() => ref.current?.focus(), [])
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    el.focus()
+    // Focus alone only put a box on screen; the list still needed a second
+    // click to drop down, so choosing a project took two clicks and looked
+    // like it had already answered "không thuộc project". `showPicker` opens
+    // it now. Not every browser has it, and it throws without a recent user
+    // gesture — either way the field is focused and works as it did.
+    try {
+      ;(el as HTMLSelectElement & { showPicker?: () => void }).showPicker?.()
+    } catch {
+      /* older browser, or no user activation */
+    }
+  }, [])
 
   // A value the list no longer offers still has to show as itself — the
   // unclassified bucket is not a tag, and a tag can be renamed out from under a
@@ -100,6 +114,181 @@ function InlinePicker({
         </option>
       ))}
     </select>
+  )
+}
+
+/** `HH:MM` → minutes since midnight. */
+export const atToMin = (at: string): number => {
+  const [h, m] = at.split(':')
+  return Number(h) * 60 + (Number(m) || 0)
+}
+
+/** Minutes since midnight → `HH:MM`, wrapping past midnight. */
+export const minToAt = (mins: number): string => {
+  const wrapped = ((mins % 1440) + 1440) % 1440
+  return (
+    String(Math.floor(wrapped / 60)).padStart(2, '0') + ':' + String(wrapped % 60).padStart(2, '0')
+  )
+}
+
+/**
+ * Start, end and duration are three views of two facts, so the row only ever
+ * stores two — the start time and the length — and derives the end from them.
+ *
+ * Editing any one of the three keeps the start where it is and moves the other
+ * two, except when the end itself is edited: then the start stays and the
+ * length gives way. That is the only reading that doesn't silently move an
+ * activity to a different time of day while you were changing how long it took.
+ */
+export const endOf = (log: Pick<LogEntry, 'at' | 'mins'>): string => minToAt(atToMin(log.at) + log.mins)
+
+/** `95` → `{ h: 1, m: 35 }`. */
+export const splitHm = (mins: number) => ({ h: Math.floor(mins / 60), m: mins % 60 })
+
+const clockField: CSSProperties = {
+  background: '#FFFFFF',
+  border: '1px solid #3E7A4E',
+  color: '#172124',
+  fontFamily: "'Be Vietnam Pro',sans-serif",
+  fontSize: 13,
+  padding: '3px 5px',
+  width: 56,
+  outline: 'none',
+  fontVariantNumeric: 'tabular-nums',
+}
+
+/**
+ * One clock time — start or end. Both read and edit the same way, so they are
+ * the same control twice rather than two near-copies.
+ *
+ * At module scope, like every other field in this app: a component declared
+ * inside another is a fresh type on every render, which rips the input out of
+ * the DOM between keystrokes and breaks Vietnamese input.
+ */
+function TimeField({
+  value,
+  editing,
+  draft,
+  editable,
+  onDraft,
+  onOpen,
+  onCommit,
+  onCancel,
+}: {
+  value: string
+  editing: boolean
+  draft: string
+  editable: boolean
+  onDraft: (v: string) => void
+  onOpen: () => void
+  onCommit: () => void
+  onCancel: () => void
+}) {
+  if (editing) {
+    return (
+      <input
+        autoFocus
+        value={draft}
+        onChange={(e) => onDraft(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.nativeEvent.isComposing) return
+          if (e.key === 'Enter') onCommit()
+          if (e.key === 'Escape') onCancel()
+        }}
+        onBlur={onCommit}
+        style={clockField}
+      />
+    )
+  }
+
+  return (
+    <Hover
+      onClick={onOpen}
+      style={{
+        fontSize: 13,
+        color: '#414A42',
+        fontVariantNumeric: 'tabular-nums',
+        cursor: editable ? 'pointer' : 'default',
+        padding: '2px 5px',
+      }}
+      hoverStyle={editable ? { background: '#EDE9D6' } : undefined}
+    >
+      {value}
+    </Hover>
+  )
+}
+
+/**
+ * Duration, as hours and minutes rather than a lump of minutes.
+ *
+ * "90" was a fine thing to store and a poor thing to read: a two-hour-forty
+ * session came out as `160`. The two boxes carry the same number split the way
+ * people say it, and either box takes an over-large value — typing `90` into
+ * minutes commits 1h 30m, because correcting someone's arithmetic is friendlier
+ * than rejecting it.
+ */
+function DurationField({
+  mins,
+  onCommit,
+  onCancel,
+}: {
+  mins: number
+  onCommit: (mins: number) => void
+  onCancel: () => void
+}) {
+  const start = splitHm(mins)
+  const [h, setH] = useState(String(start.h))
+  const [m, setM] = useState(String(start.m))
+
+  const total = () => {
+    const hh = Number(h) || 0
+    const mm = Number(m) || 0
+    return Math.max(0, Math.round(hh * 60 + mm))
+  }
+
+  function done() {
+    onCommit(total())
+  }
+
+  /** Only leave when focus lands outside both boxes, not on the way between. */
+  function onBlur(e: React.FocusEvent<HTMLDivElement>) {
+    if (e.currentTarget.contains(e.relatedTarget as Node | null)) return
+    done()
+  }
+
+  function onKeyDown(e: React.KeyboardEvent) {
+    if (e.nativeEvent.isComposing) return
+    if (e.key === 'Enter') done()
+    if (e.key === 'Escape') onCancel()
+  }
+
+  const box: CSSProperties = { ...clockField, width: 42, textAlign: 'right' }
+  const unit: CSSProperties = { fontSize: 12, color: '#8A8A7C' }
+
+  return (
+    <div onBlur={onBlur} style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+      <input
+        autoFocus
+        type="number"
+        min={0}
+        value={h}
+        onChange={(e) => setH(e.target.value)}
+        onKeyDown={onKeyDown}
+        aria-label="Số giờ"
+        style={box}
+      />
+      <div style={unit}>h</div>
+      <input
+        type="number"
+        min={0}
+        value={m}
+        onChange={(e) => setM(e.target.value)}
+        onKeyDown={onKeyDown}
+        aria-label="Số phút"
+        style={box}
+      />
+      <div style={unit}>m</div>
+    </div>
   )
 }
 
@@ -144,7 +333,7 @@ export function ActivityRow({
   onRemove,
 }: ActivityRowProps) {
   const [picking, setPicking] = useState<'project' | 'task' | null>(null)
-  const [editing, setEditing] = useState<'at' | 'mins' | null>(null)
+  const [editing, setEditing] = useState<'at' | 'end' | 'mins' | null>(null)
   const [draft, setDraft] = useState('')
   const [name, setName] = useState(log.name)
   const nameRef = useRef<HTMLInputElement>(null)
@@ -159,9 +348,9 @@ export function ActivityRow({
   const done = log.done !== false
   const color = kindColor[log.kind] ?? '#163F42'
 
-  function openEdit(field: 'at' | 'mins') {
+  function openEdit(field: 'at' | 'end' | 'mins') {
     if (!editable) return
-    setDraft(field === 'at' ? log.at : String(log.mins))
+    setDraft(field === 'at' ? log.at : field === 'end' ? endOf(log) : String(log.mins))
     setEditing(field)
   }
 
@@ -171,8 +360,20 @@ export function ActivityRow({
    * journal must never do with something you just typed.
    */
   function commit() {
+    const looksLikeTime = /^\d{1,2}:\d{2}$/.test(draft)
     if (editing === 'at') {
-      if (/^\d{1,2}:\d{2}$/.test(draft) && draft !== log.at) onPatch({ at: draft })
+      // Moving the start moves the whole activity: the length is what you
+      // said it was, so the end follows rather than the duration shrinking.
+      if (looksLikeTime && draft !== log.at) onPatch({ at: draft })
+    } else if (editing === 'end') {
+      // The one case where the length gives way instead — you are saying when
+      // it finished, not how long it took.
+      if (looksLikeTime) {
+        const mins = atToMin(draft) - atToMin(log.at)
+        // A day boundary is the only way an end can precede its start here,
+        // and an activity crossing midnight belongs to two days, not one.
+        if (mins > 0 && mins !== log.mins) onPatch({ mins })
+      }
     } else if (editing === 'mins') {
       const m = parseInt(draft, 10)
       if (m > 0 && m !== log.mins) onPatch({ mins: m })
@@ -180,17 +381,6 @@ export function ActivityRow({
     setEditing(null)
   }
 
-  const numberField: CSSProperties = {
-    background: '#FFFFFF',
-    border: '1px solid #3E7A4E',
-    color: '#172124',
-    fontFamily: "'Be Vietnam Pro',sans-serif",
-    fontSize: 14,
-    padding: '3px 6px',
-    width: 68,
-    outline: 'none',
-    fontVariantNumeric: 'tabular-nums',
-  }
 
   return (
     <div
@@ -263,34 +453,57 @@ export function ActivityRow({
               <TaskChip name={log.kind} color={color} onClick={editable ? () => setPicking('task') : undefined} />
             )}
 
-            {editing === 'at' ? (
-              <input
-                autoFocus
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.nativeEvent.isComposing) return
-                  if (e.key === 'Enter') commit()
-                  if (e.key === 'Escape') setEditing(null)
-                }}
-                onBlur={commit}
-                style={numberField}
+            {/* Start, end and duration sit together: they are one fact about
+                the activity, and reading the length meant crossing the row to
+                the far right before. */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+              <TimeField
+                value={log.at}
+                editing={editing === 'at'}
+                draft={draft}
+                editable={editable}
+                onDraft={setDraft}
+                onOpen={() => openEdit('at')}
+                onCommit={commit}
+                onCancel={() => setEditing(null)}
               />
-            ) : (
-              <Hover
-                onClick={() => openEdit('at')}
-                style={{
-                  fontSize: 13,
-                  color: '#414A42',
-                  fontVariantNumeric: 'tabular-nums',
-                  cursor: editable ? 'pointer' : 'default',
-                  padding: '2px 5px',
-                }}
-                hoverStyle={editable ? { background: '#EDE9D6' } : undefined}
-              >
-                {log.at}
-              </Hover>
-            )}
+              <div style={{ fontSize: 12, color: '#B0AEA2' }}>–</div>
+              <TimeField
+                value={endOf(log)}
+                editing={editing === 'end'}
+                draft={draft}
+                editable={editable}
+                onDraft={setDraft}
+                onOpen={() => openEdit('end')}
+                onCommit={commit}
+                onCancel={() => setEditing(null)}
+              />
+              <div style={{ fontSize: 12, color: '#D6D3C6', padding: '0 2px' }}>·</div>
+              {editing === 'mins' ? (
+                <DurationField
+                  mins={log.mins}
+                  onCommit={(next) => {
+                    if (next > 0 && next !== log.mins) onPatch({ mins: next })
+                    setEditing(null)
+                  }}
+                  onCancel={() => setEditing(null)}
+                />
+              ) : (
+                <Hover
+                  onClick={() => openEdit('mins')}
+                  style={{
+                    fontSize: 15,
+                    color: '#172124',
+                    fontVariantNumeric: 'tabular-nums',
+                    cursor: editable ? 'pointer' : 'default',
+                    padding: '2px 5px',
+                  }}
+                  hoverStyle={editable ? { background: '#EDE9D6' } : undefined}
+                >
+                  {fmt(log.mins)}
+                </Hover>
+              )}
+            </div>
 
             {!editable && <div style={{ fontSize: 11, color: '#AFAFA2' }}>✓ chốt</div>}
           </div>
@@ -341,40 +554,6 @@ export function ActivityRow({
             </div>
           )}
         </div>
-
-        {editing === 'mins' ? (
-          <input
-            autoFocus
-            type="number"
-            min={1}
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.nativeEvent.isComposing) return
-              if (e.key === 'Enter') commit()
-              if (e.key === 'Escape') setEditing(null)
-            }}
-            onBlur={commit}
-            style={{ ...numberField, flex: 'none', marginTop: 2 }}
-          />
-        ) : (
-          <Hover
-            onClick={() => openEdit('mins')}
-            style={{
-              flex: 'none',
-              marginTop: 2,
-              fontSize: 18,
-              color: '#172124',
-              fontVariantNumeric: 'tabular-nums',
-              textAlign: 'right',
-              cursor: editable ? 'pointer' : 'default',
-              padding: '2px 5px',
-            }}
-            hoverStyle={editable ? { background: '#EDE9D6' } : undefined}
-          >
-            {fmt(log.mins)}
-          </Hover>
-        )}
 
         {editable && (
           <Hover
