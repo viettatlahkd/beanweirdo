@@ -1,7 +1,11 @@
 {
   "name": "beanweirdo",
   "private": true,
-  "workspaces": ["frontend", "backend", "packages/*"],
+  "workspaces": [
+    "frontend",
+    "backend",
+    "packages/*"
+  ],
   "devDependencies": {
     "vitest": "^2.1.8",
     "@testing-library/react": "^16.1.0",
@@ -13,6 +17,7 @@
     "react-dom": "^18.3.1"
   },
   "scripts": {
-    "test": "vitest run"
+    "typecheck": "tsc --noEmit -p frontend/tsconfig.json && tsc --noEmit -p packages/post-renderer/tsconfig.json && tsc --noEmit -p backend/tsconfig.json",
+    "test": "npm run typecheck && vitest run"
   }
 }
