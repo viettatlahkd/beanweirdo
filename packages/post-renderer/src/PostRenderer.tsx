@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { Article, type ArticleOverrides } from './Article'
 import { Cards, type CardsOverrides } from './Cards'
 import { Longform } from './Longform'
@@ -11,7 +12,11 @@ import type {
   ReportPostData,
 } from './types'
 
-export type PostRendererProps =
+/** Supplied by the app and handed to whichever template renders — see below. */
+type Chrome = { breadcrumb?: ReactNode }
+
+export type PostRendererProps = Chrome &
+  (
   | ({ template: 'article'; post: ArticlePostData } & ArticleOverrides)
   | ({ template: 'cards'; post: CardsPostData } & CardsOverrides)
   | ({ template: 'report'; post: ReportPostData } & ReportOverrides)
@@ -21,6 +26,7 @@ export type PostRendererProps =
   // Memo belongs to Ghi 01 rather than to a module, but it is a template like
   // the rest and the admin previews it the same way.
   | { template: 'memo'; post: MemoPostData }
+  )
 
 /**
  * Dispatches to the right template component for `posts.template`.
@@ -35,10 +41,10 @@ export function PostRenderer(props: PostRendererProps) {
     return <Cards post={post} {...overrides} />
   }
   if (props.template === 'longform') {
-    return <Longform post={props.post} />
+    return <Longform post={props.post} breadcrumb={props.breadcrumb} />
   }
   if (props.template === 'memo') {
-    return <Memo post={props.post} />
+    return <Memo post={props.post} breadcrumb={props.breadcrumb} />
   }
   if (props.template === 'report') {
     const { template: _template, post, ...overrides } = props

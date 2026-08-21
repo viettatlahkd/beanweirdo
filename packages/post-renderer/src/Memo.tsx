@@ -1,8 +1,16 @@
+import type { ReactNode } from 'react'
 import type { CSSProperties } from 'react'
 import { sans, serif } from './tokens'
 import type { MemoItem, MemoPostData, MemoRun, MemoSection } from './types'
 
-export type MemoProps = { post: MemoPostData }
+export type MemoProps = {
+  post: MemoPostData
+  /**
+   * The trail back to where this post is filed. Supplied by the app, so the
+   * renderer package stays independent of how routing works.
+   */
+  breadcrumb?: ReactNode
+}
 
 const label: CSSProperties = {
   fontSize: 10,
@@ -177,9 +185,20 @@ function Section({ section }: { section: MemoSection }) {
  * pour) before any prose, because a tasting note nobody can reproduce is just
  * an opinion. Everything below is an outline where indent carries the argument.
  */
-export function Memo({ post }: MemoProps) {
+export function Memo({ post, breadcrumb }: MemoProps) {
   return (
     <div style={{ background: '#FCFCFA', color: '#172124', minHeight: '100vh', fontFamily: sans, fontWeight: 300 }}>
+      {/* A memo is short and deliberately plain, so it gets the shallow band
+          too — enough to say where it is filed, not enough to crowd the note. */}
+      <div
+        style={{
+          background: post.band?.bg ?? '#EAF1F4',
+          color: post.band?.fg ?? '#172124',
+          padding: '22px 56px 20px',
+        }}
+      >
+        {breadcrumb}
+      </div>
       <div style={{ padding: '40px 56px 0' }}>
         <div
           style={{

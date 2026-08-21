@@ -47,6 +47,12 @@ export type ArticleRelatedItem = {
 }
 
 export type ArticlePostData = {
+  /**
+   * The colour block at the head of the page — the module's own, so a post
+   * arrives wearing the colours of where it is filed. Omitted only by the
+   * standalone sample under Admin › Templates.
+   */
+  band?: { bg: string; fg: string }
   eyebrow: string
   moduleTitle: string
   title: string
@@ -156,6 +162,12 @@ export type ReportBlock =
   | { type: 'image'; caption: string; imageUrl?: string | null }
 
 export type ReportPostData = {
+  /**
+   * The colour block at the head of the page — the module's own, so a post
+   * arrives wearing the colours of where it is filed. Omitted only by the
+   * standalone samples under Admin › Templates.
+   */
+  band?: { bg: string; fg: string }
   title: string
   blurb?: string
   blocks: ReportBlock[]
@@ -207,6 +219,12 @@ export type LongformBlock = {
 }
 
 export type LongformPostData = {
+  /**
+   * The colour block at the head of the page — the module's own, so a post
+   * arrives wearing the colours of where it is filed. Omitted only by the
+   * standalone samples under Admin › Templates.
+   */
+  band?: { bg: string; fg: string }
   /** Shown as the opening h1 — the post's title, not the export's. */
   title: string
   /** Italic line under the title; empty on the standalone sample. */
@@ -240,6 +258,12 @@ export type MemoSection = {
 }
 
 export type MemoPostData = {
+  /**
+   * The colour block at the head of the page — the module's own, so a post
+   * arrives wearing the colours of where it is filed. Omitted only by the
+   * standalone samples under Admin › Templates.
+   */
+  band?: { bg: string; fg: string }
   title: string
   subtitle?: string
   /** The bean / water / pour readings that open the page. */

@@ -1,9 +1,17 @@
+import type { ReactNode } from 'react'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { sans, serif } from './tokens'
 import type { LongformBlock, LongformPostData, LongformRun } from './types'
 
-export type LongformProps = { post: LongformPostData }
+export type LongformProps = {
+  post: LongformPostData
+  /**
+   * The trail back to where this post is filed. Supplied by the app, so the
+   * renderer package stays independent of how routing works.
+   */
+  breadcrumb?: ReactNode
+}
 
 /** Which heading owns a block, and whether that heading is folded away. */
 type Prepared = {
@@ -240,7 +248,7 @@ function AsideBlock({ items }: { items: LongformBlock[] }) {
  * pre-parsed from a Notion export, so this only renders and folds; it never
  * parses.
  */
-export function Longform({ post }: LongformProps) {
+export function Longform({ post, breadcrumb }: LongformProps) {
   const prepared = useMemo(() => prepare(post.blocks), [post.blocks])
   const [folded, setFolded] = useState<Record<string, boolean>>({})
   const [navOpen, setNavOpen] = useState(false)
@@ -309,9 +317,21 @@ export function Longform({ post }: LongformProps) {
         minHeight: '100vh',
         fontFamily: sans,
         fontWeight: 300,
-        padding: '40px 56px 140px',
       }}
     >
+      {/* A long read is still filed somewhere. The band is shallower than the
+          other templates' — this page is a document, and a tall colour block
+          at the top would push the first paragraph off the screen. */}
+      <div
+        style={{
+          background: post.band?.bg ?? '#EAF1F4',
+          color: post.band?.fg ?? '#172124',
+          padding: '22px 56px 20px',
+        }}
+      >
+        {breadcrumb}
+      </div>
+      <div style={{ padding: '40px 56px 140px' }}>
       {/* Floating index: a rail of numbers that opens on hover. */}
       <div
         onMouseLeave={() => setNavOpen(false)}
@@ -642,6 +662,7 @@ export function Longform({ post }: LongformProps) {
           })}
         </div>
       </div>
+    </div>
     </div>
   )
 }
