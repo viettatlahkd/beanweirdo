@@ -35,6 +35,94 @@ const label: CSSProperties = {
   color: '#7C7C70',
 }
 
+/**
+ * Countdown lengths on the quarter-hour, matching the step a browser's own
+ * time control uses. Anything else is typed into the `+` beside them.
+ */
+const TIMER_PRESETS = [15, 30, 45, 60]
+
+/** Longest countdown the `+` will take, in minutes. */
+const MAX_TARGET_MINS = 12 * 60
+
+/**
+ * The `+` at the end of the countdown presets: type a length in minutes.
+ *
+ * Declared at module scope, not inside `Hours` — a component declared inside
+ * another is a new type on every render, which tears its input out of the DOM
+ * between keystrokes and breaks Vietnamese input (see TagBar's AddControl).
+ */
+function CustomTarget({ onPick }: { onPick: (mins: number) => void }) {
+  const [open, setOpen] = useState(false)
+  const [draft, setDraft] = useState('')
+
+  function commit() {
+    const mins = Math.round(Number(draft))
+    setOpen(false)
+    setDraft('')
+    if (Number.isFinite(mins) && mins > 0) onPick(Math.min(mins, MAX_TARGET_MINS))
+  }
+
+  if (open) {
+    return (
+      <input
+        autoFocus
+        type="number"
+        min={1}
+        max={MAX_TARGET_MINS}
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.nativeEvent.isComposing) return
+          if (e.key === 'Enter') commit()
+          if (e.key === 'Escape') {
+            setOpen(false)
+            setDraft('')
+          }
+        }}
+        onBlur={commit}
+        aria-label="Số phút tự đặt"
+        placeholder="phút"
+        style={{
+          flex: 1,
+          minWidth: 0,
+          textAlign: 'center',
+          fontSize: 12,
+          padding: '6px 0',
+          background: 'transparent',
+          border: '1px solid #F2A0A5',
+          color: '#FFFFFF',
+          fontFamily: "'Be Vietnam Pro',sans-serif",
+          outline: 'none',
+        }}
+      />
+    )
+  }
+
+  return (
+    <Hover
+      onClick={() => {
+        setOpen(true)
+        setDraft('')
+      }}
+      role="button"
+      aria-label="Tự đặt số phút"
+      style={{
+        flex: 'none',
+        width: 34,
+        textAlign: 'center',
+        fontSize: 12,
+        padding: '7px 0',
+        border: '1px dashed rgba(244,244,239,.4)',
+        cursor: 'pointer',
+        color: 'rgba(244,244,239,.8)',
+      }}
+      hoverStyle={{ borderColor: '#F2A0A5', color: '#F2A0A5' }}
+    >
+      +
+    </Hover>
+  )
+}
+
 /** `label`'s counterpart inside the dark timer rail. */
 const railLabel: CSSProperties = {
   fontWeight: 500,
@@ -236,6 +324,13 @@ export function Hours() {
       days: monthDays[k],
     }
   })
+
+  // The four presets, plus the typed length when it isn't one of them — so a
+  // 90-minute session still shows which chip is lit.
+  const targetChoices = useMemo(() => {
+    const mins = Math.round(tTarget / 60)
+    return TIMER_PRESETS.includes(mins) ? TIMER_PRESETS : TIMER_PRESETS.concat([mins]).sort((a, b) => a - b)
+  }, [tTarget])
 
   const tArc =
     tMode === 'down' && tTarget
@@ -649,8 +744,10 @@ export function Hours() {
 
             {tMode === 'down' && (
               <>
+                {/* A 15-minute step all the way across — 25 sat between 15 and
+                    45 for no reason anyone could name. Anything else is typed. */}
                 <div style={{ display: 'flex', gap: 6, marginBottom: 18 }}>
-                  {[15, 25, 45, 60].map((m) => {
+                  {targetChoices.map((m) => {
                     const picked = tTarget === m * 60
                     return (
                       <div
@@ -671,6 +768,7 @@ export function Hours() {
                       </div>
                     )
                   })}
+                  <CustomTarget onPick={(mins) => timer.setTarget(mins * 60)} />
                 </div>
                 <div style={{ fontSize: 11, color: 'rgba(244,244,239,.6)', marginBottom: 18 }}>Hết giờ sẽ có tiếng báo.</div>
               </>
@@ -797,7 +895,7 @@ export function Hours() {
                 style={{ flex: 1, textAlign: 'center', fontSize: 11, letterSpacing: '.18em', textTransform: 'uppercase', padding: 13, background: '#F2A0A5', color: '#3B2A2B', cursor: 'pointer' }}
                 hoverStyle={{ background: '#F6B4B8' }}
               >
-                {tRunning ? 'Tạm dừng' : tSec ? 'Tiếp tục' : 'Bắt đầu'}
+                {tRunning ? 'Tạm dừng' : 'Bắt đầu'}
               </Hover>
               <Hover
                 onClick={() => timer.reset()}
