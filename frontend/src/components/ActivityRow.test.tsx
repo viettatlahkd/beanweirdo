@@ -37,6 +37,31 @@ function row(over: Partial<Parameters<typeof ActivityRow>[0]> = {}) {
   return props
 }
 
+/** Same props as `row`, but keeps the handle so the row can be re-rendered. */
+function renderRow(over: Partial<Parameters<typeof ActivityRow>[0]> = {}) {
+  const props = {
+    log: log(),
+    editable: true,
+    kinds: ['đọc', 'work'],
+    projects: ['Sao đâu', 'Cà củng'],
+    kindColor: { đọc: '#3E7A4E', work: '#102F35' },
+    projectColor: { 'Sao đâu': '#102F35', 'Cà củng': '#C25C7C' },
+    naming: false,
+    onStartNaming: vi.fn(),
+    onName: vi.fn(),
+    onAbandon: vi.fn(),
+    onPatch: vi.fn(),
+    onRemove: vi.fn(),
+    ...over,
+  }
+  const view = render(<ActivityRow {...props} />)
+  return {
+    props,
+    rerender: (next: Partial<Parameters<typeof ActivityRow>[0]>) =>
+      view.rerender(<ActivityRow {...props} {...next} />),
+  }
+}
+
 describe('ActivityRow — clock arithmetic', () => {
   it('derives the end from the start and the length', () => {
     expect(endOf({ at: '16:57', mins: 30 })).toBe('17:27')
@@ -187,5 +212,82 @@ describe('ActivityRow — the project picker', () => {
     expect(screen.getByRole('combobox')).toHaveFocus()
     expect(screen.getByRole('option', { name: '— không thuộc project —' })).toBeInTheDocument()
     expect(screen.getByRole('option', { name: 'Sao đâu' })).toBeInTheDocument()
+  })
+})
+
+describe('ActivityRow — reading and editing want different shapes', () => {
+  it('at rest keeps the length big at the right margin, on its own', () => {
+    row()
+
+    // One `30m` on the row, not two: the right margin is where the eye lands
+    // when scanning a day, and that is where it stays until an edit starts.
+    expect(screen.getAllByText('30m')).toHaveLength(1)
+    expect(screen.getByText('30m')).toHaveStyle({ fontSize: '18px' })
+    // The separator only belongs to the editing cluster.
+    expect(screen.queryByText('·')).not.toBeInTheDocument()
+  })
+
+  it('brings the length over beside the clock times while editing', async () => {
+    const u = userEvent.setup()
+    row()
+
+    await u.click(screen.getByText('16:57'))
+
+    // The three numbers are one sum while being changed, so they sit together
+    // and the big figure stands down.
+    expect(screen.getByText('·')).toBeInTheDocument()
+    expect(screen.getByText('30m')).toHaveStyle({ fontSize: '13px' })
+    expect(screen.getAllByText('30m')).toHaveLength(1)
+  })
+
+  it('puts the big figure back when the edit finishes', async () => {
+    const u = userEvent.setup()
+    row()
+
+    await u.click(screen.getByText('16:57'))
+    await u.keyboard('{Escape}')
+
+    expect(screen.getByText('30m')).toHaveStyle({ fontSize: '18px' })
+    expect(screen.queryByText('·')).not.toBeInTheDocument()
+  })
+
+  it('still opens the duration editor from the big figure', async () => {
+    const u = userEvent.setup()
+    row()
+
+    await u.click(screen.getByText('30m'))
+
+    expect(screen.getByLabelText('Số giờ')).toBeInTheDocument()
+    expect(screen.getByLabelText('Số phút')).toBeInTheDocument()
+  })
+})
+
+describe('ActivityRow — a brand-new row is already being worked on', () => {
+  it('lines the three numbers up while the new row is being named', () => {
+    row({ naming: true })
+
+    // A new row arrives with a guessed start and 30 minutes on it, and those
+    // are the first things you fix — so they sit together from the outset,
+    // without needing a click to bring them into line.
+    expect(screen.getByText('·')).toBeInTheDocument()
+    expect(screen.getByText('16:57')).toBeInTheDocument()
+    expect(screen.getByText('17:27')).toBeInTheDocument()
+    expect(screen.getByText('30m')).toHaveStyle({ fontSize: '13px' })
+    expect(screen.getAllByText('30m')).toHaveLength(1)
+  })
+
+  it('hands the row back its right-margin figure once it is named', () => {
+    const { rerender } = renderRow({ naming: true })
+    expect(screen.getByText('30m')).toHaveStyle({ fontSize: '13px' })
+
+    rerender({ naming: false })
+
+    expect(screen.getByText('30m')).toHaveStyle({ fontSize: '18px' })
+    expect(screen.queryByText('·')).not.toBeInTheDocument()
+  })
+
+  it('keeps the name field focused for typing', () => {
+    row({ naming: true })
+    expect(screen.getByPlaceholderText('Hoạt động gì')).toBeInTheDocument()
   })
 })
