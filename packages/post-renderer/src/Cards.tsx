@@ -13,6 +13,11 @@ export type CardsOverrides = {
 }
 
 export type CardsProps = CardsOverrides & {
+  /**
+   * The trail back to where this post is filed. Supplied by the app, so the
+   * renderer package stays independent of how routing works.
+   */
+  breadcrumb?: ReactNode
   post: CardsPostData
 }
 
@@ -97,7 +102,7 @@ function groupsOf(cards: CardData[], hues: Record<string, string> = {}): Group[]
  * filter bar and a sticky table of contents. Modeled on the "isCards"
  * section of the design source.
  */
-export function Cards({ post, ...overrides }: CardsProps) {
+export function Cards({ post, breadcrumb, ...overrides }: CardsProps) {
   const [openIndexes, setOpenIndexes] = useState<Set<number>>(() => new Set())
   const [activeGroup, setActiveGroup] = useState<string | null>(null)
   const [hoverCard, setHoverCard] = useState<number | null>(null)
@@ -127,6 +132,7 @@ export function Cards({ post, ...overrides }: CardsProps) {
           padding: '40px 56px 32px',
         }}
       >
+        {breadcrumb}
         <div
           style={{
             display: 'flex',
@@ -144,7 +150,6 @@ export function Cards({ post, ...overrides }: CardsProps) {
               lineHeight: 0.9,
               letterSpacing: '-.04em',
               margin: 0,
-              textTransform: 'lowercase',
             }}
           >
             {post.title}

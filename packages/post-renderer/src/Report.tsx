@@ -14,6 +14,11 @@ export type ReportOverrides = {
 }
 
 export type ReportProps = ReportOverrides & {
+  /**
+   * The trail back to where this post is filed. Supplied by the app, so the
+   * renderer package stays independent of how routing works.
+   */
+  breadcrumb?: ReactNode
   post: ReportPostData
 }
 
@@ -26,10 +31,11 @@ const REPORT_BLUE = '#6FA8C0'
  * of a report's blocks — the admin app's insert-menu / contentEditable
  * editing chrome is not part of this shared package.
  */
-export function Report({ post, ...overrides }: ReportProps) {
+export function Report({ post, breadcrumb, ...overrides }: ReportProps) {
   return (
     <div style={{ background: paper.cream, color: ink.base, minHeight: '100vh' }}>
-      <div style={{ background: REPORT_BLUE, color: '#0E2C38', padding: '40px 56px 34px' }}>
+      <div style={{ background: post.band?.bg ?? REPORT_BLUE, color: post.band?.fg ?? '#0E2C38', padding: '40px 56px 34px' }}>
+        {breadcrumb}
         <div
           style={{
             display: 'flex',

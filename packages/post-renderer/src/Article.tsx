@@ -24,6 +24,11 @@ export type ArticleOverrides = {
 }
 
 export type ArticleProps = ArticleOverrides & {
+  /**
+   * The trail back to where this post is filed. Supplied by the app, so the
+   * renderer package stays independent of how routing works.
+   */
+  breadcrumb?: ReactNode
   post: ArticlePostData
 }
 
@@ -34,17 +39,21 @@ export type ArticleProps = ArticleOverrides & {
  * of the piece. Ported from frontend/src/screens/Article.tsx, parameterized
  * over `post` instead of the static article/articleMeta content modules.
  */
-export function Article({ post, ...overrides }: ArticleProps) {
+export function Article({ post, breadcrumb, ...overrides }: ArticleProps) {
   return (
     <div>
       <div
         style={{
-          background: garden.leaf,
-          color: '#1F3323',
+          // The module's own colours, so a biochem essay and a sensory one do
+          // not open identically. Green is only the fallback for the standalone
+          // sample under Admin › Templates, which belongs to no module.
+          background: post.band?.bg ?? garden.leaf,
+          color: post.band?.fg ?? '#1F3323',
           padding: '46px 56px 124px',
           position: 'relative',
         }}
       >
+        {breadcrumb}
         <div style={{ ...label, opacity: 0.7, marginBottom: 24 }}>
           {overrides.renderEyebrow ? overrides.renderEyebrow(post.moduleTitle) : `← ${post.moduleTitle}`}
         </div>

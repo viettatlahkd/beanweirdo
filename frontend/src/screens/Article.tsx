@@ -17,6 +17,7 @@ import type { PostRow } from '../data/usePublishedPosts'
 import { usePublishedPosts } from '../data/usePublishedPosts'
 import { useModules } from '../data/useModules'
 import { garden, ink, sans } from '../design/tokens'
+import { Breadcrumbs } from '../components/Breadcrumbs'
 import { useNav } from '../lib/nav'
 
 const status = {
@@ -63,6 +64,7 @@ function toArticleData(
   related: PostRow[],
   /** Place in the module's published list; -1 while that list is still loading. */
   position: number,
+  mod: ModuleRow | undefined,
 ): ArticlePostData {
   const { title, titleItalic } = splitTitle(post.en)
   const sections = Array.isArray(post.body) && post.body.length > 0 ? (post.body as SectionData[]) : EMPTY_SECTIONS
@@ -92,6 +94,7 @@ function toArticleData(
     detailPlate: { ...PLATE_FALLBACK.detail, imageUrl: null },
     furtherReadingHeading: 'Đọc thêm',
     furtherReading: post.further_reading ?? [],
+    band: mod ? { bg: mod.accent, fg: mod.on_color } : undefined,
   }
 }
 
@@ -101,7 +104,7 @@ function toArticleData(
  * Its structure lives in `body` like every other template's, so a memo is an
  * ordinary post distinguished only by which renderer reads it.
  */
-function toMemoData(post: PostRow): MemoPostData {
+function toMemoData(post: PostRow, mod: ModuleRow | undefined): MemoPostData {
   const body = (post.body ?? {}) as Partial<MemoPostData>
   return {
     title: postTitle(post),
@@ -110,6 +113,7 @@ function toMemoData(post: PostRow): MemoPostData {
     img: post.hero_image_url,
     imgCaption: post.hero_caption ?? undefined,
     sections: body.sections ?? [],
+    band: mod ? { bg: mod.accent, fg: mod.on_color } : undefined,
   }
 }
 
@@ -120,11 +124,12 @@ function toMemoData(post: PostRow): MemoPostData {
  * line under it come from the post's own fields, so the piece can be retitled
  * without touching its content.
  */
-function toLongformData(post: PostRow): LongformPostData {
+function toLongformData(post: PostRow, mod: ModuleRow | undefined): LongformPostData {
   return {
     title: postTitle(post),
     subtitle: postDescription(post),
     blocks: Array.isArray(post.body) ? (post.body as LongformBlock[]) : [],
+    band: mod ? { bg: mod.accent, fg: mod.on_color } : undefined,
   }
 }
 
@@ -156,9 +161,14 @@ function toCardsData(post: PostRow, mod: ModuleRow | undefined): CardsPostData {
 }
 
 /** No real "report" content is seeded yet — structurally wired so it can't crash. */
-function toReportData(post: PostRow): ReportPostData {
+function toReportData(post: PostRow, mod: ModuleRow | undefined): ReportPostData {
   const blocks = Array.isArray(post.body) && post.body.length > 0 ? (post.body as ReportBlock[]) : EMPTY_REPORT_BLOCKS
-  return { title: post.en, blurb: post.vi, blocks }
+  return {
+    title: post.en,
+    blurb: post.vi,
+    blocks,
+    band: mod ? { bg: mod.accent, fg: mod.on_color } : undefined,
+  }
 }
 
 /**
@@ -200,19 +210,24 @@ export function Article() {
   }
 
   const module_ = modules.find((m) => m.id === post.module_id)
+  // Every template gets the same trail back. The renderer package knows
+  // nothing about routing, so the app hands it the finished element.
+  const crumbs = (
+    <Breadcrumbs style={{ opacity: 0.75 }} trailing={postTitle(post)} moduleId={post.module_id} />
+  )
   const moduleTitle = module_?.title ?? post.module_id
 
   if (post.template === 'memo') {
-    return <PostRenderer template="memo" post={toMemoData(post)} />
+    return <PostRenderer template="memo" post={toMemoData(post, module_)} breadcrumb={crumbs} />
   }
   if (post.template === 'longform') {
-    return <PostRenderer template="longform" post={toLongformData(post)} />
+    return <PostRenderer template="longform" post={toLongformData(post, module_)} breadcrumb={crumbs} />
   }
   if (post.template === 'cards') {
-    return <PostRenderer template="cards" post={toCardsData(post, module_)} />
+    return <PostRenderer template="cards" post={toCardsData(post, module_)} breadcrumb={crumbs} />
   }
   if (post.template === 'report') {
-    return <PostRenderer template="report" post={toReportData(post)} />
+    return <PostRenderer template="report" post={toReportData(post, module_)} breadcrumb={crumbs} />
   }
 
   const related = siblings.data.filter((p) => p.id !== post.id)
@@ -221,7 +236,8 @@ export function Article() {
   return (
     <PostRenderer
       template="article"
-      post={toArticleData(post, moduleTitle, related, position)}
+      post={toArticleData(post, moduleTitle, related, position, module_)}
+      breadcrumb={crumbs}
       renderEyebrow={(eyebrowModuleTitle) => (
         <span onClick={() => nav.openModule(post.module_id)} style={{ cursor: 'pointer' }}>
           ← {eyebrowModuleTitle}

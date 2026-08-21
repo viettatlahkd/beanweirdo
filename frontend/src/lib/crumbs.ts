@@ -22,6 +22,8 @@ export function buildCrumbs(
   nav: Nav,
   modules: ModuleRow[],
   sections: Record<NavGroup, string>,
+  /** What the screen itself cannot know: which post is open, and under which module. */
+  ctx: { trailing?: string; moduleId?: string } = {},
 ): Crumb[] {
   /**
    * Crumbs pointing at the public journal have to leave the area when we're
@@ -45,9 +47,11 @@ export function buildCrumbs(
     case 'module':
       return [landing, index, { label: modules.find((m) => m.id === nav.moduleId)?.title ?? nav.moduleId }]
     case 'article':
+      // The trail ends on the post's own name. 'Bài viết' told the reader
+      // nothing they could not already see.
       return nav.articleFrom === 'module'
-        ? [landing, index, mod(nav.moduleId), { label: 'Bài viết' }]
-        : [admin, { label: 'Templates' }]
+        ? [landing, index, mod(ctx.moduleId ?? nav.moduleId), { label: ctx.trailing ?? 'Bài viết' }]
+        : [admin, { label: 'Templates' }, { label: ctx.trailing ?? 'Bài viết' }]
     case 'templates':
       return [admin, { label: navLabel('templates') }]
     case 'notes':
@@ -73,14 +77,16 @@ export function buildCrumbs(
  * From a private area the step back leads out to the public journal, which is
  * a different entry point rather than a different screen.
  */
-export function crumbBack(nav: Nav): () => void {
+export function crumbBack(nav: Nav, moduleId?: string): () => void {
   const out = nav.area === 'public' ? nav.goLanding : () => goToArea('public')
 
   switch (nav.screen) {
     case 'module':
       return nav.goHome
     case 'article':
-      return nav.articleFrom === 'module' ? () => nav.openModule('biochem') : out
+      // Back goes to the module this post is actually filed under. It used to
+      // go to 'biochem' whatever you were reading.
+      return nav.articleFrom === 'module' ? () => nav.openModule(moduleId ?? nav.moduleId) : out
     case 'archive':
       return nav.goCms
     default:
