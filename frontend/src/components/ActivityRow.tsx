@@ -345,6 +345,9 @@ export function ActivityRow({
     }
   }, [naming, log.name])
 
+  /** Being worked on: mid-edit, or a new row that hasn't been named yet. */
+  const working = editing !== null || naming
+
   const done = log.done !== false
   const color = kindColor[log.kind] ?? '#163F42'
 
@@ -453,9 +456,17 @@ export function ActivityRow({
               <TaskChip name={log.kind} color={color} onClick={editable ? () => setPicking('task') : undefined} />
             )}
 
-            {/* Start, end and duration sit together: they are one fact about
-                the activity, and reading the length meant crossing the row to
-                the far right before. */}
+            {/* Reading and editing want different shapes. At rest the length
+                belongs at the right margin, big, where the eye lands when
+                scanning a day. While the row is being worked on — an edit, or a
+                brand-new row still being named — the three numbers are one sum
+                and have to sit together where the work is happening, so the
+                duration comes over to join the clock times and the big figure
+                on the right stands down.
+
+                A new row counts as being worked on: it arrives with a guessed
+                start and 30 minutes on it, and those are exactly what you fix
+                before typing what the activity was. */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
               <TimeField
                 value={log.at}
@@ -478,30 +489,34 @@ export function ActivityRow({
                 onCommit={commit}
                 onCancel={() => setEditing(null)}
               />
-              <div style={{ fontSize: 12, color: '#D6D3C6', padding: '0 2px' }}>·</div>
-              {editing === 'mins' ? (
-                <DurationField
-                  mins={log.mins}
-                  onCommit={(next) => {
-                    if (next > 0 && next !== log.mins) onPatch({ mins: next })
-                    setEditing(null)
-                  }}
-                  onCancel={() => setEditing(null)}
-                />
-              ) : (
-                <Hover
-                  onClick={() => openEdit('mins')}
-                  style={{
-                    fontSize: 15,
-                    color: '#172124',
-                    fontVariantNumeric: 'tabular-nums',
-                    cursor: editable ? 'pointer' : 'default',
-                    padding: '2px 5px',
-                  }}
-                  hoverStyle={editable ? { background: '#EDE9D6' } : undefined}
-                >
-                  {fmt(log.mins)}
-                </Hover>
+              {working && (
+                <>
+                  <div style={{ fontSize: 12, color: '#D6D3C6', padding: '0 2px' }}>·</div>
+                  {editing === 'mins' ? (
+                    <DurationField
+                      mins={log.mins}
+                      onCommit={(next) => {
+                        if (next > 0 && next !== log.mins) onPatch({ mins: next })
+                        setEditing(null)
+                      }}
+                      onCancel={() => setEditing(null)}
+                    />
+                  ) : (
+                    <Hover
+                      onClick={() => openEdit('mins')}
+                      style={{
+                        fontSize: 13,
+                        color: '#414A42',
+                        fontVariantNumeric: 'tabular-nums',
+                        cursor: 'pointer',
+                        padding: '2px 5px',
+                      }}
+                      hoverStyle={{ background: '#EDE9D6' }}
+                    >
+                      {fmt(log.mins)}
+                    </Hover>
+                  )}
+                </>
               )}
             </div>
 
@@ -554,6 +569,25 @@ export function ActivityRow({
             </div>
           )}
         </div>
+
+        {!working && (
+          <Hover
+            onClick={() => openEdit('mins')}
+            style={{
+              flex: 'none',
+              marginTop: 2,
+              fontSize: 18,
+              color: '#172124',
+              fontVariantNumeric: 'tabular-nums',
+              textAlign: 'right',
+              cursor: editable ? 'pointer' : 'default',
+              padding: '2px 5px',
+            }}
+            hoverStyle={editable ? { background: '#EDE9D6' } : undefined}
+          >
+            {fmt(log.mins)}
+          </Hover>
+        )}
 
         {editable && (
           <Hover
