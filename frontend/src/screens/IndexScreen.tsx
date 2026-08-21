@@ -2,7 +2,7 @@ import type { CSSProperties } from 'react'
 import { postDescription } from '../lib/postText'
 import { useMemo } from 'react'
 import type { ModuleRow } from '../data/useModules'
-import { readingModules, useModules } from '../data/useModules'
+import { indexModules, useModules } from '../data/useModules'
 import type { PostRow } from '../data/usePublishedPosts'
 import { usePublishedPosts } from '../data/usePublishedPosts'
 import { Breadcrumbs } from '../components/Breadcrumbs'
@@ -11,6 +11,7 @@ import { garden, ink, paper, sans, serif } from '../design/tokens'
 import { Hover } from '../lib/Hover'
 import { rowPad, useNav, useSettings } from '../lib/nav'
 import { openPost } from '../lib/openPost'
+import { openModule } from '../lib/moduleTarget'
 
 const label: CSSProperties = {
   fontFamily: sans,
@@ -36,7 +37,7 @@ const switcher: CSSProperties = {
 const plateFallback = [
   { bg: garden.blush, fg: '#3B2A2B' },
   { bg: garden.leaf, fg: '#1F3323' },
-  { bg: 'oklch(0.50 0.135 14)', fg: '#3B2E19' },
+  { bg: garden.apricot, fg: '#3B2E19' },
 ]
 
 function usePlates() {
@@ -144,7 +145,7 @@ function Ledger({ modules, postsByModule }: ModulesProps) {
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: 18, paddingBottom: 14 }}>
               <Hover
                 as="h2"
-                onClick={() => nav.openModule(m.id)}
+                onClick={() => openModule(nav, m)}
                 style={{
                   fontFamily: serif,
                   fontSize: 44,
@@ -284,7 +285,7 @@ function Columns({ modules, postsByModule }: ModulesProps) {
                 {m.concept}
               </div>
               <h2
-                onClick={() => nav.openModule(m.id)}
+                onClick={() => openModule(nav, m)}
                 style={{
                   fontFamily: serif,
                   fontSize: 46,
@@ -363,7 +364,7 @@ function Columns({ modules, postsByModule }: ModulesProps) {
 export function IndexScreen() {
   const { variant } = useNav()
   const { data: allModules } = useModules()
-  const modules = readingModules(allModules)
+  const modules = indexModules(allModules)
   const { data: posts } = usePublishedPosts({ orderBy: 'sort_order', ascending: true })
   const postsByModule = useMemo(() => groupByModule(posts), [posts])
 

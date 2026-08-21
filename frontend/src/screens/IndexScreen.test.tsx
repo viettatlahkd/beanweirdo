@@ -23,7 +23,7 @@ const useModules = vi.fn()
 vi.mock('../data/useModules', () => ({
   useModules: (...args: unknown[]) => useModules(...args),
   // The journals are modules too now; only the reading ones are listed here.
-  readingModules: (ms: { kind?: string }[]) => ms.filter((m) => m.kind !== 'special'),
+  indexModules: (ms: { visibility?: string }[]) => ms.filter((m) => m.visibility !== 'private'),
 }))
 
 const usePublishedPosts = vi.fn()

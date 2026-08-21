@@ -26,11 +26,17 @@ export type ModuleRow = {
   img3: string | null
   sort_order: number
   /**
-   * 'normal' — a reading module, listed on the landing page and the index.
-   * 'special' — a journal that already has its own page. A valid place to file
-   * a post, never listed as a module. See migration 0012.
+   * 'normal' — a reading module, one of the gallery on the homepage.
+   * 'special' — extended content that already has a page of its own (Ghi 01,
+   * Ghi 02). Still a module, and still listed — see `visibility` for what
+   * hides a module. See migrations 0012 and 0015.
    */
   kind: 'normal' | 'special'
+  /**
+   * 'public' — listed wherever its kind allows.
+   * 'private' — never listed outside a signed-in area.
+   */
+  visibility: 'public' | 'private'
 }
 
 export type UseModulesResult = {
@@ -106,5 +112,45 @@ export function useModules(): UseModulesResult {
  * own — listing them again beside the reading modules would introduce them
  * twice under different names.
  */
-export const readingModules = (modules: ModuleRow[]) =>
-  modules.filter((m) => m.kind !== 'special')
+/**
+ * Which modules each surface lists.
+ *
+ * Two classifications, deliberately kept apart: `kind` says what a module is,
+ * `visibility` says whether it may be listed at all. Collapsing them is the
+ * bug these three functions exist to prevent — a special module is still a
+ * module, and only a private one disappears.
+ */
+
+/** Anything a signed-out reader may see listed. */
+const isPublic = (m: ModuleRow) => m.visibility !== 'private'
+
+/**
+ * Normal modules always sort above special ones; inside each band the order is
+ * whatever the CMS set. Sorting on `sort_order` alone would let a renumbered
+ * reading module fall below the journals.
+ */
+const byBandThenOrder = (a: ModuleRow, b: ModuleRow) => {
+  const band = Number(a.kind === 'special') - Number(b.kind === 'special')
+  return band !== 0 ? band : a.sort_order - b.sort_order
+}
+
+/**
+ * Trang chủ — the gallery of reading modules, one full-bleed colour block
+ * each. Special modules are left out because they are not reading modules,
+ * not because they are hidden.
+ */
+export const landingModules = (modules: ModuleRow[]) =>
+  modules.filter((m) => m.kind !== 'special' && isPublic(m)).sort(byBandThenOrder)
+
+/** Mục lục — everything public, the journals included, in sidebar order. */
+export const indexModules = (modules: ModuleRow[]) =>
+  modules.filter(isPublic).sort(byBandThenOrder)
+
+/** The sidebar lists exactly what the index does. */
+export const sidebarModules = indexModules
+
+/**
+ * @deprecated Names a distinction that no longer exists — say which surface
+ * you mean. Kept so nothing breaks mid-migration.
+ */
+export const readingModules = landingModules

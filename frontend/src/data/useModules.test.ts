@@ -20,7 +20,7 @@ vi.mock('../lib/supabaseClient', () => ({
   supabase: { from: (...args: unknown[]) => from(...args) },
 }))
 
-const { useModules, readingModules } = await import('./useModules')
+const { useModules, landingModules, indexModules, sidebarModules } = await import('./useModules')
 
 describe('useModules', () => {
   it('fetches every module ordered by sort_order, ascending', async () => {
@@ -55,17 +55,44 @@ describe('useModules', () => {
   })
 })
 
-describe('readingModules', () => {
-  const mod = (id: string, kind: 'normal' | 'special') => ({ id, kind }) as never
+describe('module surfaces', () => {
+  const mod = (
+    id: string,
+    kind: 'normal' | 'special',
+    visibility: 'public' | 'private',
+    sort_order: number,
+  ) => ({ id, kind, visibility, sort_order }) as never
 
-  it('leaves the journals out — they have pages of their own', () => {
-    // Listing Ghi 01 beside sensory would introduce it a second time under a
-    // different name (migration 0012).
-    const all = [mod('sensory', 'normal'), mod('ghi01', 'special'), mod('biochem', 'normal')]
-    expect(readingModules(all).map((m) => m.id)).toEqual(['sensory', 'biochem'])
+  // Ghi 02 sorts before Ghi 01 here, and biochem is renumbered above sensory,
+  // so a wrong sort shows up rather than passing by luck.
+  const all = [
+    mod('biochem', 'normal', 'public', 9),
+    mod('ghi02', 'special', 'private', 101),
+    mod('sensory', 'normal', 'public', 20),
+    mod('ghi01', 'special', 'public', 102),
+  ]
+
+  it('trang chủ lists reading modules only — the journals are not a gallery', () => {
+    expect(landingModules(all).map((m) => m.id)).toEqual(['biochem', 'sensory'])
   })
 
-  it('keeps a module whose kind has not been set', () => {
-    expect(readingModules([mod('sensory', undefined as never)])).toHaveLength(1)
+  it('mục lục lists the public journals too — special is not the same as hidden', () => {
+    expect(indexModules(all).map((m) => m.id)).toEqual(['biochem', 'sensory', 'ghi01'])
+  })
+
+  it('never lists a private module anywhere', () => {
+    for (const surface of [landingModules, indexModules, sidebarModules]) {
+      expect(surface(all).map((m) => m.id)).not.toContain('ghi02')
+    }
+  })
+
+  it('puts every reading module above every journal, whatever the CMS numbering', () => {
+    // sensory is numbered 20, well past Ghi 01's band, yet still sorts above it.
+    const ids = sidebarModules(all).map((m) => m.id)
+    expect(ids.indexOf('sensory')).toBeLessThan(ids.indexOf('ghi01'))
+  })
+
+  it('keeps a module whose kind or visibility has not been set', () => {
+    expect(landingModules([mod('sensory', undefined as never, undefined as never, 1)])).toHaveLength(1)
   })
 })

@@ -1,7 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { NAV, type Glyph, type NavItem } from '../content/navItems'
 import type { NavGroup } from '../content/site'
-import { readingModules, useModules, type ModuleRow } from '../data/useModules'
+import { sidebarModules, useModules, type ModuleRow } from '../data/useModules'
 import { usePublishedPosts, type PostRow } from '../data/usePublishedPosts'
 import { useSiteCopy } from '../data/useSiteCopy'
 import { layout, paper, sans, serif } from '../design/tokens'
@@ -9,6 +9,7 @@ import { areaOfGroup, goToArea, visibleGroups } from '../lib/area'
 import { useAuth } from '../lib/auth'
 import { Hover, useHover } from '../lib/Hover'
 import { useNav, type Nav } from '../lib/nav'
+import { openModule } from '../lib/moduleTarget'
 
 const row: CSSProperties = {
   display: 'flex',
@@ -187,7 +188,7 @@ export function Sidebar() {
   const nav = useNav()
   const { on, bind } = useHover()
   const { data: allModules } = useModules()
-  const modules = readingModules(allModules)
+  const modules = sidebarModules(allModules)
   const { data: posts } = usePublishedPosts()
   const { site } = useSiteCopy()
   const { authed, signOut } = useAuth()
@@ -202,7 +203,8 @@ export function Sidebar() {
     const rows: ReactNode[] = []
 
     for (const item of items) {
-      // The modules sit between "Mục lục" and "Ghi 01" in Public.
+      // The modules sit below "Mục lục" in Public — reading modules first,
+      // then the journals, which is the order `sidebarModules` returns.
       if (group === 'Public' && item.key === 'notes') {
         // Every module is listed, published or not: the sidebar is the map of
         // what the journal covers, and a module with nothing in it yet is still
@@ -211,7 +213,7 @@ export function Sidebar() {
           rows.push(
             <Row
               key={`mod-${m.id}`}
-              onClick={() => nav.openModule(m.id)}
+              onClick={() => openModule(nav, m)}
               label={m.title}
               count={countFor(m)}
               muted={t.muted}
@@ -222,8 +224,11 @@ export function Sidebar() {
             />,
           )
         }
+        // Ghi 01 is one of those module rows now, so the nav entry that used to
+        // draw it here would be a duplicate. The entry itself stays — the
+        // breadcrumbs and the CMS site map still name the page through it.
+        continue
       }
-
 
       rows.push(
         <Row
