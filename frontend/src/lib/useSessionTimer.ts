@@ -18,6 +18,18 @@ type Stored = {
   /** Held by the on-screen-only rule rather than by the person. */
   suspended: boolean
   onScreenOnly: boolean
+  /**
+   * What the running session will be filed as.
+   *
+   * Kept beside the clock rather than in the screen's own state: the clock now
+   * survives a reload and leaving the page, and a session that comes back
+   * running with its name and tags wiped is a session you have to file as
+   * "Phiên không tên" under nothing — which undoes the two fixes that put the
+   * name and the project there in the first place.
+   */
+  name: string
+  kind: string
+  project: string | null
 }
 
 export const TIMER_KEY = 'beanweirdo.hours.timer'
@@ -36,6 +48,9 @@ const EMPTY: Stored = {
   since: null,
   suspended: false,
   onScreenOnly: false,
+  name: '',
+  kind: 'đọc',
+  project: null,
 }
 
 const now = () => Date.now()
@@ -81,6 +96,9 @@ function write(s: Stored) {
  * tab came back as thirteen minutes. Time is now read from the clock: `since`
  * is a timestamp, and the interval only decides how often the display is
  * repainted. Miss every tick and the number is still right.
+ *
+ * The session's name and its two tags ride along in the same record, so what
+ * comes back after a reload is the whole session, not a bare number.
  *
  * `onScreenOnly` is the opposite promise, for people who want the timer to
  * measure attention rather than duration: while it is on, leaving the tab
@@ -154,9 +172,15 @@ export function useSessionTimer({ onFinish }: { onFinish?: () => void } = {}) {
     update((s) => (s.since === null ? { ...s, suspended: false } : { ...s, base: elapsed(s, now()), since: null, suspended: false }))
   }, [update])
 
+  /**
+   * Finish with this session and start a blank one. The name goes, the tags
+   * stay: the next session is usually the same kind of work for the same
+   * project, and making someone re-pick both every time is the friction the
+   * rail's auto-select exists to remove.
+   */
   const reset = useCallback(() => {
     finishedRef.current = false
-    update((s) => ({ ...s, base: 0, since: null, suspended: false }))
+    update((s) => ({ ...s, base: 0, since: null, suspended: false, name: '' }))
   }, [update])
 
   const setMode = useCallback(
@@ -172,6 +196,13 @@ export function useSessionTimer({ onFinish }: { onFinish?: () => void } = {}) {
       finishedRef.current = false
       update((s) => ({ ...s, mode: 'down', target, base: 0, since: null, suspended: false }))
     },
+    [update],
+  )
+
+  const setName = useCallback((name: string) => update((s) => ({ ...s, name })), [update])
+  const setKind = useCallback((kind: string) => update((s) => ({ ...s, kind })), [update])
+  const setProject = useCallback(
+    (project: string | null) => update((s) => ({ ...s, project })),
     [update],
   )
 
@@ -193,6 +224,12 @@ export function useSessionTimer({ onFinish }: { onFinish?: () => void } = {}) {
     mode: state.mode,
     target: state.target,
     onScreenOnly: state.onScreenOnly,
+    name: state.name,
+    kind: state.kind,
+    project: state.project,
+    setName,
+    setKind,
+    setProject,
     /** True while the on-screen-only rule is parking a session the person started. */
     suspended: state.suspended,
     running,

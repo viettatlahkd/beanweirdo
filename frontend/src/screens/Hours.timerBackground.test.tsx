@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom/vitest'
-import { act, render, screen } from '@testing-library/react'
+import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { UseHoursResult } from '../data/useHours'
@@ -18,7 +18,7 @@ const START = new Date('2026-08-21T11:07:00').getTime()
 const hours = (): UseHoursResult => ({
   logs: [],
   kinds: ['đọc', 'work'],
-  projects: [],
+  projects: ['Sao đâu'],
   loading: false,
   error: null,
   add,
@@ -90,6 +90,44 @@ describe('Hours — a session logged from the rail', () => {
     expect(screen.getByRole('switch', { name: /chỉ tính khi đang mở màn này/i })).toHaveAttribute(
       'aria-checked',
       'true',
+    )
+  }, 20_000)
+})
+
+describe('Hours — a session survives the page going away', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    add.mockClear()
+    useHours.mockReturnValue(hours())
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    vi.setSystemTime(START)
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('comes back with the name and project still on it, and files them', async () => {
+    const u = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    const first = render(<Hours />)
+
+    await u.type(screen.getByPlaceholderText('Đang làm gì'), 'NAUCode: Onb review')
+    await u.click(within(screen.getByRole('group', { name: 'Project' })).getByText('#Sao đâu'))
+    await u.click(screen.getByText('Bắt đầu'))
+    act(() => {
+      vi.setSystemTime(START + 4 * 3600_000 - 1000)
+      vi.advanceTimersByTime(1000)
+    })
+
+    // The page goes away mid-session — a reload, or leaving Ghi 02 entirely.
+    first.unmount()
+    render(<Hours />)
+
+    expect(screen.getByPlaceholderText('Đang làm gì')).toHaveValue('NAUCode: Onb review')
+    expect(screen.getByText('03:59:59')).toBeInTheDocument()
+
+    await u.click(screen.getByText('Hoàn thành'))
+    expect(add).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'NAUCode: Onb review', project: 'Sao đâu', mins: 240 }),
     )
   }, 20_000)
 })
