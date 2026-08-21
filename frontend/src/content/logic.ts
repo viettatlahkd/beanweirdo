@@ -118,7 +118,11 @@ export const LOGIC: LogicPart[] = [
       { s: 'Module', r: 'Khi clone bài mẫu sang module chính thức: bắt buộc đổi toàn bộ màu sang theme của module đó, không giữ màu của bản mẫu.', e: 'accent · tint · tint2 của module' },
       { s: 'Module', r: 'Khi một bài mẫu được nhân bản thành bài chính thức dưới module: khối màu đầu trang phải lấy đúng accent của module đó.', e: 'sensory → #F2A0A5' },
       { s: 'Toàn hệ thống', r: 'Với mỗi bài dùng chung template: chỉ đổi màu, nhãn, tiêu đề và đoạn dẫn theo lối vào — nội dung và thao tác giữ nguyên.', e: 'một template, hai vai' },
-      { s: 'Toàn hệ thống', r: 'Với đường dẫn: bài chính thức đi từ [[landing]] › [[home]] › module, bài mẫu đi từ [[secAdmin]] › Notes › Templates.', e: '' }
+      { s: 'Toàn hệ thống', r: 'Với đường dẫn: bài chính thức đi từ [[landing]] › [[home]] › module, bài mẫu đi từ [[secAdmin]] › Notes › Templates.', e: '' },
+      { s: 'Toàn hệ thống', r: 'Hai điều không template nào được từ chối, kể cả template viết sau này: đường dẫn quay lại ở đầu trang, và khối màu lấy từ module chứa bài. Ngoài hai điều đó, một template được trình bày khác hẳn mọi template còn lại — đó là lý do có nhiều template.', e: 'Bài dài và bài ghi chú dùng dải màu mỏng hơn bài thường, nhưng vẫn là màu của module.' },
+      { s: 'Toàn hệ thống', r: 'Với đường dẫn của một bài: đoạn cuối là tên bài, không phải một chữ chung như "Bài viết".', e: 'Trang chủ › Mục lục › sensory › Sensory Lexicon' },
+      { s: 'Toàn hệ thống', r: 'Hệ thống không đổi chữ hoa/thường của tiêu đề bài ở bất kỳ vị trí nào — lưu sao hiện vậy. Viết hoa hay viết thường là quyết định của người soạn bài.', e: '' },
+      { s: 'Toàn hệ thống', r: 'Thêm một template mới là phải sửa đủ ba nơi: ràng buộc trong cơ sở dữ liệu, danh sách ở backend, và bộ điều phối ở frontend. Ba nơi này không nhìn thấy nhau nên có một kiểm tra tự động so chúng với nhau.', e: 'Đã từng lệch: cơ sở dữ liệu nhận longform và memo, backend thì không, nên tạo hai loại đó qua trang quản trị trả về lỗi 400.' }
     ] },
     { n: '10', g: '[[article]]', items: [
       { s: 'Template', r: 'Với [[article]]: hai cột — cột lớn thân bài, cột nhỏ mục lục hoặc ghi chú bên lề.', e: '' },
