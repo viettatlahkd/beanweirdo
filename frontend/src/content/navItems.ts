@@ -31,6 +31,11 @@ export type NavItem = {
   screen: Screen
   /** Template pages nest under a "Templates" head inside Admin. */
   sub?: boolean
+  /**
+   * Kept out of the sidebar, but still a real page: the breadcrumbs and the
+   * CMS site map go on naming it through this entry.
+   */
+  hiddenFromSidebar?: boolean
   shape: Glyph
 }
 
@@ -113,6 +118,10 @@ export const NAV: NavItem[] = [
   },
   {
     key: 'archive',
+    // Content management already lists every post, under five status filters
+    // and with the editing controls attached. Archive shows a subset of the
+    // same rows and can do nothing to them, so it was two doors into one room.
+    hiddenFromSidebar: true,
     group: 'Admin',
     label: 'Archive',
     desc: 'toàn bộ bài theo thời gian',
