@@ -14,7 +14,7 @@ tài liệu · `BỎ` đã quyết không làm.
 
 ## A. Luật đề xuất — chờ đưa vào `frontend/src/content/logic.ts`
 
-Bộ quy tắc hiện có **3 phần · 14 nhóm · 64 luật**. Bảy luật dưới đây phát sinh
+Bộ quy tắc hiện có **3 phần · 14 nhóm · 68 luật** (64 + 4 thêm ở PR template contract). Bảy luật dưới đây phát sinh
 từ code đã merge, chưa luật nào được ghi vào.
 
 | # | Luật | Từ PR | Nhóm phù hợp | Trạng thái |
@@ -31,7 +31,7 @@ từ code đã merge, chưa luật nào được ghi vào.
 
 | # | Mục | Sai ở đâu | Trạng thái |
 |---|---|---|---|
-| B1 | Bộ quy tắc | Ghi **67 luật**, thực tế **64**. Sai này do tôi, lặp ở nhiều chỗ. | CHỜ |
+| B1 | Bộ quy tắc | Ghi **67 luật**, thực tế nay là **68** (64 + 4). Con số 67 ban đầu là tôi ghi sai. | CHỜ |
 | B2 | Cơ sở dữ liệu | `modules` nay **21 cột** (thêm `visibility`), không phải 20. | CHỜ |
 | B3 | Cơ sở dữ liệu | `posts` **22 → 21 cột** sau khi bỏ `n`. Migration đã chạy 2026-08-21. | CHỜ |
 | B4 | Cột của hai bảng chính | Bỏ `n` khỏi dòng liệt kê `posts`. Migration đã chạy. | CHỜ |
