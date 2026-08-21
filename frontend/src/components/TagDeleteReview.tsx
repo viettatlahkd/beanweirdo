@@ -151,9 +151,7 @@ export function TagDeleteReview({
         <div style={{ ...label, marginBottom: 10 }}>Xoá tag</div>
         <div style={{ fontSize: 19, marginBottom: 6 }}>{draw(target.name)}</div>
         <div style={{ fontSize: 12.5, lineHeight: 1.6, color: '#6A6F63', marginBottom: 20 }}>
-          {wearing.length} hoạt động đang mang tag này. Chọn tag thay thế cho từng nhóm; phần không được
-          chọn sẽ vào <strong style={{ fontWeight: 500 }}>{UNCLASSIFIED}</strong> — nhóm chìm dành cho hoạt
-          động chưa phân loại, vẫn được tính trong thống kê.
+          {wearing.length} hoạt động đang mang tag này.
         </div>
 
         {moves.length > 0 && (
@@ -312,9 +310,6 @@ export function TagDeleteReview({
           </Hover>
         </div>
 
-        <div style={{ fontSize: 11.5, color: '#A2A296', marginTop: 12, lineHeight: 1.6 }}>
-          Xoá xong vẫn hoàn tác được bằng Ctrl+Z — tag và toàn bộ hoạt động cũ trở lại như trước.
-        </div>
       </div>
     </div>
   )

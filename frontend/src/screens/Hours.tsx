@@ -1,11 +1,10 @@
 import { useMemo, useState, type CSSProperties } from 'react'
 import { ActivityRow } from '../components/ActivityRow'
-import { TagBar, TimerAddTag, type TagFilter, type TagSystem } from '../components/TagBar'
+import { TagBar, type TagFilter, type TagSystem } from '../components/TagBar'
 import { TagDeleteReview, type TagTarget } from '../components/TagDeleteReview'
 import { Breadcrumbs } from '../components/Breadcrumbs'
 import {
   RECENT_DAYS,
-  hashtag,
   kindColorMap,
   projectColorMap,
   quoteOfTheDay,
@@ -15,7 +14,8 @@ import {
 import { useHours } from '../data/useHours'
 import { serif } from '../design/tokens'
 import { Hover } from '../lib/Hover'
-import { MAX_SESSION_HOURS, useSessionTimer } from '../lib/useSessionTimer'
+import { useSessionTimer, type SessionView } from '../lib/useSessionTimer'
+import { TimerRail } from '../components/TimerRail'
 import {
   buildAllDays,
   byKind as computeByKind,
@@ -35,107 +35,9 @@ const label: CSSProperties = {
   color: '#7C7C70',
 }
 
-/**
- * Countdown lengths on the quarter-hour, matching the step a browser's own
- * time control uses. Anything else is typed into the `+` beside them.
- */
-const TIMER_PRESETS = [15, 30, 45, 60]
 
-/** Longest countdown the `+` will take, in minutes. */
-const MAX_TARGET_MINS = 12 * 60
 
-/**
- * The `+` at the end of the countdown presets: type a length in minutes.
- *
- * Declared at module scope, not inside `Hours` — a component declared inside
- * another is a new type on every render, which tears its input out of the DOM
- * between keystrokes and breaks Vietnamese input (see TagBar's AddControl).
- */
-function CustomTarget({ onPick }: { onPick: (mins: number) => void }) {
-  const [open, setOpen] = useState(false)
-  const [draft, setDraft] = useState('')
 
-  function commit() {
-    const mins = Math.round(Number(draft))
-    setOpen(false)
-    setDraft('')
-    if (Number.isFinite(mins) && mins > 0) onPick(Math.min(mins, MAX_TARGET_MINS))
-  }
-
-  if (open) {
-    return (
-      <input
-        autoFocus
-        type="number"
-        min={1}
-        max={MAX_TARGET_MINS}
-        value={draft}
-        onChange={(e) => setDraft(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.nativeEvent.isComposing) return
-          if (e.key === 'Enter') commit()
-          if (e.key === 'Escape') {
-            setOpen(false)
-            setDraft('')
-          }
-        }}
-        onBlur={commit}
-        aria-label="Số phút tự đặt"
-        placeholder="phút"
-        style={{
-          flex: 1,
-          minWidth: 0,
-          textAlign: 'center',
-          fontSize: 12,
-          padding: '6px 0',
-          background: 'transparent',
-          border: '1px solid #F2A0A5',
-          color: '#FFFFFF',
-          fontFamily: "'Be Vietnam Pro',sans-serif",
-          outline: 'none',
-        }}
-      />
-    )
-  }
-
-  return (
-    <Hover
-      onClick={() => {
-        setOpen(true)
-        setDraft('')
-      }}
-      role="button"
-      aria-label="Tự đặt số phút"
-      style={{
-        flex: 'none',
-        width: 34,
-        textAlign: 'center',
-        fontSize: 12,
-        padding: '7px 0',
-        border: '1px dashed rgba(244,244,239,.4)',
-        cursor: 'pointer',
-        color: 'rgba(244,244,239,.8)',
-      }}
-      hoverStyle={{ borderColor: '#F2A0A5', color: '#F2A0A5' }}
-    >
-      +
-    </Hover>
-  )
-}
-
-/** `label`'s counterpart inside the dark timer rail. */
-const railLabel: CSSProperties = {
-  fontWeight: 500,
-  fontSize: 9,
-  letterSpacing: '.2em',
-  textTransform: 'uppercase',
-  color: 'rgba(244,244,239,.55)',
-}
-
-const clockFmt = (s: number) =>
-  [Math.floor(s / 3600), Math.floor((s % 3600) / 60), s % 60]
-    .map((v) => String(v).padStart(2, '0'))
-    .join(':')
 
 function beep() {
   try {
@@ -189,25 +91,8 @@ export function Hours() {
   /** The tag whose deletion is being worked out, if any. */
   const [deleting, setDeleting] = useState<TagTarget | null>(null)
   const [newId, setNewId] = useState<string | null>(null)
-  // The clock reads the time rather than counting ticks, and it carries the
-  // session's name and tags so a reload gives back the whole session — see
-  // useSessionTimer.
+  // Several clocks, one of them open — see useSessionTimer.
   const timer = useSessionTimer({ onFinish: beep })
-  const {
-    mode: tMode,
-    target: tTarget,
-    running: tRunning,
-    sec: tSec,
-    usedSec: tUsedSec,
-    onScreenOnly,
-    suspended,
-    name: tName,
-    kind: dKind,
-    project: dProject,
-    setName: setTName,
-    setKind: setDKind,
-    setProject: setDProject,
-  } = timer
 
   // The unclassified bucket has no row in `activity_kinds`, so the stats have
   // to be told about it or the hours it holds vanish from every total.
@@ -226,29 +111,31 @@ export function Hours() {
     const last = onDay.slice().sort((a, b) => toMin(a.at) - toMin(b.at)).slice(-1)[0]
     const startMin = last ? Math.min(23 * 60 + 30, toMin(last.at) + last.mins + 15) : 8 * 60
     const at = String(Math.floor(startMin / 60)).padStart(2, '0') + ':' + String(startMin % 60).padStart(2, '0')
-    const saved = await add({ date: ds, name: '', kind: dKind, mins: 30, done: false, at })
+    const saved = await add({ date: ds, name: '', kind: timer.open?.kind ?? 'đọc', mins: 30, done: false, at })
     if (!saved) return
     setNewId(saved.id)
   }
 
-  function saveTimer(mins: number) {
+  /**
+   * Write one session into today's log and start it over.
+   *
+   * The row is stamped with the wall-clock time the stopwatch was set going,
+   * not the moment the tick was pressed: a session that ran across tabs still
+   * started when it started.
+   */
+  function logSession(session: SessionView, mins: number) {
     if (!mins || mins < 1) return
-    const now = new Date()
-    // A session that ran across tabs still started when it started — the row is
-    // stamped with the wall-clock time the stopwatch was set going.
-    const startedAt = new Date(now.getTime() - mins * 60_000)
-    const at =
-      String(startedAt.getHours()).padStart(2, '0') + ':' + String(startedAt.getMinutes()).padStart(2, '0')
+    const at = new Date(Date.now() - mins * 60_000)
     void add({
       date: today,
-      name: tName.trim() || 'Phiên không tên',
-      kind: dKind,
-      project: dProject,
+      name: session.name.trim() || 'Phiên không tên',
+      kind: session.kind,
+      project: session.project,
       mins,
-      at,
+      at: String(at.getHours()).padStart(2, '0') + ':' + String(at.getMinutes()).padStart(2, '0'),
       done: true,
     })
-    timer.reset()
+    timer.reset(session.id)
   }
 
   const all = useMemo(() => buildAllDays(logs), [logs])
@@ -325,19 +212,6 @@ export function Hours() {
     }
   })
 
-  // The four presets, plus the typed length when it isn't one of them — so a
-  // 90-minute session still shows which chip is lit.
-  const targetChoices = useMemo(() => {
-    const mins = Math.round(tTarget / 60)
-    return TIMER_PRESETS.includes(mins) ? TIMER_PRESETS : TIMER_PRESETS.concat([mins]).sort((a, b) => a - b)
-  }, [tTarget])
-
-  const tArc =
-    tMode === 'down' && tTarget
-      ? Math.round((1 - tSec / tTarget) * 100) + '%'
-      : tSec
-        ? Math.min(100, Math.round((tSec / 3600) * 100)) + '%'
-        : '0%'
 
   /**
    * A tag nothing is filed under goes straight away — rule 08's "delete
@@ -699,13 +573,9 @@ export function Hours() {
           ))}
         </div>
 
-        {/* The rail was a fixed 316px, set when it held a clock, one row of
-            tags and two buttons. It now holds two tag rows, five countdown
-            chips and a switch, and at that width the chips wrapped onto three
-            lines while the day list beside it had room to spare. It scales with
-            the window instead: never under 320 so the countdown row fits on one
-            line, never over 440 so it stays the narrower column — the day list
-            is the main event (rule 14.01) and this sits beside it. */}
+        {/* The rail holds several clocks now — see TimerRail. It scales with
+            the window: never under 320 so the countdown row fits on one line,
+            never over 440 so the day list stays the main event (rule 14.01). */}
         <div
           style={{
             flex: '0 1 clamp(320px, 30%, 440px)',
@@ -714,268 +584,30 @@ export function Hours() {
             top: 32,
           }}
         >
-          <div style={{ background: 'linear-gradient(168deg, #143C43 0%, #0D272C 100%)', color: '#F4F4EF', padding: '28px 26px 26px' }}>
-            <div style={{ display: 'flex', gap: 18, marginBottom: 22, fontWeight: 500, fontSize: 9.5, letterSpacing: '.2em', textTransform: 'uppercase' }}>
-              <div
-                onClick={() => timer.setMode('up')}
-                style={{
-                  cursor: 'pointer',
-                  paddingBottom: 4,
-                  borderBottom: `1px solid ${tMode === 'up' ? '#F2A0A5' : 'transparent'}`,
-                  color: tMode === 'up' ? '#EDE9DC' : 'rgba(244,244,239,.55)',
-                }}
-              >
-                Bấm giờ
-              </div>
-              <div
-                onClick={() => timer.setMode('down')}
-                style={{
-                  cursor: 'pointer',
-                  paddingBottom: 4,
-                  borderBottom: `1px solid ${tMode === 'down' ? '#F2A0A5' : 'transparent'}`,
-                  color: tMode === 'down' ? '#EDE9DC' : 'rgba(244,244,239,.55)',
-                }}
-              >
-                Hẹn giờ
-              </div>
-            </div>
-
-            <div style={{ fontFamily: serif, fontSize: 66, lineHeight: 0.9, letterSpacing: '-.04em', fontVariantNumeric: 'tabular-nums' }}>
-              {clockFmt(tSec)}
-            </div>
-            <div style={{ height: 2, background: 'rgba(244,244,239,.22)', margin: '16px 0 10px' }}>
-              <div style={{ height: 2, width: tArc, background: '#F2A0A5' }} />
-            </div>
-            <div style={{ fontSize: 11, color: 'rgba(244,244,239,.6)', marginBottom: 18, minHeight: 15 }}>
-              {tRunning || suspended
-                ? onScreenOnly
-                  ? suspended
-                    ? 'Đang tạm dừng — bạn đã rời màn này.'
-                    : 'Đang chạy — dừng khi bạn rời màn này.'
-                  : 'Đang chạy — vẫn tính khi bạn rời màn này.'
-                : ''}
-            </div>
-
-            {tMode === 'down' && (
-              <>
-                {/* A 15-minute step all the way across — 25 sat between 15 and
-                    45 for no reason anyone could name. Anything else is typed. */}
-                <div style={{ display: 'flex', gap: 6, marginBottom: 18 }}>
-                  {targetChoices.map((m) => {
-                    const picked = tTarget === m * 60
-                    return (
-                      <div
-                        key={m}
-                        onClick={() => timer.setTarget(m * 60)}
-                        style={{
-                          flex: 1,
-                          textAlign: 'center',
-                          fontSize: 12,
-                          padding: '7px 0',
-                          border: '1px solid rgba(244,244,239,.35)',
-                          cursor: 'pointer',
-                          background: picked ? '#F2A0A5' : 'transparent',
-                          color: picked ? '#1F3323' : 'rgba(247,244,233,.82)',
-                        }}
-                      >
-                        {m}′
-                      </div>
-                    )
-                  })}
-                  <CustomTarget onPick={(mins) => timer.setTarget(mins * 60)} />
-                </div>
-                <div style={{ fontSize: 11, color: 'rgba(244,244,239,.6)', marginBottom: 18 }}>Hết giờ sẽ có tiếng báo.</div>
-              </>
-            )}
-
-            <input
-              value={tName}
-              onChange={(e) => setTName(e.target.value)}
-              placeholder="Đang làm gì"
-              style={{
-                width: '100%',
-                boxSizing: 'border-box',
-                background: 'transparent',
-                border: 0,
-                borderBottom: '1px solid rgba(244,244,239,.55)',
-                color: '#FFFFFF',
-                fontFamily: "'Be Vietnam Pro',sans-serif",
-                fontWeight: 200,
-                fontSize: 15,
-                padding: '8px 0 9px',
-                outline: 'none',
-                marginBottom: 16,
-              }}
-            />
-
-            {/* Both tag systems, in the bar's order — project, then task. The
-                rail used to offer only task, so every session it logged came
-                back project-less and the row's project slot sat empty with no
-                way to have filled it from here. */}
-            <div style={{ ...railLabel, marginBottom: 7 }} id="rail-project">
-              Project
-            </div>
-            {/* Named groups: the same tags are drawn again in the bar at the top
-                of the screen, and "the project row" has to mean one of them. */}
-            <div
-              role="group"
-              aria-labelledby="rail-project"
-              style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}
-            >
-              {projects.map((p) => {
-                const picked = p === dProject
-                const color = projectColor[p] ?? '#F2A0A5'
-                return (
-                  <div
-                    key={p}
-                    onClick={() => setDProject(picked ? null : p)}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 7,
-                      fontSize: 12,
-                      padding: '5px 11px',
-                      // A project is optional, so an unpicked one still reads as
-                      // available rather than as switched off.
-                      border: `1px solid ${picked ? color : 'rgba(244,244,239,.3)'}`,
-                      cursor: 'pointer',
-                      background: picked ? color : 'transparent',
-                      color: picked ? '#F7F5EE' : 'rgba(247,244,233,.82)',
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: 6,
-                        height: 6,
-                        borderRadius: '50%',
-                        background: picked ? 'rgba(255,255,255,.6)' : color,
-                        flex: 'none',
-                      }}
-                    />
-                    {hashtag(p)}
-                  </div>
-                )
-              })}
-              <TimerAddTag
-                label="project mới"
-                onAdd={(name) => {
-                  // Naming a tag here means you want this session filed under
-                  // it — picking it again by hand would be a second step for a
-                  // choice already made.
-                  setDProject(name.trim())
-                  void addTag(name, 'project')
-                }}
-              />
-            </div>
-
-            <div style={{ ...railLabel, marginBottom: 7 }} id="rail-task">
-              Task
-            </div>
-            <div
-              role="group"
-              aria-labelledby="rail-task"
-              style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 20 }}
-            >
-              {allKinds.map((k) => {
-                const picked = k === dKind
-                return (
-                  <div
-                    key={k}
-                    onClick={() => setDKind(k)}
-                    style={{
-                      fontSize: 12,
-                      padding: '5px 11px',
-                      border: '1px solid rgba(244,244,239,.3)',
-                      cursor: 'pointer',
-                      background: picked ? '#F2A0A5' : 'transparent',
-                      color: picked ? '#1F3323' : 'rgba(247,244,233,.82)',
-                    }}
-                  >
-                    {k}
-                  </div>
-                )
-              })}
-              <TimerAddTag
-                onAdd={(name) => {
-                  setDKind(name.trim())
-                  void addTag(name, 'task')
-                }}
-              />
-            </div>
-
-            <div style={{ display: 'flex', gap: 8 }}>
-              <Hover
-                onClick={() => (tRunning ? timer.pause() : timer.start())}
-                style={{ flex: 1, textAlign: 'center', fontSize: 11, letterSpacing: '.18em', textTransform: 'uppercase', padding: 13, background: '#F2A0A5', color: '#3B2A2B', cursor: 'pointer' }}
-                hoverStyle={{ background: '#F6B4B8' }}
-              >
-                {tRunning ? 'Tạm dừng' : 'Bắt đầu'}
-              </Hover>
-              <Hover
-                onClick={() => timer.reset()}
-                style={{ flex: 'none', fontSize: 11, letterSpacing: '.14em', textTransform: 'uppercase', padding: '13px 15px', border: '1px solid rgba(244,244,239,.35)', cursor: 'pointer' }}
-                hoverStyle={{ border: '1px solid #F4F4EF' }}
-              >
-                Đặt lại
-              </Hover>
-            </div>
-
-            {/* The rule, stated where it applies. Off by default: a stopwatch
-                that stops when you look away is a surprise, and the case that
-                sent this back from QA was four hours of work in another tab
-                logged as thirteen minutes. */}
-            <Hover
-              onClick={() => timer.setOnScreenOnly(!onScreenOnly)}
-              role="switch"
-              aria-checked={onScreenOnly}
-              style={{
-                marginTop: 14,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 9,
-                cursor: 'pointer',
-                color: onScreenOnly ? '#F2A0A5' : 'rgba(244,244,239,.6)',
-              }}
-              hoverStyle={{ color: '#F2A0A5' }}
-            >
-              <div
-                style={{
-                  width: 13,
-                  height: 13,
-                  flex: 'none',
-                  border: '1px solid currentColor',
-                  background: onScreenOnly ? 'currentColor' : 'transparent',
-                }}
-              />
-              <div style={{ fontSize: 11.5, lineHeight: 1.4 }}>Chỉ tính khi đang mở màn này</div>
-            </Hover>
-
-            <Hover
-              onClick={() => saveTimer(Math.round(tUsedSec / 60))}
-              style={{
-                marginTop: 12,
-                textAlign: 'center',
-                padding: '17px 14px 16px',
-                background: '#F4F4EF',
-                color: 'oklch(0.50 0.135 14)',
-                cursor: 'pointer',
-                transition: 'background .25s ease, color .25s ease',
-              }}
-              hoverStyle={{ background: '#FFFFFF', color: 'oklch(0.42 0.125 14)' }}
-            >
-              <div style={{ fontFamily: serif, fontSize: 25, lineHeight: 1, letterSpacing: '-.02em' }}>Hoàn thành</div>
-              <div style={{ fontFamily: "'Be Vietnam Pro',sans-serif", fontWeight: 500, fontSize: 11.5, letterSpacing: '.1em', marginTop: 7 }}>
-                Ghi vào hoạt động · {fmt(Math.round(tUsedSec / 60))}
-              </div>
-            </Hover>
-          </div>
-
-          <div style={{ marginTop: 22, fontSize: 12.5, lineHeight: 1.6, color: '#6A6F63' }}>
-            Phiên đếm lên chạy tới khi bạn dừng — kể cả khi bạn sang tab khác, đóng trang rồi mở lại, hay đi
-            sang màn hình khác; giờ được tính từ lúc bấm bắt đầu. Bật “chỉ tính khi đang mở màn này” nếu bạn
-            muốn ngược lại. Một phiên bỏ quên quá {MAX_SESSION_HOURS} tiếng sẽ tự dừng ở mốc đó. Hẹn giờ dùng
-            cho việc cần giới hạn — hết giờ có tiếng báo, rồi bấm tick để ghi vào ngày.
-          </div>
+          <TimerRail
+            sessions={timer.sessions}
+            open={timer.open}
+            canAdd={timer.canAdd}
+            projects={projects}
+            kinds={allKinds}
+            projectColor={projectColor}
+            kindColor={kindColor}
+            onOpenSession={timer.openSession}
+            onCollapseAll={timer.collapseAll}
+            onAddSession={timer.addSession}
+            onRemoveSession={timer.removeSession}
+            onStart={timer.start}
+            onPause={timer.pause}
+            onReset={timer.reset}
+            onMode={timer.setMode}
+            onTarget={timer.setTarget}
+            onName={timer.setName}
+            onKind={timer.setKind}
+            onProject={timer.setProject}
+            onScreenOnly={timer.setOnScreenOnly}
+            onAddTag={(name, system) => void addTag(name, system)}
+            onLog={logSession}
+          />
         </div>
       </div>
     </div>

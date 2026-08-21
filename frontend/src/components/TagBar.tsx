@@ -427,9 +427,6 @@ export function TagBar({
         )}
       </div>
 
-      <div style={{ fontSize: 11, color: '#C2C2B8' }}>
-        Bấm để lọc · bấm hai lần vào một tag để sửa tên hoặc xoá
-      </div>
     </div>
   )
 }

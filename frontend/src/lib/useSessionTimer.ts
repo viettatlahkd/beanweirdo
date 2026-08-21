@@ -3,11 +3,16 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 export type TimerMode = 'up' | 'down'
 
 /**
- * What is kept between renders, screens and page loads. Elapsed time is not
- * stored — it is derived from `since`, which is the whole point: a counter that
- * is incremented by a tick can only be as accurate as the ticks it received.
+ * One stopwatch. Elapsed time is not stored — it is derived from `since`, which
+ * is the whole point: a counter incremented by a tick can only be as accurate
+ * as the ticks it received, and a background tab receives about one a minute.
+ *
+ * The name and the two tags ride along with the clock rather than living in
+ * the screen's state, so what comes back after a reload is the whole session
+ * and not a bare number with nothing to file it under.
  */
-type Stored = {
+export type Session = {
+  id: string
   mode: TimerMode
   /** Countdown length, in seconds. Ignored while counting up. */
   target: number
@@ -18,18 +23,28 @@ type Stored = {
   /** Held by the on-screen-only rule rather than by the person. */
   suspended: boolean
   onScreenOnly: boolean
-  /**
-   * What the running session will be filed as.
-   *
-   * Kept beside the clock rather than in the screen's own state: the clock now
-   * survives a reload and leaving the page, and a session that comes back
-   * running with its name and tags wiped is a session you have to file as
-   * "Phiên không tên" under nothing — which undoes the two fixes that put the
-   * name and the project there in the first place.
-   */
   name: string
   kind: string
   project: string | null
+}
+
+/** A session plus the numbers derived from it, ready to draw. */
+export type SessionView = Session & {
+  running: boolean
+  /** What the clock face shows: counting up, or what a countdown has left. */
+  sec: number
+  /** Seconds worth logging — a countdown reports what it burned, not what is left. */
+  usedSec: number
+}
+
+type Stored = {
+  sessions: Session[]
+  /**
+   * Which session is expanded, or `''` for none — clicking away from the rail
+   * collapses everything, because a panel left open is a panel taking up room
+   * for work that is no longer happening.
+   */
+  openId: string
 }
 
 export const TIMER_KEY = 'beanweirdo.hours.timer'
@@ -41,41 +56,83 @@ export const TIMER_KEY = 'beanweirdo.hours.timer'
  */
 export const MAX_SESSION_HOURS = 12
 
-const EMPTY: Stored = {
-  mode: 'up',
-  target: 1500,
-  base: 0,
-  since: null,
-  suspended: false,
-  onScreenOnly: false,
-  name: '',
-  kind: 'đọc',
-  project: null,
-}
+/**
+ * How many clocks can run at once.
+ *
+ * Not a technical limit — the rail is about 620px tall and a collapsed session
+ * takes ~52px, so past five the expanded session gets pushed out of sight and
+ * the thing you are actually working on is the thing you can't see.
+ */
+export const MAX_SESSIONS = 5
 
 const now = () => Date.now()
 
+let seq = 0
+/** Unique within a page load, which is all an id has to be here. */
+const newId = () => `s${now().toString(36)}-${seq++}`
+
+export function blankSession(from?: Partial<Session>): Session {
+  return {
+    mode: 'up',
+    // 30 phút, một mốc có sẵn — mặc định cũ là 1500 giây (25 phút), và vì nó
+    // không nằm trong bốn mốc nên hàng hẹn giờ tự mọc thêm chip 25′ cho ai
+    // chưa từng đặt gì.
+    target: 1800,
+    base: 0,
+    since: null,
+    suspended: false,
+    onScreenOnly: false,
+    name: '',
+    kind: 'đọc',
+    project: null,
+    ...from,
+    // A caller passing a stored record keeps its id; a caller passing only
+    // fields to seed a new session gets the fresh one above.
+    id: from?.id ?? newId(),
+  }
+}
+
 /** Seconds this session has counted, as of `at`. */
-function elapsed(s: Stored, at: number): number {
+function elapsed(s: Session, at: number): number {
   const running = s.since === null ? 0 : Math.max(0, Math.floor((at - s.since) / 1000))
   return s.base + running
 }
 
+/** Bank what ran while nothing was watching, and disbelieve a forgotten session. */
+function restore(s: Session): Session {
+  if (s.since === null) return s
+  const ran = elapsed(s, now())
+  if (ran > MAX_SESSION_HOURS * 3600) {
+    return { ...s, base: MAX_SESSION_HOURS * 3600, since: null, suspended: false }
+  }
+  return s
+}
+
+/**
+ * Read what is stored, including records written before this screen could run
+ * more than one clock — those hold a single session at the top level, and a tab
+ * left open across the deploy must not lose the session it is timing.
+ */
 function read(): Stored {
+  const fresh = blankSession()
   try {
     const raw = localStorage.getItem(TIMER_KEY)
-    if (!raw) return EMPTY
-    const parsed = { ...EMPTY, ...(JSON.parse(raw) as Partial<Stored>) }
-    if (parsed.since === null) return parsed
-    // Came back from a page load: bank what ran while nothing was watching,
-    // and refuse to believe a session older than the cap.
-    const ran = elapsed(parsed, now())
-    if (ran > MAX_SESSION_HOURS * 3600) {
-      return { ...parsed, base: MAX_SESSION_HOURS * 3600, since: null, suspended: false }
+    if (!raw) return { sessions: [fresh], openId: fresh.id }
+    const parsed = JSON.parse(raw) as Partial<Stored> & Partial<Session>
+
+    if (Array.isArray(parsed.sessions) && parsed.sessions.length > 0) {
+      const sessions = parsed.sessions.map((s) => restore(blankSession(s)))
+      const openId = sessions.some((s) => s.id === parsed.openId)
+        ? (parsed.openId as string)
+        : sessions[sessions.length - 1].id
+      return { sessions, openId }
     }
-    return parsed
+
+    // The one-session shape. Everything it held is still meaningful.
+    const only = restore(blankSession(parsed as Partial<Session>))
+    return { sessions: [only], openId: only.id }
   } catch {
-    return EMPTY
+    return { sessions: [fresh], openId: fresh.id }
   }
 }
 
@@ -83,163 +140,234 @@ function write(s: Stored) {
   try {
     localStorage.setItem(TIMER_KEY, JSON.stringify(s))
   } catch {
-    /* private mode, quota — the timer still works, it just won't survive a reload */
+    /* private mode, quota — the timers still work, they just won't survive a reload */
+  }
+}
+
+function viewOf(s: Session, at: number): SessionView {
+  const ran = elapsed(s, at)
+  return {
+    ...s,
+    running: s.since !== null,
+    sec: s.mode === 'down' ? Math.max(0, s.target - ran) : ran,
+    usedSec: s.mode === 'down' ? Math.min(s.target, ran) : ran,
   }
 }
 
 /**
- * The stopwatch behind Ghi 02's timer rail.
+ * The stopwatches behind Ghi 02's timer rail — several at once.
  *
- * It used to count by adding one to a number every second, which made the
- * reading a count of ticks rather than a measure of time — and a background tab
- * is throttled to roughly one tick a minute, so four hours of work in another
- * tab came back as thirteen minutes. Time is now read from the clock: `since`
- * is a timestamp, and the interval only decides how often the display is
- * repainted. Miss every tick and the number is still right.
- *
- * The session's name and its two tags ride along in the same record, so what
- * comes back after a reload is the whole session, not a bare number.
- *
- * `onScreenOnly` is the opposite promise, for people who want the timer to
- * measure attention rather than duration: while it is on, leaving the tab
- * parks the clock and coming back starts it again.
+ * Two activities can genuinely run side by side (something fermenting while you
+ * read), so a session is no longer a singleton. One session is expanded at a
+ * time; the rest keep counting from a collapsed line. Every clock is a
+ * timestamp, so a session that is out of sight is not out of time.
  */
-export function useSessionTimer({ onFinish }: { onFinish?: () => void } = {}) {
+export function useSessionTimer({ onFinish }: { onFinish?: (s: Session) => void } = {}) {
   const [state, setState] = useState<Stored>(read)
   // Repaint pulse — the value is never read, only its change.
   const [, pulse] = useState(0)
-  const finishedRef = useRef(false)
+  const finished = useRef<Set<string>>(new Set())
 
-  const update = useCallback((next: Stored | ((s: Stored) => Stored)) => {
+  const update = useCallback((next: (s: Stored) => Stored) => {
     setState((s) => {
-      const value = typeof next === 'function' ? next(s) : next
+      const value = next(s)
       write(value)
       return value
     })
   }, [])
 
-  const running = state.since !== null
-  const ran = elapsed(state, now())
-  const sec = state.mode === 'down' ? Math.max(0, state.target - ran) : ran
-  /** Seconds worth logging — a countdown reports what it burned, not what is left. */
-  const usedSec = state.mode === 'down' ? Math.min(state.target, ran) : ran
+  /** Apply a change to one session, leaving the others alone. */
+  const patch = useCallback(
+    (id: string, fn: (s: Session) => Session) =>
+      update((st) => ({ ...st, sessions: st.sessions.map((s) => (s.id === id ? fn(s) : s)) })),
+    [update],
+  )
 
-  // Repaint while the clock moves. One second is the display's resolution, not
-  // the timer's: the reading is computed from the timestamp either way.
+  const at = now()
+  const sessions = state.sessions.map((s) => viewOf(s, at))
+  const open = sessions.find((s) => s.id === state.openId) ?? null
+  const anyRunning = sessions.some((s) => s.running)
+
+  // Repaint while any clock moves. One second is the display's resolution, not
+  // the timer's: every reading is computed from a timestamp either way.
   useEffect(() => {
-    if (!running) return
+    if (!anyRunning) return
     const id = window.setInterval(() => pulse((n) => n + 1), 1000)
     return () => window.clearInterval(id)
-  }, [running])
+  }, [anyRunning])
 
   // A countdown that reaches zero stops itself, wherever the tab was when it
   // happened — including "was hidden for an hour", in which case this fires on
-  // the first render after coming back.
+  // the first render after coming back. Each session is tracked separately, so
+  // two countdowns ending together both get their moment.
   useEffect(() => {
-    if (state.mode !== 'down' || !running || sec > 0) {
-      if (sec > 0) finishedRef.current = false
-      return
+    for (const s of sessions) {
+      if (s.mode !== 'down' || !s.running) continue
+      if (s.sec > 0) {
+        finished.current.delete(s.id)
+        continue
+      }
+      if (finished.current.has(s.id)) continue
+      finished.current.add(s.id)
+      patch(s.id, (x) => ({ ...x, base: x.target, since: null, suspended: false }))
+      onFinish?.(s)
     }
-    if (finishedRef.current) return
-    finishedRef.current = true
-    update((s) => ({ ...s, base: s.target, since: null, suspended: false }))
-    onFinish?.()
-  }, [state.mode, running, sec, update, onFinish])
+  })
 
-  // The on-screen-only rule, and the reason a hidden tab is watched at all.
+  // The on-screen-only rule, per session: one activity may need the screen and
+  // another may not.
   useEffect(() => {
     function onVisibility() {
-      update((s) => {
-        if (document.visibilityState === 'hidden') {
-          if (!s.onScreenOnly || s.since === null) return s
-          return { ...s, base: elapsed(s, now()), since: null, suspended: true }
-        }
-        if (!s.suspended) return s
-        return { ...s, since: now(), suspended: false }
-      })
+      const hidden = document.visibilityState === 'hidden'
+      update((st) => ({
+        ...st,
+        sessions: st.sessions.map((s) => {
+          if (hidden) {
+            if (!s.onScreenOnly || s.since === null) return s
+            return { ...s, base: elapsed(s, now()), since: null, suspended: true }
+          }
+          if (!s.suspended) return s
+          return { ...s, since: now(), suspended: false }
+        }),
+      }))
       pulse((n) => n + 1)
     }
     document.addEventListener('visibilitychange', onVisibility)
     return () => document.removeEventListener('visibilitychange', onVisibility)
   }, [update])
 
-  const start = useCallback(() => {
-    finishedRef.current = false
-    update((s) => (s.since === null ? { ...s, since: now(), suspended: false } : s))
-  }, [update])
+  const start = useCallback(
+    (id: string) => {
+      finished.current.delete(id)
+      patch(id, (s) => (s.since === null ? { ...s, since: now(), suspended: false } : s))
+    },
+    [patch],
+  )
 
-  const pause = useCallback(() => {
-    update((s) => (s.since === null ? { ...s, suspended: false } : { ...s, base: elapsed(s, now()), since: null, suspended: false }))
-  }, [update])
+  const pause = useCallback(
+    (id: string) =>
+      patch(id, (s) =>
+        s.since === null
+          ? { ...s, suspended: false }
+          : { ...s, base: elapsed(s, now()), since: null, suspended: false },
+      ),
+    [patch],
+  )
 
   /**
-   * Finish with this session and start a blank one. The name goes, the tags
+   * Finish with this session and start it over blank. The name goes, the tags
    * stay: the next session is usually the same kind of work for the same
-   * project, and making someone re-pick both every time is the friction the
-   * rail's auto-select exists to remove.
+   * project, and re-picking both every time is the friction the rail's
+   * auto-select exists to remove.
    */
-  const reset = useCallback(() => {
-    finishedRef.current = false
-    update((s) => ({ ...s, base: 0, since: null, suspended: false, name: '' }))
-  }, [update])
+  const reset = useCallback(
+    (id: string) => {
+      finished.current.delete(id)
+      patch(id, (s) => ({ ...s, base: 0, since: null, suspended: false, name: '' }))
+    },
+    [patch],
+  )
 
   const setMode = useCallback(
-    (mode: TimerMode) => {
-      finishedRef.current = false
-      update((s) => ({ ...s, mode, base: 0, since: null, suspended: false }))
+    (id: string, mode: TimerMode) => {
+      finished.current.delete(id)
+      patch(id, (s) => ({ ...s, mode, base: 0, since: null, suspended: false }))
     },
-    [update],
+    [patch],
   )
 
   const setTarget = useCallback(
-    (target: number) => {
-      finishedRef.current = false
-      update((s) => ({ ...s, mode: 'down', target, base: 0, since: null, suspended: false }))
+    (id: string, target: number) => {
+      finished.current.delete(id)
+      patch(id, (s) => ({ ...s, mode: 'down', target, base: 0, since: null, suspended: false }))
     },
-    [update],
+    [patch],
   )
 
-  const setName = useCallback((name: string) => update((s) => ({ ...s, name })), [update])
-  const setKind = useCallback((kind: string) => update((s) => ({ ...s, kind })), [update])
+  const setName = useCallback((id: string, name: string) => patch(id, (s) => ({ ...s, name })), [patch])
+  const setKind = useCallback((id: string, kind: string) => patch(id, (s) => ({ ...s, kind })), [patch])
   const setProject = useCallback(
-    (project: string | null) => update((s) => ({ ...s, project })),
-    [update],
+    (id: string, project: string | null) => patch(id, (s) => ({ ...s, project })),
+    [patch],
   )
 
   const setOnScreenOnly = useCallback(
-    (onScreenOnly: boolean) => {
-      update((s) => {
+    (id: string, onScreenOnly: boolean) =>
+      patch(id, (s) => {
         // Turning the rule off while it is holding the clock hands it back.
         if (!onScreenOnly && s.suspended) return { ...s, onScreenOnly, since: now(), suspended: false }
         if (onScreenOnly && document.visibilityState === 'hidden' && s.since !== null) {
           return { ...s, onScreenOnly, base: elapsed(s, now()), since: null, suspended: true }
         }
         return { ...s, onScreenOnly }
-      })
-    },
+      }),
+    [patch],
+  )
+
+  /** Expand one session; whichever was expanded collapses. */
+  const openSession = useCallback((id: string) => update((st) => ({ ...st, openId: id })), [update])
+
+  /** Collapse everything — nothing is being worked on. */
+  const collapseAll = useCallback(() => update((st) => ({ ...st, openId: '' })), [update])
+
+  /**
+   * A new clock, expanded, carrying the tags of the one that was open — the
+   * next activity is usually filed the same way, and the name is the only part
+   * that is always different.
+   */
+  const addSession = useCallback(
+    () =>
+      update((st) => {
+        if (st.sessions.length >= MAX_SESSIONS) return st
+        const from = st.sessions.find((s) => s.id === st.openId)
+        const next = blankSession({ kind: from?.kind, project: from?.project ?? null })
+        return { sessions: st.sessions.concat([next]), openId: next.id }
+      }),
+    [update],
+  )
+
+  /**
+   * Drop a session. The rail always holds at least one, so removing the last
+   * one leaves a blank in its place rather than an empty rail with no way back.
+   */
+  const removeSession = useCallback(
+    (id: string) =>
+      update((st) => {
+        finished.current.delete(id)
+        const left = st.sessions.filter((s) => s.id !== id)
+        if (left.length === 0) {
+          const fresh = blankSession()
+          return { sessions: [fresh], openId: fresh.id }
+        }
+        const openId = st.openId === id ? left[left.length - 1].id : st.openId
+        return { sessions: left, openId }
+      }),
     [update],
   )
 
   return {
-    mode: state.mode,
-    target: state.target,
-    onScreenOnly: state.onScreenOnly,
-    name: state.name,
-    kind: state.kind,
-    project: state.project,
-    setName,
-    setKind,
-    setProject,
-    /** True while the on-screen-only rule is parking a session the person started. */
-    suspended: state.suspended,
-    running,
-    sec,
-    usedSec,
+    /** Every clock, in the order they were created. */
+    sessions,
+    /** The expanded one, or null when everything is collapsed. */
+    open,
+    openId: open?.id ?? '',
+    /**
+     * Whether another clock can be started. A nameless session would give the
+     * collapsed list a row with nothing to tell it apart by.
+     */
+    canAdd: sessions.length < MAX_SESSIONS && (open?.name.trim().length ?? 0) > 0,
+    openSession,
+    collapseAll,
+    addSession,
+    removeSession,
     start,
     pause,
     reset,
     setMode,
     setTarget,
+    setName,
+    setKind,
+    setProject,
     setOnScreenOnly,
   }
 }
