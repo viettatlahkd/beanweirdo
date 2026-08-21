@@ -22,7 +22,8 @@ import {
 } from '../lib/apiClient'
 import { useNav } from '../../lib/nav'
 import { ink, paper, serif } from '../../design/tokens'
-import { blankReportBlock, getBody, resolveTemplate, toArticleData, toCardsData } from '../lib/postData'
+import { blankReportBlock, getBody, resolveTemplate } from '../lib/postData'
+import { fromAdminModule, fromAdminPost, toArticleData, toCardsData } from '../../lib/postToRenderer'
 
 /**
  * The patch shape every editable field ultimately produces — a subset of
@@ -151,7 +152,7 @@ export function EditorCanvas({ template, post, module, onChange, onHeroDrop }: C
       <HeroUploader heroImageUrl={post.heroImageUrl} onDrop={onHeroDrop} />
       <div style={{ marginTop: 16, border: `1px solid ${paper.rule}`, overflow: 'hidden', background: paper.white }}>
         {template === 'cards' ? (
-          <CardsEditor post={post} onChange={onChange} />
+          <CardsEditor post={post} module={module} onChange={onChange} />
         ) : template === 'report' ? (
           <ReportEditor post={post} onChange={onChange} />
         ) : (
@@ -317,7 +318,10 @@ function HeroUploader({ heroImageUrl, onDrop }: { heroImageUrl: string | null; o
 // ---------------------------------------------------------------------------
 
 function ArticleEditor({ post, module, onChange }: { post: PostDetail; module?: Module; onChange: (patch: EditPatch) => void }) {
-  const data = toArticleData(post, module)
+  // Same adapter as the public journal, so the canvas is edited against what
+  // will actually ship.
+  const mod = fromAdminModule(module)
+  const data = toArticleData(fromAdminPost(post), mod?.title ?? post.moduleId, [], -1, mod)
   const sections = getBody<SectionData>(post)
   const furtherReading = post.furtherReading ?? []
 
@@ -347,8 +351,8 @@ function ArticleEditor({ post, module, onChange }: { post: PostDetail; module?: 
 // field gets a small editor bar above the real (otherwise unmodified) canvas.
 // ---------------------------------------------------------------------------
 
-function CardsEditor({ post, onChange }: { post: PostDetail; onChange: (patch: EditPatch) => void }) {
-  const data = toCardsData(post)
+function CardsEditor({ post, module, onChange }: { post: PostDetail; module?: Module; onChange: (patch: EditPatch) => void }) {
+  const data = toCardsData(fromAdminPost(post), fromAdminModule(module))
   const cards = getBody<CardData>(post)
 
   function updateCard(cardIndex: number, patch: Partial<CardData>) {
