@@ -337,6 +337,12 @@ export function ActivityRow({
   const [draft, setDraft] = useState('')
   const [name, setName] = useState(log.name)
   const nameRef = useRef<HTMLInputElement>(null)
+  const rowRef = useRef<HTMLDivElement>(null)
+  // `onName` closes over the draft, and the listener below is registered once
+  // per naming session — without this it would keep calling the version of
+  // `onName` that existed when the row first opened.
+  const commitName = useRef<() => void>(() => {})
+  commitName.current = () => onName(name.trim())
 
   useEffect(() => {
     if (naming) {
@@ -344,6 +350,23 @@ export function ActivityRow({
       nameRef.current?.focus()
     }
   }, [naming, log.name])
+
+  /**
+   * Rule 08.04 says an unnamed new row disappears when you leave it. "Leave"
+   * used to mean the name field losing focus, which made the row vanish the
+   * moment you reached for the project chip or the duration — the two things
+   * you most often set before typing what the activity was. It means leaving
+   * the whole row now.
+   */
+  useEffect(() => {
+    if (!naming) return
+    function onDown(e: MouseEvent) {
+      if (rowRef.current?.contains(e.target as Node)) return
+      commitName.current()
+    }
+    document.addEventListener('mousedown', onDown)
+    return () => document.removeEventListener('mousedown', onDown)
+  }, [naming])
 
   /** Being worked on: mid-edit, or a new row that hasn't been named yet. */
   const working = editing !== null || naming
@@ -387,6 +410,7 @@ export function ActivityRow({
 
   return (
     <div
+      ref={rowRef}
       draggable={editable && !naming && !editing}
       onDragStart={(e) => {
         e.dataTransfer.setData('text/plain', log.id)
@@ -533,10 +557,9 @@ export function ActivityRow({
                 // input method is mid-letter, Enter finishes the letter, not
                 // the edit.
                 if (e.nativeEvent.isComposing) return
-                if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+                if (e.key === 'Enter') onName(name.trim())
                 if (e.key === 'Escape') onAbandon()
               }}
-              onBlur={() => onName(name.trim())}
               placeholder="Hoạt động gì"
               style={{
                 display: 'block',

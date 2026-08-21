@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom/vitest'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import type { LogEntry } from '../content/hours'
@@ -289,5 +289,165 @@ describe('ActivityRow — a brand-new row is already being worked on', () => {
   it('keeps the name field focused for typing', () => {
     row({ naming: true })
     expect(screen.getByPlaceholderText('Hoạt động gì')).toBeInTheDocument()
+  })
+})
+
+describe('ActivityRow — a new row stays put while you set it up', () => {
+  it('survives reaching for the project picker before typing a name', async () => {
+    const u = userEvent.setup()
+    const props = row({ naming: true, log: log({ name: '', project: null }) })
+
+    await u.click(screen.getByText('+ project'))
+
+    // Rule 08.04 drops an unnamed row when you leave it — but reaching for the
+    // project chip is not leaving, it is setting the row up.
+    expect(props.onName).not.toHaveBeenCalled()
+    expect(screen.getByRole('combobox')).toBeInTheDocument()
+  })
+
+  it('survives reaching for the duration before typing a name', async () => {
+    const u = userEvent.setup()
+    const props = row({ naming: true, log: log({ name: '' }) })
+
+    await u.click(screen.getByText('30m'))
+
+    expect(props.onName).not.toHaveBeenCalled()
+    expect(screen.getByLabelText('Số giờ')).toBeInTheDocument()
+  })
+
+  it('survives reaching for either clock time', async () => {
+    const u = userEvent.setup()
+    const props = row({ naming: true, log: log({ name: '' }) })
+
+    await u.click(screen.getByText('16:57'))
+    expect(props.onName).not.toHaveBeenCalled()
+
+    const field = screen.getByDisplayValue('16:57')
+    await u.clear(field)
+    await u.type(field, '09:00')
+    await u.keyboard('{Enter}')
+    expect(props.onPatch).toHaveBeenCalledWith({ at: '09:00' })
+    expect(props.onName).not.toHaveBeenCalled()
+  })
+
+  it('lets go once the pointer lands outside the row', async () => {
+    const props = row({ naming: true, log: log({ name: '' }) })
+
+    fireEvent.mouseDown(document.body)
+
+    // Nothing typed and the pointer went elsewhere: the row was abandoned.
+    expect(props.onName).toHaveBeenCalledWith('')
+  })
+
+  it('keeps what was typed when the pointer lands outside', async () => {
+    const u = userEvent.setup()
+    const props = row({ naming: true, log: log({ name: '' }) })
+
+    await u.type(screen.getByPlaceholderText('Hoạt động gì'), 'Cấy men ngày 6')
+    fireEvent.mouseDown(document.body)
+
+    expect(props.onName).toHaveBeenCalledWith('Cấy men ngày 6')
+  })
+
+  it('saves on Enter without needing the pointer to go anywhere', async () => {
+    const u = userEvent.setup()
+    const props = row({ naming: true, log: log({ name: '' }) })
+
+    await u.type(screen.getByPlaceholderText('Hoạt động gì'), 'Đọc paper{Enter}')
+
+    expect(props.onName).toHaveBeenCalledWith('Đọc paper')
+  })
+
+  it('abandons on Escape', async () => {
+    const u = userEvent.setup()
+    const props = row({ naming: true, log: log({ name: '' }) })
+
+    await u.type(screen.getByPlaceholderText('Hoạt động gì'), 'nửa chừng{Escape}')
+
+    expect(props.onAbandon).toHaveBeenCalled()
+  })
+})
+
+describe('ActivityRow — two of three, the third follows', () => {
+  it('sets the length from a start and an end', async () => {
+    const u = userEvent.setup()
+    const props = row({ naming: true, log: log({ name: '', at: '09:00', mins: 30 }) })
+
+    // Known: it started at 09:00 and finished at 10:15. The length follows.
+    await u.click(screen.getByText('09:30'))
+    const end = screen.getByDisplayValue('09:30')
+    await u.clear(end)
+    await u.type(end, '10:15')
+    await u.keyboard('{Enter}')
+
+    expect(props.onPatch).toHaveBeenCalledWith({ mins: 75 })
+  })
+
+  it('sets the end from a start and a length', async () => {
+    const u = userEvent.setup()
+    const props = row({ naming: true, log: log({ name: '', at: '09:00', mins: 30 }) })
+
+    // Known: it started at 09:00 and took two hours. The end follows — and is
+    // never written, because it is always derived from the other two.
+    await u.click(screen.getByText('30m'))
+    await u.clear(screen.getByLabelText('Số giờ'))
+    await u.type(screen.getByLabelText('Số giờ'), '2')
+    await u.clear(screen.getByLabelText('Số phút'))
+    await u.type(screen.getByLabelText('Số phút'), '0')
+    await u.keyboard('{Enter}')
+
+    expect(props.onPatch).toHaveBeenCalledWith({ mins: 120 })
+  })
+
+  it('moves the end when the start moves, keeping the length', async () => {
+    const u = userEvent.setup()
+    const props = row({ log: log({ at: '09:00', mins: 30 }) })
+
+    await u.click(screen.getByText('09:00'))
+    const start = screen.getByDisplayValue('09:00')
+    await u.clear(start)
+    await u.type(start, '14:00')
+    await u.keyboard('{Enter}')
+
+    // Only the start is written; 30 minutes is untouched, so the end is 14:30.
+    expect(props.onPatch).toHaveBeenCalledWith({ at: '14:00' })
+    expect(props.onPatch).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('ActivityRow — renaming a row that already exists', () => {
+  it('saves the new name when the pointer lands outside', async () => {
+    const u = userEvent.setup()
+    const props = row({ naming: true, log: log({ name: 'Tên cũ' }) })
+
+    const field = screen.getByPlaceholderText('Hoạt động gì')
+    await u.clear(field)
+    await u.type(field, 'Tên mới')
+    fireEvent.mouseDown(document.body)
+
+    expect(props.onName).toHaveBeenCalledWith('Tên mới')
+  })
+
+  it('survives reaching for the project chip mid-rename', async () => {
+    const u = userEvent.setup()
+    const props = row({ naming: true, log: log({ name: 'Tên cũ', project: null }) })
+
+    await u.click(screen.getByText('+ project'))
+
+    expect(props.onName).not.toHaveBeenCalled()
+    expect(screen.getByPlaceholderText('Hoạt động gì')).toHaveValue('Tên cũ')
+  })
+
+  it('reports an emptied name as empty — the screen decides what that means', async () => {
+    const u = userEvent.setup()
+    const props = row({ naming: true, log: log({ name: 'Tên cũ' }) })
+
+    await u.clear(screen.getByPlaceholderText('Hoạt động gì'))
+    fireEvent.mouseDown(document.body)
+
+    // This row already has an hour and two tags on it. Deleting its name is
+    // not the same act as abandoning a blank row, and the difference is the
+    // screen's to make, not this component's.
+    expect(props.onName).toHaveBeenCalledWith('')
   })
 })
