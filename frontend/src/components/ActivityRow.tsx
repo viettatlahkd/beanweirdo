@@ -68,6 +68,11 @@ function InlinePicker({
   const ref = useRef<HTMLSelectElement>(null)
   useEffect(() => ref.current?.focus(), [])
 
+  // A value the list no longer offers still has to show as itself — the
+  // unclassified bucket is not a tag, and a tag can be renamed out from under a
+  // row. Without this the picker would open showing someone else's name.
+  const choices = value && !options.includes(value) ? [value].concat(options) : options
+
   return (
     <select
       ref={ref}
@@ -89,7 +94,7 @@ function InlinePicker({
       }}
     >
       {allowEmpty && <option value="">— không thuộc project —</option>}
-      {options.map((o) => (
+      {choices.map((o) => (
         <option key={o} value={o}>
           {o}
         </option>

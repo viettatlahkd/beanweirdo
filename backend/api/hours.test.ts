@@ -220,3 +220,284 @@ describe('POST /api/hours?resource=kinds', () => {
     expect(res.statusCode).toBe(400)
   })
 })
+
+/** The listing every kinds route answers with, as the last mocked call. */
+const bothSystems = (kinds: string[], projects: string[]) =>
+  queryBuilder({
+    data: [
+      ...kinds.map((name) => ({ name, system: 'task' })),
+      ...projects.map((name) => ({ name, system: 'project' })),
+    ],
+    error: null,
+  })
+
+describe('PATCH /api/hours?resource=kinds — renaming a tag', () => {
+  it('carries the activities over before the tag itself', async () => {
+    const logs = queryBuilder({ data: null, error: null })
+    const tag = queryBuilder({ data: { id: 'tag-1' }, error: null })
+    fromMock
+      .mockReturnValueOnce(logs)
+      .mockReturnValueOnce(tag)
+      .mockReturnValueOnce(bothSystems(['đọc', 'ghi chép'], []))
+
+    const res = mockRes()
+    await handler(
+      mockReq({
+        method: 'PATCH',
+        query: { resource: 'kinds', name: 'viết', system: 'task' },
+        body: { name: 'ghi chép' },
+        headers: authHeaders(signToken()),
+      }),
+      res,
+    )
+
+    // The activities move first: a tag pointing at nothing is recoverable,
+    // activities pointing at a tag that isn't there are not.
+    expect(logs.update).toHaveBeenCalledWith({ kind: 'ghi chép' })
+    expect(logs.eq).toHaveBeenCalledWith('kind', 'viết')
+    expect(tag.update).toHaveBeenCalledWith({ name: 'ghi chép' })
+    expect(res.statusCode).toBe(200)
+    expect(res.body.kinds).toEqual(['đọc', 'ghi chép'])
+  })
+
+  it('writes the project column when the project system is renamed', async () => {
+    const logs = queryBuilder({ data: null, error: null })
+    fromMock
+      .mockReturnValueOnce(logs)
+      .mockReturnValueOnce(queryBuilder({ data: { id: 'tag-2' }, error: null }))
+      .mockReturnValueOnce(bothSystems([], ['Cà phê']))
+
+    const res = mockRes()
+    await handler(
+      mockReq({
+        method: 'PATCH',
+        query: { resource: 'kinds', name: 'Cà củng', system: 'project' },
+        body: { name: 'Cà phê' },
+        headers: authHeaders(signToken()),
+      }),
+      res,
+    )
+
+    expect(logs.update).toHaveBeenCalledWith({ project: 'Cà phê' })
+    expect(res.body.projects).toEqual(['Cà phê'])
+  })
+
+  it('puts the activities back when the tag write fails', async () => {
+    const logs = queryBuilder({ data: null, error: null })
+    const rollback = queryBuilder({ data: null, error: null })
+    fromMock
+      .mockReturnValueOnce(logs)
+      .mockReturnValueOnce(queryBuilder({ data: null, error: { message: 'nope' } }))
+      .mockReturnValueOnce(rollback)
+
+    const res = mockRes()
+    await handler(
+      mockReq({
+        method: 'PATCH',
+        query: { resource: 'kinds', name: 'viết', system: 'task' },
+        body: { name: 'ghi chép' },
+        headers: authHeaders(signToken()),
+      }),
+      res,
+    )
+
+    expect(res.statusCode).toBe(500)
+    expect(rollback.update).toHaveBeenCalledWith({ kind: 'viết' })
+    expect(rollback.eq).toHaveBeenCalledWith('kind', 'ghi chép')
+  })
+
+  it('is a no-op when the name has not changed', async () => {
+    fromMock.mockReturnValueOnce(bothSystems(['viết'], []))
+
+    const res = mockRes()
+    await handler(
+      mockReq({
+        method: 'PATCH',
+        query: { resource: 'kinds', name: 'viết', system: 'task' },
+        body: { name: 'viết' },
+        headers: authHeaders(signToken()),
+      }),
+      res,
+    )
+
+    expect(res.statusCode).toBe(200)
+    // No update was attempted — only the listing was read.
+    expect(fromMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('404s on a tag that is not there', async () => {
+    fromMock
+      .mockReturnValueOnce(queryBuilder({ data: null, error: null }))
+      .mockReturnValueOnce(queryBuilder({ data: null, error: null }))
+      .mockReturnValueOnce(queryBuilder({ data: null, error: null }))
+
+    const res = mockRes()
+    await handler(
+      mockReq({
+        method: 'PATCH',
+        query: { resource: 'kinds', name: 'không có', system: 'task' },
+        body: { name: 'mới' },
+        headers: authHeaders(signToken()),
+      }),
+      res,
+    )
+
+    expect(res.statusCode).toBe(404)
+  })
+
+  it('rejects a blank new name', async () => {
+    const res = mockRes()
+    await handler(
+      mockReq({
+        method: 'PATCH',
+        query: { resource: 'kinds', name: 'viết', system: 'task' },
+        body: { name: '  ' },
+        headers: authHeaders(signToken()),
+      }),
+      res,
+    )
+    expect(res.statusCode).toBe(400)
+    expect(fromMock).not.toHaveBeenCalled()
+  })
+})
+
+describe('DELETE /api/hours?resource=kinds — deleting a tag', () => {
+  it('applies the reassignments, then sweeps the rest into the bucket', async () => {
+    const move = queryBuilder({ data: null, error: null })
+    const rest = queryBuilder({ data: null, error: null })
+    const drop = queryBuilder({ data: null, error: null })
+    fromMock
+      // The read that tells undo which activities wore the tag.
+      .mockReturnValueOnce(queryBuilder({ data: [{ id: 'log-1' }, { id: 'log-9' }], error: null }))
+      .mockReturnValueOnce(move)
+      .mockReturnValueOnce(rest)
+      .mockReturnValueOnce(drop)
+      .mockReturnValueOnce(bothSystems(['đọc'], []))
+
+    const res = mockRes()
+    await handler(
+      mockReq({
+        method: 'DELETE',
+        query: { resource: 'kinds', name: 'work', system: 'task' },
+        body: { moves: [{ to: 'đọc', ids: ['log-1', 'log-2'] }] },
+        headers: authHeaders(signToken()),
+      }),
+      res,
+    )
+
+    expect(move.update).toHaveBeenCalledWith({ kind: 'đọc' })
+    expect(move.in).toHaveBeenCalledWith('id', ['log-1', 'log-2'])
+    // Anything still wearing the tag is unclassified, not deleted.
+    expect(rest.update).toHaveBeenCalledWith({ kind: 'Khác' })
+    expect(rest.eq).toHaveBeenCalledWith('kind', 'work')
+    expect(drop.delete).toHaveBeenCalled()
+    expect(res.statusCode).toBe(200)
+    // Including the one outside the span the screen draws.
+    expect(res.body.affected).toEqual(['log-1', 'log-9'])
+  })
+
+  it('lets a project fall to no project at all when that is what was asked', async () => {
+    const rest = queryBuilder({ data: null, error: null })
+    fromMock
+      .mockReturnValueOnce(queryBuilder({ data: [], error: null }))
+      .mockReturnValueOnce(rest)
+      .mockReturnValueOnce(queryBuilder({ data: null, error: null }))
+      .mockReturnValueOnce(bothSystems([], []))
+
+    const res = mockRes()
+    await handler(
+      mockReq({
+        method: 'DELETE',
+        query: { resource: 'kinds', name: 'Sao đâu', system: 'project' },
+        body: { rest: null },
+        headers: authHeaders(signToken()),
+      }),
+      res,
+    )
+
+    expect(rest.update).toHaveBeenCalledWith({ project: null })
+    expect(res.statusCode).toBe(200)
+  })
+
+  it('keeps a task out of NOT NULL even when null was asked for', async () => {
+    const rest = queryBuilder({ data: null, error: null })
+    fromMock
+      .mockReturnValueOnce(queryBuilder({ data: [], error: null }))
+      .mockReturnValueOnce(rest)
+      .mockReturnValueOnce(queryBuilder({ data: null, error: null }))
+      .mockReturnValueOnce(bothSystems([], []))
+
+    const res = mockRes()
+    await handler(
+      mockReq({
+        method: 'DELETE',
+        query: { resource: 'kinds', name: 'work', system: 'task' },
+        body: { rest: null },
+        headers: authHeaders(signToken()),
+      }),
+      res,
+    )
+
+    expect(rest.update).toHaveBeenCalledWith({ kind: 'Khác' })
+  })
+
+  it('rejects a malformed moves list before touching anything', async () => {
+    const res = mockRes()
+    await handler(
+      mockReq({
+        method: 'DELETE',
+        query: { resource: 'kinds', name: 'work', system: 'task' },
+        body: { moves: [{ to: 'đọc', ids: 'log-1' }] },
+        headers: authHeaders(signToken()),
+      }),
+      res,
+    )
+    expect(res.statusCode).toBe(400)
+    expect(fromMock).not.toHaveBeenCalled()
+  })
+
+  it('requires a name', async () => {
+    const res = mockRes()
+    await handler(
+      mockReq({ method: 'DELETE', query: { resource: 'kinds' }, headers: authHeaders(signToken()) }),
+      res,
+    )
+    expect(res.statusCode).toBe(400)
+  })
+})
+
+describe('PATCH /api/hours?resource=assign — moving activities in bulk', () => {
+  it('applies every move and reports how many rows it touched', async () => {
+    const first = queryBuilder({ data: null, error: null })
+    const second = queryBuilder({ data: null, error: null })
+    fromMock.mockReturnValueOnce(first).mockReturnValueOnce(second)
+
+    const res = mockRes()
+    await handler(
+      mockReq({
+        method: 'PATCH',
+        query: { resource: 'assign' },
+        body: {
+          system: 'task',
+          moves: [
+            { to: 'work', ids: ['a', 'b'] },
+            { to: 'đọc', ids: ['c'] },
+          ],
+        },
+        headers: authHeaders(signToken()),
+      }),
+      res,
+    )
+
+    expect(first.update).toHaveBeenCalledWith({ kind: 'work' })
+    expect(second.update).toHaveBeenCalledWith({ kind: 'đọc' })
+    expect(res.body).toEqual({ moved: 3 })
+  })
+
+  it('requires auth like everything else on this route', async () => {
+    const res = mockRes()
+    await handler(mockReq({ method: 'PATCH', query: { resource: 'assign' } }), res)
+    expect(res.statusCode).toBe(401)
+    expect(fromMock).not.toHaveBeenCalled()
+  })
+})

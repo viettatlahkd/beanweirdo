@@ -1,5 +1,5 @@
 import { useState, type CSSProperties } from 'react'
-import { hashtag, type LogEntry } from '../content/hours'
+import { UNCLASSIFIED, hashtag, type LogEntry } from '../content/hours'
 import { Hover } from '../lib/Hover'
 
 export type TagSystem = 'task' | 'project'
@@ -36,6 +36,131 @@ const draftInput: CSSProperties = {
   outline: 'none',
 }
 
+const chipBase: CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 8,
+  padding: '6px 12px',
+  cursor: 'pointer',
+}
+
+/**
+ * One tag in the bar.
+ *
+ * A single click filters. A double click opens the tag itself: the name
+ * becomes a field — Enter or clicking away saves it — and the delete cross
+ * appears pinned to the chip's top-right corner, where it can't be hit by
+ * accident while filtering. Escape leaves everything as it was.
+ */
+function TagChip({
+  name,
+  count,
+  on,
+  dim,
+  editing,
+  draft,
+  fill,
+  dot,
+  ink,
+  border,
+  editable,
+  onDraft,
+  onOpen,
+  onCommit,
+  onCancel,
+  onDelete,
+  onToggle,
+}: {
+  name: string
+  count: number
+  on: boolean
+  dim: boolean
+  editing: boolean
+  draft: string
+  /** Chip background — a project reads as a filled tab, a task as an outline. */
+  fill: string
+  dot: string
+  ink: string
+  border: string
+  /** The unclassified bucket is a fact about the data, not a tag to edit. */
+  editable: boolean
+  onDraft: (v: string) => void
+  onOpen: () => void
+  onCommit: () => void
+  onCancel: () => void
+  onDelete: () => void
+  onToggle: () => void
+}) {
+  if (editing) {
+    return (
+      <div style={{ position: 'relative', display: 'inline-flex' }}>
+        <input
+          autoFocus
+          value={draft}
+          onChange={(e) => onDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') onCommit()
+            if (e.key === 'Escape') onCancel()
+          }}
+          onBlur={onCommit}
+          aria-label={`Đổi tên ${name}`}
+          style={draftInput}
+        />
+        <Hover
+          // mousedown, not click: the input's blur would commit and unmount
+          // this button before a click ever landed on it.
+          onMouseDown={(e) => {
+            e.preventDefault()
+            onDelete()
+          }}
+          aria-label={`Xoá ${name}`}
+          role="button"
+          style={{
+            position: 'absolute',
+            top: -8,
+            right: -8,
+            width: 17,
+            height: 17,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 11,
+            lineHeight: 1,
+            background: '#FCFCFA',
+            border: '1px solid #CFCFC4',
+            color: '#6A6F63',
+            borderRadius: '50%',
+            cursor: 'pointer',
+          }}
+          hoverStyle={{ borderColor: '#C25C7C', color: '#C25C7C' }}
+        >
+          ✕
+        </Hover>
+      </div>
+    )
+  }
+
+  return (
+    <div
+      onClick={onToggle}
+      onDoubleClick={editable ? onOpen : undefined}
+      title={editable ? 'bấm để lọc · bấm hai lần để sửa hoặc xoá' : undefined}
+      style={{
+        ...chipBase,
+        background: fill,
+        border: `1px solid ${border}`,
+        opacity: dim ? 0.45 : 1,
+      }}
+    >
+      <div style={{ width: 8, height: 8, borderRadius: '50%', background: dot, flex: 'none' }} />
+      <div style={{ fontSize: 12.5, color: ink }}>{name}</div>
+      <div style={{ fontSize: 11, color: ink, opacity: on ? 0.6 : 0.55, fontVariantNumeric: 'tabular-nums' }}>
+        {count}
+      </div>
+    </div>
+  )
+}
+
 /**
  * The two tag systems, in the order they're read everywhere else: project
  * first, then task.
@@ -43,7 +168,8 @@ const draftInput: CSSProperties = {
  * The `+` used to live in two places driven by one boolean, so opening either
  * one rendered both inputs — they fought over focus and each cleared the other's
  * draft. Which system is being added to is now part of the state, so only one
- * input can ever be open.
+ * input can ever be open. The same state holds which tag is being edited, for
+ * the same reason.
  */
 export function TagBar({
   projects,
@@ -54,6 +180,8 @@ export function TagBar({
   filter,
   onFilter,
   onAdd,
+  onRename,
+  onDelete,
 }: {
   projects: string[]
   kinds: string[]
@@ -63,16 +191,34 @@ export function TagBar({
   filter: TagFilter
   onFilter: (f: TagFilter) => void
   onAdd: (name: string, system: TagSystem) => void
+  onRename: (name: string, next: string, system: TagSystem) => void
+  /** Asked, not done — the screen decides whether the tag can just go. */
+  onDelete: (name: string, system: TagSystem) => void
 }) {
   const [adding, setAdding] = useState<TagSystem | null>(null)
+  const [editing, setEditing] = useState<{ system: TagSystem; name: string } | null>(null)
   const [draft, setDraft] = useState('')
 
-  function commit() {
+  function commitAdd() {
     const v = draft.trim()
     const system = adding
     setAdding(null)
     setDraft('')
     if (v && system) onAdd(v, system)
+  }
+
+  function commitEdit() {
+    const v = draft.trim()
+    const target = editing
+    setEditing(null)
+    setDraft('')
+    if (target && v && v !== target.name) onRename(target.name, v, target.system)
+  }
+
+  function open(system: TagSystem, name: string) {
+    setAdding(null)
+    setEditing({ system, name })
+    setDraft(name)
   }
 
   const countTask = (name: string) => logs.filter((l) => l.kind === name && l.done !== false).length
@@ -82,19 +228,28 @@ export function TagBar({
   const toggle = (system: TagSystem, name: string) =>
     onFilter(isOn(system, name) ? null : { system, name })
 
+  const isEditing = (system: TagSystem, name: string) =>
+    editing?.system === system && editing.name === name
+
+  // Activities whose tag was deleted sit in the bucket. It is listed so they
+  // can still be found and filtered, but it is not a tag: nothing renames it,
+  // and deleting it would mean deleting the fact that they are unfiled.
+  const bucketCount = countTask(UNCLASSIFIED)
+  const taskTags = kinds.includes(UNCLASSIFIED) || bucketCount === 0 ? kinds : kinds.concat([UNCLASSIFIED])
+
   const AddControl = ({ system, label }: { system: TagSystem; label: string }) =>
     adding === system ? (
       <input
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         onKeyDown={(e) => {
-          if (e.key === 'Enter') commit()
+          if (e.key === 'Enter') commitAdd()
           if (e.key === 'Escape') {
             setAdding(null)
             setDraft('')
           }
         }}
-        onBlur={commit}
+        onBlur={commitAdd}
         autoFocus
         placeholder={label}
         style={draftInput}
@@ -102,6 +257,7 @@ export function TagBar({
     ) : (
       <Hover
         onClick={() => {
+          setEditing(null)
           setAdding(system)
           setDraft('')
         }}
@@ -130,30 +286,33 @@ export function TagBar({
           const on = isOn('project', p)
           const color = projectColor[p] ?? '#102F35'
           return (
-            <div
+            <TagChip
               key={p}
-              onClick={() => toggle('project', p)}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 8,
-                background: color,
-                border: `1px solid ${color}`,
-                padding: '6px 12px',
-                cursor: 'pointer',
-                opacity: filter && !on ? 0.45 : 1,
+              name={hashtag(p)}
+              count={countProject(p)}
+              on={on}
+              dim={!!filter && !on}
+              editing={isEditing('project', p)}
+              draft={draft}
+              fill={color}
+              dot="rgba(255,255,255,.55)"
+              ink="#F7F5EE"
+              border={color}
+              editable
+              onDraft={setDraft}
+              onOpen={() => open('project', p)}
+              onCommit={commitEdit}
+              onCancel={() => {
+                setEditing(null)
+                setDraft('')
               }}
-            >
-              <div
-                style={{ width: 8, height: 8, borderRadius: '50%', background: 'rgba(255,255,255,.55)', flex: 'none' }}
-              />
-              <div style={{ fontSize: 12.5, color: '#F7F5EE' }}>{hashtag(p)}</div>
-              <div
-                style={{ fontSize: 11, color: '#F7F5EE', opacity: 0.6, fontVariantNumeric: 'tabular-nums' }}
-              >
-                {countProject(p)}
-              </div>
-            </div>
+              onDelete={() => {
+                setEditing(null)
+                setDraft('')
+                onDelete(p, 'project')
+              }}
+              onToggle={() => toggle('project', p)}
+            />
           )
         })}
         <AddControl system="project" label="project mới" />
@@ -161,36 +320,37 @@ export function TagBar({
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 9, flexWrap: 'wrap' }}>
         <div style={{ ...groupLabel, width: 54 }}>Task</div>
-        {kinds.map((k) => {
+        {taskTags.map((k) => {
           const on = isOn('task', k)
+          const color = kindColor[k] ?? '#A2A296'
           return (
-            <div
+            <TagChip
               key={k}
-              onClick={() => toggle('task', k)}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 8,
-                background: on ? kindColor[k] : 'transparent',
-                border: `1px solid ${on ? kindColor[k] : '#DEDED6'}`,
-                padding: '6px 12px',
-                cursor: 'pointer',
-                opacity: filter && !on ? 0.45 : 1,
+              name={k}
+              count={countTask(k)}
+              on={on}
+              dim={!!filter && !on}
+              editing={isEditing('task', k)}
+              draft={draft}
+              fill={on ? color : 'transparent'}
+              dot={color}
+              ink={on ? '#FFFFFF' : '#414A42'}
+              border={on ? color : '#DEDED6'}
+              editable={k !== UNCLASSIFIED}
+              onDraft={setDraft}
+              onOpen={() => open('task', k)}
+              onCommit={commitEdit}
+              onCancel={() => {
+                setEditing(null)
+                setDraft('')
               }}
-            >
-              <div style={{ width: 8, height: 8, borderRadius: '50%', background: kindColor[k], flex: 'none' }} />
-              <div style={{ fontSize: 12.5, color: on ? '#FFFFFF' : '#414A42' }}>{k}</div>
-              <div
-                style={{
-                  fontSize: 11,
-                  color: on ? '#FFFFFF' : '#414A42',
-                  opacity: 0.55,
-                  fontVariantNumeric: 'tabular-nums',
-                }}
-              >
-                {countTask(k)}
-              </div>
-            </div>
+              onDelete={() => {
+                setEditing(null)
+                setDraft('')
+                onDelete(k, 'task')
+              }}
+              onToggle={() => toggle('task', k)}
+            />
           )
         })}
         <AddControl system="task" label="loại mới" />
@@ -211,6 +371,10 @@ export function TagBar({
             bỏ lọc ✕
           </Hover>
         )}
+      </div>
+
+      <div style={{ fontSize: 11, color: '#C2C2B8' }}>
+        Bấm để lọc · bấm hai lần vào một tag để sửa tên hoặc xoá
       </div>
     </div>
   )

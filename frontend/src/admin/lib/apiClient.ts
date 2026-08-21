@@ -318,6 +318,51 @@ export async function addKind(
   })
 }
 
+/** Which activities a tag is being taken off, and what they get instead. */
+export type TagMove = { to: string | null; ids: string[] }
+
+/** PATCH /api/hours?resource=kinds — rename a tag and everything filed under it. */
+export async function renameKind(
+  name: string,
+  next: string,
+  system: 'task' | 'project' = 'task',
+): Promise<{ kinds: string[]; projects: string[] }> {
+  return request<{ kinds: string[]; projects: string[] }>(
+    `/api/hours?resource=kinds&name=${encodeURIComponent(name)}&system=${system}`,
+    { method: 'PATCH', body: JSON.stringify({ name: next }) },
+  )
+}
+
+/**
+ * DELETE /api/hours?resource=kinds — remove a tag.
+ *
+ * `moves` are the reassignments chosen for the activities wearing it; `rest`
+ * catches whatever those did not cover. Leaving `rest` undefined files the
+ * remainder as unclassified. `affected` comes back holding every activity that
+ * wore the tag — undo needs the ones older than the span on screen too.
+ */
+export async function deleteKind(
+  name: string,
+  system: 'task' | 'project' = 'task',
+  body: { moves?: TagMove[]; rest?: string | null } = {},
+): Promise<{ kinds: string[]; projects: string[]; affected: string[] }> {
+  return request<{ kinds: string[]; projects: string[]; affected: string[] }>(
+    `/api/hours?resource=kinds&name=${encodeURIComponent(name)}&system=${system}`,
+    { method: 'DELETE', body: JSON.stringify(body) },
+  )
+}
+
+/** PATCH /api/hours?resource=assign — move activities between tags, tags untouched. */
+export async function assignTags(
+  system: 'task' | 'project',
+  moves: TagMove[],
+): Promise<{ moved: number }> {
+  return request<{ moved: number }>('/api/hours?resource=assign', {
+    method: 'PATCH',
+    body: JSON.stringify({ system, moves }),
+  })
+}
+
 // ── Ghi 01 — loose notes ────────────────────────────────────────────────────
 
 /** POST /api/notes — a blank note, dated today, ready to be typed into. */

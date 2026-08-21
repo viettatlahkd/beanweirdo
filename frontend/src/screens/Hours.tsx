@@ -1,8 +1,16 @@
 import { useMemo, useState, type CSSProperties } from 'react'
 import { ActivityRow } from '../components/ActivityRow'
-import { TagBar, TimerAddTag, type TagFilter } from '../components/TagBar'
+import { TagBar, TimerAddTag, type TagFilter, type TagSystem } from '../components/TagBar'
+import { TagDeleteReview, type TagTarget } from '../components/TagDeleteReview'
 import { Breadcrumbs } from '../components/Breadcrumbs'
-import { RECENT_DAYS, kindColorMap, projectColorMap, quoteOfTheDay, todayStr } from '../content/hours'
+import {
+  RECENT_DAYS,
+  kindColorMap,
+  projectColorMap,
+  quoteOfTheDay,
+  todayStr,
+  withUnclassified,
+} from '../content/hours'
 import { useHours } from '../data/useHours'
 import { serif } from '../design/tokens'
 import { Hover } from '../lib/Hover'
@@ -60,7 +68,19 @@ function beep() {
  * drag between days — while everything older is a locked record.
  */
 export function Hours() {
-  const { logs, kinds: allKinds, projects, loading, error, add, patch, remove, addTag } = useHours()
+  const {
+    logs,
+    kinds: allKinds,
+    projects,
+    loading,
+    error,
+    add,
+    patch,
+    remove,
+    addTag,
+    renameTag,
+    removeTag,
+  } = useHours()
   // A fresh "today" each render would drift across midnight mid-session; one
   // per mount is what the rest of the screen compares against.
   const today = useMemo(() => todayStr(), [])
@@ -68,6 +88,8 @@ export function Hours() {
   const [openMonths, setOpenMonths] = useState<Record<string, boolean>>({})
   /** Tag picked in the bar, from either system — null shows everything. */
   const [tagFilter, setTagFilter] = useState<TagFilter>(null)
+  /** The tag whose deletion is being worked out, if any. */
+  const [deleting, setDeleting] = useState<TagTarget | null>(null)
   const [newId, setNewId] = useState<string | null>(null)
   const [dKind, setDKind] = useState<string>('đọc')
   const [tName, setTName] = useState('')
@@ -83,7 +105,10 @@ export function Hours() {
     suspended,
   } = timer
 
-  const kindColor = useMemo(() => kindColorMap(allKinds), [allKinds])
+  // The unclassified bucket has no row in `activity_kinds`, so the stats have
+  // to be told about it or the hours it holds vanish from every total.
+  const statKinds = useMemo(() => withUnclassified(allKinds, logs), [allKinds, logs])
+  const kindColor = useMemo(() => kindColorMap(statKinds), [statKinds])
   const projectColor = useMemo(() => projectColorMap(projects), [projects])
   // One quote per calendar day, same for every visit that day.
   const quote = useMemo(() => quoteOfTheDay(), [])
@@ -123,7 +148,7 @@ export function Hours() {
   const { avg7, spanTotalTxt, activeDaysTxt, bestTxt, bestDay } = spanStats(all)
   const chart = computeChart(all)
   const topNames = computeTopNames(logs)
-  const byKind = computeByKind(logs, all, allKinds, kindColor)
+  const byKind = computeByKind(logs, all, statKinds, kindColor)
 
   // Most recent 12 days, newest first — the window this screen renders.
   const shownDays = all.slice().reverse().slice(0, 12)
@@ -195,6 +220,23 @@ export function Hours() {
       : tSec
         ? Math.min(100, Math.round((tSec / 3600) * 100)) + '%'
         : '0%'
+
+  /**
+   * A tag nothing is filed under goes straight away — rule 08's "delete
+   * outright, never ask", with Ctrl+Z as the safety net. One that is in use
+   * opens the review, because dropping it silently reassigns work nobody chose
+   * to reassign.
+   */
+  function requestDelete(name: string, system: TagSystem) {
+    const column = system === 'task' ? 'kind' : 'project'
+    const inUse = logs.some((l) => l[column] === name)
+    if (!inUse) {
+      if (tagFilter?.system === system && tagFilter.name === name) setTagFilter(null)
+      void removeTag(name, system)
+      return
+    }
+    setDeleting({ system, name })
+  }
 
   function onDropDay(e: React.DragEvent, ds: string) {
     e.preventDefault()
@@ -343,7 +385,26 @@ export function Hours() {
         filter={tagFilter}
         onFilter={setTagFilter}
         onAdd={(name, system) => void addTag(name, system)}
+        onRename={(name, next, system) => void renameTag(name, next, system)}
+        onDelete={requestDelete}
       />
+
+      {deleting && (
+        <TagDeleteReview
+          target={deleting}
+          logs={logs}
+          kinds={allKinds}
+          projects={projects}
+          onAddTag={addTag}
+          onConfirm={(plan) => {
+            const target = deleting
+            setDeleting(null)
+            if (tagFilter?.system === target.system && tagFilter.name === target.name) setTagFilter(null)
+            void removeTag(target.name, target.system, plan)
+          }}
+          onCancel={() => setDeleting(null)}
+        />
+      )}
 
       {statsOpen && (
         <div style={{ margin: '30px 0 6px' }}>

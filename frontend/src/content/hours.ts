@@ -22,6 +22,26 @@ export type LogEntry = {
 export const KINDS = ['đọc', 'thực hành', 'viết', 'quan sát']
 
 /**
+ * Where an activity lands when the tag it wore was deleted and nothing was
+ * chosen to replace it.
+ *
+ * Not a tag anyone creates, and not something the tag bar offers to file new
+ * work under — it exists so the reports can say "this happened, and it was
+ * never classified" instead of dropping the hours or refusing the deletion.
+ */
+export const UNCLASSIFIED = 'Khác'
+
+/**
+ * `kinds` for the statistics: the tag list, plus the unclassified bucket when
+ * anything is actually sitting in it. The bucket has no row in
+ * `activity_kinds`, so it would otherwise be missing from every total.
+ */
+export function withUnclassified(kinds: string[], logs: LogEntry[]): string[] {
+  if (kinds.includes(UNCLASSIFIED)) return kinds
+  return logs.some((l) => l.kind === UNCLASSIFIED) ? kinds.concat([UNCLASSIFIED]) : kinds
+}
+
+/**
  * Project tags read as hashtags — `#Sao đâu` — but the `#` is punctuation, not
  * part of the name, so it is added when drawn and never stored.
  */
@@ -68,6 +88,9 @@ export function kindColorMap(kinds: string[]): Record<string, string> {
   kinds.forEach((k, i) => {
     map[k] = KIND_PALETTE[i % KIND_PALETTE.length]
   })
+  // The bucket is grey wherever it appears: it is the absence of a choice, and
+  // giving it a colour of its own would make it look like one.
+  map[UNCLASSIFIED] = '#A2A296'
   return map
 }
 

@@ -4,7 +4,9 @@ import { requireAuth } from '../lib/auth.js'
 import { getSupabase } from '../lib/supabase.js'
 import {
   HOUR_LOG_WRITABLE,
+  TAG_COLUMN,
   TAG_SYSTEMS,
+  UNCLASSIFIED,
   toHourLog,
   type ActivityKindRow,
   type HourLogRow,
@@ -24,6 +26,9 @@ import {
  *   PATCH  /api/hours?id=…              edit one field or several
  *   DELETE /api/hours?id=…              remove a log
  *   POST   /api/hours?resource=kinds    add a tag — `system` picks which list
+ *   PATCH  /api/hours?resource=kinds&name=…&system=…   rename a tag
+ *   DELETE /api/hours?resource=kinds&name=…&system=…   delete a tag
+ *   PATCH  /api/hours?resource=assign   move activities between tags in bulk
  */
 
 function getParam(req: VercelRequest, key: string): string | null {
@@ -94,15 +99,222 @@ async function handleCreateKind(req: VercelRequest, res: VercelResponse): Promis
     return
   }
 
-  const { data: kinds } = await supabase
-    .from('activity_kinds')
-    .select('*')
-    .order('sort_order', { ascending: true })
-  const rows = (kinds ?? []) as ActivityKindRow[]
-  res.status(200).json({
+  res.status(200).json(await bothSystems())
+}
+
+/** Both tag systems as they now stand — the answer every kinds route gives. */
+async function bothSystems(): Promise<{ kinds: string[]; projects: string[] }> {
+  const supabase = getSupabase()
+  const { data } = await supabase.from('activity_kinds').select('*').order('sort_order', { ascending: true })
+  const rows = (data ?? []) as ActivityKindRow[]
+  return {
     kinds: rows.filter((k) => k.system === 'task').map((k) => k.name),
     projects: rows.filter((k) => k.system === 'project').map((k) => k.name),
-  })
+  }
+}
+
+/** `{ system, name }` off the query string, or null with the 400 already sent. */
+function tagTarget(req: VercelRequest, res: VercelResponse): { name: string; system: TagSystem } | null {
+  const name = getParam(req, 'name')
+  const system = (getParam(req, 'system') ?? 'task') as TagSystem
+  if (!name) {
+    res.status(400).json({ error: 'name query parameter is required' })
+    return null
+  }
+  if (!(TAG_SYSTEMS as readonly string[]).includes(system)) {
+    res.status(400).json({ error: `system must be one of: ${TAG_SYSTEMS.join(', ')}` })
+    return null
+  }
+  return { name, system }
+}
+
+/**
+ * Renaming a tag is two writes with no transaction between them, so the
+ * activities go first: a tag whose rename half-failed still names something,
+ * where activities pointing at a tag that no longer exists name nothing. If the
+ * second write fails the first is put back.
+ */
+async function handleRenameKind(req: VercelRequest, res: VercelResponse): Promise<void> {
+  const target = tagTarget(req, res)
+  if (!target) return
+
+  const body = (req.body ?? {}) as { name?: unknown }
+  const next = typeof body.name === 'string' ? body.name.trim() : ''
+  if (!next) {
+    res.status(400).json({ error: 'name is required' })
+    return
+  }
+  if (next === target.name) {
+    res.status(200).json(await bothSystems())
+    return
+  }
+
+  const supabase = getSupabase()
+  const column = TAG_COLUMN[target.system]
+
+  const { error: logsError } = await supabase
+    .from('hour_logs')
+    .update({ [column]: next })
+    .eq(column, target.name)
+  if (logsError) {
+    res.status(500).json({ error: logsError.message })
+    return
+  }
+
+  const { data: renamed, error: tagError } = await supabase
+    .from('activity_kinds')
+    .update({ name: next })
+    .eq('name', target.name)
+    .eq('system', target.system)
+    .select('id')
+    .maybeSingle()
+
+  if (tagError) {
+    await supabase.from('hour_logs').update({ [column]: target.name }).eq(column, next)
+    res.status(500).json({ error: tagError.message })
+    return
+  }
+  if (!renamed) {
+    await supabase.from('hour_logs').update({ [column]: target.name }).eq(column, next)
+    res.status(404).json({ error: `Tag '${target.name}' not found` })
+    return
+  }
+
+  res.status(200).json(await bothSystems())
+}
+
+/** `[{ to, ids }]` off a body, validated. Returns null with the 400 sent. */
+function readMoves(
+  body: Record<string, unknown>,
+  res: VercelResponse,
+): Array<{ to: string | null; ids: string[] }> | null {
+  const raw = body.moves
+  if (raw === undefined) return []
+  if (!Array.isArray(raw)) {
+    res.status(400).json({ error: 'moves must be an array' })
+    return null
+  }
+  const moves: Array<{ to: string | null; ids: string[] }> = []
+  for (const entry of raw) {
+    const move = (entry ?? {}) as { to?: unknown; ids?: unknown }
+    if (move.to !== null && typeof move.to !== 'string') {
+      res.status(400).json({ error: 'moves[].to must be a string or null' })
+      return null
+    }
+    if (!Array.isArray(move.ids) || move.ids.some((id) => typeof id !== 'string')) {
+      res.status(400).json({ error: 'moves[].ids must be an array of ids' })
+      return null
+    }
+    if (move.ids.length > 0) moves.push({ to: move.to as string | null, ids: move.ids as string[] })
+  }
+  return moves
+}
+
+/** Apply `[{ to, ids }]` to one column. Returns the first error message, if any. */
+async function applyMoves(
+  column: 'kind' | 'project',
+  moves: Array<{ to: string | null; ids: string[] }>,
+): Promise<string | null> {
+  const supabase = getSupabase()
+  for (const move of moves) {
+    // `kind` is NOT NULL — "no tag" for a task is the unclassified bucket.
+    const value = move.to === null && column === 'kind' ? UNCLASSIFIED : move.to
+    const { error } = await supabase
+      .from('hour_logs')
+      .update({ [column]: value })
+      .in('id', move.ids)
+    if (error) return error.message
+  }
+  return null
+}
+
+/**
+ * Delete a tag, having decided what happens to the activities wearing it.
+ *
+ * The caller sends the reassignments it collected — `moves` names activities
+ * by id — and `rest` catches everything still on the tag when those are done.
+ * Anything left with no answer falls to the unclassified bucket rather than
+ * blocking the delete or quietly losing its hours from the totals.
+ */
+async function handleDeleteKind(req: VercelRequest, res: VercelResponse): Promise<void> {
+  const target = tagTarget(req, res)
+  if (!target) return
+
+  const body = (req.body ?? {}) as Record<string, unknown>
+  const moves = readMoves(body, res)
+  if (!moves) return
+  if (body.rest !== undefined && body.rest !== null && typeof body.rest !== 'string') {
+    res.status(400).json({ error: 'rest must be a string or null' })
+    return
+  }
+
+  const supabase = getSupabase()
+  const column = TAG_COLUMN[target.system]
+
+  // Everything wearing the tag right now, including activities older than the
+  // span the screen draws. This is what undo needs: without it, taking the
+  // delete back would only restore the part that happened to be on screen.
+  const { data: wearing, error: readError } = await supabase
+    .from('hour_logs')
+    .select('id')
+    .eq(column, target.name)
+  if (readError) {
+    res.status(500).json({ error: readError.message })
+    return
+  }
+  const affected = ((wearing ?? []) as Array<{ id: string }>).map((r) => r.id)
+
+  const moveError = await applyMoves(column, moves)
+  if (moveError) {
+    res.status(500).json({ error: moveError })
+    return
+  }
+
+  // Whatever still wears the tag: the caller's fallback, or the bucket.
+  const rest = body.rest === undefined ? UNCLASSIFIED : (body.rest as string | null)
+  const restValue = rest === null && column === 'kind' ? UNCLASSIFIED : rest
+  const { error: restError } = await supabase
+    .from('hour_logs')
+    .update({ [column]: restValue })
+    .eq(column, target.name)
+  if (restError) {
+    res.status(500).json({ error: restError.message })
+    return
+  }
+
+  const { error } = await supabase
+    .from('activity_kinds')
+    .delete()
+    .eq('name', target.name)
+    .eq('system', target.system)
+  if (error) {
+    res.status(500).json({ error: error.message })
+    return
+  }
+
+  res.status(200).json({ ...(await bothSystems()), affected })
+}
+
+/**
+ * Move activities between tags in bulk, touching no tag itself. The delete
+ * flow's reassignments run inside the delete; this is how undo puts them back.
+ */
+async function handleAssign(req: VercelRequest, res: VercelResponse): Promise<void> {
+  const body = (req.body ?? {}) as Record<string, unknown>
+  const system = (body.system ?? 'task') as TagSystem
+  if (!(TAG_SYSTEMS as readonly string[]).includes(system)) {
+    res.status(400).json({ error: `system must be one of: ${TAG_SYSTEMS.join(', ')}` })
+    return
+  }
+  const moves = readMoves(body, res)
+  if (!moves) return
+
+  const error = await applyMoves(TAG_COLUMN[system], moves)
+  if (error) {
+    res.status(500).json({ error })
+    return
+  }
+  res.status(200).json({ moved: moves.reduce((n, m) => n + m.ids.length, 0) })
 }
 
 async function handleCreate(req: VercelRequest, res: VercelResponse): Promise<void> {
@@ -194,6 +406,14 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
 
   if (resource === 'kinds') {
     if (req.method === 'POST') return handleCreateKind(req, res)
+    if (req.method === 'PATCH') return handleRenameKind(req, res)
+    if (req.method === 'DELETE') return handleDeleteKind(req, res)
+    res.status(405).json({ error: 'Method not allowed' })
+    return
+  }
+
+  if (resource === 'assign') {
+    if (req.method === 'PATCH') return handleAssign(req, res)
     res.status(405).json({ error: 'Method not allowed' })
     return
   }

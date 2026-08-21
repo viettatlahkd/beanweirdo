@@ -54,6 +54,23 @@ export const HOUR_LOG_WRITABLE = ['date', 'name', 'kind', 'project', 'mins', 'at
 export const TAG_SYSTEMS = ['task', 'project'] as const
 export type TagSystem = (typeof TAG_SYSTEMS)[number]
 
+/** Which column of `hour_logs` a tag system is written to. */
+export const TAG_COLUMN: Record<TagSystem, 'kind' | 'project'> = {
+  task: 'kind',
+  project: 'project',
+}
+
+/**
+ * Where an activity lands when its tag is deleted and nothing was chosen to
+ * replace it.
+ *
+ * Not a tag anyone creates and not a row in `activity_kinds` — it is the name
+ * the reports need for "this happened, and it was never filed". `kind` is NOT
+ * NULL, so the alternative was inventing a tag per deletion or refusing to
+ * delete tags that are in use; this keeps the hours in the totals either way.
+ */
+export const UNCLASSIFIED = 'Khác'
+
 export interface ActivityKindRow {
   id: string
   name: string

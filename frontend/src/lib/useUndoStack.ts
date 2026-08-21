@@ -8,8 +8,19 @@ export type UndoEntry = {
   redo(): void | Promise<void>
 }
 
+type Held = UndoEntry & { at: number }
+
 /** System conventions, rule 08: the last five, and nothing beyond the page. */
 export const UNDO_DEPTH = 5
+
+/**
+ * How long an entry stays reversible.
+ *
+ * Undo is for the thing you just did. Ten minutes on, the screen has moved on
+ * and Ctrl+Z would be reaching for something you can no longer see — closer to
+ * a second mistake than a fix.
+ */
+export const UNDO_TTL_MS = 10 * 60 * 1000
 
 /**
  * Ctrl+Z / Ctrl+Shift+Z over the last five writes.
@@ -18,33 +29,44 @@ export const UNDO_DEPTH = 5
  * ask. That trade only works if taking it back is genuinely one keystroke away,
  * so undo is what a confirmation dialog would have been.
  *
- * Deliberately not persisted: the stack dies with the page. A history that
- * outlives what you were looking at invites undoing something you can no longer
- * see, which is worse than not offering it.
+ * Deliberately not persisted: the stack dies with the page, and each entry dies
+ * ten minutes after it was recorded. A history that outlives what you were
+ * looking at invites undoing something you can no longer see — and one that
+ * survives a reload would be undoing against a database another device may have
+ * moved on from.
  */
 export function useUndoStack(enabled = true) {
-  const undoStack = useRef<UndoEntry[]>([])
-  const redoStack = useRef<UndoEntry[]>([])
+  const undoStack = useRef<Held[]>([])
+  const redoStack = useRef<Held[]>([])
+
+  /** Entries younger than the TTL, in order. */
+  const fresh = (stack: Held[]) => stack.filter((e) => Date.now() - e.at < UNDO_TTL_MS)
 
   const record = useCallback((entry: UndoEntry) => {
-    undoStack.current = undoStack.current.concat([entry]).slice(-UNDO_DEPTH)
+    undoStack.current = fresh(undoStack.current)
+      .concat([{ ...entry, at: Date.now() }])
+      .slice(-UNDO_DEPTH)
     // A fresh action makes any redo branch unreachable.
     redoStack.current = []
   }, [])
 
   const undo = useCallback(async () => {
+    undoStack.current = fresh(undoStack.current)
     const entry = undoStack.current[undoStack.current.length - 1]
     if (!entry) return
     undoStack.current = undoStack.current.slice(0, -1)
-    redoStack.current = redoStack.current.concat([entry]).slice(-UNDO_DEPTH)
+    // Taking it back is itself something you might take back, so the clock on
+    // the redo entry starts now rather than when the action was first done.
+    redoStack.current = redoStack.current.concat([{ ...entry, at: Date.now() }]).slice(-UNDO_DEPTH)
     await entry.undo()
   }, [])
 
   const redo = useCallback(async () => {
+    redoStack.current = fresh(redoStack.current)
     const entry = redoStack.current[redoStack.current.length - 1]
     if (!entry) return
     redoStack.current = redoStack.current.slice(0, -1)
-    undoStack.current = undoStack.current.concat([entry]).slice(-UNDO_DEPTH)
+    undoStack.current = undoStack.current.concat([{ ...entry, at: Date.now() }]).slice(-UNDO_DEPTH)
     await entry.redo()
   }, [])
 
