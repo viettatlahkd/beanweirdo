@@ -2,14 +2,14 @@ import { useEffect, useState } from 'react'
 import { listModules, type Module, type PostKind } from '../lib/apiClient'
 import { ink, paper } from '../../design/tokens'
 
-export type Metadata = { moduleId: string; kind: PostKind; en: string; vi: string }
+export type Metadata = { module_id: string; kind: PostKind; en: string; vi: string }
 const KINDS: PostKind[] = ['note', 'essay', 'ref', 'log']
 
 const fieldLabelStyle = { fontSize: 11, textTransform: 'uppercase' as const, letterSpacing: '.05em', color: ink.muted, margin: '16px 0 6px', display: 'block' }
 
 export function MetadataStep({ onContinue }: { onContinue: (m: Metadata) => void }) {
   const [modules, setModules] = useState<Module[]>([])
-  const [moduleId, setModuleId] = useState('')
+  const [module_id, setModuleId] = useState('')
   const [kind, setKind] = useState<PostKind>(KINDS[0])
   const [en, setEn] = useState('')
   const [vi, setVi] = useState('')
@@ -21,14 +21,14 @@ export function MetadataStep({ onContinue }: { onContinue: (m: Metadata) => void
     })
   }, [])
 
-  const canContinue = moduleId !== '' && en.trim() !== '' && vi.trim() !== ''
+  const canContinue = module_id !== '' && en.trim() !== '' && vi.trim() !== ''
 
   return (
     <div style={{ maxWidth: 560, background: paper.white, border: `1px solid ${paper.rule}`, borderRadius: 10, padding: 24 }}>
       <label htmlFor="module" style={{ ...fieldLabelStyle, marginTop: 0 }}>
         Module
       </label>
-      <select id="module" aria-label="Module" value={moduleId} onChange={(e) => setModuleId(e.target.value)} className="admin-field">
+      <select id="module" aria-label="Module" value={module_id} onChange={(e) => setModuleId(e.target.value)} className="admin-field">
         {modules.length === 0 && <option value="">Đang tải module…</option>}
         {/* Reading modules first, then the journals — a post can be filed
             under either, but they are not the same kind of place. */}
@@ -81,7 +81,7 @@ export function MetadataStep({ onContinue }: { onContinue: (m: Metadata) => void
       />
 
       <div style={{ marginTop: 20 }}>
-        <button disabled={!canContinue} onClick={() => onContinue({ moduleId, kind, en, vi })} className="admin-btn">
+        <button disabled={!canContinue} onClick={() => onContinue({ module_id, kind, en, vi })} className="admin-btn">
           Tiếp tục →
         </button>
       </div>

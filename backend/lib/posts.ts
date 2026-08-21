@@ -85,54 +85,64 @@ function findSrc(value: unknown, depth = 0): string | null {
   return null
 }
 
+/**
+ * What the API hands back for a post.
+ *
+ * The field names are the database's own. They used to be renamed to camelCase
+ * on the way out, which meant the same post arrived under two different sets of
+ * names depending on which door you came through — and the two sides grew two
+ * adapters that then drifted apart. One shape, one set of names, end to end.
+ */
 export interface PostSummary {
   id: string
-  moduleId: string
+  module_id: string
   en: string
   vi: string
   kind: PostKind
-  dateLabel: string
+  date_label: string
   status: PostStatus
   template: PostTemplate
-  heroImageUrl: string | null
+  hero_image_url: string | null
   /**
    * The picture that stands for the post in a listing: its cover if it has
    * one, otherwise the first image inside it.
    */
-  thumbnailUrl: string | null
-  sortOrder: number
-  createdAt: string
-  updatedAt: string
-  publishedAt: string | null
+  thumbnail_url: string | null
+  sort_order: number
+  created_at: string
+  updated_at: string
+  published_at: string | null
 }
 
 export interface PostDetail extends PostSummary {
   slug: string | null
   body: unknown | null
-  heroCaption: string | null
+  hero_caption: string | null
   lead: string | null
-  pullQuote: string | null
-  furtherReading: string[] | null
-  deletedAt: string | null
-  previousStatus: string | null
+  pull_quote: string | null
+  further_reading: string[] | null
+  deleted_at: string | null
+  previous_status: string | null
 }
 
 export function toPostSummary(row: PostRow): PostSummary {
   return {
     id: row.id,
-    moduleId: row.module_id,
+    module_id: row.module_id,
     en: row.en,
     vi: row.vi,
     kind: row.kind,
-    dateLabel: row.date_label,
+    date_label: row.date_label,
     status: row.status,
     template: row.template,
-    heroImageUrl: row.hero_image_url,
-    thumbnailUrl: row.hero_image_url || findSrc(row.body),
-    sortOrder: row.sort_order,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-    publishedAt: row.published_at,
+    hero_image_url: row.hero_image_url,
+    // The one field with no column behind it: a listing wants a picture, and
+    // takes the post's cover or the first image inside it.
+    thumbnail_url: row.hero_image_url || findSrc(row.body),
+    sort_order: row.sort_order,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    published_at: row.published_at,
   }
 }
 
@@ -141,12 +151,12 @@ export function toPostDetail(row: PostRow): PostDetail {
     ...toPostSummary(row),
     slug: row.slug,
     body: row.body,
-    heroCaption: row.hero_caption,
+    hero_caption: row.hero_caption,
     lead: row.lead,
-    pullQuote: row.pull_quote,
-    furtherReading: row.further_reading,
-    deletedAt: row.deleted_at,
-    previousStatus: row.previous_status,
+    pull_quote: row.pull_quote,
+    further_reading: row.further_reading,
+    deleted_at: row.deleted_at,
+    previous_status: row.previous_status,
   }
 }
 

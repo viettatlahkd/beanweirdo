@@ -31,10 +31,10 @@ function row(overrides: Partial<PostRow> = {}): PostRow {
 describe('toPostSummary / toPostDetail', () => {
   it('maps snake_case columns to camelCase JSON', () => {
     const summary = toPostSummary(row({ hero_image_url: 'https://x/y.jpg' }))
-    expect(summary).toMatchObject({ id: 'p1', moduleId: 'sensory', heroImageUrl: 'https://x/y.jpg' })
+    expect(summary).toMatchObject({ id: 'p1', module_id: 'sensory', hero_image_url: 'https://x/y.jpg' })
 
     const detail = toPostDetail(row({ pull_quote: 'quote', further_reading: ['a', 'b'] }))
-    expect(detail).toMatchObject({ pullQuote: 'quote', furtherReading: ['a', 'b'] })
+    expect(detail).toMatchObject({ pull_quote: 'quote', further_reading: ['a', 'b'] })
   })
 })
 
@@ -116,21 +116,21 @@ describe('toPostSummary — thumbnail', () => {
     } as never)
 
   it('prefers the cover when the post has one', () => {
-    expect(row('/hero.png', [{ k: 'fig', src: '/inside.png' }]).thumbnailUrl).toBe('/hero.png')
+    expect(row('/hero.png', [{ k: 'fig', src: '/inside.png' }]).thumbnail_url).toBe('/hero.png')
   })
 
   it('falls back to the first picture inside the post', () => {
     // A long-form piece carries its figures in `body`; without this the listing
     // shows a blank swatch for an article full of images.
-    expect(row(null, [{ k: 'p' }, { k: 'fig', src: '/first.png' }]).thumbnailUrl).toBe('/first.png')
+    expect(row(null, [{ k: 'p' }, { k: 'fig', src: '/first.png' }]).thumbnail_url).toBe('/first.png')
   })
 
   it('reaches into a nested block', () => {
-    expect(row(null, [{ k: 'aside', items: [{ k: 'fig', src: '/nested.png' }] }]).thumbnailUrl).toBe('/nested.png')
+    expect(row(null, [{ k: 'aside', items: [{ k: 'fig', src: '/nested.png' }] }]).thumbnail_url).toBe('/nested.png')
   })
 
   it('is null when the post has no picture at all', () => {
-    expect(row(null, [{ n: '01', title: 'Apple' }]).thumbnailUrl).toBeNull()
-    expect(row(null, null).thumbnailUrl).toBeNull()
+    expect(row(null, [{ n: '01', title: 'Apple' }]).thumbnail_url).toBeNull()
+    expect(row(null, null).thumbnail_url).toBeNull()
   })
 })

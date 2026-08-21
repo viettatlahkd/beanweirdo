@@ -83,12 +83,12 @@ describe('apiClient authenticated calls', () => {
 
   it('createPost POSTs the input to /api/posts', async () => {
     ;(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(mockJsonResponse({ id: 'p2' }, 201))
-    const result = await createPost({ moduleId: 'sensory', kind: 'note', en: 'Title', vi: 'Mô tả' })
+    const result = await createPost({ module_id: 'sensory', kind: 'note', en: 'Title', vi: 'Mô tả' })
     expect(global.fetch).toHaveBeenCalledWith(
       'http://localhost:3001/api/posts',
       expect.objectContaining({
         method: 'POST',
-        body: JSON.stringify({ moduleId: 'sensory', kind: 'note', en: 'Title', vi: 'Mô tả' }),
+        body: JSON.stringify({ module_id: 'sensory', kind: 'note', en: 'Title', vi: 'Mô tả' }),
       }),
     )
     expect(result).toEqual({ id: 'p2' })

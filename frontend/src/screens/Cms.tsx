@@ -283,10 +283,10 @@ export function Cms() {
     }
   }
 
-  const postsOf = (moduleId: string) =>
-    posts.filter((p) => p.moduleId === moduleId).sort((a, b) => a.sortOrder - b.sortOrder)
+  const postsOf = (module_id: string) =>
+    posts.filter((p) => p.module_id === module_id).sort((a, b) => a.sort_order - b.sort_order)
 
-  async function patchPost(id: string, patch: { en?: string; vi?: string; dateLabel?: string }) {
+  async function patchPost(id: string, patch: { en?: string; vi?: string; date_label?: string }) {
     setPosts((ps) => ps.map((p) => (p.id === id ? { ...p, ...patch } : p)))
     try {
       await updatePost(id, patch)
@@ -295,26 +295,26 @@ export function Cms() {
     }
   }
 
-  async function dropEntry(moduleId: string, targetId: string) {
+  async function dropEntry(module_id: string, targetId: string) {
     const src = dragEntry
     setDragEntry(null)
     if (!src || src === targetId) return
-    const order = postsOf(moduleId).map((p) => p.id)
+    const order = postsOf(module_id).map((p) => p.id)
     const i = order.indexOf(src)
     const j = order.indexOf(targetId)
     if (i < 0 || j < 0) return
     order.splice(j, 0, order.splice(i, 1)[0])
     try {
-      const updated = await reorderPosts(moduleId, order)
-      setPosts((ps) => ps.filter((p) => p.moduleId !== moduleId).concat(updated))
+      const updated = await reorderPosts(module_id, order)
+      setPosts((ps) => ps.filter((p) => p.module_id !== module_id).concat(updated))
     } catch (e) {
       setError((e as Error).message)
     }
   }
 
-  async function addEntry(moduleId: string) {
+  async function addEntry(module_id: string) {
     try {
-      await createPost({ moduleId, kind: 'note', en: 'Bài mới', vi: 'Một dòng mô tả' })
+      await createPost({ module_id, kind: 'note', en: 'Bài mới', vi: 'Một dòng mô tả' })
       setPosts(await listPosts('all'))
     } catch (e) {
       setError((e as Error).message)
@@ -764,7 +764,7 @@ export function Cms() {
                       try {
                         await deleteModule(m.id)
                         setModules((ms) => ms.filter((x) => x.id !== m.id))
-                        setPosts((ps) => ps.filter((p) => p.moduleId !== m.id))
+                        setPosts((ps) => ps.filter((p) => p.module_id !== m.id))
                         setOpenModule(null)
                       } catch (e) {
                         setError((e as Error).message)
@@ -814,8 +814,8 @@ export function Cms() {
                       </Field>
                       <Field label="Mô tả dài — Trang chủ và đầu trang module">
                         <textarea
-                          defaultValue={m.longDesc}
-                          onBlur={(e) => void patchModule(m.id, { longDesc: e.target.value })}
+                          defaultValue={m.long_desc}
+                          onBlur={(e) => void patchModule(m.id, { long_desc: e.target.value })}
                           rows={3}
                           style={area}
                         />
@@ -844,8 +844,8 @@ export function Cms() {
                       </Field>
                       <Field label="Ghi chú dàn trang — Design system">
                         <textarea
-                          defaultValue={m.layoutNote}
-                          onBlur={(e) => void patchModule(m.id, { layoutNote: e.target.value })}
+                          defaultValue={m.layout_note}
+                          onBlur={(e) => void patchModule(m.id, { layout_note: e.target.value })}
                           rows={2}
                           style={area}
                         />
@@ -978,8 +978,8 @@ export function Cms() {
                           }}
                         />
                         <input
-                          defaultValue={e.dateLabel}
-                          onBlur={(ev) => void patchPost(e.id, { dateLabel: ev.target.value })}
+                          defaultValue={e.date_label}
+                          onBlur={(ev) => void patchPost(e.id, { date_label: ev.target.value })}
                           style={{
                             width: '100%',
                             boxSizing: 'border-box',

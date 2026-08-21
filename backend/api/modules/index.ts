@@ -32,10 +32,10 @@ async function handleCreate(req: VercelRequest, res: VercelResponse): Promise<vo
     return
   }
 
-  const sortOrder = ((last?.[0]?.sort_order as number | undefined) ?? 0) + 1
+  const sort_order = ((last?.[0]?.sort_order as number | undefined) ?? 0) + 1
   const { data, error } = await supabase
     .from('modules')
-    .insert(newModuleRow(id, sortOrder))
+    .insert(newModuleRow(id, sort_order))
     .select('*')
     .single()
 

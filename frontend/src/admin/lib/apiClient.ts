@@ -28,46 +28,46 @@ export type StatusAction =
 
 export type PostSummary = {
   id: string
-  moduleId: string
+  module_id: string
   en: string
   vi: string
   kind: PostKind
-  dateLabel: string
+  date_label: string
   status: PostStatus
   template: PostTemplate | null
-  heroImageUrl: string | null
+  hero_image_url: string | null
   /** Cover if the post has one, otherwise the first image inside it. */
-  thumbnailUrl: string | null
-  sortOrder: number
-  createdAt: string
-  updatedAt: string
-  publishedAt: string | null
+  thumbnail_url: string | null
+  sort_order: number
+  created_at: string
+  updated_at: string
+  published_at: string | null
 }
 
 export type PostDetail = PostSummary & {
   slug: string
   body: SectionData[] | null
-  heroCaption: string | null
+  hero_caption: string | null
   lead: string | null
-  pullQuote: string | null
-  furtherReading: string[] | null
-  deletedAt: string | null
-  previousStatus: PostStatus | null
+  pull_quote: string | null
+  further_reading: string[] | null
+  deleted_at: string | null
+  previous_status: PostStatus | null
 }
 
 export type Module = {
   id: string
   title: string
   accent: string
-  onColor: string
+  on_color: string
   tint: string
   tint2: string
   layout: string
   concept: string
   blurb: string
-  longDesc: string
+  long_desc: string
   treatment: string
-  layoutNote: string
+  layout_note: string
   shot1: string | null
   shot2: string | null
   shot3: string | null
@@ -75,7 +75,7 @@ export type Module = {
   img1: string | null
   img2: string | null
   img3: string | null
-  sortOrder: number
+  sort_order: number
   /** 'normal' = reading module; 'special' = a journal a post can be filed under. */
   kind: 'normal' | 'special'
 }
@@ -143,9 +143,9 @@ export async function listPosts(status: PostStatus | 'all' = 'all'): Promise<Pos
   return result.posts
 }
 
-/** POST /api/posts — create a draft. Server derives n and dateLabel; status defaults to 'draft'. */
+/** POST /api/posts — create a draft. Server derives n and date_label; status defaults to 'draft'. */
 export async function createPost(input: {
-  moduleId: string
+  module_id: string
   kind: PostKind
   en: string
   vi: string
@@ -168,13 +168,13 @@ export async function updatePost(
     en: string
     vi: string
     body: SectionData[]
-    heroImageUrl: string
-    heroCaption: string
+    hero_image_url: string
+    hero_caption: string
     lead: string
-    pullQuote: string
-    furtherReading: string[]
-    dateLabel: string
-    sortOrder: number
+    pull_quote: string
+    further_reading: string[]
+    date_label: string
+    sort_order: number
   }>,
 ): Promise<PostDetail> {
   const result = await request<{ post: PostDetail }>(`/api/posts/${id}`, {
@@ -214,10 +214,10 @@ export async function listModules(): Promise<Module[]> {
 }
 
 /** PUT /api/posts — reorder one module's posts; also renumbers their `n`. */
-export async function reorderPosts(moduleId: string, order: string[]): Promise<PostSummary[]> {
+export async function reorderPosts(module_id: string, order: string[]): Promise<PostSummary[]> {
   const result = await request<{ posts: PostSummary[] }>('/api/posts', {
     method: 'PUT',
-    body: JSON.stringify({ moduleId, order }),
+    body: JSON.stringify({ module_id, order }),
   })
   return result.posts
 }
@@ -232,7 +232,7 @@ export async function createModule(id?: string): Promise<Module> {
 }
 
 /** PATCH /api/modules/:id — partial update of one module. */
-export async function updateModule(id: string, patch: Partial<Omit<Module, 'id' | 'sortOrder'>>): Promise<Module> {
+export async function updateModule(id: string, patch: Partial<Omit<Module, 'id' | 'sort_order'>>): Promise<Module> {
   const result = await request<{ module: Module }>(`/api/modules/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(patch),
@@ -392,7 +392,7 @@ export type TemplateSummary = {
   name: string
   description: string
   renderer: PostTemplate
-  sortOrder: number
+  sort_order: number
 }
 
 export type StoredTemplate = TemplateSummary & { body: unknown | null }
@@ -412,7 +412,7 @@ export async function getTemplate(id: string): Promise<StoredTemplate> {
 /** PATCH /api/templates?id=… — save an edited template back. */
 export async function updateTemplate(
   id: string,
-  patch: Partial<Pick<StoredTemplate, 'name' | 'description' | 'body' | 'sortOrder'>>,
+  patch: Partial<Pick<StoredTemplate, 'name' | 'description' | 'body' | 'sort_order'>>,
 ): Promise<StoredTemplate> {
   const result = await request<{ template: StoredTemplate }>(`/api/templates?id=${encodeURIComponent(id)}`, {
     method: 'PATCH',

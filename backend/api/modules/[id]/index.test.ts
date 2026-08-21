@@ -61,19 +61,19 @@ describe('PATCH /api/modules/:id', () => {
 
     const res = mockRes()
     await handler(
-      mockReq({ method: 'PATCH', query: q(), body: { longDesc: 'new' }, headers: authHeaders(signToken()) }),
+      mockReq({ method: 'PATCH', query: q(), body: { long_desc: 'new' }, headers: authHeaders(signToken()) }),
       res,
     )
 
     expect(builder.update).toHaveBeenCalledWith({ long_desc: 'new' })
     expect(res.statusCode).toBe(200)
-    expect(res.body.module.longDesc).toBe('new')
+    expect(res.body.module.long_desc).toBe('new')
   })
 
   it('ignores unknown keys and 400s when nothing editable is left', async () => {
     const res = mockRes()
     await handler(
-      mockReq({ method: 'PATCH', query: q(), body: { sortOrder: 4 }, headers: authHeaders(signToken()) }),
+      mockReq({ method: 'PATCH', query: q(), body: { sort_order: 4 }, headers: authHeaders(signToken()) }),
       res,
     )
     expect(res.statusCode).toBe(400)

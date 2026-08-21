@@ -4,8 +4,6 @@ import { getPost, listModules, type Module, type PostDetail } from '../lib/apiCl
 import { ink, paper } from '../../design/tokens'
 import { resolveTemplate } from '../lib/postData'
 import {
-  fromAdminModule,
-  fromAdminPost,
   toArticleData,
   toCardsData,
   toLongformData,
@@ -45,8 +43,8 @@ function PreviewContent({ postId }: { postId: string }) {
   if (!post) return <div style={{ padding: 32, color: ink.muted, fontSize: 13 }}>Đang tải...</div>
 
   const template = resolveTemplate(post)
-  const mod = fromAdminModule(modules.find((m) => m.id === post.moduleId))
-  const source = fromAdminPost(post)
+  const mod = modules.find((m) => m.id === post.module_id)
+  const source = post
 
   return (
     <div style={{ minHeight: '100vh', background: paper.cream, padding: '32px 24px' }}>
@@ -68,7 +66,7 @@ function PreviewContent({ postId }: { postId: string }) {
         ) : (
           <PostRenderer
             template="article"
-            post={toArticleData(source, mod?.title ?? post.moduleId, [], -1, mod)}
+            post={toArticleData(source, mod?.title ?? post.module_id, [], -1, mod)}
           />
         )}
       </div>

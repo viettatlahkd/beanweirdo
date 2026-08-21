@@ -71,9 +71,9 @@ export function PostCard({
         background: hover ? paper.hover : paper.white,
       }}
     >
-      {post.thumbnailUrl ? (
+      {post.thumbnail_url ? (
         <img
-          src={post.thumbnailUrl}
+          src={post.thumbnail_url}
           alt=""
           style={{ width: 44, height: 44, objectFit: 'cover', borderRadius: 6, flex: 'none' }}
         />
@@ -84,7 +84,7 @@ export function PostCard({
       <div style={{ minWidth: 0 }}>
         <div style={{ fontFamily: serif, fontSize: 16, letterSpacing: '-0.01em', color: ink.base }}>{post.en}</div>
         <div style={{ fontFamily: sans, fontSize: 11, color: ink.muted, marginTop: 3 }}>
-          {post.moduleId} · {post.kind} · {post.dateLabel}
+          {post.module_id} · {post.kind} · {post.date_label}
         </div>
         <div style={{ fontFamily: sans, fontSize: 12.5, color: ink.soft, marginTop: 5, lineHeight: 1.5 }}>{post.vi}</div>
         <div style={{ fontSize: 11, marginTop: 8 }}>
