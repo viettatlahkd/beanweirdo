@@ -543,10 +543,18 @@ export function Hours() {
                           naming={newId === l.id}
                           onStartNaming={() => setNewId(l.id)}
                           onName={(nm) => {
-                            // An unnamed row that loses focus was abandoned.
-                            if (nm) void patch(l.id, { name: nm })
-                            else void remove(l.id)
                             setNewId(null)
+                            if (nm) {
+                              void patch(l.id, { name: nm })
+                              return
+                            }
+                            // Rule 08.04 drops a *new* row left blank. A row
+                            // that already carries an hour and two tags is a
+                            // different thing: emptying its name is an edit,
+                            // not an abandonment, and deleting it here would
+                            // throw away work the name was only labelling.
+                            if (l.name) void patch(l.id, { name: '' })
+                            else void remove(l.id)
                           }}
                           onAbandon={() => {
                             setNewId(null)
