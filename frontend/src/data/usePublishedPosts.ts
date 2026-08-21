@@ -14,7 +14,6 @@ export type PostStatus = 'draft' | 'published' | 'archived' | 'deleted'
 export type PostRow = {
   id: string
   module_id: string
-  n: string
   en: string
   vi: string
   kind: PostKind

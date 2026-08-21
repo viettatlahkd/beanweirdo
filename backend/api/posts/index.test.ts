@@ -147,7 +147,7 @@ describe('PUT /api/posts', () => {
     expect(res.statusCode).toBe(400)
   })
 
-  it('rewrites sort_order and renumbers n, scoped to the module', async () => {
+  it('rewrites sort_order, scoped to the module', async () => {
     const first = queryBuilder({ data: null, error: null })
     const second = queryBuilder({ data: null, error: null })
     fromMock
@@ -165,10 +165,13 @@ describe('PUT /api/posts', () => {
       res,
     )
 
-    expect(first.update).toHaveBeenCalledWith(expect.objectContaining({ sort_order: 1, n: '01' }))
+    expect(first.update).toHaveBeenCalledWith(expect.objectContaining({ sort_order: 1 }))
     expect(first.eq).toHaveBeenCalledWith('id', 'post-b')
     expect(first.eq).toHaveBeenCalledWith('module_id', 'sensory')
-    expect(second.update).toHaveBeenCalledWith(expect.objectContaining({ sort_order: 2, n: '02' }))
+    // The reader's number comes from the list on screen, so order is all that
+    // is stored — nothing writes a display number any more.
+    expect(second.update).toHaveBeenCalledWith(expect.objectContaining({ sort_order: 2 }))
+    expect(second.update).toHaveBeenCalledWith(expect.not.objectContaining({ n: expect.anything() }))
     expect(res.statusCode).toBe(200)
   })
 })

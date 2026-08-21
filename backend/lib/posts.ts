@@ -16,7 +16,6 @@ export const POST_STATUSES: PostStatus[] = ['draft', 'published', 'archived', 'd
 export interface PostRow {
   id: string
   module_id: string
-  n: string
   en: string
   vi: string
   kind: PostKind
@@ -72,7 +71,6 @@ function findSrc(value: unknown, depth = 0): string | null {
 export interface PostSummary {
   id: string
   moduleId: string
-  n: string
   en: string
   vi: string
   kind: PostKind
@@ -106,7 +104,6 @@ export function toPostSummary(row: PostRow): PostSummary {
   return {
     id: row.id,
     moduleId: row.module_id,
-    n: row.n,
     en: row.en,
     vi: row.vi,
     kind: row.kind,

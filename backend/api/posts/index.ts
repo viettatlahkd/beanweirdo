@@ -163,9 +163,10 @@ async function handleCreate(req: VercelRequest, res: VercelResponse): Promise<vo
 /**
  * PUT — reorder one module's posts.
  *
- * Takes the module's post ids in their new order and rewrites both `sort_order`
- * and the displayed `n` to 1..N, so the numbering the reader sees always matches
- * the order the editor dragged them into (the prototype's `renumber()`).
+ * Takes the module's post ids in their new order and rewrites `sort_order` to
+ * 1..N. Nothing else needs writing: every screen numbers a post by where it
+ * sits in the list being shown, so the order alone decides what the reader
+ * counts along with.
  */
 async function handleReorder(req: VercelRequest, res: VercelResponse): Promise<void> {
   const body = (req.body ?? {}) as { moduleId?: unknown; order?: unknown }
@@ -187,7 +188,7 @@ async function handleReorder(req: VercelRequest, res: VercelResponse): Promise<v
   for (const [i, id] of (order as string[]).entries()) {
     const { error } = await supabase
       .from('posts')
-      .update({ sort_order: i + 1, n: String(i + 1).padStart(2, '0'), updated_at: nowIso })
+      .update({ sort_order: i + 1, updated_at: nowIso })
       .eq('id', id)
       .eq('module_id', moduleId)
     if (error) {

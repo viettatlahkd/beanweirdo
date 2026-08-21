@@ -116,3 +116,35 @@ Trang module biochemistry: `01`. Test 170 FE + 137 BE, xanh.
 **Chưa quan sát được trên site:** dòng eyebrow ở trang bài chỉ áp cho bài dạng
 `article`, mà ba bài đang đăng đều là `cards`, `longform`, `memo`. Phần đó do
 test bao, không phải do nhìn tận mắt.
+
+---
+
+# Bổ sung 2 · Bỏ cột `posts.n`
+
+## Schema
+- **Migration 0016** — `alter table public.posts drop column if exists n;`
+- **CHƯA CHẠY.** Cần chạy **sau** khi code đã lên, không phải trước.
+
+## Vì sao thứ tự quan trọng
+`PUT /api/posts` (kéo-thả đổi thứ tự) trước đây ghi `n` mỗi lần. Nếu xoá cột
+khi code cũ còn chạy, mọi thao tác kéo-thả sẽ trả 500.
+
+## Đã đổi
+- [ĐỔI HÀNH VI] `PUT /api/posts` chỉ còn ghi `sort_order`, thôi ghi `n`.
+- [ĐỔI HÀNH VI] `PATCH /api/posts/[id]` không còn nhận trường `n`. Nếu client
+  nào đó gửi lên, trường đó bị bỏ qua thay vì ghi xuống.
+- Gỡ `n` khỏi: `backend/lib/posts.ts` (2 kiểu + ánh xạ), `PostRow` ở
+  `usePublishedPosts.ts`, `PostSummary` và payload PATCH ở `apiClient.ts`.
+
+## Đụng dữ liệu
+- Cột `posts.n` bị xoá vĩnh viễn. Thông tin nó mang (thứ tự trong module) vẫn
+  còn nguyên ở `sort_order` — không mất gì.
+- Bảng `posts` sau migration: 21 cột, không phải 22.
+
+## Kiểm chứng
+- 170 FE + 137 BE, xanh. Typecheck sạch.
+- Test kéo-thả nay khẳng định `n` **không** được ghi nữa.
+
+## SPEC lỗi thời
+- Mục "Cơ sở dữ liệu": `posts` 22 → 21 cột; danh sách cột bỏ `n`.
+- Mục "Cột của hai bảng chính": bỏ `n` khỏi dòng liệt kê `posts`.
