@@ -384,8 +384,17 @@ export function TagBar({
  * The `+` inside the timer rail. Same job as the bar's, on the dark ground —
  * and crucially its own draft state, so the two can never overwrite each other
  * the way one shared flag made them.
+ *
+ * `label` names which system is being added to: the rail carries one of these
+ * per row, and "loại mới" over the project row would be a lie.
  */
-export function TimerAddTag({ onAdd }: { onAdd: (name: string) => void }) {
+export function TimerAddTag({
+  onAdd,
+  label = 'loại mới',
+}: {
+  onAdd: (name: string) => void
+  label?: string
+}) {
   const [adding, setAdding] = useState(false)
   const [draft, setDraft] = useState('')
 
@@ -410,9 +419,9 @@ export function TimerAddTag({ onAdd }: { onAdd: (name: string) => void }) {
           }
         }}
         onBlur={commit}
-        placeholder="loại mới"
+        placeholder={label}
         style={{
-          width: 86,
+          width: 96,
           background: 'transparent',
           border: '1px solid #F2A0A5',
           color: '#FFFFFF',

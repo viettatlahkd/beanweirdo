@@ -25,6 +25,9 @@ const hours = (): UseHoursResult => ({
   patch: vi.fn(),
   remove: vi.fn(),
   addTag: vi.fn(),
+  // Thêm bởi QA-02; file này viết trước nên chưa có.
+  renameTag: vi.fn(),
+  removeTag: vi.fn(),
   undo: vi.fn(),
   redo: vi.fn(),
 })

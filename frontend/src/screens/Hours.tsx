@@ -5,6 +5,7 @@ import { TagDeleteReview, type TagTarget } from '../components/TagDeleteReview'
 import { Breadcrumbs } from '../components/Breadcrumbs'
 import {
   RECENT_DAYS,
+  hashtag,
   kindColorMap,
   projectColorMap,
   quoteOfTheDay,
@@ -32,6 +33,15 @@ const label: CSSProperties = {
   letterSpacing: '.2em',
   textTransform: 'uppercase',
   color: '#7C7C70',
+}
+
+/** `label`'s counterpart inside the dark timer rail. */
+const railLabel: CSSProperties = {
+  fontWeight: 500,
+  fontSize: 9,
+  letterSpacing: '.2em',
+  textTransform: 'uppercase',
+  color: 'rgba(244,244,239,.55)',
 }
 
 const clockFmt = (s: number) =>
@@ -92,6 +102,8 @@ export function Hours() {
   const [deleting, setDeleting] = useState<TagTarget | null>(null)
   const [newId, setNewId] = useState<string | null>(null)
   const [dKind, setDKind] = useState<string>('đọc')
+  /** The project the timer files its session under — null when it belongs to none. */
+  const [dProject, setDProject] = useState<string | null>(null)
   const [tName, setTName] = useState('')
   // The clock reads the time rather than counting ticks — see useSessionTimer.
   const timer = useSessionTimer({ onFinish: beep })
@@ -135,7 +147,15 @@ export function Hours() {
     const startedAt = new Date(now.getTime() - mins * 60_000)
     const at =
       String(startedAt.getHours()).padStart(2, '0') + ':' + String(startedAt.getMinutes()).padStart(2, '0')
-    void add({ date: today, name: tName.trim() || 'Phiên không tên', kind: dKind, mins, at, done: true })
+    void add({
+      date: today,
+      name: tName.trim() || 'Phiên không tên',
+      kind: dKind,
+      project: dProject,
+      mins,
+      at,
+      done: true,
+    })
     setTName('')
     timer.reset()
   }
@@ -673,7 +693,74 @@ export function Hours() {
               }}
             />
 
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 20 }}>
+            {/* Both tag systems, in the bar's order — project, then task. The
+                rail used to offer only task, so every session it logged came
+                back project-less and the row's project slot sat empty with no
+                way to have filled it from here. */}
+            <div style={{ ...railLabel, marginBottom: 7 }} id="rail-project">
+              Project
+            </div>
+            {/* Named groups: the same tags are drawn again in the bar at the top
+                of the screen, and "the project row" has to mean one of them. */}
+            <div
+              role="group"
+              aria-labelledby="rail-project"
+              style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}
+            >
+              {projects.map((p) => {
+                const picked = p === dProject
+                const color = projectColor[p] ?? '#F2A0A5'
+                return (
+                  <div
+                    key={p}
+                    onClick={() => setDProject(picked ? null : p)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 7,
+                      fontSize: 12,
+                      padding: '5px 11px',
+                      // A project is optional, so an unpicked one still reads as
+                      // available rather than as switched off.
+                      border: `1px solid ${picked ? color : 'rgba(244,244,239,.3)'}`,
+                      cursor: 'pointer',
+                      background: picked ? color : 'transparent',
+                      color: picked ? '#F7F5EE' : 'rgba(247,244,233,.82)',
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 6,
+                        height: 6,
+                        borderRadius: '50%',
+                        background: picked ? 'rgba(255,255,255,.6)' : color,
+                        flex: 'none',
+                      }}
+                    />
+                    {hashtag(p)}
+                  </div>
+                )
+              })}
+              <TimerAddTag
+                label="project mới"
+                onAdd={(name) => {
+                  // Naming a tag here means you want this session filed under
+                  // it — picking it again by hand would be a second step for a
+                  // choice already made.
+                  setDProject(name.trim())
+                  void addTag(name, 'project')
+                }}
+              />
+            </div>
+
+            <div style={{ ...railLabel, marginBottom: 7 }} id="rail-task">
+              Task
+            </div>
+            <div
+              role="group"
+              aria-labelledby="rail-task"
+              style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 20 }}
+            >
               {allKinds.map((k) => {
                 const picked = k === dKind
                 return (
@@ -693,7 +780,12 @@ export function Hours() {
                   </div>
                 )
               })}
-              <TimerAddTag onAdd={(name) => void addTag(name, 'task')} />
+              <TimerAddTag
+                onAdd={(name) => {
+                  setDKind(name.trim())
+                  void addTag(name, 'task')
+                }}
+              />
             </div>
 
             <div style={{ display: 'flex', gap: 8 }}>
