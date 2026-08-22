@@ -4,6 +4,7 @@ import {
   NO_PROJECT,
   buildAllDays,
   byProject,
+  clockHm,
   cloneOf,
   heatmap,
   neglected,
@@ -448,5 +449,17 @@ describe('weekGroups — co gọn theo tuần', () => {
     expect(groups[0].mins).toBe(90)
     expect(groups[0].logged).toBe(2)
     expect(groups[0].days).toHaveLength(3)
+  })
+})
+
+describe('clockHm — giờ lúc bấm', () => {
+  it('reads the wall clock, padded on both sides', () => {
+    expect(clockHm(new Date('2026-08-22T09:05:00'))).toBe('09:05')
+    expect(clockHm(new Date('2026-08-22T18:00:00'))).toBe('18:00')
+    expect(clockHm(new Date('2026-08-22T23:59:00'))).toBe('23:59')
+  })
+
+  it('is midnight, not blank, at the top of the day', () => {
+    expect(clockHm(new Date('2026-08-22T00:00:00'))).toBe('00:00')
   })
 })
