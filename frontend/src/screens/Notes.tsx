@@ -10,11 +10,18 @@ import {
   type Note,
 } from '../content/notes'
 import { useNotes } from '../data/useNotes'
-import { usePublishedPosts } from '../data/usePublishedPosts'
+import { usePublishedPosts, type PostRow } from '../data/usePublishedPosts'
 import { postDescription } from '../lib/postText'
 import { postThumbnail } from '../lib/postThumb'
-import { useNav } from '../lib/nav'
-import { openPost } from '../lib/openPost'
+import { useModules } from '../data/useModules'
+import { PostRenderer } from 'post-renderer'
+import {
+  toArticleData,
+  toCardsData,
+  toLongformData,
+  toMemoData,
+  toReportData,
+} from '../lib/postToRenderer'
 import { serif } from '../design/tokens'
 import { Hover } from '../lib/Hover'
 
@@ -24,6 +31,41 @@ const label: CSSProperties = {
   letterSpacing: '.2em',
   textTransform: 'uppercase',
   color: '#5A5A50',
+}
+
+/**
+ * A post filed under Ghi 01, opened where it sits.
+ *
+ * It is drawn by its own template — the same components the post's own page
+ * would use — so nothing here has to know what a memo looks like. The design
+ * sends these to a screen of their own; the owner chose to keep the reader in
+ * the list instead, so the whole piece unfolds in place and the grid gives it
+ * the full width to do it in.
+ */
+function OpenedPost({
+  post,
+  mod,
+}: {
+  post: PostRow
+  mod: { title: string; accent: string; on_color: string } | undefined
+}) {
+  switch (post.template) {
+    case 'memo':
+      return <PostRenderer template="memo" post={toMemoData(post, mod)} />
+    case 'longform':
+      return <PostRenderer template="longform" post={toLongformData(post, mod)} />
+    case 'cards':
+      return <PostRenderer template="cards" post={toCardsData(post, mod)} />
+    case 'report':
+      return <PostRenderer template="report" post={toReportData(post, mod)} />
+    default:
+      return (
+        <PostRenderer
+          template="article"
+          post={toArticleData(post, mod?.title ?? post.module_id, [], -1, mod)}
+        />
+      )
+  }
 }
 
 /** How far (px) the cursor's pull reaches before a card stops responding. */
@@ -355,8 +397,11 @@ function FillerCell({ f, dimmed }: { f: (typeof fillers)[number]; dimmed: boolea
  * aside and dims.
  */
 export function Notes() {
-  const nav = useNav()
   const { notes, loading, error } = useNotes()
+  // Ghi 01's own colours, so an unfolded post wears them the way it would on a
+  // page of its own.
+  const { data: allModules } = useModules()
+  const ghi01 = allModules.find((m) => m.id === 'ghi01')
   // Posts filed under Ghi 01 — the memo lives here, as a post like any other.
   const { data: filed } = usePublishedPosts({ moduleId: 'ghi01' })
   const [noteFilter, setNoteFilter] = useState<'tất cả' | Note['k']>('tất cả')
@@ -494,60 +539,70 @@ export function Notes() {
           alignItems: 'start',
         }}
       >
-        {/* Posts filed under Ghi 01 lead the grid — they are full pieces with
-            their own template, so they open rather than expand. */}
-        {filed.map((p) => (
-          <Hover
-            key={p.id}
-            onClick={(e) => {
-              e.stopPropagation()
-              openPost(nav, p)
-            }}
-            style={{
-              gridColumn: 'span 5',
-              cursor: 'pointer',
-              opacity: openNote !== null ? 0.18 : 1,
-              transition: 'opacity .45s ease',
-            }}
-            hoverStyle={{ opacity: 1 }}
-          >
-            {postThumbnail(p) && (
-              <div
-                style={{
-                  aspectRatio: '4/3',
-                  background: `url(${postThumbnail(p)}) center/cover no-repeat`,
-                  marginBottom: 18,
+          {/* A post filed under Ghi 01 unfolds where it sits, the way the
+              statistics panel unfolds on Ghi 02 — the reader stays on the page
+              they were reading. Open, it takes the full width of the grid and
+              everything else steps back. */}
+          {filed.map((p) => {
+            const open = openNote === p.id
+            return (
+              <Hover
+                key={p.id}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setOpenNote((prev) => (prev === p.id ? null : p.id))
                 }}
-              />
-            )}
-            <div
-              style={{
-                fontFamily: "'Be Vietnam Pro',sans-serif",
-                fontSize: 9.5,
-                letterSpacing: '.2em',
-                textTransform: 'uppercase',
-                color: '#8A8A80',
-                marginBottom: 10,
-              }}
-            >
-              {p.template} · {p.date_label}
-            </div>
-            <div style={{ fontFamily: serif, fontSize: 40, lineHeight: 1.06, letterSpacing: '-.035em' }}>{p.en}</div>
-            <div
-              style={{
-                fontFamily: "'Be Vietnam Pro',sans-serif",
-                fontWeight: 200,
-                fontSize: 15,
-                lineHeight: 1.6,
-                color: '#33332C',
-                marginTop: 12,
-                maxWidth: 520,
-              }}
-            >
-              {postDescription(p)}
-            </div>
-          </Hover>
-        ))}
+                style={{
+                  gridColumn: open ? 'span 12' : 'span 5',
+                  cursor: 'pointer',
+                  opacity: openNote !== null && !open ? 0.18 : 1,
+                  transition: 'opacity .45s ease',
+                }}
+                hoverStyle={{ opacity: 1 }}
+              >
+                {open ? (
+                  <OpenedPost post={p} mod={ghi01} />
+                ) : (
+                  <>
+                    {postThumbnail(p) && (
+                      <div
+                        style={{
+                          aspectRatio: '4/3',
+                          background: `url(${postThumbnail(p)}) center/cover no-repeat`,
+                          marginBottom: 18,
+                        }}
+                      />
+                    )}
+                    <div style={{ ...label, marginBottom: 10 }}>
+                      {p.template} · {p.date_label}
+                    </div>
+                    <div
+                      style={{
+                        fontFamily: serif,
+                        fontSize: 40,
+                        lineHeight: 1.06,
+                        letterSpacing: '-.035em',
+                      }}
+                    >
+                      {p.en}
+                    </div>
+                    <div
+                      style={{
+                        fontFamily: "'Be Vietnam Pro',sans-serif",
+                        fontWeight: 200,
+                        fontSize: 15,
+                        lineHeight: 1.62,
+                        color: '#4A4A42',
+                        marginTop: 12,
+                      }}
+                    >
+                      {postDescription(p)}
+                    </div>
+                  </>
+                )}
+              </Hover>
+            )
+          })}
 
         {!loading && filtered.length === 0 && filed.length === 0 && (
           <div
