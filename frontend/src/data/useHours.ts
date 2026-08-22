@@ -10,7 +10,7 @@ import {
   renameKind,
   type TagMove,
 } from '../admin/lib/apiClient'
-import { KINDS, SPAN_DAYS, dateStr, dayBefore, type LogEntry } from '../content/hours'
+import { KINDS, STATS_DAYS, dateStr, dayBefore, type LogEntry } from '../content/hours'
 import { useUndoStack } from '../lib/useUndoStack'
 
 export type UseHoursResult = {
@@ -68,9 +68,10 @@ export function useHours(): UseHoursResult {
   const logsRef = useRef<LogEntry[]>([])
   logsRef.current = logs
 
-  // Only the span the screen actually draws — the history behind it stays on
-  // the server rather than growing the payload every day.
-  const from = dateStr(dayBefore(SPAN_DAYS - 1))
+  // Twelve weeks: the day list draws far less, but the heatmap and the
+  // month-to-date figures read the whole window. Older history than this stays
+  // on the server rather than growing the payload every day.
+  const from = dateStr(dayBefore(STATS_DAYS - 1))
 
   /**
    * `keepError` is for the refetch that follows a failed write: rolling the
