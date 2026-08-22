@@ -30,26 +30,48 @@ ghi chú bàn giao của lane mình; người khác sẽ sửa.
 ## Nhánh và merge
 
 - Một lỗi hoặc một việc → một nhánh, cắt từ `origin/main`, không stack lên nhau.
-- **Không tự merge khi chưa hỏi chủ site.** Mở PR, báo, đợi xác nhận.
+- **Tự chạy `cd`, `git`, `gh` — đừng bắt chủ site chạy hộ.** Chỉ hai lệnh cần
+  hỏi trước: **đẩy PR** và **merge PR**.
+- **Không tự merge khi chưa hỏi.** Mở PR, báo, đợi xác nhận. Một câu "merge đi"
+  giữa chừng không phải là xác nhận cho lần sau — hỏi lại từng lần.
 - `gh` có sẵn ở `/opt/homebrew/bin/gh`, đã đăng nhập — `PATH` của shell agent
   không chứa thư mục đó nên `which gh` trả về rỗng. Gọi bằng đường dẫn đầy đủ.
 - Merge bằng `--rebase` để lịch sử thẳng, một commit một việc.
 - Sau khi merge: chạy lại toàn bộ test trên `main`, và nhắc các worktree khác
   `git pull` — chúng không tự biết.
+- **`design/v4-cms-templates` không merge vào đâu cả.** Nó là ảnh chụp trước khi
+  rẽ nhánh; `main` đã dựng lại toàn bộ nội dung của nó. Merge vào sẽ xoá mất
+  migration, endpoint, thanh tag hai hệ và các bộ vẽ bài. Nguồn design để đối
+  chiếu là `frontend/design/prototype/Coffee Study Blog v4.dc.html`, không phải
+  nhánh git.
 
 ## Ghi chú bàn giao
 
-Mỗi PR kèm một ghi chú trong `docs/inbox/<lane>/<ngày>-<tên>.md`. Một PR một
-file, không sửa file đã nộp.
+Mỗi PR kèm một ghi chú trong `docs/inbox/<lane>/<ngày>-<tên>.md`.
 
-Mỗi mục phải gắn **[SỬA LỖI]** (specs không đổi) hoặc **[ĐỔI HÀNH VI]** (specs
-phải đổi theo, kèm trước/sau). Gọi sai nhãn thì specs âm thầm sai — đó là lỗi
-nặng nhất ở đây.
+1. **Neo vào PR cụ thể** — số PR và tên nhánh ở đầu file.
+2. **Xuất theo PR, không theo thời gian.** Đừng gom một tuần vào một file.
+3. **Gắn nhãn [SỬA LỖI] hay [ĐỔI HÀNH VI]** cho từng mục. Sửa lỗi thì specs
+   không đổi; đổi hành vi thì specs phải đổi theo, ghi rõ trước/sau. Gọi sai
+   nhãn thì specs âm thầm sai — lỗi nặng nhất ở đây.
+4. **Tách sự thật khỏi ý kiến.** Viết "tôi đổi X thành Y", không viết "hệ thống
+   phải luôn Y". Đề xuất luật để riêng ở mục cuối.
+5. **Mọi khẳng định phải chỉ được bằng chứng** — `file:tên hàm`, hoặc các bước
+   tái hiện. Câu không chỉ được vào đâu sẽ bị bỏ qua.
+6. **Đối chiếu ngược với bộ luật** trong `logic.ts`. Gọi đúng `nhóm.số`. Nếu bản
+   sửa **mâu thuẫn** với một luật, nói thẳng.
+7. **Nêu mọi bảng, cột và endpoint đã đụng**, kể cả chỉ đọc thêm một cột.
+8. **Không viết bằng giọng tài liệu, không tự sửa specs.** Đây là báo cáo bàn
+   giao, không phải bản nháp tài liệu.
+
+Một PR một file, **không sửa file đã nộp** — có gì mới thì file mới.
 
 **Neo bằng tên hàm hoặc hằng, không bằng số dòng.** Số dòng tính theo nhánh của
 bạn và trượt ngay sau vài PR; `handleRenameKind` thì không.
 
-Nêu mọi bảng, cột và endpoint đã đụng, kể cả chỉ đọc thêm một cột.
+**Bản tóm tắt gộp nhiều ghi chú là chỗ dễ sai nhất.** Từng ghi chú thì đúng,
+bản gộp lại chép từ ghi chú cũ mà quên ghi chú sau đã đổi. Trước khi gửi, đọc
+lại ghi chú **cuối cùng** chạm tới mỗi sự kiện.
 
 ## Database
 
@@ -93,6 +115,11 @@ database — cho một việc mà service key sẵn trong repo làm xong bằng 
 **3. Chọn thẳng, đừng bày ra để chọn.** Có hai đường mà một đường rõ ràng rẻ
 hơn thì đi luôn và nói một câu vì sao. Chỉ hỏi khi chọn sai thì phải làm lại từ
 đầu, hoặc khi nó đụng dữ liệu thật.
+
+**4. Việc nào xong việc đấy.** Đừng mở ba mặt trận rồi để cả ba dở dang. Cần
+chạy song song thì spawn subagent, đừng kéo dài một việc.
+
+**5. Mỗi lần báo cáo kèm ETA** cho việc đang làm và việc sắp tới.
 
 **Báo cáo:** phần *cần chủ site quyết* lên đầu, tối đa ba gạch đầu dòng. Chi
 tiết để dưới. Không nhắc lại thứ đã nói ở lượt trước.
