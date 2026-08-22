@@ -110,7 +110,6 @@ export function kindColorMap(kinds: string[]): Record<string, string> {
  */
 export const KICKOFF = '2026-08-20'
 
-export const SPAN_DAYS = 21
 
 /**
  * How much history the statistics ask the server for: twenty-six weeks.
@@ -132,8 +131,6 @@ export const STATS_DAYS = 182
 /** Of that span, only the most recent 7 days are editable/draggable. */
 export const RECENT_DAYS = 7
 
-/** Of that span, only the most recent 12 days render as day rows at all. */
-export const SHOWN_DAYS = 12
 
 export const dateStr = (d: Date) =>
   d.getFullYear() +
