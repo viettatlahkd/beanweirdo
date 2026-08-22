@@ -14,24 +14,24 @@ tài liệu · `BỎ` đã quyết không làm.
 
 ## A. Luật đề xuất — chờ đưa vào `frontend/src/content/logic.ts`
 
-Bộ quy tắc hiện có **3 phần · 14 nhóm · 68 luật** (64 + 4 thêm ở PR template contract). Bảy luật dưới đây phát sinh
+Bộ quy tắc hiện có **3 phần · 14 nhóm · 75 luật**. Bảy luật dưới đây phát sinh
 từ code đã merge, chưa luật nào được ghi vào.
 
 | # | Luật | Từ PR | Nhóm phù hợp | Trạng thái |
 |---|---|---|---|---|
-| A1 | Mười bốn nhóm của bánh xe hương là từ vựng cố định, không phải dữ liệu bài. Mỗi nhóm một bộ ba màu dùng chung toàn hệ thống. | #2 | 12 (màu thẻ) | CHỜ |
-| A2 | Thanh lọc nhóm hương xếp theo thứ tự bánh xe, không theo thứ tự bài viết nhắc tới. | #2 | 12 | CHỜ |
-| A3 | Module phân loại theo hai trục độc lập: `kind` nói nó là gì, `visibility` nói nó có được liệt kê không. Không bao giờ lọc một bề mặt chỉ bằng `kind`. | #4 | 05 (điều hướng) | CHỜ |
-| A4 | Trang chủ chỉ trưng module thường — vì nó là phòng trưng bày module đọc, không phải vì module đặc biệt bị ẩn. Mục lục và sidebar liệt kê mọi module công khai. | #4 | 05 | CHỜ |
-| A5 | Sidebar xếp module thường trước, module đặc biệt sau; trong mỗi nhóm theo thứ tự đặt ở Content management. | #4 | 05 | CHỜ |
-| A6 | Số hiện cạnh một bài là vị trí của nó trong danh sách người đọc đang nhìn, đếm từ 01. Không bao giờ in thẳng thứ tự lúc soạn. | #6 | 05 hoặc 08 | CHỜ |
-| A7 | Khi chưa biết bài nằm ở đâu trong danh sách thì bỏ số đi, đừng đoán. | #6 | như A6 | CHỜ |
+| A1 | Mười bốn nhóm của bánh xe hương là từ vựng cố định, không phải dữ liệu bài. Mỗi nhóm một bộ ba màu dùng chung toàn hệ thống. | #2 | 12 (màu thẻ) | XONG |
+| A2 | Thanh lọc nhóm hương xếp theo thứ tự bánh xe, không theo thứ tự bài viết nhắc tới. | #2 | 12 | XONG |
+| A3 | Module phân loại theo hai trục độc lập: `kind` nói nó là gì, `visibility` nói nó có được liệt kê không. Không bao giờ lọc một bề mặt chỉ bằng `kind`. | #4 | 05 (điều hướng) | XONG |
+| A4 | Trang chủ chỉ trưng module thường — vì nó là phòng trưng bày module đọc, không phải vì module đặc biệt bị ẩn. Mục lục và sidebar liệt kê mọi module công khai. | #4 | 05 | XONG |
+| A5 | Sidebar xếp module thường trước, module đặc biệt sau; trong mỗi nhóm theo thứ tự đặt ở Content management. | #4 | 05 | XONG |
+| A6 | Số hiện cạnh một bài là vị trí của nó trong danh sách người đọc đang nhìn, đếm từ 01. Không bao giờ in thẳng thứ tự lúc soạn. | #6 | 05 hoặc 08 | XONG |
+| A7 | Khi chưa biết bài nằm ở đâu trong danh sách thì bỏ số đi, đừng đoán. | #6 | như A6 | XONG |
 
 ## B. `docs/SPEC.html` đã lỗi thời
 
 | # | Mục | Sai ở đâu | Trạng thái |
 |---|---|---|---|
-| B1 | Bộ quy tắc | Con số luật: 67 (tôi ghi sai) → 64 (đúng lúc đó) → **68** hôm nay. Đã sửa trong SPEC. | XONG |
+| B1 | Bộ quy tắc | Con số luật: 67 (tôi ghi sai) → 64 (đúng lúc đó) → 68 → **75** hôm nay. Đã sửa trong SPEC cùng PR này. | XONG |
 | B2 | Cơ sở dữ liệu | `modules` nay **21 cột** (thêm `visibility`), không phải 20. | XONG |
 | B3 | Cơ sở dữ liệu | `posts` **22 → 21 cột** sau khi bỏ `n`. Migration đã chạy 2026-08-21. | XONG |
 | B4 | Cột của hai bảng chính | Bỏ `n` khỏi dòng liệt kê `posts`. Migration đã chạy. | XONG |
