@@ -284,7 +284,8 @@ export function Cms() {
   }
 
   const postsOf = (module_id: string) =>
-    posts.filter((p) => p.module_id === module_id).sort((a, b) => a.sort_order - b.sort_order)
+    posts.filter((p) => p.module_id === module_id)// Bài chưa ai đặt vị trí thì xuống cuối, đúng như trang công khai.
+    .sort((a, b) => (a.sort_order ?? Infinity) - (b.sort_order ?? Infinity))
 
   async function patchPost(id: string, patch: { en?: string; vi?: string; date_label?: string }) {
     setPosts((ps) => ps.map((p) => (p.id === id ? { ...p, ...patch } : p)))
