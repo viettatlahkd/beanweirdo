@@ -553,13 +553,12 @@ export function Notes() {
             // Bài đứng đầu lưới nên nhận những chỗ đầu của chu kỳ dàn trang —
             // cùng nhịp lệch hàng với ghi chú rời, không thẳng cột.
             const place = notePlacement[i % notePlacement.length]
-            // Ô chèn phải đứng NGAY SAU bài nó thuộc về. Dồn hết xuống cuối thì
-            // lưới dense chỉ còn chỗ ở đáy, và cả lớp trang trí tụ lại một chỗ.
-            const chen = fillers
-              .filter((f) => f.after === i)
-              .map((f, fi) => (
-                <FillerCell key={`filler-post-${i}-${fi}`} f={f} dimmed={openNote !== null} />
-              ))
+              // Ô feature phải đứng NGAY SAU bài nó thuộc về. Dồn hết xuống cuối
+              // thì lưới dense chỉ còn chỗ ở đáy, và cả lớp trang trí tụ lại
+              // một cụm dưới cùng.
+              const anhFeature = featureCells
+                .filter((f) => f.afterPost === i)
+                .map((f) => <FeatureCellView key={`F${f.n}`} f={f} dimmed={openNote !== null} />)
             return [
               <Hover
                 key={p.id}
@@ -618,7 +617,7 @@ export function Notes() {
                   </>
                 )}
               </Hover>,
-              ...chen,
+              ...anhFeature,
             ]
           })}
 
