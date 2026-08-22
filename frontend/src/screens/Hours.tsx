@@ -20,6 +20,7 @@ import { useSessionTimer, type SessionView } from '../lib/useSessionTimer'
 import { TimerRail } from '../components/TimerRail'
 import {
   buildAllDays,
+  clockHm,
   cloneOf,
   spanStats,
   streak as computeStreak,
@@ -101,17 +102,14 @@ export function Hours() {
    * and an unnamed row that loses focus deletes itself (rule 08).
    */
   /**
-   * Where the next activity of a day starts: a quarter of an hour after the
-   * latest one ends, or eight in the morning on an empty day. Rows are sorted
-   * by this, so anything stamped here lands at the bottom of the day.
+   * A new row starts at the moment it was asked for.
+   *
+   * It used to be queued a quarter of an hour after the day's latest activity,
+   * falling back to eight in the morning on an empty day — so the first row of
+   * a day always came up 08:00 no matter what time it actually was, and had to
+   * be retyped every single time. The wall clock is right far more often, and
+   * wrong in a way that is one nudge away from right.
    */
-  function nextSlot(ds: string): string {
-    const onDay = logs.filter((l) => l.date === ds)
-    const last = onDay.slice().sort((a, b) => toMin(a.at) - toMin(b.at)).slice(-1)[0]
-    const startMin = last ? Math.min(23 * 60 + 30, toMin(last.at) + last.mins + 15) : 8 * 60
-    return String(Math.floor(startMin / 60)).padStart(2, '0') + ':' + String(startMin % 60).padStart(2, '0')
-  }
-
   async function addRow(ds: string) {
     const saved = await add({
       date: ds,
@@ -119,7 +117,7 @@ export function Hours() {
       kind: timer.open?.kind ?? 'đọc',
       mins: 30,
       done: false,
-      at: nextSlot(ds),
+      at: clockHm(),
     })
     if (!saved) return
     setNewId(saved.id)

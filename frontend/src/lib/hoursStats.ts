@@ -48,6 +48,9 @@ export type DayBucket = {
  * into the day's total that nobody confirmed. The owner reads it back, then
  * ticks it or leaves it waiting.
  */
+export const clockHm = (now: Date = new Date()) =>
+  String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0')
+
 export function cloneOf(l: LogEntry, now: Date = new Date()): Omit<LogEntry, 'id'> {
   return {
     date: l.date,
@@ -56,7 +59,7 @@ export function cloneOf(l: LogEntry, now: Date = new Date()): Omit<LogEntry, 'id
     project: l.project ?? null,
     mins: l.mins,
     done: false,
-    at: String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0'),
+    at: clockHm(now),
   }
 }
 
