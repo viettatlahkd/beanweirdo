@@ -548,12 +548,19 @@ export function Notes() {
               statistics panel unfolds on Ghi 02 — the reader stays on the page
               they were reading. Open, it takes the full width of the grid and
               everything else steps back. */}
-          {filed.map((p, i) => {
+          {filed.flatMap((p, i) => {
             const open = openNote === p.id
             // Bài đứng đầu lưới nên nhận những chỗ đầu của chu kỳ dàn trang —
             // cùng nhịp lệch hàng với ghi chú rời, không thẳng cột.
             const place = notePlacement[i % notePlacement.length]
-            return (
+            // Ô chèn phải đứng NGAY SAU bài nó thuộc về. Dồn hết xuống cuối thì
+            // lưới dense chỉ còn chỗ ở đáy, và cả lớp trang trí tụ lại một chỗ.
+            const chen = fillers
+              .filter((f) => f.after === i)
+              .map((f, fi) => (
+                <FillerCell key={`filler-post-${i}-${fi}`} f={f} dimmed={openNote !== null} />
+              ))
+            return [
               <Hover
                 key={p.id}
                 onClick={(e) => {
@@ -610,8 +617,9 @@ export function Notes() {
                     </div>
                   </>
                 )}
-              </Hover>
-            )
+              </Hover>,
+              ...chen,
+            ]
           })}
 
         {!loading && filtered.length === 0 && filed.length === 0 && (
