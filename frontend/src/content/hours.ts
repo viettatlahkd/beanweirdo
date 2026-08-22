@@ -100,6 +100,16 @@ export function kindColorMap(kinds: string[]): Record<string, string> {
 }
 
 /** How far back the streak, stats and month grouping reach. */
+/**
+ * The day this journal opened. Nothing was written before it and nothing ever
+ * will be, so a square or a row for an earlier date is not "a day nobody
+ * logged" — it is a day that never belonged to the journal at all, and showing
+ * it as an empty row reads as a lapse that didn't happen.
+ *
+ * Everything that walks backwards through dates stops here.
+ */
+export const KICKOFF = '2026-08-20'
+
 export const SPAN_DAYS = 21
 
 /**

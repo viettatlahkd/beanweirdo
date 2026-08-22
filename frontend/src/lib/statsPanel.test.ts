@@ -1,13 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import type { LogEntry } from '../content/hours'
+import { KICKOFF, type LogEntry } from '../content/hours'
 import {
   NO_PROJECT,
+  buildAllDays,
   byProject,
   cloneOf,
   heatmap,
   neglected,
   periodStats,
   realSpanOfDay,
+  spanStats,
   usefulRatio,
 } from './hoursStats'
 
@@ -268,12 +270,12 @@ describe('heatmap — the shape of the habit', () => {
 })
 
 describe('heatmap — days the journal did not exist for', () => {
-  it('marks squares before the first entry as outside the record', () => {
-    // The grid opens on Monday the 17th; the first entry is Thursday the 20th,
+  it('marks squares before the journal opened as outside the record', () => {
+    // The grid opens on Monday the 17th; the journal opened Thursday the 20th,
     // so the first three squares predate the journal itself.
     const grid = heatmap([log({ date: '2026-08-20', mins: 60 })], 4, NOW)
     const early = grid.cells.find((c) => c.ds === '2026-08-18')!
-    const first = grid.cells.find((c) => c.ds === '2026-08-20')!
+    const first = grid.cells.find((c) => c.ds === KICKOFF)!
 
     // Nothing was written before the 20th because there was no journal yet —
     // a different fact from "that day went unlogged".
@@ -283,13 +285,12 @@ describe('heatmap — days the journal did not exist for', () => {
 
   it('separates an unlogged day inside the record from one outside it', () => {
     const grid = heatmap(
-      [log({ date: '2026-08-18', mins: 60 }), log({ date: '2026-08-22', mins: 60 })],
+      [log({ date: '2026-08-20', mins: 60 }), log({ date: '2026-08-22', mins: 60 })],
       4,
       NOW,
     )
-    const gap = grid.cells.find((c) => c.ds === '2026-08-19')!
+    const gap = grid.cells.find((c) => c.ds === '2026-08-21')!
     const before = grid.cells.find((c) => c.ds === '2026-08-17')!
-    expect(gap && before).toBeTruthy()
 
     expect(gap.outside).toBe(false)
     expect(gap.level).toBe(0)
@@ -307,15 +308,21 @@ describe('heatmap — days the journal did not exist for', () => {
     expect(tomorrow.mins).toBe(0)
   })
 
-  it('treats the whole grid as outside when nothing has ever been logged', () => {
+  it('an empty journal still owns the days since it opened', () => {
     const grid = heatmap([], 4, NOW)
-    expect(grid.cells.every((c) => c.outside)).toBe(true)
+    const inside = grid.cells.filter((c) => !c.outside).map((c) => c.ds)
+
+    // Opened on the 20th, today is the 22nd: three days on the record with
+    // nothing written on any of them. That is a lapse, not an absence, and the
+    // grid has to be able to say so.
+    expect(inside).toEqual(['2026-08-20', '2026-08-21', '2026-08-22'])
+    expect(grid.cells.filter((c) => c.level > 0)).toHaveLength(0)
   })
 })
 
-describe('heatmap — the grid runs forward from the first entry', () => {
-  it('opens on the week of the first entry, not six months before today', () => {
-    // First entry 2026-08-20, a Thursday; its week starts Monday the 17th.
+describe('heatmap — the grid runs forward from the day the journal opened', () => {
+  it('opens on the week the journal did, not six months before today', () => {
+    // KICKOFF is 2026-08-20, a Thursday; its week starts Monday the 17th.
     const grid = heatmap([log({ date: '2026-08-20', mins: 60 })], 26, NOW)
     const earliest = grid.cells.map((c) => c.ds).sort()[0]
     expect(earliest).toBe('2026-08-17')
@@ -330,23 +337,38 @@ describe('heatmap — the grid runs forward from the first entry', () => {
   })
 
   it('slides the window once the record outgrows it', () => {
-    // A journal that started well over 26 weeks ago: the grid should end on
-    // this week rather than stopping short of today.
-    const grid = heatmap(
-      [log({ date: '2025-01-06', mins: 60 }), log({ date: '2026-08-22', mins: 60 })],
-      26,
-      NOW,
-    )
+    // A year on from the opening day: the grid should end on the current week
+    // rather than stopping short of today, back near the journal's beginning.
+    const later = new Date('2027-08-21T18:00:00') // a Saturday
+    const grid = heatmap([log({ date: '2026-08-20', mins: 60 })], 26, later)
     const dates = grid.cells.map((c) => c.ds).sort()
-    expect(dates[0] > '2026-01-01').toBe(true)
-    expect(dates.slice(-1)[0]).toBe('2026-08-23') // the Sunday closing this week
+
+    expect(dates[0] > '2027-01-01').toBe(true)
+    expect(dates.slice(-1)[0]).toBe('2027-08-22') // the Sunday closing that week
   })
 
-  it('falls back to the current week when nothing has been logged at all', () => {
-    const grid = heatmap([], 26, NOW)
-    const earliest = grid.cells.map((c) => c.ds).sort()[0]
-    expect(earliest).toBe('2026-08-17')
-    expect(grid.cells.every((c) => c.outside)).toBe(true)
+  it('opens in the same place whether or not anything has been written yet', () => {
+    // The anchor is the opening day, not the first entry — so an untouched
+    // journal and a journal written in on day one draw the same grid.
+    const empty = heatmap([], 26, NOW)
+    const written = heatmap([log({ date: '2026-08-22', mins: 60 })], 26, NOW)
+
+    expect(empty.cells.map((c) => c.ds).sort()[0]).toBe('2026-08-17')
+    expect(empty.cells.map((c) => c.ds)).toEqual(written.cells.map((c) => c.ds))
+  })
+})
+
+describe('buildAllDays — the journal has no days before it opened', () => {
+  it('stops the day list at the opening day', () => {
+    const all = buildAllDays([log({ date: '2026-08-22', mins: 60 })], NOW)
+    expect(all.map((x) => x.ds)).toEqual(['2026-08-20', '2026-08-21', '2026-08-22'])
+  })
+
+  it('counts active days against the days that exist, not a fixed span', () => {
+    const all = buildAllDays([log({ date: '2026-08-22', mins: 60 })], NOW)
+    // Three days on the record, one of them written on — not "1/21 ngày",
+    // which would count eighteen days that were never the journal's to miss.
+    expect(spanStats(all).activeDaysTxt).toBe('1/3 ngày')
   })
 })
 
