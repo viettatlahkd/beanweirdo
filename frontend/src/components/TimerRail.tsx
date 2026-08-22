@@ -159,6 +159,7 @@ function CollapsedSession({
   onOpen,
   onLog,
   onPause,
+  onRestart,
   onRemove,
 }: {
   session: SessionView
@@ -167,6 +168,7 @@ function CollapsedSession({
   onOpen: () => void
   onLog: () => void
   onPause: () => void
+  onRestart: () => void
   onRemove: () => void
 }) {
   const canLog = Math.round(session.usedSec / 60) >= 1
@@ -257,8 +259,9 @@ function CollapsedSession({
           {clockFmt(session.sec)}
         </div>
 
-        {/* The three controls stop the click from reaching the card, or every
-            one of them would also expand the session it just acted on. */}
+        {/* The controls stop the click from reaching the card, or every one of
+            them would also expand the session it just acted on. Ordered by how
+            hard the action is to take back: log, pause, restart, discard. */}
         <div onClick={(e) => e.stopPropagation()} style={{ display: 'flex', gap: 4, flex: 'none' }}>
           <Hover
             onClick={onLog}
@@ -281,6 +284,16 @@ function CollapsedSession({
             hoverStyle={{ color: '#143C43' }}
           >
             {session.running ? '❙❙' : '▶'}
+          </Hover>
+          <Hover
+            onClick={onRestart}
+            role="button"
+            aria-label={`Làm lại ${session.name || 'phiên'} từ đầu`}
+            title="Làm lại từ đầu — giữ tên và tag"
+            style={{ ...iconButton, opacity: session.usedSec === 0 ? 0.35 : 1 }}
+            hoverStyle={{ color: '#B8862E' }}
+          >
+            ↻
           </Hover>
           <Hover
             onClick={onRemove}
@@ -313,6 +326,7 @@ function ExpandedSession({
   onStart,
   onPause,
   onReset,
+  onRestart,
   onMode,
   onTarget,
   onName,
@@ -329,6 +343,7 @@ function ExpandedSession({
   onStart: (id: string) => void
   onPause: (id: string) => void
   onReset: (id: string) => void
+  onRestart: (id: string) => void
   onMode: (id: string, mode: TimerMode) => void
   onTarget: (id: string, seconds: number) => void
   onName: (id: string, name: string) => void
@@ -569,7 +584,28 @@ function ExpandedSession({
           {session.running ? 'Tạm dừng' : 'Bắt đầu'}
         </Hover>
         <Hover
+          onClick={() => onRestart(session.id)}
+          role="button"
+          aria-label="Làm lại từ đầu"
+          title="Làm lại từ đầu — giữ tên và tag"
+          style={{
+            flex: 'none',
+            width: 42,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 15,
+            border: '1px solid rgba(244,244,239,.35)',
+            cursor: 'pointer',
+            opacity: session.usedSec === 0 ? 0.4 : 1,
+          }}
+          hoverStyle={{ border: '1px solid #F4F4EF' }}
+        >
+          ↻
+        </Hover>
+        <Hover
           onClick={() => onReset(session.id)}
+          title="Kết thúc phiên — xoá tên, giữ tag"
           style={{
             flex: 'none',
             fontSize: 11,
@@ -659,6 +695,7 @@ export type TimerRailProps = {
   onStart: (id: string) => void
   onPause: (id: string) => void
   onReset: (id: string) => void
+  onRestart: (id: string) => void
   onMode: (id: string, mode: TimerMode) => void
   onTarget: (id: string, seconds: number) => void
   onName: (id: string, name: string) => void
@@ -695,6 +732,7 @@ export function TimerRail({
   onStart,
   onPause,
   onReset,
+  onRestart,
   onMode,
   onTarget,
   onName,
@@ -780,6 +818,7 @@ export function TimerRail({
             onStart={onStart}
             onPause={onPause}
             onReset={onReset}
+            onRestart={onRestart}
             onMode={onMode}
             onTarget={onTarget}
             onName={onName}
@@ -798,6 +837,7 @@ export function TimerRail({
             onOpen={() => onOpenSession(s.id)}
             onLog={() => onLog(s, Math.round(s.usedSec / 60))}
             onPause={() => (s.running ? onPause(s.id) : onStart(s.id))}
+            onRestart={() => onRestart(s.id)}
             onRemove={() => onRemoveSession(s.id)}
           />
         ),

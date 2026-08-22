@@ -88,6 +88,73 @@ describe('useSessionTimer — one clock', () => {
     expect(result.current.open.sec).toBe(0)
   })
 
+  it('keeps the name and the tags on restart — only the reading goes back', () => {
+    const { result } = renderHook(() => useSessionTimer())
+    const id = result.current.open.id
+    act(() => {
+      result.current.setName(id, 'đọc chương 4')
+      result.current.setProject(id, 'Sao đâu')
+      result.current.setKind(id, 'viết')
+      result.current.start(id)
+    })
+    skip(600_000)
+    act(() => result.current.restart(id))
+
+    // Same work, from the top — the opposite of `reset`, which ends the session.
+    expect(result.current.open.name).toBe('đọc chương 4')
+    expect(result.current.open.project).toBe('Sao đâu')
+    expect(result.current.open.kind).toBe('viết')
+    expect(result.current.open.sec).toBe(0)
+  })
+
+  it('a clock that was moving keeps moving after a restart', () => {
+    const { result } = renderHook(() => useSessionTimer())
+    const id = result.current.open.id
+    act(() => result.current.start(id))
+    skip(600_000)
+    act(() => result.current.restart(id))
+
+    expect(result.current.open.running).toBe(true)
+    skip(60_000)
+    expect(result.current.open.sec).toBe(60)
+  })
+
+  it('a clock that was paused stays paused after a restart', () => {
+    const { result } = renderHook(() => useSessionTimer())
+    const id = result.current.open.id
+    act(() => result.current.start(id))
+    skip(600_000)
+    act(() => result.current.pause(id))
+    act(() => result.current.restart(id))
+
+    expect(result.current.open.running).toBe(false)
+    expect(result.current.open.sec).toBe(0)
+    skip(3600_000)
+    expect(result.current.open.sec).toBe(0)
+  })
+
+  it('restarting a finished countdown lets it ring again', () => {
+    const done = vi.fn()
+    const { result } = renderHook(() => useSessionTimer({ onFinish: done }))
+    const id = result.current.open.id
+    act(() => {
+      result.current.setTarget(id, 900)
+      result.current.start(id)
+    })
+    skip(900_000)
+    expect(done).toHaveBeenCalledTimes(1)
+
+    // A countdown parks itself at zero when it ends. Restart has to lift the
+    // "already fired" mark too, or the next round would run out in silence.
+    act(() => {
+      result.current.restart(id)
+      result.current.start(id)
+    })
+    expect(result.current.open.sec).toBe(900)
+    skip(900_000)
+    expect(done).toHaveBeenCalledTimes(2)
+  })
+
   it('refuses to restore a session left running past the cap', () => {
     localStorage.setItem(
       TIMER_KEY,

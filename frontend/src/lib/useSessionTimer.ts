@@ -268,6 +268,25 @@ export function useSessionTimer({ onFinish }: { onFinish?: (s: Session) => void 
     [patch],
   )
 
+  /**
+   * Start this session's clock over without ending the session. Everything that
+   * says *what* is being timed stays — name, tags, mode, countdown length — and
+   * only the reading goes back to zero. A clock that was moving keeps moving,
+   * so a countdown rolls straight into its next round.
+   *
+   * Deliberately not the same as `reset`, which also clears the name: that one
+   * means "done with this, on to the next thing", this one means "same thing,
+   * from the top". Re-typing the name and re-picking both tags to correct a
+   * clock left running by mistake is the friction worth removing here.
+   */
+  const restart = useCallback(
+    (id: string) => {
+      finished.current.delete(id)
+      patch(id, (s) => ({ ...s, base: 0, since: s.since === null ? null : now() }))
+    },
+    [patch],
+  )
+
   const setMode = useCallback(
     (id: string, mode: TimerMode) => {
       finished.current.delete(id)
@@ -363,6 +382,7 @@ export function useSessionTimer({ onFinish }: { onFinish?: (s: Session) => void 
     start,
     pause,
     reset,
+    restart,
     setMode,
     setTarget,
     setName,
