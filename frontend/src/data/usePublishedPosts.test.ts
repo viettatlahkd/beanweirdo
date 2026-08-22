@@ -27,7 +27,7 @@ describe('usePublishedPosts', () => {
     from.mockClear()
   })
 
-  it('queries status=published, sort_order ascending by default, with no module filter', async () => {
+  it('xếp theo ba tầng: ghim trước, vị trí tự chọn, rồi ngày đăng', async () => {
     const rows = [{ id: 'p1', module_id: 'biochem', n: '01' }]
     const builder = makeQueryBuilder({ data: rows, error: null })
     from.mockReturnValue(builder)
@@ -37,7 +37,13 @@ describe('usePublishedPosts', () => {
 
     expect(from).toHaveBeenCalledWith('posts')
     expect(builder.eq).toHaveBeenCalledWith('status', 'published')
-    expect(builder.order).toHaveBeenCalledWith('sort_order', { ascending: true })
+    // Ba tầng, đúng thứ tự này. `sort_order` rỗng xuống dưới, vì rỗng nghĩa là
+    // chưa ai chọn vị trí cho bài đó.
+    expect(builder.order.mock.calls).toEqual([
+      ['pinned', { ascending: false }],
+      ['sort_order', { ascending: true, nullsFirst: false }],
+      ['published_at', { ascending: false }],
+    ])
     expect(result.current.data).toEqual(rows)
   })
 

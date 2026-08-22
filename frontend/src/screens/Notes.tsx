@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { Breadcrumbs } from '../components/Breadcrumbs'
 import {
-  fillers,
+  featureCells,
   noteBlock,
   noteColor,
   noteKinds,
@@ -348,7 +348,7 @@ function NoteCard({
   )
 }
 
-function FillerCell({ f, dimmed }: { f: (typeof fillers)[number]; dimmed: boolean }) {
+function FeatureCellView({ f, dimmed }: { f: (typeof featureCells)[number]; dimmed: boolean }) {
   const style: CSSProperties = { gridColumn: f.col, marginTop: f.mt, marginLeft: f.ml, position: 'relative', zIndex: 1, opacity: dimmed ? 0.18 : 1 }
   if (f.kind === 'quote') {
     return (
@@ -658,11 +658,13 @@ export function Notes() {
               }}
             />,
           ]
-          fillers
-            .filter((f) => f.after === i)
-            .forEach((f, fi) =>
-              cells.push(<FillerCell key={`filler-${i}-${fi}`} f={f} dimmed={openNote !== null} />),
-            )
+            // Ghi chú rời đứng sau các bài, nên chỗ của chúng trong nhịp ô
+            // feature cũng phải cộng thêm số bài.
+            featureCells
+              .filter((f) => f.afterPost === filed.length + i)
+              .forEach((f) =>
+                cells.push(<FeatureCellView key={`F${f.n}`} f={f} dimmed={openNote !== null} />),
+              )
           return cells
         })}
       </div>

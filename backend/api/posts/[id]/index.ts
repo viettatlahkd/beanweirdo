@@ -35,10 +35,10 @@ interface PatchPostBody {
   lead?: unknown
   pull_quote?: unknown
   further_reading?: unknown
-  /** The CMS's entry rows edit the display number and date label in place. */
-  n?: unknown
   date_label?: unknown
+  /** A hand-picked position; null hands the post back to date order. */
   sort_order?: unknown
+  pinned?: unknown
 }
 
 /**
@@ -57,6 +57,7 @@ const PATCHABLE = [
   'further_reading',
   'date_label',
   'sort_order',
+  'pinned',
 ] as const satisfies readonly (keyof PatchPostBody & keyof PostRow)[]
 
 async function handlePatch(req: VercelRequest, res: VercelResponse, id: string): Promise<void> {

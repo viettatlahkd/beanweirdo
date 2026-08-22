@@ -24,7 +24,10 @@ export type PostRow = {
   lead: string | null
   pull_quote: string | null
   further_reading: string[] | null
-  sort_order: number
+  /** Vị trí người dùng tự chọn. Rỗng nghĩa là chưa ai chọn. */
+  sort_order: number | null
+  /** Bài ghim dẫn đầu module. */
+  pinned: boolean
   created_at: string
   status: PostStatus
   template: PostTemplate
@@ -46,6 +49,11 @@ export type UsePostsOptions = {
    * every other listing must leave them out.
    */
   includeArchived?: boolean
+  /**
+   * Chỉ dùng khi cần một thứ tự khác thứ tự chuẩn của module. Bỏ trống thì
+   * dùng thứ tự chuẩn: bài ghim trước, rồi vị trí người dùng chọn, rồi ngày
+   * đăng mới nhất.
+   */
   orderBy?: 'sort_order' | 'date_label' | 'created_at'
   ascending?: boolean
   /** Set false to skip the fetch entirely (e.g. while a dependency isn't ready yet). Defaults to true. */
@@ -67,7 +75,7 @@ export type UsePostsResult = {
 export function usePublishedPosts(options: UsePostsOptions = {}): UsePostsResult {
   const {
     moduleId,
-    orderBy = 'sort_order',
+    orderBy,
     ascending = true,
     enabled = true,
     includeArchived = false,
@@ -92,7 +100,19 @@ export function usePublishedPosts(options: UsePostsOptions = {}): UsePostsResult
       : supabase.from('posts').select('*').eq('status', 'published')
     if (moduleId) query = query.eq('module_id', moduleId)
 
-    query.order(orderBy, { ascending }).then(({ data, error }) => {
+    // Thứ tự chuẩn của một module, đúng ba tầng:
+    //   1. bài ghim lên trước
+    //   2. vị trí người dùng tự kéo — rỗng thì xuống dưới
+    //   3. bài đăng mới nhất trước
+    // Người gọi truyền `orderBy` thì mới đi đường khác.
+    const ordered = orderBy
+      ? query.order(orderBy, { ascending })
+      : query
+          .order('pinned', { ascending: false })
+          .order('sort_order', { ascending: true, nullsFirst: false })
+          .order('published_at', { ascending: false })
+
+    ordered.then(({ data, error }) => {
       if (cancelled) return
       setLoading(false)
       if (error) {
