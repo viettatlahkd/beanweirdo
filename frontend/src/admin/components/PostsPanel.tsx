@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type CSSProperties } from 'react'
 import { PostCard } from './PostCard'
 import {
   listPosts,
+  updatePost,
   transitionStatus,
   type PostStatus,
   type PostSummary,
@@ -195,6 +196,19 @@ export function PostsPanel() {
     }
   }
 
+  /**
+   * Ghim, ngay tại danh sách. Bài ghim dẫn đầu module của nó, nên đổi một bài
+   * là đổi thứ tự cả module — nạp lại danh sách sau khi ghi.
+   */
+  async function handlePin(id: string, pinned: boolean) {
+    try {
+      await updatePost(id, { pinned })
+      await load()
+    } catch (e) {
+      setError((e as Error).message)
+    }
+  }
+
   // A note is live the moment it exists, so it belongs under these two.
   const showNotes = filter === 'all' || filter === 'published'
 
@@ -295,7 +309,13 @@ export function PostsPanel() {
       )}
 
       {posts.map((p) => (
-        <PostCard key={p.id} post={p} onAction={handleAction} onEdit={(id) => nav.editPost(id)} />
+        <PostCard
+          key={p.id}
+          post={p}
+          onAction={handleAction}
+          onEdit={(id) => nav.editPost(id)}
+          onPin={handlePin}
+        />
       ))}
 
       {showNotes &&
