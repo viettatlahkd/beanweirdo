@@ -30,8 +30,12 @@ ghi chú bàn giao của lane mình; người khác sẽ sửa.
 ## Nhánh và merge
 
 - Một lỗi hoặc một việc → một nhánh, cắt từ `origin/main`, không stack lên nhau.
-- **Tự chạy `cd`, `git`, `gh` — đừng bắt chủ site chạy hộ.** Chỉ hai lệnh cần
-  hỏi trước: **đẩy PR** và **merge PR**.
+- **Tự chạy mọi lệnh terminal.** Không hỏi, không đưa lệnh cho chủ site chạy
+  hộ — `cd`, `git`, `gh`, `curl`, `npm`, cài gói, dựng server, truy vấn API.
+  Đưa một khối lệnh kèm câu "m chạy giúp" là đang đẩy việc của mình sang người
+  khác.
+- **Đúng ba việc phải hỏi trước:** đẩy PR · merge PR · ghi vào dữ liệu thật của
+  chủ site. Ngoài ba việc đó thì cứ làm.
 - **Không tự merge khi chưa hỏi.** Mở PR, báo, đợi xác nhận. Một câu "merge đi"
   giữa chừng không phải là xác nhận cho lần sau — hỏi lại từng lần.
 - `gh` có sẵn ở `/opt/homebrew/bin/gh`, đã đăng nhập — `PATH` của shell agent
@@ -39,11 +43,6 @@ ghi chú bàn giao của lane mình; người khác sẽ sửa.
 - Merge bằng `--rebase` để lịch sử thẳng, một commit một việc.
 - Sau khi merge: chạy lại toàn bộ test trên `main`, và nhắc các worktree khác
   `git pull` — chúng không tự biết.
-- **`design/v4-cms-templates` không merge vào đâu cả.** Nó là ảnh chụp trước khi
-  rẽ nhánh; `main` đã dựng lại toàn bộ nội dung của nó. Merge vào sẽ xoá mất
-  migration, endpoint, thanh tag hai hệ và các bộ vẽ bài. Nguồn design để đối
-  chiếu là `frontend/design/prototype/Coffee Study Blog v4.dc.html`, không phải
-  nhánh git.
 
 ## Ghi chú bàn giao
 
