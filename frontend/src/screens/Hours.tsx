@@ -519,6 +519,7 @@ export function Hours() {
             onStart={timer.start}
             onPause={timer.pause}
             onReset={timer.reset}
+            onRestart={timer.restart}
             onMode={timer.setMode}
             onTarget={timer.setTarget}
             onName={timer.setName}

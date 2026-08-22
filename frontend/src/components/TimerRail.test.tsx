@@ -39,6 +39,7 @@ function rail(over: Partial<Parameters<typeof TimerRail>[0]> = {}) {
     onStart: vi.fn(),
     onPause: vi.fn(),
     onReset: vi.fn(),
+    onRestart: vi.fn(),
     onMode: vi.fn(),
     onTarget: vi.fn(),
     onName: vi.fn(),
@@ -248,5 +249,34 @@ describe('TimerRail — the open session', () => {
     const text = document.body.textContent ?? ''
     expect(text).not.toContain('Phiên đếm lên chạy')
     expect(text).not.toContain('Hết giờ sẽ có')
+  })
+})
+
+describe('TimerRail — làm lại từ đầu', () => {
+  const two = [session({ id: 'a', name: 'Cấy men ngày 5' }), session({ id: 'b', name: 'Đọc paper lipid' })]
+
+  it('offers restart on a collapsed clock without expanding it', async () => {
+    const props = rail({ sessions: two, open: two[1] })
+    await userEvent.click(screen.getByRole('button', { name: 'Làm lại Cấy men ngày 5 từ đầu' }))
+
+    expect(props.onRestart).toHaveBeenCalledWith('a')
+    // The controls sit on a card that expands when clicked; acting on one must
+    // not also open the session underneath it.
+    expect(props.onOpenSession).not.toHaveBeenCalled()
+  })
+
+  it('offers restart on the expanded clock too', async () => {
+    const props = rail({ sessions: two, open: two[1] })
+    await userEvent.click(screen.getByRole('button', { name: 'Làm lại từ đầu' }))
+
+    expect(props.onRestart).toHaveBeenCalledWith('b')
+  })
+
+  it('keeps restart apart from the button that ends the session', async () => {
+    const props = rail()
+    await userEvent.click(screen.getByText('Đặt lại'))
+
+    expect(props.onReset).toHaveBeenCalled()
+    expect(props.onRestart).not.toHaveBeenCalled()
   })
 })
