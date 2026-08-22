@@ -1,0 +1,586 @@
+<title>Sổ tay hệ thống beanweirdo</title>
+<style>
+:root{
+  --ground:#FDFBF2; --surface:#FFFFFF; --surface-2:#F7F3E6; --sunken:#F1ECDB;
+  --ink:#23211A; --muted:#6B6353; --faint:#9A927E; --rule:#E7E0CC; --rule-soft:#F0EADA;
+  --leaf:#4E8A4D; --apricot:#B5802F; --blush:#C4666E; --teal:#17454E;
+  --leaf-wash:#EDF3EC; --apricot-wash:#F7EFDE; --blush-wash:#F7EAEA; --teal-wash:#E6EEEF;
+  --shadow:0 1px 2px rgba(35,33,26,.05), 0 8px 24px -18px rgba(35,33,26,.35);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#16140F; --surface:#1D1A14; --surface-2:#221E17; --sunken:#12100C;
+    --ink:#ECE6D6; --muted:#A69D87; --faint:#776F5C; --rule:#312C22; --rule-soft:#262117;
+    --leaf:#86BC84; --apricot:#DCA95C; --blush:#E39AA0; --teal:#8CC4CF;
+    --leaf-wash:#1B2419; --apricot-wash:#261F13; --blush-wash:#261A1B; --teal-wash:#172426;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -18px rgba(0,0,0,.8);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#16140F; --surface:#1D1A14; --surface-2:#221E17; --sunken:#12100C;
+  --ink:#ECE6D6; --muted:#A69D87; --faint:#776F5C; --rule:#312C22; --rule-soft:#262117;
+  --leaf:#86BC84; --apricot:#DCA95C; --blush:#E39AA0; --teal:#8CC4CF;
+  --leaf-wash:#1B2419; --apricot-wash:#261F13; --blush-wash:#261A1B; --teal-wash:#172426;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -18px rgba(0,0,0,.8);
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--ground); color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  font-size:16px; line-height:1.65; margin:0;
+  -webkit-font-smoothing:antialiased;
+}
+.serif{font-family:Georgia,"Iowan Old Style","Times New Roman",serif}
+
+.wrap{max-width:1180px;margin:0 auto;padding:0 clamp(20px,5vw,48px) 96px}
+.layout{display:grid;grid-template-columns:1fr;gap:0}
+@media (min-width:1080px){
+  .layout{grid-template-columns:212px minmax(0,1fr);gap:56px;align-items:start}
+}
+
+/* ---- masthead ---- */
+.mast{padding:clamp(48px,8vw,88px) 0 clamp(28px,4vw,40px);border-bottom:1px solid var(--rule)}
+.eyebrow{
+  font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--faint);font-weight:600;margin:0 0 20px
+}
+.mast h1{
+  font-family:Georgia,"Iowan Old Style","Times New Roman",serif;
+  font-size:clamp(34px,6vw,54px);line-height:1.1;font-weight:400;
+  margin:0 0 18px;text-wrap:balance;letter-spacing:-.01em;color:var(--ink)
+}
+.mast .standfirst{
+  font-size:clamp(16px,2vw,18px);color:var(--muted);max-width:62ch;margin:0 0 32px
+}
+.stamp{
+  display:flex;flex-wrap:wrap;gap:8px 28px;font-size:12.5px;color:var(--muted);
+  padding-top:4px;border-top:1px solid var(--rule-soft)
+}
+.stamp b{color:var(--ink);font-weight:600}
+
+/* ---- key figures ---- */
+.figures{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));
+  gap:1px;background:var(--rule);border:1px solid var(--rule);
+  margin:36px 0 0;border-radius:3px;overflow:hidden
+}
+.fig{background:var(--surface);padding:16px 18px}
+.fig .n{
+  font-family:Georgia,"Iowan Old Style",serif;font-size:27px;line-height:1.1;
+  font-variant-numeric:tabular-nums;color:var(--ink);display:block
+}
+.fig .l{font-size:11.5px;color:var(--muted);letter-spacing:.02em;margin-top:5px;display:block}
+
+/* ---- table of contents rail ---- */
+nav.toc{display:none}
+@media (min-width:1080px){
+  nav.toc{
+    display:block;position:sticky;top:32px;padding-top:56px;
+    font-size:13.5px;line-height:1.45
+  }
+  nav.toc ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:11px}
+  nav.toc a{
+    color:var(--muted);text-decoration:none;display:flex;gap:9px;align-items:baseline;
+    border-left:2px solid transparent;padding-left:10px;margin-left:-12px;
+    transition:color .15s, border-color .15s
+  }
+  nav.toc a:hover{color:var(--ink);border-left-color:var(--rule)}
+  nav.toc a:focus-visible{outline:2px solid var(--teal);outline-offset:3px;border-radius:2px}
+  nav.toc .chip{width:7px;height:7px;flex:none;border-radius:1px;transform:translateY(-1px)}
+}
+
+/* ---- sections ---- */
+section{padding-top:clamp(52px,7vw,76px);scroll-margin-top:24px}
+section > h2{
+  font-family:Georgia,"Iowan Old Style","Times New Roman",serif;
+  font-size:clamp(23px,3.4vw,30px);font-weight:400;line-height:1.2;
+  margin:0 0 8px;display:flex;align-items:center;gap:12px;text-wrap:balance;color:var(--ink)
+}
+section > h2 .chip{width:11px;height:11px;flex:none;border-radius:2px}
+.deck{color:var(--muted);margin:0 0 26px;max-width:66ch;font-size:15.5px}
+h3{
+  font-size:12px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;
+  color:var(--faint);margin:38px 0 14px
+}
+h4{font-size:15.5px;font-weight:650;margin:26px 0 8px;color:var(--ink)}
+p{margin:0 0 15px;max-width:70ch}
+ul,ol{margin:0 0 15px;padding-left:20px;max-width:70ch}
+li{margin-bottom:7px}
+li::marker{color:var(--faint)}
+a{color:var(--teal)}
+strong{font-weight:650}
+
+code,.mono{
+  font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,monospace;
+  font-size:.875em;font-variant-numeric:tabular-nums
+}
+p code,li code,td code{
+  background:var(--sunken);border:1px solid var(--rule-soft);
+  padding:.1em .38em;border-radius:3px;color:var(--ink);white-space:nowrap
+}
+
+/* ---- tables ---- */
+.scroller{overflow-x:auto;margin:0 0 20px;border:1px solid var(--rule);border-radius:3px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:520px}
+th{
+  text-align:left;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--faint);font-weight:700;padding:11px 14px;border-bottom:1px solid var(--rule);
+  background:var(--surface-2);white-space:nowrap
+}
+td{padding:10px 14px;border-bottom:1px solid var(--rule-soft);vertical-align:top;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td:first-child{color:var(--ink);font-weight:550;white-space:nowrap}
+td.n{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+td.mono,th.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px}
+
+/* ---- pills ---- */
+.pill{
+  display:inline-block;font-size:11px;font-weight:650;letter-spacing:.03em;
+  padding:2px 8px;border-radius:999px;border:1px solid;white-space:nowrap;line-height:1.5
+}
+.pill.open{color:var(--leaf);border-color:var(--leaf);background:var(--leaf-wash)}
+.pill.shut{color:var(--blush);border-color:var(--blush);background:var(--blush-wash)}
+.pill.warnp{color:var(--apricot);border-color:var(--apricot);background:var(--apricot-wash)}
+.pill.neutral{color:var(--muted);border-color:var(--rule);background:var(--surface-2)}
+
+/* ---- callout ---- */
+.note{
+  background:var(--surface);border:1px solid var(--rule);border-left:3px solid var(--teal);
+  border-radius:3px;padding:15px 18px;margin:0 0 20px;font-size:14.5px;color:var(--muted);
+  max-width:72ch
+}
+.note b{color:var(--ink)}
+.note.caution{border-left-color:var(--apricot)}
+
+/* ---- flow diagram ---- */
+.flow{
+  display:flex;flex-wrap:wrap;align-items:stretch;gap:10px;margin:0 0 24px;
+  padding:20px;background:var(--surface);border:1px solid var(--rule);border-radius:3px
+}
+.node{
+  flex:1 1 140px;min-width:140px;background:var(--surface-2);border:1px solid var(--rule);
+  border-radius:3px;padding:12px 14px
+}
+.node .t{font-weight:650;font-size:14px;color:var(--ink);display:block}
+.node .d{font-size:12.5px;color:var(--muted);margin-top:4px;display:block}
+.arrow{
+  align-self:center;color:var(--faint);font-size:18px;flex:none;line-height:1;
+  padding:0 2px;user-select:none
+}
+@media (max-width:640px){.arrow{transform:rotate(90deg);width:100%;text-align:center}}
+
+/* ---- gap list ---- */
+.gaps{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:1px;
+  background:var(--rule);border:1px solid var(--rule);border-radius:3px;overflow:hidden;max-width:none}
+.gaps li{background:var(--surface);padding:14px 18px;margin:0;display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
+.gaps .body{flex:1 1 300px;min-width:0}
+.gaps .body b{display:block;font-weight:650;color:var(--ink);font-size:14.5px;margin-bottom:3px}
+.gaps .body span{font-size:13.5px;color:var(--muted)}
+
+footer{
+  margin-top:80px;padding-top:22px;border-top:1px solid var(--rule);
+  font-size:13px;color:var(--faint);max-width:70ch
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="wrap">
+
+<header class="mast">
+  <p class="eyebrow">Tài liệu cơ sở · beanweirdo</p>
+  <h1 class="serif">Sổ tay hệ thống beanweirdo</h1>
+  <p class="standfirst">Mô tả toàn bộ những gì dự án <em>đang có</em> tính đến hôm nay: cơ sở dữ liệu, backend, frontend, bộ quy tắc và các khoảng trống đã biết. Viết cho người tiếp quản dự án mà chưa từng đọc dòng code nào.</p>
+  <div class="stamp">
+    <span>Cập nhật <b>22.08.2026</b></span>
+    <span>Phạm vi <b>DB · BE · FE</b></span>
+    <span>Trạng thái <b>đang chạy thật</b></span>
+  </div>
+
+  <div class="figures">
+    <div class="fig"><span class="n">7</span><span class="l">bảng dữ liệu</span></div>
+    <div class="fig"><span class="n">17</span><span class="l">migration</span></div>
+    <div class="fig"><span class="n">11</span><span class="l">API endpoint</span></div>
+    <div class="fig"><span class="n">17</span><span class="l">màn hình</span></div>
+    <div class="fig"><span class="n">5</span><span class="l">kiểu trình bày</span></div>
+    <div class="fig"><span class="n">68</span><span class="l">quy tắc hệ thống</span></div>
+    <div class="fig"><span class="n">399</span><span class="l">test tự động</span></div>
+  </div>
+</header>
+
+<div class="layout">
+
+  <nav class="toc" aria-label="Mục lục">
+    <ol>
+      <li><a href="#tong-quan"><span class="chip" style="background:var(--teal)"></span>Trang này là gì</a></li>
+      <li><a href="#khu-vuc"><span class="chip" style="background:var(--teal)"></span>Ba khu vực &amp; đăng nhập</a></li>
+      <li><a href="#noi-dung"><span class="chip" style="background:var(--leaf)"></span>Mô hình nội dung</a></li>
+      <li><a href="#du-lieu"><span class="chip" style="background:var(--leaf)"></span>Cơ sở dữ liệu</a></li>
+      <li><a href="#backend"><span class="chip" style="background:var(--apricot)"></span>Backend</a></li>
+      <li><a href="#frontend"><span class="chip" style="background:var(--blush)"></span>Frontend</a></li>
+      <li><a href="#quy-tac"><span class="chip" style="background:var(--teal)"></span>Bộ quy tắc</a></li>
+      <li><a href="#trien-khai"><span class="chip" style="background:var(--teal)"></span>Môi trường &amp; triển khai</a></li>
+      <li><a href="#khoang-trong"><span class="chip" style="background:var(--teal)"></span>Khoảng trống đã biết</a></li>
+      <li><a href="#thay-doi"><span class="chip" style="background:var(--teal)"></span>Đã đổi kể từ bản đầu</a></li>
+    </ol>
+  </nav>
+
+  <main>
+
+  <section id="tong-quan">
+    <h2 class="serif"><span class="chip" style="background:var(--teal)"></span>Trang này là gì</h2>
+    <p class="deck">beanweirdo là nhật ký học cà phê của một người. Không có tính năng nhiều người dùng, không đăng ký tài khoản, không bình luận. Một người viết, mọi người đọc.</p>
+
+    <p>Site chia làm ba phần, cùng nằm trên một tên miền và cùng dùng một lần đăng nhập:</p>
+    <ul>
+      <li><strong>Trang công khai</strong> — ai cũng vào được. Trang chủ, các module kiến thức, bài viết.</li>
+      <li><strong>Trang luyện tập</strong> — chỉ chủ site. Bấm giờ và ghi lại số giờ thực hành.</li>
+      <li><strong>Trang quản trị</strong> — chỉ chủ site. Soạn bài, sửa nội dung site, quản lý template, xem lưu trữ.</li>
+    </ul>
+
+    <p>Về mặt kỹ thuật: giao diện là React chạy trên Vercel, dữ liệu nằm trong Postgres của Supabase, và các thao tác ghi đi qua một lớp hàm serverless nhỏ cũng trên Vercel. Người đọc lấy dữ liệu thẳng từ Supabase; chỉ chủ site mới đi qua lớp serverless đó.</p>
+
+    <div class="note">
+      <b>Điểm cần nhớ đầu tiên:</b> mọi thứ hiển thị trên site đều đến từ cơ sở dữ liệu, không có nội dung nào viết cứng trong code — trừ phần chữ giao diện (nhãn nút, tiêu đề mục) và bộ quy tắc hệ thống.
+    </div>
+  </section>
+
+  <section id="khu-vuc">
+    <h2 class="serif"><span class="chip" style="background:var(--teal)"></span>Ba khu vực &amp; đăng nhập</h2>
+    <p class="deck">Site không dùng thư viện định tuyến. Khu vực được quyết định một lần khi tải trang, dựa trên đường dẫn; sau đó việc chuyển màn hình diễn ra trong bộ nhớ.</p>
+
+    <div class="scroller">
+      <table>
+        <thead><tr><th>Khu vực</th><th class="mono">Đường dẫn</th><th>Màn hình cho phép</th><th>Cần đăng nhập</th></tr></thead>
+        <tbody>
+          <tr><td>Công khai</td><td class="mono">/</td><td>landing · home · module · notes · article</td><td><span class="pill open">Không</span></td></tr>
+          <tr><td>Luyện tập</td><td class="mono">/practice</td><td>hours</td><td><span class="pill shut">Có</span></td></tr>
+          <tr><td>Quản trị</td><td class="mono">/admin</td><td>cms · art · logic · archive · article · templates · postNew · postEdit · postPreview</td><td><span class="pill shut">Có</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>Danh sách này là một <em>danh sách trắng</em>: nếu code cố mở một màn hình không nằm trong khu vực hiện tại, nó sẽ không mở. Đây là lớp chặn để trang công khai không bao giờ vô tình lộ màn hình quản trị.</p>
+
+    <h3>Cách đăng nhập hoạt động</h3>
+    <p>Không có bảng người dùng, không dùng hệ thống tài khoản của Supabase. Thay vào đó:</p>
+    <ol>
+      <li>Chủ site nhập một mật khẩu tĩnh, được lưu trong biến môi trường của backend.</li>
+      <li>Backend so mật khẩu, rồi phát ra một <em>vé</em> có chữ ký, hạn 7 ngày.</li>
+      <li>Trình duyệt giữ vé đó và gắn vào mọi yêu cầu ghi dữ liệu.</li>
+    </ol>
+    <p>Hệ quả quan trọng: vì Postgres không biết ai đang đăng nhập, mọi kiểm tra quyền ghi đều nằm ở lớp serverless. Cơ sở dữ liệu chỉ phân biệt được hai vai — khách ẩn danh và khoá bí mật của backend.</p>
+
+    <div class="note caution">
+      <b>Đổi mật khẩu là đổi biến môi trường,</b> không phải đổi trong giao diện. Sau khi đổi, các vé đã phát vẫn còn hiệu lực đến khi hết hạn — trừ khi đổi luôn khoá ký.
+    </div>
+  </section>
+
+  <section id="noi-dung">
+    <h2 class="serif"><span class="chip" style="background:var(--leaf)"></span>Mô hình nội dung</h2>
+    <p class="deck">Bốn khái niệm, thường hay bị lẫn với nhau. Đây là chỗ đáng đọc kỹ nhất trong tài liệu.</p>
+
+    <h3>Module — ngăn kéo</h3>
+    <p>Một module là một chủ đề lớn: <em>sensory</em>, <em>biochem</em>, <em>roasting 101</em>. Mỗi module mang toàn bộ phần trình bày của riêng nó: màu nhấn, kiểu bố cục, đoạn giới thiệu, ba tấm ảnh. Bài viết được xếp vào module.</p>
+    <p>Có hai loại module:</p>
+    <ul>
+      <li><strong>Bình thường</strong> — hiện trên trang chủ như một ngăn kiến thức. Hiện có ba.</li>
+      <li><strong>Đặc biệt</strong> — <em>Ghi 01</em> và <em>Ghi 02</em>. Vẫn là module để bài viết có chỗ xếp vào, nhưng không nằm chung lưới với các module kiến thức trên trang chủ. Chúng cố tình để trống phần trình bày.</li>
+    </ul>
+    <div class="note">
+      <b>Quy tắc đã chốt:</b> một module đã tạo thì luôn hiện ở sidebar và trang chủ, <em>kể cả khi chưa có bài nào</em> — số bài đơn giản là 0. Module trống là một ý định đã tuyên bố, không phải một thứ còn thiếu.
+    </div>
+
+    <h3>Bài viết — nội dung thật</h3>
+    <p>Mỗi bài là một bản ghi độc lập, thuộc về đúng một module, và mang một <em>kiểu trình bày</em>. Toàn bộ bài viết được quản lý ở tab <strong>Nội dung</strong> trong trang quản trị — bất kể bài đó thuộc module nào.</p>
+
+    <h3>Template — khuôn để lấy ra dùng lại</h3>
+    <p>Template là một kho riêng, hoàn toàn tách khỏi bài viết. Nó không được đăng, không xuất hiện trên site công khai, không tính vào số bài. Nó chỉ tồn tại để khi cần viết một bài dạng tương tự thì lôi ra dùng.</p>
+
+    <div class="flow" role="img" aria-label="Luồng tạo bài: chọn template, hệ thống sao chép phần thân, bài mới tách rời khỏi template">
+      <div class="node"><span class="t">Kho template</span><span class="d">5 khuôn có sẵn</span></div>
+      <span class="arrow" aria-hidden="true">→</span>
+      <div class="node"><span class="t">Chọn khi tạo bài</span><span class="d">kèm tiêu đề, module</span></div>
+      <span class="arrow" aria-hidden="true">→</span>
+      <div class="node"><span class="t">Sao chép phần thân</span><span class="d">một lần, tại lúc tạo</span></div>
+      <span class="arrow" aria-hidden="true">→</span>
+      <div class="node"><span class="t">Bài viết độc lập</span><span class="d">sửa thoải mái, không ảnh hưởng khuôn</span></div>
+    </div>
+
+    <p>Việc sao chép chỉ xảy ra <strong>một lần duy nhất</strong> tại thời điểm tạo bài. Sau đó sửa bài không đụng đến template, và sửa template không đụng đến các bài đã tạo trước đó. Kho template mở rộng được — thêm bao nhiêu khuôn cũng được, không giới hạn ở 5.</p>
+
+    <h3>Nhật ký luyện tập — dữ liệu riêng</h3>
+    <p>Không liên quan gì đến bài viết. Đây là các phiên bấm giờ, mỗi phiên gắn một hoạt động và tuỳ chọn thêm một dự án. Hoạt động có hai hệ: <em>Task</em> (việc) và <em>Project</em> (dự án — hiện có <em>Sao đâu</em>, <em>Cà củng</em>). Khi chọn, Project hiện trước Task.</p>
+
+    <h3>Năm kiểu trình bày</h3>
+    <p>Kiểu trình bày quyết định bài được vẽ ra như thế nào, không quyết định bài nói về cái gì.</p>
+    <div class="scroller">
+      <table>
+        <thead><tr><th>Kiểu</th><th>Dùng khi</th><th>Đang dùng</th></tr></thead>
+        <tbody>
+          <tr><td>article</td><td>Bài văn xuôi thông thường, có đoạn dẫn và trích dẫn nổi</td><td class="n">—</td></tr>
+          <tr><td>cards</td><td>Nội dung chia thành các thẻ ngang hàng, như bảng từ vựng</td><td class="n">1</td></tr>
+          <tr><td>report</td><td>Bài có cấu trúc báo cáo, nhiều mục đánh số</td><td class="n">—</td></tr>
+          <tr><td>longform</td><td>Bài dài nhiều phần, có mục lục</td><td class="n">1</td></tr>
+          <tr><td>memo</td><td>Ghi chú ngắn, có ảnh, có thể ghim</td><td class="n">1</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Cùng một bộ mã vẽ <em>và cùng một bộ chuyển đổi dữ liệu</em> được dùng cho cả trang công khai lẫn ô xem trước trong trang quản trị. Trước đây mỗi bên một bộ chuyển đổi và chúng đã lệch nhau; nay có một kiểm tra tự động bắt buộc hai đường cho ra kết quả giống hệt.</p>
+  </section>
+
+  <section id="du-lieu">
+    <h2 class="serif"><span class="chip" style="background:var(--leaf)"></span>Cơ sở dữ liệu</h2>
+    <p class="deck">Postgres trên Supabase. Bảy bảng, mười bốn migration. Số liệu dưới đây là trạng thái thật trên bản chạy.</p>
+
+    <div class="scroller">
+      <table>
+        <thead><tr><th>Bảng</th><th>Giữ cái gì</th><th class="n">Cột</th><th class="n">Bản ghi</th><th>Khách đọc được</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">modules</td><td>Ngăn kiến thức + toàn bộ phần trình bày của nó</td><td class="n">21</td><td class="n">5</td><td><span class="pill open">Có</span></td></tr>
+          <tr><td class="mono">posts</td><td>Bài viết, mọi trạng thái</td><td class="n">21</td><td class="n">19</td><td><span class="pill open">Có</span> — chỉ bài đã đăng</td></tr>
+          <tr><td class="mono">templates</td><td>Kho khuôn viết bài</td><td class="n">8</td><td class="n">5</td><td><span class="pill shut">Không</span></td></tr>
+          <tr><td class="mono">site_settings</td><td>Chữ giao diện sửa được qua CMS, một dòng duy nhất</td><td class="n">3</td><td class="n">1</td><td><span class="pill open">Có</span></td></tr>
+          <tr><td class="mono">hour_logs</td><td>Phiên luyện tập đã bấm giờ</td><td class="n">9</td><td class="n">3</td><td><span class="pill shut">Không</span></td></tr>
+          <tr><td class="mono">activity_kinds</td><td>Danh mục hoạt động: Task và Project</td><td class="n">5</td><td class="n">6</td><td><span class="pill shut">Không</span></td></tr>
+          <tr><td class="mono">notes</td><td>Bảng ghi chú cũ — hiện rỗng, nhưng đường ghi vẫn còn qua <code>/api/notes</code></td><td class="n">13</td><td class="n">0</td><td><span class="pill open">Có</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Cột của hai bảng chính</h3>
+    <h4>modules</h4>
+    <p class="mono" style="color:var(--muted);font-size:13px">id · title · kind · sort_order · accent · on_color · tint · tint2 · layout · concept · blurb · long_desc · treatment · layout_note · shot1–3 · img1–3</p>
+    <p><code>kind</code> phân biệt <code>normal</code> với <code>special</code>. <code>sort_order</code> quyết định thứ tự; hai module đặc biệt để ở 101 và 102 nên luôn nằm cuối.</p>
+
+    <h4>posts</h4>
+    <p class="mono" style="color:var(--muted);font-size:13px">id · module_id · slug · n · en · vi · lead · kind · date_label · body · template · status · previous_status · sort_order · hero_image_url · hero_caption · pull_quote · further_reading · created_at · updated_at · published_at · deleted_at</p>
+    <ul>
+      <li><code>en</code> là tiêu đề bài — khai báo <strong>một chỗ duy nhất</strong>, dùng lại ở mọi nơi.</li>
+      <li>Mô tả trong danh sách lấy <code>lead</code> (đoạn sapo) nếu có; nếu không thì lấy <code>vi</code> làm cụm khoá ngắn.</li>
+      <li><code>body</code> là dữ liệu có cấu trúc, hình dạng tuỳ theo <code>template</code>.</li>
+      <li><code>previous_status</code> tồn tại để khôi phục bài từ thùng rác về đúng trạng thái trước đó.</li>
+    </ul>
+
+    <h3>Phân quyền</h3>
+    <p>Supabase cần <em>hai</em> lớp cùng bật thì khách mới đọc được: chính sách hàng (RLS) và quyền trên bảng. Thiếu một trong hai là chặn. Kết quả kiểm tra thật bằng khoá công khai:</p>
+    <div class="scroller">
+      <table>
+        <thead><tr><th>Bảng</th><th>Khách đọc</th><th>Khách ghi</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">modules · posts · site_settings · notes</td><td><span class="pill open">200 Cho phép</span></td><td><span class="pill shut">Từ chối</span></td></tr>
+          <tr><td class="mono">hour_logs · activity_kinds · templates</td><td><span class="pill shut">401 Từ chối</span></td><td><span class="pill shut">Từ chối</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Nghĩa là dữ liệu luyện tập và kho template không bao giờ rời khỏi máy chủ về phía người đọc, kể cả khi ai đó lấy được khoá công khai từ mã nguồn trình duyệt — khoá đó vốn được thiết kế để công khai.</p>
+
+    <div class="note caution">
+      <b>Nguyên tắc về migration, học từ lỗi thật:</b> không bao giờ sửa một file migration đã gửi đi chạy. Viết file số mới. <code>create table if not exists</code> chỉ kiểm tra tên bảng có tồn tại hay không, <em>không</em> kiểm tra cấu trúc — nên sửa tại chỗ sẽ âm thầm không có tác dụng gì. Ngoài ra khi xoá cột, phải xoá chính sách tham chiếu tới cột đó <em>trước</em>.
+    </div>
+  </section>
+
+  <section id="backend">
+    <h2 class="serif"><span class="chip" style="background:var(--apricot)"></span>Backend</h2>
+    <p class="deck">Mười một hàm serverless trên Vercel. Chúng chỉ phục vụ thao tác ghi và những thứ khách không được đọc; phần đọc công khai đi thẳng từ trình duyệt tới Supabase.</p>
+
+    <div class="scroller">
+      <table>
+        <thead><tr><th>Endpoint</th><th>Việc</th><th>Cần vé</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">/api/login</td><td>Đổi mật khẩu lấy vé 7 ngày</td><td><span class="pill neutral">—</span></td></tr>
+          <tr><td class="mono">/api/site</td><td>Đọc &amp; ghi chữ giao diện của CMS</td><td><span class="pill shut">Có</span></td></tr>
+          <tr><td class="mono">/api/upload</td><td>Nhận ảnh, đẩy lên kho lưu trữ</td><td><span class="pill shut">Có</span></td></tr>
+          <tr><td class="mono">/api/hours</td><td>Phiên luyện tập &amp; danh mục hoạt động</td><td><span class="pill shut">Có</span></td></tr>
+          <tr><td class="mono">/api/notes</td><td>Bảng ghi chú cũ</td><td><span class="pill shut">Có</span></td></tr>
+          <tr><td class="mono">/api/templates</td><td>Kho khuôn</td><td><span class="pill shut">Có</span></td></tr>
+          <tr><td class="mono">/api/modules</td><td>Danh sách module</td><td><span class="pill shut">Có</span></td></tr>
+          <tr><td class="mono">/api/modules/[id]</td><td>Sửa một module</td><td><span class="pill shut">Có</span></td></tr>
+          <tr><td class="mono">/api/posts</td><td>Danh sách &amp; tạo bài</td><td><span class="pill shut">Có</span></td></tr>
+          <tr><td class="mono">/api/posts/[id]</td><td>Đọc &amp; sửa một bài</td><td><span class="pill shut">Có</span></td></tr>
+          <tr><td class="mono">/api/posts/[id]/status</td><td>Đổi trạng thái bài</td><td><span class="pill shut">Có</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note caution">
+      <b>Trần 12 hàm.</b> Gói Vercel đang dùng cho phép tối đa 12 hàm serverless. Hiện đang ở 11. Thêm endpoint thứ 13 sẽ làm hỏng deploy — khi cần mở rộng, phải gộp nhiều việc vào một endpoint hoặc nâng gói.
+    </div>
+
+    <h3>Vòng đời một bài viết</h3>
+    <p>Bài chỉ đi được những đường đã cho phép; mọi đường khác bị từ chối ở backend.</p>
+    <div class="scroller">
+      <table>
+        <thead><tr><th>Thao tác</th><th>Chỉ từ trạng thái</th><th>Kết quả</th></tr></thead>
+        <tbody>
+          <tr><td>Đăng</td><td>nháp</td><td>đã đăng — hiện trên site</td></tr>
+          <tr><td>Gỡ đăng</td><td>đã đăng</td><td>nháp</td></tr>
+          <tr><td>Lưu trữ</td><td>đã đăng</td><td>lưu trữ</td></tr>
+          <tr><td>Khôi phục</td><td>lưu trữ</td><td>đã đăng</td></tr>
+          <tr><td>Xoá</td><td>nháp · đã đăng · lưu trữ</td><td>thùng rác</td></tr>
+          <tr><td>Lấy lại từ thùng rác</td><td>thùng rác</td><td>trạng thái trước khi xoá</td></tr>
+          <tr><td>Xoá vĩnh viễn</td><td>thùng rác</td><td>mất hẳn</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Xoá là hai bước có chủ đích: bước một bỏ vào thùng rác và ghi nhớ trạng thái cũ, bước hai mới xoá thật. Chỉ bài đã đăng mới xuất hiện trên trang công khai.</p>
+
+    <h3>Biến môi trường</h3>
+    <div class="scroller">
+      <table>
+        <thead><tr><th>Biến</th><th>Ở đâu</th><th>Việc</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">ADMIN_PASSWORD</td><td>backend</td><td>Mật khẩu đăng nhập</td></tr>
+          <tr><td class="mono">ADMIN_SESSION_SECRET</td><td>backend</td><td>Khoá ký vé đăng nhập</td></tr>
+          <tr><td class="mono">ADMIN_ALLOWED_ORIGIN</td><td>backend</td><td>Chỉ nhận yêu cầu từ tên miền này</td></tr>
+          <tr><td class="mono">SUPABASE_URL</td><td>backend</td><td>Địa chỉ cơ sở dữ liệu</td></tr>
+          <tr><td class="mono">SUPABASE_SECRET_KEY</td><td>backend</td><td>Khoá bí mật, bỏ qua mọi phân quyền</td></tr>
+          <tr><td class="mono">VITE_SUPABASE_URL</td><td>frontend</td><td>Địa chỉ cơ sở dữ liệu</td></tr>
+          <tr><td class="mono">VITE_SUPABASE_ANON_KEY</td><td>frontend</td><td>Khoá công khai, chỉ đọc được cái đã cho phép</td></tr>
+          <tr><td class="mono">VITE_ADMIN_API_URL</td><td>frontend</td><td>Địa chỉ lớp serverless</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note caution">
+      <b>Chỗ để bí mật:</b> chỉ trong file <code>.env.local</code>, và không bao giờ đặt bí mật trong thư mục dự án ở dạng file khác. Lưu ý file tên <code>.env</code> (không có <code>.local</code>) <em>không</em> nằm trong danh sách bỏ qua của Git — đặt bí mật vào đó là đẩy thẳng lên GitHub.
+    </div>
+  </section>
+
+  <section id="frontend">
+    <h2 class="serif"><span class="chip" style="background:var(--blush)"></span>Frontend</h2>
+    <p class="deck">React với TypeScript, dựng bằng Vite. Mười sáu màn hình, sáu nguồn dữ liệu, năm bộ vẽ bài dùng chung.</p>
+
+    <h3>Màn hình</h3>
+    <div class="scroller">
+      <table>
+        <thead><tr><th>Khu vực</th><th>Màn hình</th></tr></thead>
+        <tbody>
+          <tr><td>Công khai</td><td>Landing (trang chủ) · IndexScreen (danh mục) · ModuleScreen (một ngăn) · Article (bài viết) · Notes (Ghi 01)</td></tr>
+          <tr><td>Luyện tập</td><td>Hours (bấm giờ &amp; thống kê)</td></tr>
+          <tr><td>Quản trị</td><td>Cms (sửa chữ giao diện) · Templates (kho khuôn) · Archive (lưu trữ &amp; thùng rác) · Logic (bộ quy tắc) · DesignSystem (bảng màu, kiểu chữ)</td></tr>
+          <tr><td>Soạn bài</td><td>Login · NewPostWizard · TemplateStep (chọn khuôn) · MetadataStep (tiêu đề, module) · Editor · Preview</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Nguồn dữ liệu</h3>
+    <div class="scroller">
+      <table>
+        <thead><tr><th>Nguồn</th><th>Cung cấp</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">useModules</td><td>Danh sách module, dùng chung toàn site qua một lớp bọc</td></tr>
+          <tr><td class="mono">usePublishedPosts</td><td>Các bài đã đăng cho trang công khai</td></tr>
+          <tr><td class="mono">usePost</td><td>Một bài cụ thể</td></tr>
+          <tr><td class="mono">useSiteCopy</td><td>Chữ giao diện sửa được qua CMS, dùng chung toàn site</td></tr>
+          <tr><td class="mono">useHours</td><td>Phiên luyện tập và danh mục hoạt động</td></tr>
+          <tr><td class="mono">useNotes</td><td>Bảng ghi chú cũ</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Vài hành vi đáng biết</h3>
+    <ul>
+      <li><strong>Ghi rồi mới xác nhận.</strong> Khi sửa nội dung, màn hình cập nhật ngay lập tức rồi mới gửi lên máy chủ; nếu máy chủ trả về khác, màn hình chỉnh lại theo máy chủ. Nên thao tác cảm giác nhanh, nhưng có thể thấy giá trị "nhảy" một nhịp khi mạng chậm.</li>
+      <li><strong>Hoàn tác</strong> bằng Ctrl+Z, nhớ 5 bước gần nhất, và tự xoá khi rời màn hình. Nó cố tình không hoạt động khi con trỏ đang ở trong ô nhập liệu — chỗ đó để trình duyệt tự lo.</li>
+      <li><strong>Chữ gợi ý trong ô soạn thảo</strong> được vẽ bằng CSS chứ không phải nội dung thật, để không bị lưu nhầm thành nội dung bài.</li>
+      <li><strong>Mọi bài đều mở bằng cùng một màn hình</strong> Article, rồi màn hình đó chọn bộ vẽ theo kiểu trình bày của bài. Không có đường tắt riêng cho từng loại.</li>
+    </ul>
+  </section>
+
+  <section id="quy-tac">
+    <h2 class="serif"><span class="chip" style="background:var(--teal)"></span>Bộ quy tắc</h2>
+    <p class="deck">Sáu mươi tư quy tắc, chia làm 14 nhóm trong 3 phần, đọc được ngay trên site ở trang <em>Quy ước hệ thống</em> trong khu quản trị.</p>
+
+    <p>Đây không phải tài liệu tham khảo cho vui — nó là ràng buộc. Khi viết code mà phát sinh một luật cố định mới, luật đó phải được thêm vào bộ quy tắc, để người đọc bộ quy tắc thấy được toàn bộ bức tranh mà không phải đọc code.</p>
+
+    <p>Ba luật gần đây nhất được thêm vào, tiện làm ví dụ về loại nội dung thuộc về đây:</p>
+    <ul>
+      <li>Tiêu đề bài chỉ khai báo ở một chỗ, mọi nơi khác dùng lại — để tiêu đề trong module không bao giờ lệch với tiêu đề bài.</li>
+      <li>Mô tả trong danh sách lấy đoạn sapo nếu có, không thì lấy một cụm khoá ngắn.</li>
+      <li>Module đã tạo luôn hiện, kể cả khi chưa có bài.</li>
+    </ul>
+
+    <p>Bộ quy tắc có cơ chế chèn tên điều hướng động, nên khi đổi tên một mục trong sidebar thì các quy tắc nhắc tới mục đó cũng đổi theo, không bị lệch.</p>
+  </section>
+
+  <section id="trien-khai">
+    <h2 class="serif"><span class="chip" style="background:var(--teal)"></span>Môi trường &amp; triển khai</h2>
+    <p class="deck">Hai dự án Vercel — một cho giao diện, một cho lớp serverless — cùng đọc một cơ sở dữ liệu Supabase.</p>
+
+    <div class="scroller">
+      <table>
+        <thead><tr><th>Việc</th><th>Cách làm</th><th>Ai làm được</th></tr></thead>
+        <tbody>
+          <tr><td>Đưa code lên</td><td>Đẩy lên nhánh chính, Vercel tự dựng</td><td>Cả hai</td></tr>
+          <tr><td>Đổi cấu trúc dữ liệu</td><td>Dán file migration mới vào SQL Editor của Supabase</td><td><span class="pill warnp">Chỉ chủ site</span></td></tr>
+          <tr><td>Đổi biến môi trường</td><td>Bảng điều khiển Vercel, rồi dựng lại</td><td><span class="pill warnp">Chỉ chủ site</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p><strong>Kiểm thử tự động:</strong> 262 bài cho giao diện, 137 bài cho backend — tất cả đang qua, trừ <em>một</em> bài backend bị cố ý bỏ qua. Chạy bằng <code>npm test</code> ở thư mục gốc: nó kiểm kiểu cả ba phần trước, rồi mới chạy test. Chạy lẻ từng phần sẽ bỏ sót — đó là cách một lần hỏng đã lọt lên nhánh chính.</p>
+
+    <div class="note caution">
+      <b>Việc migration không tự động được.</b> Không có mật khẩu cơ sở dữ liệu trong môi trường làm việc, nên mỗi thay đổi cấu trúc đều cần chủ site tự dán và chạy trong Supabase. Đây là ma sát có ý thức: nó buộc mọi thay đổi cấu trúc phải được nhìn thấy trước khi xảy ra.
+    </div>
+  </section>
+
+  <section id="khoang-trong">
+    <h2 class="serif"><span class="chip" style="background:var(--teal)"></span>Khoảng trống đã biết</h2>
+    <p class="deck">Những thứ đang thiếu hoặc còn nợ, ghi lại đúng như hiện trạng — không cái nào là lỗi đang chặn, nhưng đều nên biết trước khi lên kế hoạch.</p>
+
+    <ul class="gaps">
+      <li>
+        <span class="pill warnp">Bảo mật</span>
+        <span class="body"><b>Token GitHub quá rộng quyền</b><span>Token đang dùng không có ngày hết hạn và mở gần như mọi quyền, kể cả quản trị tổ chức. Nên thay bằng token chỉ có quyền kho mã, hạn 90 ngày.</span></span>
+      </li>
+      <li>
+        <span class="pill neutral">Dữ liệu</span>
+        <span class="body"><b>Bảng ghi chú cũ còn nằm đó</b><span>Bảng <code>notes</code> hiện rỗng và không còn đường ghi vào — nội dung Ghi 01 đã chuyển hết sang bài viết. Chưa quyết định xoá hay giữ.</span></span>
+      </li>
+      <li>
+        <span class="pill neutral">Tính năng</span>
+        <span class="body"><b>Chưa có giao diện tạo template</b><span>Kho template mở rộng được về mặt dữ liệu, nhưng thêm khuôn mới hiện phải làm qua cơ sở dữ liệu. Đã thống nhất làm sau.</span></span>
+      </li>
+      <li>
+        <span class="pill neutral">Tính năng</span>
+        <span class="body"><b>Trình soạn thảo chưa phủ hết 5 kiểu</b><span>Editor xử lý được cards và report; bài longform và memo hiện phải sửa ngoài trình soạn thảo.</span></span>
+      </li>
+      <li>
+        <span class="pill neutral">Tính năng</span>
+        <span class="body"><b>Module chưa có cách ẩn</b><span>Đã có cột <code>visibility</code> (migration 0015). Module riêng tư không hiện ở đâu ngoài khu đã đăng nhập; module đặc biệt công khai như Ghi 01 vẫn hiện ở Mục lục và sidebar, chỉ vắng ở Trang chủ.</span></span>
+      </li>
+      <li>
+        <span class="pill neutral">Tồn đọng</span>
+        <span class="body"><b>Nhóm B trong ghi chú hợp nhất</b><span>Một mục việc trong <code>MERGE-NOTES.md</code> chưa được đụng tới lần nào.</span></span>
+      </li>
+    </ul>
+  </section>
+
+  <section id="thay-doi">
+    <h2 class="serif"><span class="chip" style="background:var(--teal)"></span>Đã đổi kể từ bản đầu</h2>
+    <p class="deck">Bản đầu viết ngày 19.08. Những điều dưới đây đã khác kể từ đó — ghi lại để ai đọc bản cũ không hiểu nhầm.</p>
+    <div class="scroller">
+      <table>
+        <thead><tr><th>Thay đổi</th><th>Ảnh hưởng</th></tr></thead>
+        <tbody>
+          <tr><td>Module có thêm <code>visibility</code></td><td>Trang chủ chỉ trưng module thường; Mục lục và sidebar liệt kê mọi module công khai, gồm Ghi 01</td></tr>
+          <tr><td>Bỏ cột <code>posts.n</code></td><td>Số cạnh mỗi bài nay là vị trí trong danh sách đang xem, không phải số lưu sẵn</td></tr>
+          <tr><td>API thôi đổi tên cột</td><td>Cả hệ thống một hình dạng dữ liệu; không còn bộ chuyển đổi trung gian nào</td></tr>
+          <tr><td>Một bộ chuyển đổi cho cả hai đường</td><td>Ô xem trước trong admin không thể lệch khỏi bản đăng</td></tr>
+          <tr><td>Backend biết đủ 5 loại bài</td><td>Trước đó không tạo được bài longform và memo qua trang quản trị</td></tr>
+          <tr><td>Mọi trang bài có đường quay lại và màu module</td><td>Trước đó 4/5 loại bài mở ra trông giống hệt nhau</td></tr>
+          <tr><td>Thêm <code>backend/scripts/dev-server.mjs</code></td><td>Chạy được khu admin ở máy cá nhân — trước đó không thể</td></tr>
+          <tr><td>Bộ quy tắc 64 → 68 luật</td><td>Thêm luật phổ quát cho template; sửa 3 luật mô tả sai mô hình template</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    Tài liệu mô tả hiện trạng, không mô tả kế hoạch. Khi cấu trúc dữ liệu, endpoint hay bộ quy tắc thay đổi, cập nhật lại tài liệu này cùng lúc — một tài liệu cơ sở đã lệch còn tệ hơn không có tài liệu.
+  </footer>
+
+  </main>
+</div>
+</div>
