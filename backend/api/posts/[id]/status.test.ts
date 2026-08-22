@@ -25,7 +25,7 @@ afterEach(() => {
   vi.resetModules()
 })
 
-function fullRow(status: string, previousStatus: string | null = null) {
+function fullRow(status: string, previous_status: string | null = null) {
   return {
     id: 'p1',
     module_id: 'sensory',
@@ -47,7 +47,7 @@ function fullRow(status: string, previousStatus: string | null = null) {
     updated_at: '2026-01-01T00:00:00.000Z',
     published_at: null,
     deleted_at: null,
-    previous_status: previousStatus,
+    previous_status: previous_status,
   }
 }
 
@@ -136,7 +136,7 @@ describe('POST /api/posts/:id/status', () => {
     await handler(req, res)
     expect(res.statusCode).toBe(200)
     expect(res.body.post.status).toBe('deleted')
-    expect(res.body.post.previousStatus).toBe('published')
+    expect(res.body.post.previous_status).toBe('published')
   })
 
   it('restore-trash: deleted -> previous_status, clearing deleted_at/previous_status', async () => {
@@ -156,7 +156,7 @@ describe('POST /api/posts/:id/status', () => {
     await handler(req, res)
     expect(res.statusCode).toBe(200)
     expect(res.body.post.status).toBe('archived')
-    expect(res.body.post.previousStatus).toBeNull()
+    expect(res.body.post.previous_status).toBeNull()
   })
 
   it('permanently-delete: deleted -> hard delete, no post in response', async () => {

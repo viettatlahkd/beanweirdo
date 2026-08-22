@@ -56,7 +56,7 @@ describe('GET /api/posts', () => {
     await handler(req, res)
     expect(res.statusCode).toBe(200)
     expect(res.body.posts).toHaveLength(1)
-    expect(res.body.posts[0]).toMatchObject({ id: 'p1', moduleId: 'sensory', status: 'draft' })
+    expect(res.body.posts[0]).toMatchObject({ id: 'p1', module_id: 'sensory', status: 'draft' })
   })
 
   it('accepts status=draft|published|archived|deleted|all', async () => {
@@ -90,7 +90,7 @@ describe('POST /api/posts', () => {
     const req = mockReq({
       method: 'POST',
       headers: authHeaders(token),
-      body: { moduleId: 'sensory', kind: 'bogus', en: 'E', vi: 'V' },
+      body: { module_id: 'sensory', kind: 'bogus', en: 'E', vi: 'V' },
     })
     const res = mockRes()
     await handler(req, res)
@@ -105,7 +105,7 @@ describe('POST /api/posts', () => {
     const req = mockReq({
       method: 'POST',
       headers: authHeaders(token),
-      body: { moduleId: 'sensory', kind: 'essay', en: 'Title', vi: 'Mô tả' },
+      body: { module_id: 'sensory', kind: 'essay', en: 'Title', vi: 'Mô tả' },
     })
     const res = mockRes()
     await handler(req, res)
@@ -114,7 +114,7 @@ describe('POST /api/posts', () => {
     expect(res.body).toEqual({ id: 'new-id' })
   })
 
-  it('maps a foreign key violation (bad moduleId) to 400', async () => {
+  it('maps a foreign key violation (bad module_id) to 400', async () => {
     fromMock
       .mockReturnValueOnce(queryBuilder({ count: 0, error: null }))
       .mockReturnValueOnce(queryBuilder({ data: null, error: { code: '23503', message: 'fk violation' } }))
@@ -122,7 +122,7 @@ describe('POST /api/posts', () => {
     const req = mockReq({
       method: 'POST',
       headers: authHeaders(token),
-      body: { moduleId: 'nope', kind: 'essay', en: 'Title', vi: 'Mô tả' },
+      body: { module_id: 'nope', kind: 'essay', en: 'Title', vi: 'Mô tả' },
     })
     const res = mockRes()
     await handler(req, res)
@@ -131,7 +131,7 @@ describe('POST /api/posts', () => {
 })
 
 describe('PUT /api/posts', () => {
-  it('requires a moduleId', async () => {
+  it('requires a module_id', async () => {
     const res = mockRes()
     await handler(mockReq({ method: 'PUT', body: { order: ['a'] }, headers: authHeaders(signToken()) }), res)
     expect(res.statusCode).toBe(400)
@@ -140,7 +140,7 @@ describe('PUT /api/posts', () => {
   it('requires order to be an array of ids', async () => {
     const res = mockRes()
     await handler(
-      mockReq({ method: 'PUT', body: { moduleId: 'sensory', order: 'a' }, headers: authHeaders(signToken()) }),
+      mockReq({ method: 'PUT', body: { module_id: 'sensory', order: 'a' }, headers: authHeaders(signToken()) }),
       res,
     )
     expect(res.statusCode).toBe(400)
@@ -158,7 +158,7 @@ describe('PUT /api/posts', () => {
     await handler(
       mockReq({
         method: 'PUT',
-        body: { moduleId: 'sensory', order: ['post-b', 'post-a'] },
+        body: { module_id: 'sensory', order: ['post-b', 'post-a'] },
         headers: authHeaders(signToken()),
       }),
       res,
@@ -187,7 +187,7 @@ describe('POST /api/posts — starting from a template', () => {
     await handler(
       mockReq({
         method: 'POST',
-        body: { moduleId: 'biochem', kind: 'note', en: 'Bài mới', vi: 'mô tả', templateId: 't1' },
+        body: { module_id: 'biochem', kind: 'note', en: 'Bài mới', vi: 'mô tả', templateId: 't1' },
         headers: authHeaders(signToken()),
       }),
       res,
@@ -207,7 +207,7 @@ describe('POST /api/posts — starting from a template', () => {
     await handler(
       mockReq({
         method: 'POST',
-        body: { moduleId: 'biochem', kind: 'note', en: 'x', vi: 'y', templateId: 'gone' },
+        body: { module_id: 'biochem', kind: 'note', en: 'x', vi: 'y', templateId: 'gone' },
         headers: authHeaders(signToken()),
       }),
       res,
@@ -223,7 +223,7 @@ describe('POST /api/posts — starting from a template', () => {
     await handler(
       mockReq({
         method: 'POST',
-        body: { moduleId: 'biochem', kind: 'note', en: 'x', vi: 'y' },
+        body: { module_id: 'biochem', kind: 'note', en: 'x', vi: 'y' },
         headers: authHeaders(signToken()),
       }),
       res,

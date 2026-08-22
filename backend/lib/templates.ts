@@ -24,7 +24,7 @@ export interface Template {
   description: string
   renderer: PostTemplate
   body: unknown | null
-  sortOrder: number
+  sort_order: number
 }
 
 export function toTemplate(row: TemplateRow): Template {
@@ -34,7 +34,7 @@ export function toTemplate(row: TemplateRow): Template {
     description: row.description,
     renderer: row.renderer,
     body: row.body,
-    sortOrder: row.sort_order,
+    sort_order: row.sort_order,
   }
 }
 
@@ -45,5 +45,5 @@ export const TEMPLATE_PATCHABLE: Array<{ jsonKey: string; column: keyof Template
   { jsonKey: 'name', column: 'name' },
   { jsonKey: 'description', column: 'description' },
   { jsonKey: 'body', column: 'body' },
-  { jsonKey: 'sortOrder', column: 'sort_order' },
+  { jsonKey: 'sort_order', column: 'sort_order' },
 ]

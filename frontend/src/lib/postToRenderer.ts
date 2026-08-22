@@ -23,10 +23,9 @@ import { displayNumber, postDescription, postTitle } from './postText'
  * entirely, while a banner above it promised the reader was seeing exactly
  * what would ship.
  *
- * So the shape below is the database's own, and the public journal passes its
- * rows straight through. Only the admin has a bridge, `fromAdminPost`, which
- * does nothing but rename. When the API stops renaming columns, that bridge
- * deletes itself and nothing else here moves.
+ * The API no longer renames columns on the way out, so both doors now open on
+ * the same shape and neither side needs a bridge. This file is the only place
+ * that decides how a stored post becomes something a template can draw.
  */
 
 /** Stand-ins for pictures a post has not been given yet. */
@@ -184,43 +183,4 @@ export function toReportData(post: RenderablePost, mod: RenderableModule | undef
     blocks,
     band: mod ? { bg: mod.accent, fg: mod.on_color } : undefined,
   }
-}
-
-
-/**
- * The admin reads posts through our own API, which renames every column on the
- * way out. This puts the names back. It exists only for as long as that
- * renaming does.
- */
-export function fromAdminPost(p: {
-  en: string
-  vi: string
-  lead: string | null
-  kind: string
-  dateLabel: string
-  body: unknown
-  heroCaption: string | null
-  heroImageUrl: string | null
-  pullQuote: string | null
-  furtherReading: string[] | null
-}): RenderablePost {
-  return {
-    en: p.en,
-    vi: p.vi,
-    lead: p.lead,
-    kind: p.kind,
-    date_label: p.dateLabel,
-    body: p.body,
-    hero_caption: p.heroCaption,
-    hero_image_url: p.heroImageUrl,
-    pull_quote: p.pullQuote,
-    further_reading: p.furtherReading,
-  }
-}
-
-/** Same bridge, for the module the admin loaded alongside the post. */
-export function fromAdminModule(
-  m: { title: string; accent: string; onColor: string } | undefined,
-): RenderableModule | undefined {
-  return m ? { title: m.title, accent: m.accent, on_color: m.onColor } : undefined
 }

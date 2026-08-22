@@ -66,7 +66,7 @@ describe('GET /api/modules', () => {
 
     expect(res.statusCode).toBe(200)
     expect(res.body.modules).toHaveLength(1)
-    expect(res.body.modules[0]).toMatchObject({ id: 'sensory', onColor: '#fff', longDesc: 'ld', sortOrder: 0 })
+    expect(res.body.modules[0]).toMatchObject({ id: 'sensory', on_color: '#fff', long_desc: 'ld', sort_order: 0 })
   })
 
   it('propagates supabase errors as 500', async () => {

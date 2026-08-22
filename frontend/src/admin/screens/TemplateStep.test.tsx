@@ -9,8 +9,8 @@ vi.mock('../lib/apiClient', () => ({ listTemplates: () => listTemplates() }))
 const { TemplateStep } = await import('./TemplateStep')
 
 const templates = [
-  { id: 't1', name: 'Article', description: 'Essay hai cột', renderer: 'article', sortOrder: 1 },
-  { id: 't2', name: 'Long-form', description: 'Bài rất dài', renderer: 'longform', sortOrder: 2 },
+  { id: 't1', name: 'Article', description: 'Essay hai cột', renderer: 'article', sort_order: 1 },
+  { id: 't2', name: 'Long-form', description: 'Bài rất dài', renderer: 'longform', sort_order: 2 },
 ]
 
 beforeEach(() => {

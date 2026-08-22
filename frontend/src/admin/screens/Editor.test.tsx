@@ -12,27 +12,27 @@ import { EditorCanvas } from './Editor'
 function basePost(overrides: Partial<Omit<PostDetail, 'body'>> & { body?: unknown } = {}): PostDetail {
   return {
     id: 'p1',
-    moduleId: 'sensory',
+    module_id: 'sensory',
     n: 1,
     en: 'Senses of Flavors',
     vi: 'mô tả',
     kind: 'essay',
-    dateLabel: '2026.06',
+    date_label: '2026.06',
     status: 'draft',
     template: 'article',
-    heroImageUrl: null,
-    sortOrder: 0,
-    createdAt: '2026-06-01T00:00:00Z',
-    updatedAt: '2026-06-01T00:00:00Z',
-    publishedAt: null,
+    hero_image_url: null,
+    sort_order: 0,
+    created_at: '2026-06-01T00:00:00Z',
+    updated_at: '2026-06-01T00:00:00Z',
+    published_at: null,
     slug: 'senses-of-flavors',
     body: null,
-    heroCaption: null,
+    hero_caption: null,
     lead: 'một mô tả mở đầu',
-    pullQuote: null,
-    furtherReading: null,
-    deletedAt: null,
-    previousStatus: null,
+    pull_quote: null,
+    further_reading: null,
+    deleted_at: null,
+    previous_status: null,
     ...overrides,
   } as PostDetail
 }
@@ -42,7 +42,7 @@ describe('EditorCanvas — article', () => {
     const onChange = vi.fn()
     const post = basePost({
       body: [{ h: 'Nó là gì', p: 'nội dung cũ' }],
-      pullQuote: 'trích dẫn cũ',
+      pull_quote: 'trích dẫn cũ',
     })
     render(<EditorCanvas template="article" post={post} onChange={onChange} onHeroDrop={vi.fn()} />)
 
@@ -64,16 +64,16 @@ describe('EditorCanvas — article', () => {
     const pull = screen.getByDisplayValue('trích dẫn cũ')
     await userEvent.type(pull, '!')
     await userEvent.tab()
-    expect(onChange).toHaveBeenLastCalledWith({ pullQuote: 'trích dẫn cũ!' })
+    expect(onChange).toHaveBeenLastCalledWith({ pull_quote: 'trích dẫn cũ!' })
   })
 
   it('shows the existing hero image when set, and the drop prompt otherwise', () => {
     const { rerender } = render(
-      <EditorCanvas template="article" post={basePost({ heroImageUrl: 'https://example.com/hero.png' })} onChange={vi.fn()} onHeroDrop={vi.fn()} />,
+      <EditorCanvas template="article" post={basePost({ hero_image_url: 'https://example.com/hero.png' })} onChange={vi.fn()} onHeroDrop={vi.fn()} />,
     )
     expect(document.querySelector('img')).toHaveAttribute('src', 'https://example.com/hero.png')
 
-    rerender(<EditorCanvas template="article" post={basePost({ heroImageUrl: null })} onChange={vi.fn()} onHeroDrop={vi.fn()} />)
+    rerender(<EditorCanvas template="article" post={basePost({ hero_image_url: null })} onChange={vi.fn()} onHeroDrop={vi.fn()} />)
     expect(document.querySelector('img')).not.toBeInTheDocument()
     expect(screen.getByText(/kéo ảnh hero thả vào đây/)).toBeInTheDocument()
   })

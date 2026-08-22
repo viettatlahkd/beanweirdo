@@ -35,22 +35,22 @@ export interface Module {
   id: string
   title: string
   accent: string
-  onColor: string
+  on_color: string
   tint: string
   tint2: string
   layout: ModuleLayout
   concept: string
   blurb: string
-  longDesc: string
+  long_desc: string
   treatment: string
-  layoutNote: string
+  layout_note: string
   shot1: string
   shot2: string
   shot3: string
   img1: string | null
   img2: string | null
   img3: string | null
-  sortOrder: number
+  sort_order: number
   kind: 'normal' | 'special'
 }
 
@@ -59,22 +59,22 @@ export function toModule(row: ModuleRow): Module {
     id: row.id,
     title: row.title,
     accent: row.accent,
-    onColor: row.on_color,
+    on_color: row.on_color,
     tint: row.tint,
     tint2: row.tint2,
     layout: row.layout,
     concept: row.concept,
     blurb: row.blurb,
-    longDesc: row.long_desc,
+    long_desc: row.long_desc,
     treatment: row.treatment,
-    layoutNote: row.layout_note,
+    layout_note: row.layout_note,
     shot1: row.shot1,
     shot2: row.shot2,
     shot3: row.shot3,
     img1: row.img1,
     img2: row.img2,
     img3: row.img3,
-    sortOrder: row.sort_order,
+    sort_order: row.sort_order,
     kind: row.kind ?? 'normal',
   }
 }
@@ -83,15 +83,15 @@ export function toModule(row: ModuleRow): Module {
 export const MODULE_PATCHABLE: Array<{ jsonKey: string; column: keyof ModuleRow }> = [
   { jsonKey: 'title', column: 'title' },
   { jsonKey: 'accent', column: 'accent' },
-  { jsonKey: 'onColor', column: 'on_color' },
+  { jsonKey: 'on_color', column: 'on_color' },
   { jsonKey: 'tint', column: 'tint' },
   { jsonKey: 'tint2', column: 'tint2' },
   { jsonKey: 'layout', column: 'layout' },
   { jsonKey: 'concept', column: 'concept' },
   { jsonKey: 'blurb', column: 'blurb' },
-  { jsonKey: 'longDesc', column: 'long_desc' },
+  { jsonKey: 'long_desc', column: 'long_desc' },
   { jsonKey: 'treatment', column: 'treatment' },
-  { jsonKey: 'layoutNote', column: 'layout_note' },
+  { jsonKey: 'layout_note', column: 'layout_note' },
   { jsonKey: 'shot1', column: 'shot1' },
   { jsonKey: 'shot2', column: 'shot2' },
   { jsonKey: 'shot3', column: 'shot3' },
@@ -105,7 +105,7 @@ export const MODULE_PATCHABLE: Array<{ jsonKey: string; column: keyof ModuleRow 
  * sees it until it has a post, so the placeholder copy only has to be legible
  * in the editor.
  */
-export function newModuleRow(id: string, sortOrder: number): Omit<ModuleRow, 'img1' | 'img2' | 'img3'> {
+export function newModuleRow(id: string, sort_order: number): Omit<ModuleRow, 'img1' | 'img2' | 'img3'> {
   return {
     id,
     title: 'module mới',
@@ -122,7 +122,7 @@ export function newModuleRow(id: string, sortOrder: number): Omit<ModuleRow, 'im
     shot1: 'ảnh chính',
     shot2: 'ảnh phụ',
     shot3: 'ảnh phụ',
-    sort_order: sortOrder,
+    sort_order: sort_order,
     // Created from the CMS means a reading module; the journals are seeded.
     kind: 'normal',
   }

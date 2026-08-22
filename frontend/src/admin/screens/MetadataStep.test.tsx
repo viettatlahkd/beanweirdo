@@ -27,7 +27,7 @@ describe('MetadataStep', () => {
     await userEvent.type(screen.getByLabelText('Mô tả (VI)'), 'mô tả')
     await userEvent.click(screen.getByRole('button', { name: /tiếp tục/i }))
 
-    expect(onContinue).toHaveBeenCalledWith({ moduleId: 'roasting', kind: 'essay', en: 'Senses of Flavors', vi: 'mô tả' })
+    expect(onContinue).toHaveBeenCalledWith({ module_id: 'roasting', kind: 'essay', en: 'Senses of Flavors', vi: 'mô tả' })
   })
 
   it('disables continue until module, EN and VI titles are filled', async () => {

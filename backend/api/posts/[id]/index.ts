@@ -30,38 +30,43 @@ interface PatchPostBody {
   en?: unknown
   vi?: unknown
   body?: unknown
-  heroImageUrl?: unknown
-  heroCaption?: unknown
+  hero_image_url?: unknown
+  hero_caption?: unknown
   lead?: unknown
-  pullQuote?: unknown
-  furtherReading?: unknown
+  pull_quote?: unknown
+  further_reading?: unknown
   /** The CMS's entry rows edit the display number and date label in place. */
   n?: unknown
-  dateLabel?: unknown
-  sortOrder?: unknown
+  date_label?: unknown
+  sort_order?: unknown
 }
 
-const PATCHABLE: Array<{ jsonKey: keyof PatchPostBody; column: keyof PostRow }> = [
-  { jsonKey: 'en', column: 'en' },
-  { jsonKey: 'vi', column: 'vi' },
-  { jsonKey: 'body', column: 'body' },
-  { jsonKey: 'heroImageUrl', column: 'hero_image_url' },
-  { jsonKey: 'heroCaption', column: 'hero_caption' },
-  { jsonKey: 'lead', column: 'lead' },
-  { jsonKey: 'pullQuote', column: 'pull_quote' },
-  { jsonKey: 'furtherReading', column: 'further_reading' },
-  { jsonKey: 'dateLabel', column: 'date_label' },
-  { jsonKey: 'sortOrder', column: 'sort_order' },
-]
+/**
+ * The fields a client may change. Once the API stopped renaming columns these
+ * became the column names themselves, so there is nothing left to map — the
+ * list is just a gate saying which columns are writable.
+ */
+const PATCHABLE = [
+  'en',
+  'vi',
+  'body',
+  'hero_image_url',
+  'hero_caption',
+  'lead',
+  'pull_quote',
+  'further_reading',
+  'date_label',
+  'sort_order',
+] as const satisfies readonly (keyof PatchPostBody & keyof PostRow)[]
 
 async function handlePatch(req: VercelRequest, res: VercelResponse, id: string): Promise<void> {
   const body = (req.body ?? {}) as PatchPostBody
 
   const patch: Record<string, unknown> = {}
-  for (const { jsonKey, column } of PATCHABLE) {
-    if (Object.prototype.hasOwnProperty.call(body, jsonKey)) {
-      patch[column] = body[jsonKey]
-    }
+    for (const field of PATCHABLE) {
+      if (Object.prototype.hasOwnProperty.call(body, field)) {
+        patch[field] = body[field]
+      }
   }
 
   if (Object.keys(patch).length === 0) {

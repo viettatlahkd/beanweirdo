@@ -23,7 +23,7 @@ import {
 import { useNav } from '../../lib/nav'
 import { ink, paper, serif } from '../../design/tokens'
 import { blankReportBlock, getBody, resolveTemplate } from '../lib/postData'
-import { fromAdminModule, fromAdminPost, toArticleData, toCardsData } from '../../lib/postToRenderer'
+import { toArticleData, toCardsData } from '../../lib/postToRenderer'
 
 /**
  * The patch shape every editable field ultimately produces — a subset of
@@ -34,10 +34,10 @@ import { fromAdminModule, fromAdminPost, toArticleData, toCardsData } from '../.
 export type EditPatch = Partial<{
   en: string
   lead: string
-  pullQuote: string
-  furtherReading: string[]
+  pull_quote: string
+  further_reading: string[]
   body: unknown
-  heroImageUrl: string
+  hero_image_url: string
 }>
 
 type CanvasProps = {
@@ -79,7 +79,7 @@ function EditorContent({ postId }: { postId: string }) {
   if (!post) return <div style={{ padding: 32, color: ink.muted, fontSize: 13 }}>Đang tải...</div>
 
   const template = resolveTemplate(post)
-  const activeModule = modules.find((m) => m.id === post.moduleId)
+  const activeModule = modules.find((m) => m.id === post.module_id)
 
   // Optimistic local update + fire-and-forget remote save. Functional
   // setState keeps this safe against the stale-closure bug this screen used
@@ -104,8 +104,8 @@ function EditorContent({ postId }: { postId: string }) {
         onChange={applyPatch}
         onHeroDrop={async (file) => {
           const { url } = await uploadImage(file)
-          setPost((prev) => (prev ? { ...prev, heroImageUrl: url } : prev))
-          updatePost(postId, { heroImageUrl: url })
+          setPost((prev) => (prev ? { ...prev, hero_image_url: url } : prev))
+          updatePost(postId, { hero_image_url: url })
         }}
       />
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 20, maxWidth: 1320 }}>
@@ -149,7 +149,7 @@ export function EditorCanvas({ template, post, module, onChange, onHeroDrop }: C
   return (
     <div style={{ maxWidth: 1320 }}>
       <EditorStyles />
-      <HeroUploader heroImageUrl={post.heroImageUrl} onDrop={onHeroDrop} />
+      <HeroUploader hero_image_url={post.hero_image_url} onDrop={onHeroDrop} />
       <div style={{ marginTop: 16, border: `1px solid ${paper.rule}`, overflow: 'hidden', background: paper.white }}>
         {template === 'cards' ? (
           <CardsEditor post={post} module={module} onChange={onChange} />
@@ -257,7 +257,7 @@ function EditableField({
   )
 }
 
-function HeroUploader({ heroImageUrl, onDrop }: { heroImageUrl: string | null; onDrop: (file: File) => void }) {
+function HeroUploader({ hero_image_url, onDrop }: { hero_image_url: string | null; onDrop: (file: File) => void }) {
   const inputRef = useRef<HTMLInputElement>(null)
   return (
     <div
@@ -298,15 +298,15 @@ function HeroUploader({ heroImageUrl, onDrop }: { heroImageUrl: string | null; o
           e.target.value = ''
         }}
       />
-      {heroImageUrl && (
+      {hero_image_url && (
         <img
-          src={heroImageUrl}
+          src={hero_image_url}
           alt=""
           style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.6 }}
         />
       )}
       <span style={{ position: 'relative' }}>
-        {heroImageUrl ? '⬇ kéo ảnh mới vào để thay, hoặc bấm để chọn file' : '⬇ kéo ảnh hero thả vào đây, hoặc bấm để chọn file'}
+        {hero_image_url ? '⬇ kéo ảnh mới vào để thay, hoặc bấm để chọn file' : '⬇ kéo ảnh hero thả vào đây, hoặc bấm để chọn file'}
       </span>
     </div>
   )
@@ -320,16 +320,15 @@ function HeroUploader({ heroImageUrl, onDrop }: { heroImageUrl: string | null; o
 function ArticleEditor({ post, module, onChange }: { post: PostDetail; module?: Module; onChange: (patch: EditPatch) => void }) {
   // Same adapter as the public journal, so the canvas is edited against what
   // will actually ship.
-  const mod = fromAdminModule(module)
-  const data = toArticleData(fromAdminPost(post), mod?.title ?? post.moduleId, [], -1, mod)
+  const data = toArticleData(post, module?.title ?? post.module_id, [], -1, module)
   const sections = getBody<SectionData>(post)
-  const furtherReading = post.furtherReading ?? []
+  const further_reading = post.further_reading ?? []
 
   function updateSection(index: number, patch: Partial<SectionData>) {
     onChange({ body: sections.map((s, i) => (i === index ? { ...s, ...patch } : s)) })
   }
   function updateFurtherReading(index: number, value: string) {
-    onChange({ furtherReading: furtherReading.map((r, i) => (i === index ? value : r)) })
+    onChange({ further_reading: further_reading.map((r, i) => (i === index ? value : r)) })
   }
 
   return (
@@ -340,7 +339,7 @@ function ArticleEditor({ post, module, onChange }: { post: PostDetail; module?: 
       renderLead={(lead) => <EditableField value={lead} multiline rows={2} onCommit={(v) => onChange({ lead: v })} />}
       renderSectionHeading={(h, i) => <EditableField value={h} onCommit={(v) => updateSection(i, { h: v })} />}
       renderSectionBody={(p, i) => <EditableField value={p} multiline rows={3} onCommit={(v) => updateSection(i, { p: v })} />}
-      renderPullQuote={(pull) => <EditableField value={pull} multiline rows={3} onCommit={(v) => onChange({ pullQuote: v })} />}
+      renderPullQuote={(pull) => <EditableField value={pull} multiline rows={3} onCommit={(v) => onChange({ pull_quote: v })} />}
       renderFurtherReadingItem={(item, i) => <EditableField value={item} onCommit={(v) => updateFurtherReading(i, v)} />}
     />
   )
@@ -352,7 +351,7 @@ function ArticleEditor({ post, module, onChange }: { post: PostDetail; module?: 
 // ---------------------------------------------------------------------------
 
 function CardsEditor({ post, module, onChange }: { post: PostDetail; module?: Module; onChange: (patch: EditPatch) => void }) {
-  const data = toCardsData(fromAdminPost(post), fromAdminModule(module))
+  const data = toCardsData(post, module)
   const cards = getBody<CardData>(post)
 
   function updateCard(cardIndex: number, patch: Partial<CardData>) {

@@ -41,7 +41,7 @@ async function handleList(req: VercelRequest, res: VercelResponse): Promise<void
 }
 
 interface CreatePostBody {
-  moduleId?: unknown
+  module_id?: unknown
   kind?: unknown
   en?: unknown
   vi?: unknown
@@ -60,7 +60,7 @@ function formatDateLabel(date: Date): string {
 async function handleCreate(req: VercelRequest, res: VercelResponse): Promise<void> {
   const body = (req.body ?? {}) as CreatePostBody
 
-  const moduleId = body.moduleId
+  const module_id = body.module_id
   const kind = body.kind
   const en = body.en
   const vi = body.vi
@@ -71,8 +71,8 @@ async function handleCreate(req: VercelRequest, res: VercelResponse): Promise<vo
   // editing the template never reaches back into posts already written.
   let startingBody: unknown = null
 
-  if (typeof moduleId !== 'string' || moduleId.length === 0) {
-    res.status(400).json({ error: 'moduleId is required' })
+  if (typeof module_id !== 'string' || module_id.length === 0) {
+    res.status(400).json({ error: 'module_id is required' })
     return
   }
   if (!(POST_KINDS as string[]).includes(kind as string)) {
@@ -121,7 +121,7 @@ async function handleCreate(req: VercelRequest, res: VercelResponse): Promise<vo
   const { count, error: countError } = await supabase
     .from('posts')
     .select('id', { count: 'exact', head: true })
-    .eq('module_id', moduleId)
+    .eq('module_id', module_id)
 
   if (countError) {
     res.status(500).json({ error: countError.message })
@@ -129,18 +129,18 @@ async function handleCreate(req: VercelRequest, res: VercelResponse): Promise<vo
   }
 
   const n = String((count ?? 0) + 1).padStart(2, '0')
-  const dateLabel = formatDateLabel(new Date())
+  const date_label = formatDateLabel(new Date())
 
   const { data, error } = await supabase
     .from('posts')
     .insert({
-      module_id: moduleId,
+      module_id: module_id,
       kind: kind as PostKind,
       en,
       vi,
       template: template as PostTemplate,
       n,
-      date_label: dateLabel,
+      date_label: date_label,
       sort_order: (count ?? 0) + 1,
       body: startingBody,
     })
@@ -148,9 +148,9 @@ async function handleCreate(req: VercelRequest, res: VercelResponse): Promise<vo
     .single()
 
   if (error) {
-    // 23503 = foreign key violation, i.e. moduleId doesn't exist.
+    // 23503 = foreign key violation, i.e. module_id doesn't exist.
     if (error.code === '23503') {
-      res.status(400).json({ error: `Module '${moduleId}' does not exist` })
+      res.status(400).json({ error: `Module '${module_id}' does not exist` })
       return
     }
     res.status(500).json({ error: error.message })
@@ -169,12 +169,12 @@ async function handleCreate(req: VercelRequest, res: VercelResponse): Promise<vo
  * counts along with.
  */
 async function handleReorder(req: VercelRequest, res: VercelResponse): Promise<void> {
-  const body = (req.body ?? {}) as { moduleId?: unknown; order?: unknown }
-  const moduleId = body.moduleId
+  const body = (req.body ?? {}) as { module_id?: unknown; order?: unknown }
+  const module_id = body.module_id
   const order = body.order
 
-  if (typeof moduleId !== 'string' || moduleId.length === 0) {
-    res.status(400).json({ error: 'moduleId is required' })
+  if (typeof module_id !== 'string' || module_id.length === 0) {
+    res.status(400).json({ error: 'module_id is required' })
     return
   }
   if (!Array.isArray(order) || order.some((id) => typeof id !== 'string')) {
@@ -190,7 +190,7 @@ async function handleReorder(req: VercelRequest, res: VercelResponse): Promise<v
       .from('posts')
       .update({ sort_order: i + 1, updated_at: nowIso })
       .eq('id', id)
-      .eq('module_id', moduleId)
+      .eq('module_id', module_id)
     if (error) {
       res.status(500).json({ error: error.message })
       return
@@ -200,7 +200,7 @@ async function handleReorder(req: VercelRequest, res: VercelResponse): Promise<v
   const { data, error } = await supabase
     .from('posts')
     .select(POST_SUMMARY_COLUMNS)
-    .eq('module_id', moduleId)
+    .eq('module_id', module_id)
     .order('sort_order', { ascending: true })
 
   if (error) {

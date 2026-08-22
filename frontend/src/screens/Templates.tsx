@@ -69,7 +69,7 @@ function Preview({ template }: { template: StoredTemplate }) {
     related: [],
     detailPlate: { tint: '#E4F0DF', caption: 'chi tiết', imageUrl: null },
     furtherReadingHeading: 'Đọc thêm',
-    furtherReading: [],
+      furtherReading: [],
   }
   return <PostRenderer template="article" post={article} />
 }
