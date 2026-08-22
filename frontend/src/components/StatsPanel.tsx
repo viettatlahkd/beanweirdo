@@ -40,6 +40,20 @@ const OUTSIDE: CSSProperties = { background: 'transparent', border: '1px solid #
 const DOW = ['T2', '', 'T4', '', 'T6', '', 'CN']
 
 /**
+ * A day square, at most this wide.
+ *
+ * The grid used to take whatever width the column gave it, which on a wide
+ * screen blew one day up to seventy pixels — half a year of squares rendered
+ * at the size of buttons, reading as a wall rather than as a habit. Anki and
+ * the calendars it borrows from keep the square small on purpose: the shape
+ * only says anything when a season of them fits in one glance.
+ *
+ * It is a cap, not a fixed size — the squares still shrink on a narrow screen.
+ */
+const CELL = 14
+const GAP = 3
+
+/**
  * The two breakdowns sit in a three-column bed: projects take two of them, the
  * kinds of work take one — the ranking that matters gets the room.
  *
@@ -159,12 +173,19 @@ export function StatsPanel({
           window rather than fixed hour marks, so a quiet stretch still shows
           its own rhythm instead of washing out to a single pale tone. */}
       <div style={{ ...label, marginBottom: 10 }}>Đều đặn · {grid.weeks} tuần</div>
-      <div style={{ display: 'flex', gap: 5, marginBottom: 8 }}>
+      <div
+        style={{
+          display: 'flex',
+          gap: 5,
+          marginBottom: 8,
+          maxWidth: 21 + grid.weeks * CELL + (grid.weeks - 1) * GAP,
+        }}
+      >
         <div
           style={{
             display: 'grid',
             gridTemplateRows: 'repeat(7,1fr)',
-            gap: 3,
+            gap: GAP,
             fontSize: 8.5,
             color: '#B4B2A9',
             flex: 'none',
@@ -181,10 +202,10 @@ export function StatsPanel({
           style={{
             flex: 1,
             display: 'grid',
-            gridTemplateColumns: `repeat(${grid.weeks},1fr)`,
+            gridTemplateColumns: `repeat(${grid.weeks},minmax(0,1fr))`,
             gridTemplateRows: 'repeat(7,1fr)',
             gridAutoFlow: 'column',
-            gap: 3,
+            gap: GAP,
           }}
         >
           {grid.cells.map((c) => (
