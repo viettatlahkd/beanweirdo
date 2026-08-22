@@ -31,7 +31,7 @@ từ code đã merge, chưa luật nào được ghi vào.
 
 | # | Mục | Sai ở đâu | Trạng thái |
 |---|---|---|---|
-| B1 | Bộ quy tắc | Ghi **67 luật**, thực tế nay là **68** (64 + 4). Con số 67 ban đầu là tôi ghi sai. | XONG |
+| B1 | Bộ quy tắc | Con số luật: 67 (tôi ghi sai) → 64 (đúng lúc đó) → **68** hôm nay. Đã sửa trong SPEC. | XONG |
 | B2 | Cơ sở dữ liệu | `modules` nay **21 cột** (thêm `visibility`), không phải 20. | XONG |
 | B3 | Cơ sở dữ liệu | `posts` **22 → 21 cột** sau khi bỏ `n`. Migration đã chạy 2026-08-21. | XONG |
 | B4 | Cột của hai bảng chính | Bỏ `n` khỏi dòng liệt kê `posts`. Migration đã chạy. | XONG |
@@ -89,6 +89,8 @@ Các file đáng soi khi rà Content management:
 
 **Đừng merge tag này vào đâu cả** — nó là ảnh chụp trước khi rẽ nhánh, đi từ
 `main` sang nó là 3.176 dòng thêm / 7.598 dòng xoá, 19 file conflict.
+| D6 | Hai tài liệu đối soát design của tôi — `DOI-SOAT-DESIGN-V4.html` và `SO-TUNG-ELEMENT.html` — **chưa commit** và **có lỗi**: số dòng lệch 5, số liệu tự mâu thuẫn, và bảng so sánh **không tái lập được** vì script đọc file design từ một thư mục tạm nay đã mất. Agent tài liệu bắt được ở lượt 03–04. Cần dựng lại từ file design trong repo, hoặc bỏ hẳn. | CHỜ |
+| D7 | Agent QA báo `main` đỏ 9 lỗi typecheck; tôi đo 6 commit gần nhất đều xanh. Chưa rõ nó chạy lệnh gì ở thư mục nào. | CHỜ |
 
 ---
 
