@@ -102,6 +102,23 @@ export function kindColorMap(kinds: string[]): Record<string, string> {
 /** How far back the streak, stats and month grouping reach. */
 export const SPAN_DAYS = 21
 
+/**
+ * How much history the statistics ask the server for: twenty-six weeks.
+ *
+ * The day list still draws the recent span; this is the window the heatmap,
+ * the month-to-date figures and the "last touched" column need behind it. A
+ * personal journal at a few entries a day is a few hundred rows over this
+ * span — small enough to fetch in one go, and fetching less would leave the
+ * heatmap looking like an empty grid.
+ *
+ * Twenty-six rather than twelve because the grid is one column per week: at
+ * twelve columns a square that fills the panel's width is 58px across and the
+ * grid stands 400px tall, which is a wall rather than a glance. At twenty-six
+ * the square is 27px and the grid 188px — and a year, the Anki default, would
+ * be mostly empty for a journal this young.
+ */
+export const STATS_DAYS = 182
+
 /** Of that span, only the most recent 7 days are editable/draggable. */
 export const RECENT_DAYS = 7
 

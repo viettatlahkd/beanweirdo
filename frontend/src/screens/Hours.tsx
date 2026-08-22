@@ -1,7 +1,8 @@
-import { useMemo, useState, type CSSProperties } from 'react'
+import { useMemo, useState } from 'react'
 import { ActivityRow } from '../components/ActivityRow'
 import { TagBar, type TagFilter, type TagSystem } from '../components/TagBar'
 import { TagDeleteReview, type TagTarget } from '../components/TagDeleteReview'
+import { StatsPanel } from '../components/StatsPanel'
 import { Breadcrumbs } from '../components/Breadcrumbs'
 import {
   RECENT_DAYS,
@@ -16,24 +17,7 @@ import { serif } from '../design/tokens'
 import { Hover } from '../lib/Hover'
 import { useSessionTimer, type SessionView } from '../lib/useSessionTimer'
 import { TimerRail } from '../components/TimerRail'
-import {
-  buildAllDays,
-  byKind as computeByKind,
-  chart as computeChart,
-  spanStats,
-  streak as computeStreak,
-  toMin,
-  topNames as computeTopNames,
-  fmt,
-} from '../lib/hoursStats'
-
-const label: CSSProperties = {
-  fontWeight: 500,
-  fontSize: 9.5,
-  letterSpacing: '.2em',
-  textTransform: 'uppercase',
-  color: '#7C7C70',
-}
+import { buildAllDays, spanStats, streak as computeStreak, toMin, fmt } from '../lib/hoursStats'
 
 
 
@@ -143,10 +127,7 @@ export function Hours() {
   const streak = computeStreak(all)
   const todayList = logs.filter((l) => l.date === today)
   const todayTotal = todayList.filter((l) => l.done !== false).reduce((a, l) => a + l.mins, 0)
-  const { avg7, spanTotalTxt, activeDaysTxt, bestTxt, bestDay } = spanStats(all)
-  const chart = computeChart(all)
-  const topNames = computeTopNames(logs)
-  const byKind = computeByKind(logs, all, statKinds, kindColor)
+  const { avg7 } = spanStats(all)
 
   // Most recent 12 days, newest first — the window this screen renders.
   const shownDays = all.slice().reverse().slice(0, 12)
@@ -399,82 +380,13 @@ export function Hours() {
       )}
 
       {statsOpen && (
-        <div style={{ margin: '30px 0 6px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: 12, marginBottom: 26 }}>
-            <div style={{ background: '#102F35', color: '#F4F4EF', padding: '18px 20px 20px' }}>
-              <div style={{ fontWeight: 500, fontSize: 9.5, letterSpacing: '.2em', textTransform: 'uppercase', color: 'rgba(244,244,239,.72)', marginBottom: 8 }}>
-                Tổng 21 ngày
-              </div>
-              <div style={{ fontFamily: serif, fontSize: 46, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{spanTotalTxt}</div>
-            </div>
-            <div style={{ background: 'oklch(0.50 0.135 14)', color: 'oklch(0.97 0.018 14)', padding: '18px 20px 20px' }}>
-              <div style={{ fontWeight: 500, fontSize: 9.5, letterSpacing: '.2em', textTransform: 'uppercase', color: 'oklch(0.97 0.018 14 / .8)', marginBottom: 8 }}>
-                Ngày có ghi
-              </div>
-              <div style={{ fontFamily: serif, fontSize: 46, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{activeDaysTxt}</div>
-            </div>
-            <div style={{ background: '#F2A0A5', color: '#3B2A2B', padding: '18px 20px 20px' }}>
-              <div style={{ fontWeight: 500, fontSize: 9.5, letterSpacing: '.2em', textTransform: 'uppercase', color: 'rgba(255,246,236,.75)', marginBottom: 8 }}>
-                Ngày nhiều nhất — {bestDay}
-              </div>
-              <div style={{ fontFamily: serif, fontSize: 46, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{bestTxt}</div>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 48, alignItems: 'flex-start' }}>
-            <div style={{ flex: '2 1 440px', minWidth: 0, background: '#F6F6F1', padding: '20px 22px 24px' }}>
-              <div style={{ ...label, marginBottom: 16 }}>Giờ theo ngày</div>
-              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 5, height: 140, borderBottom: '1px solid #CFCFC4' }}>
-                {chart.map((c) => (
-                  <div key={c.key} style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', height: '100%' }}>
-                    <div style={{ height: c.h, background: c.c }} />
-                  </div>
-                ))}
-              </div>
-              <div style={{ display: 'flex', gap: 5, marginTop: 6 }}>
-                {chart.map((c) => (
-                  <div key={c.key} style={{ flex: 1, textAlign: 'center', fontSize: 9, color: '#A2A296', fontVariantNumeric: 'tabular-nums' }}>
-                    {c.lab}
-                  </div>
-                ))}
-              </div>
-
-              <div style={{ ...label, margin: '36px 0 14px' }}>Việc chiếm nhiều thời gian nhất</div>
-              {topNames.map((t) => (
-                <div key={t.n} style={{ borderTop: '1px solid #E3E3DB', padding: '11px 0' }}>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 14 }}>
-                    <div style={{ fontSize: 10, color: '#A2A296', fontVariantNumeric: 'tabular-nums' }}>{t.rank}</div>
-                    <div style={{ fontSize: 15, flex: 1 }}>{t.n}</div>
-                    <div style={{ fontSize: 13, color: '#414A42', fontVariantNumeric: 'tabular-nums' }}>{t.dur}</div>
-                  </div>
-                  <div style={{ height: 3, background: '#E6E6DE', marginTop: 8 }}>
-                    <div style={{ height: 3, width: t.w, background: '#102F35' }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div style={{ flex: '1 1 300px', minWidth: 280, background: '#F6F6F1', padding: '20px 22px 24px' }}>
-              <div style={{ ...label, marginBottom: 16 }}>Thói quen theo loại</div>
-              {byKind.map((b) => (
-                <div key={b.k} style={{ borderTop: '1px solid #E3E3DB', padding: '14px 0', opacity: b.dim }}>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-                    <div style={{ width: 8, height: 8, background: b.color, flex: 'none' }} />
-                    <div style={{ fontSize: 16, flex: 1 }}>{b.k}</div>
-                    <div style={{ fontSize: 15, fontVariantNumeric: 'tabular-nums' }}>{b.dur}</div>
-                  </div>
-                  <div style={{ height: 4, background: '#E6E6DE', margin: '10px 0 8px' }}>
-                    <div style={{ height: 4, width: b.w, background: b.color }} />
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, color: '#6A6F63' }}>
-                    <div>{b.streak}</div>
-                    <div>{b.days} · {b.pct}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+        <StatsPanel
+          logs={logs}
+          projects={projects}
+          projectColor={projectColor}
+          kindColor={kindColor}
+          kinds={statKinds}
+        />
       )}
 
       <div style={{ display: 'flex', gap: 36, alignItems: 'flex-start', marginTop: 38, flexWrap: 'wrap' }}>
