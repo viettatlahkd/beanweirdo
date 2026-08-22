@@ -86,8 +86,13 @@ export const LOGIC: LogicPart[] = [
       { s: 'Toàn hệ thống', r: 'Trên dải đường dẫn: mũi tên ← quay về trang liền trước, bấm từng chặng thì tới đúng trang đó.', e: '' },
       { s: 'Toàn hệ thống', r: 'Với sidebar: chia ba nhóm, mỗi nhóm có nhãn và đường kẻ ngăn.', e: '[[secPublic]] · [[secPractice]] · [[secAdmin]]' },
       { s: 'Toàn hệ thống', r: 'Với sidebar: chìm ở 64px, chỉ mở rộng khi rê chuột.', e: '268px khi mở' },
-      { s: 'Module', r: 'Với sidebar: mỗi module một chấm tròn màu riêng; riêng [[notes]] dùng hình vuông để tách khỏi module.', e: '' },
-      { s: 'Module', r: 'Với mọi module đã tạo và chưa ẩn: luôn hiện ở sidebar và [[landing]], kể cả khi chưa có bài nào — số bài hiển thị 0, không tự ẩn đi.', e: 'chưa có bài ≠ chưa tồn tại' }
+      { s: 'Module', r: 'Với sidebar: module thường một chấm tròn màu riêng; module đặc biệt dùng hình vuông — khác hình để nhận ra ngay đây là loại module khác, trước cả khi đọc tên.', e: '' },
+        { s: 'Module', r: 'Với mọi module đã tạo và công khai: luôn hiện, kể cả khi chưa có bài nào — số bài hiển thị 0, không tự ẩn đi.', e: 'chưa có bài ≠ chưa tồn tại' },
+        { s: 'Module', r: 'Module phân loại theo hai trục độc lập: kind nói nó là gì (thường hay đặc biệt), visibility nói nó có được liệt kê không. Không bao giờ lọc một bề mặt chỉ bằng kind.', e: 'Ghi 01 là module đặc biệt nhưng công khai, nên vẫn có mặt ở [[home]] và sidebar.' },
+        { s: 'Module', r: 'Trang chủ chỉ trưng module thường — vì nó là phòng trưng bày module đọc, không phải vì module đặc biệt bị ẩn. [[home]] và sidebar liệt kê mọi module công khai.', e: '' },
+        { s: 'Module', r: 'Sidebar xếp module thường trước, module đặc biệt sau; trong mỗi nhóm theo thứ tự đặt ở Content management.', e: 'Đánh số lại một module thường không đẩy nó xuống dưới nhật ký được.' },
+        { s: 'Toàn hệ thống', r: 'Số hiện cạnh một bài là vị trí của nó trong danh sách người đọc đang nhìn, đếm từ 01. Không bao giờ in thẳng thứ tự lúc soạn bài.', e: 'Bài duy nhất còn đăng của một module hiện 01, dù lúc soạn nó là bài thứ năm.' },
+        { s: 'Toàn hệ thống', r: 'Khi chưa biết bài nằm ở đâu trong danh sách thì bỏ số đi, đừng đoán.', e: '' }
     ] },
     { n: '06', g: 'Câu trích đầu trang Ghi', items: [
       { s: 'Template', r: 'Ở đầu trang Ghi: một câu trích thật về hiệu suất, thói quen hoặc thời gian, kèm tên tác giả — không tự nghĩ câu.', e: 'nguồn có thật, ghi đúng tên' },
@@ -136,10 +141,12 @@ export const LOGIC: LogicPart[] = [
       { s: 'Template', r: 'Với [[report]]: bảng thêm được cột và dòng, kéo được bề rộng cột.', e: '' }
     ] },
     { n: '12', g: '[[cards]]', items: [
-      { s: 'Template', r: 'Riêng [[cards]]: mở được nhiều thẻ cùng lúc để đối chiếu — ngoại lệ của quy tắc 06.', e: 'có mở hết / gập hết' },
+      { s: 'Template', r: 'Riêng [[cards]]: mở được nhiều thẻ cùng lúc để đối chiếu — ngoại lệ của nhóm 07 luật 3.', e: 'có mở hết / gập hết' },
       { s: 'Template', r: 'Với [[cards]]: các thẻ cùng một cấp, gập mở độc lập, đổi được thứ tự.', e: '' },
       { s: 'Template', r: 'Riêng [[cards]]: bộ tag nhóm hương đặt cố định ở đầu trang, không rải theo từng thẻ.', e: '' },
-      { s: 'Template', r: 'Với [[cards]]: màu thẻ lấy theo nhóm hương đầu tiên của thẻ đó.', e: '' }
+      { s: 'Template', r: 'Với [[cards]]: màu thẻ lấy theo nhóm hương đầu tiên của thẻ đó.', e: '' },
+        { s: 'Template', r: 'Mười bốn nhóm của bánh xe hương là từ vựng cố định, không phải dữ liệu bài. Mỗi nhóm một bộ ba màu dùng chung toàn hệ thống, để cùng một nhóm luôn hiện cùng một màu ở mọi bài.', e: 'Berry luôn đỏ, dù bài nào nhắc tới nó.' },
+        { s: 'Template', r: 'Thanh lọc nhóm hương xếp theo thứ tự bánh xe, không theo thứ tự bài viết nhắc tới.', e: 'Người đọc gặp Berry trước Chemical, bất kể bài viết thế nào.' }
     ] },
     { n: '13', g: '[[notes]]', items: [
       { s: 'Template', r: 'Với [[notes]]: lưới 12 cột lệch tầng, mỗi note một bề rộng và độ tụt khác nhau.', e: '' },
