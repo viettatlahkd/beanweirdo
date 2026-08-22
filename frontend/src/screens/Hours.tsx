@@ -5,6 +5,7 @@ import { TagDeleteReview, type TagTarget } from '../components/TagDeleteReview'
 import { StatsPanel } from '../components/StatsPanel'
 import { Breadcrumbs } from '../components/Breadcrumbs'
 import {
+  type LogEntry,
   RECENT_DAYS,
   kindColorMap,
   projectColorMap,
@@ -90,14 +91,50 @@ export function Hours() {
    * Add an empty row and put the cursor in it — the name is typed in place,
    * and an unnamed row that loses focus deletes itself (rule 08).
    */
-  async function addRow(ds: string) {
+  /**
+   * Where the next activity of a day starts: a quarter of an hour after the
+   * latest one ends, or eight in the morning on an empty day. Rows are sorted
+   * by this, so anything stamped here lands at the bottom of the day.
+   */
+  function nextSlot(ds: string): string {
     const onDay = logs.filter((l) => l.date === ds)
     const last = onDay.slice().sort((a, b) => toMin(a.at) - toMin(b.at)).slice(-1)[0]
     const startMin = last ? Math.min(23 * 60 + 30, toMin(last.at) + last.mins + 15) : 8 * 60
-    const at = String(Math.floor(startMin / 60)).padStart(2, '0') + ':' + String(startMin % 60).padStart(2, '0')
-    const saved = await add({ date: ds, name: '', kind: timer.open?.kind ?? 'đọc', mins: 30, done: false, at })
+    return String(Math.floor(startMin / 60)).padStart(2, '0') + ':' + String(startMin % 60).padStart(2, '0')
+  }
+
+  async function addRow(ds: string) {
+    const saved = await add({
+      date: ds,
+      name: '',
+      kind: timer.open?.kind ?? 'đọc',
+      mins: 30,
+      done: false,
+      at: nextSlot(ds),
+    })
     if (!saved) return
     setNewId(saved.id)
+  }
+
+  /**
+   * The same activity, a second time. Everything that says *what* was done
+   * carries over — name, both tags, how long it took, whether it counts — and
+   * only the clock time is new, because the point of copying a row is that the
+   * work happened again, later.
+   *
+   * No naming prompt: the copy arrives complete. A row that needed typing
+   * would be `thêm hoạt động`, not this.
+   */
+  async function cloneRow(l: LogEntry) {
+    await add({
+      date: l.date,
+      name: l.name,
+      kind: l.kind,
+      project: l.project ?? null,
+      mins: l.mins,
+      done: l.done,
+      at: nextSlot(l.date),
+    })
   }
 
   /**
@@ -473,6 +510,7 @@ export function Hours() {
                             if (!l.name) void remove(l.id)
                           }}
                           onPatch={(p) => void patch(l.id, p)}
+                          onClone={() => void cloneRow(l)}
                           onRemove={() => void remove(l.id)}
                         />
                       ))}

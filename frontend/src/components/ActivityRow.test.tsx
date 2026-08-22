@@ -30,6 +30,7 @@ function row(over: Partial<Parameters<typeof ActivityRow>[0]> = {}) {
     onName: vi.fn(),
     onAbandon: vi.fn(),
     onPatch: vi.fn(),
+    onClone: vi.fn(),
     onRemove: vi.fn(),
     ...over,
   }
@@ -51,6 +52,7 @@ function renderRow(over: Partial<Parameters<typeof ActivityRow>[0]> = {}) {
     onName: vi.fn(),
     onAbandon: vi.fn(),
     onPatch: vi.fn(),
+    onClone: vi.fn(),
     onRemove: vi.fn(),
     ...over,
   }
@@ -449,5 +451,23 @@ describe('ActivityRow — renaming a row that already exists', () => {
     // not the same act as abandoning a blank row, and the difference is the
     // screen's to make, not this component's.
     expect(props.onName).toHaveBeenCalledWith('')
+  })
+})
+
+describe('ActivityRow — nhân đôi', () => {
+  it('copies the row without touching it', async () => {
+    const props = row()
+    await userEvent.click(screen.getByRole('button', { name: 'Nhân đôi beanweirdo: fermentation memos' }))
+
+    expect(props.onClone).toHaveBeenCalledTimes(1)
+    expect(props.onRemove).not.toHaveBeenCalled()
+    expect(props.onPatch).not.toHaveBeenCalled()
+    // The copy arrives complete, so nothing asks for a name.
+    expect(props.onStartNaming).not.toHaveBeenCalled()
+  })
+
+  it('hides the copy button on a day that can no longer be edited', () => {
+    row({ editable: false })
+    expect(screen.queryByRole('button', { name: /Nhân đôi/ })).not.toBeInTheDocument()
   })
 })
