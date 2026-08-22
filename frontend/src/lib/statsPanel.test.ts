@@ -10,6 +10,7 @@ import {
   periodStats,
   realSpanOfDay,
   spanStats,
+  weekGroups,
   usefulRatio,
 } from './hoursStats'
 
@@ -401,5 +402,51 @@ describe('cloneOf — nhân đôi một hoạt động', () => {
 
   it('pads the clock time to two digits on both sides', () => {
     expect(cloneOf(original(), new Date('2026-08-22T09:05:00')).at).toBe('09:05')
+  })
+})
+
+describe('weekGroups — co gọn theo tuần', () => {
+  const day = (ds: string, mins = 0) => ({ ds, mins })
+
+  it('cuts weeks Monday to Sunday, in the order the days arrive', () => {
+    // Newest first, the way the day list is read.
+    const groups = weekGroups([
+      day('2026-08-24'), // Monday, a new week
+      day('2026-08-23'), // Sunday, closing the previous one
+      day('2026-08-20'),
+      day('2026-08-17'), // Monday
+    ])
+
+    expect(groups.map((g) => g.label)).toEqual(['24.8', '17 – 23.8'])
+  })
+
+  it('leaves the newest group open and folds the rest', () => {
+    const groups = weekGroups([day('2026-08-24'), day('2026-08-17'), day('2026-08-10')])
+
+    expect(groups.map((g) => g.collapsible)).toEqual([false, true, true])
+  })
+
+  it('gives a single week nothing to fold', () => {
+    // One week under a month is the same thing to read twice — no heading, no
+    // control, nothing to click.
+    const groups = weekGroups([day('2026-08-20'), day('2026-08-21')])
+
+    expect(groups).toHaveLength(1)
+    expect(groups[0].collapsible).toBe(false)
+  })
+
+  it('labels a stub week by the days it actually holds', () => {
+    // 31/8 is a Monday: read under August it is one day, not a week gone quiet.
+    const groups = weekGroups([day('2026-08-31')])
+
+    expect(groups[0].label).toBe('31.8')
+  })
+
+  it('totals the minutes and counts only the days written on', () => {
+    const groups = weekGroups([day('2026-08-22', 60), day('2026-08-21', 30), day('2026-08-20', 0)])
+
+    expect(groups[0].mins).toBe(90)
+    expect(groups[0].logged).toBe(2)
+    expect(groups[0].days).toHaveLength(3)
   })
 })

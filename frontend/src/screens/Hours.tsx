@@ -18,7 +18,15 @@ import { serif } from '../design/tokens'
 import { Hover } from '../lib/Hover'
 import { useSessionTimer, type SessionView } from '../lib/useSessionTimer'
 import { TimerRail } from '../components/TimerRail'
-import { buildAllDays, cloneOf, spanStats, streak as computeStreak, toMin, fmt } from '../lib/hoursStats'
+import {
+  buildAllDays,
+  cloneOf,
+  spanStats,
+  streak as computeStreak,
+  toMin,
+  fmt,
+  weekGroups,
+} from '../lib/hoursStats'
 
 
 
@@ -71,6 +79,7 @@ export function Hours() {
   const today = useMemo(() => todayStr(), [])
   const [statsOpen, setStatsOpen] = useState(false)
   const [openMonths, setOpenMonths] = useState<Record<string, boolean>>({})
+  const [openWeeks, setOpenWeeks] = useState<Record<string, boolean>>({})
   /** Tag picked in the bar, from either system — null shows everything. */
   const [tagFilter, setTagFilter] = useState<TagFilter>(null)
   /** The tag whose deletion is being worked out, if any. */
@@ -155,8 +164,10 @@ export function Hours() {
   const todayTotal = todayList.filter((l) => l.done !== false).reduce((a, l) => a + l.mins, 0)
   const { avg7 } = spanStats(all)
 
-  // Most recent 12 days, newest first — the window this screen renders.
-  const shownDays = all.slice().reverse().slice(0, 12)
+  // Every day the journal has had, newest first. There is no cap any more:
+  // the list groups by month and by week, and everything but the newest group
+  // arrives collapsed, so length costs a heading rather than a screenful.
+  const shownDays = all.slice().reverse()
 
   const dayViews = shownDays.map((x) => {
     const recent = x.age < RECENT_DAYS
@@ -170,6 +181,7 @@ export function Hours() {
     const isToday = x.ds === today
     return {
       ds: x.ds,
+      mins: x.mins,
       dow: ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'][x.d.getDay()],
       num: String(x.d.getDate()).padStart(2, '0'),
       isToday,
@@ -206,6 +218,22 @@ export function Hours() {
     // The month you're in stays open; older ones collapse until asked for.
     const isCur = k === today.slice(0, 7)
     const open = isCur || !!openMonths[k]
+
+    const weeks = weekGroups(monthDays[k]).map((w) => {
+      const key = k + '|' + w.key
+      const open = !w.collapsible || !!openWeeks[key]
+      return {
+        key,
+        label: w.label,
+        total: w.mins ? fmt(w.mins) : '—',
+        nDays: w.logged + '/' + w.days.length + ' ngày',
+        collapsible: w.collapsible,
+        open,
+        cue: open ? 'thu gọn ↑' : 'xổ ra ↓',
+        days: w.days,
+      }
+    })
+
     return {
       key: k,
       label: 'Tháng ' + String(Number(k.slice(5, 7))),
@@ -215,7 +243,7 @@ export function Hours() {
       isCur,
       open,
       cue: open ? 'thu gọn ↑' : 'xổ ra ↓',
-      days: monthDays[k],
+      weeks,
     }
   })
 
@@ -437,7 +465,58 @@ export function Hours() {
               </div>
 
               {mo.open &&
-                mo.days.map((d) => (
+                mo.weeks.map((wk) => (
+                  <div key={wk.key}>
+                    {/* A week heading only earns its line when the month holds
+                        more than one. Indented under the month, so the two
+                        levels read as levels rather than as two lists. */}
+                    {mo.weeks.length > 1 && (
+                      <Hover
+                        onClick={
+                          wk.collapsible
+                            ? () => setOpenWeeks((st) => ({ ...st, [wk.key]: !st[wk.key] }))
+                            : undefined
+                        }
+                        style={{
+                          display: 'block',
+                          padding: '10px 2px 0 13px',
+                          borderTop: '1px solid #E3E3DB',
+                          cursor: wk.collapsible ? 'pointer' : 'default',
+                        }}
+                        hoverStyle={wk.collapsible ? { background: '#FBFAF5' } : {}}
+                      >
+                        {/* Serif, one step down from the month heading above
+                            it. Grey small-caps sat at the same weight as every
+                            other label on the screen and read as one more line
+                            of chrome; the level shows in the type, which is
+                            how the month says it too. */}
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
+                        <div
+                          style={{
+                            fontFamily: serif,
+                            fontSize: 15.5,
+                            letterSpacing: '-.01em',
+                            color: '#143C43',
+                            flex: 'none',
+                          }}
+                        >
+                          Tuần {wk.label}
+                        </div>
+                        <div style={{ flex: '1 1 0' }} />
+                        <div style={{ fontSize: 10.5, color: '#A2A296' }}>{wk.nDays}</div>
+                        <div style={{ fontSize: 12.5, color: '#414A42', fontVariantNumeric: 'tabular-nums' }}>{wk.total}</div>
+                        {wk.collapsible && (
+                          <div style={{ fontSize: 9.5, letterSpacing: '.14em', textTransform: 'uppercase', color: '#A2A296', width: 62, textAlign: 'right' }}>
+                            {wk.cue}
+                          </div>
+                        )}
+                        </div>
+                        <div style={{ height: 1, background: '#E3E3DB', marginTop: 8 }} />
+                      </Hover>
+                    )}
+
+                    {wk.open &&
+                      wk.days.map((d) => (
                   <div
                     key={d.ds}
                     onDragOver={(e) => e.preventDefault()}
@@ -514,6 +593,8 @@ export function Hours() {
                         </Hover>
                       )}
                     </div>
+                  </div>
+                      ))}
                   </div>
                 ))}
             </div>

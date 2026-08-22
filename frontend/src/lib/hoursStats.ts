@@ -1,4 +1,4 @@
-import { KICKOFF, SPAN_DAYS, dateStr, dayBefore, todayStr, type LogEntry } from '../content/hours'
+import { KICKOFF, STATS_DAYS, dateStr, dayBefore, todayStr, type LogEntry } from '../content/hours'
 
 export const toMin = (t: string) => {
   const p = String(t).split(':')
@@ -28,7 +28,7 @@ export type DayBucket = {
    * so the marker lights up on writing, not on ticking.
    */
   hasAny: boolean
-  /** 0 = today, `SPAN_DAYS - 1` = oldest day in the span */
+  /** 0 = today, counting back to the day the journal opened. */
   age: number
 }
 
@@ -61,12 +61,60 @@ export function cloneOf(l: LogEntry, now: Date = new Date()): Omit<LogEntry, 'id
 }
 
 /** The rolling span the screen draws, oldest day first. */
+/**
+ * Days grouped into Monday-to-Sunday weeks, in the order they arrive.
+ *
+ * Called per month, so a week straddling two months comes out split — and the
+ * label says which days are actually in the group, because a stub of one day
+ * has to read as one day rather than as a whole week gone quiet.
+ */
+export function weekGroups<T extends { ds: string; mins: number }>(days: T[]) {
+  const keys: string[] = []
+  const byWeek: Record<string, T[]> = {}
+  for (const d of days) {
+    const wk = dateStr(weekStart(new Date(d.ds)))
+    if (!byWeek[wk]) {
+      byWeek[wk] = []
+      keys.push(wk)
+    }
+    byWeek[wk].push(d)
+  }
+
+  return keys.map((wk, i) => {
+    const ds = byWeek[wk]
+    const mins = ds.reduce((a, d) => a + d.mins, 0)
+    const nums = ds.map((d) => Number(d.ds.slice(8))).sort((a, b) => a - b)
+    const mo = String(Number(ds[0].ds.slice(5, 7)))
+    const first = nums[0]
+    const last = nums[nums.length - 1]
+    return {
+      key: wk,
+      label: first === last ? `${first}.${mo}` : `${first} – ${last}.${mo}`,
+      mins,
+      logged: ds.filter((d) => d.mins > 0).length,
+      /**
+       * The newest week of a group stays open; older ones fold away. A group
+       * holding a single week has nothing to fold, so it gets no heading of
+       * its own — one week and one month are the same thing to read.
+       */
+      newest: i === 0,
+      collapsible: keys.length > 1 && i !== 0,
+      days: ds,
+    }
+  })
+}
+
 export function buildAllDays(logs: LogEntry[], now: Date = new Date()): DayBucket[] {
   const byDate: Record<string, LogEntry[]> = {}
   for (const l of logs) (byDate[l.date] ||= []).push(l)
 
+  // Every day the journal has had, newest last. It used to be a rolling
+  // three-week window, which is why older months came up empty: the days were
+  // never built, so there was nothing for a month to hold. The list groups and
+  // collapses now, so the length is the record's own, capped only by how far
+  // back the screen actually fetched.
   const all: DayBucket[] = []
-  for (let i = SPAN_DAYS - 1; i >= 0; i--) {
+  for (let i = STATS_DAYS - 1; i >= 0; i--) {
     const d = dayBefore(i, now)
     const ds = dateStr(d)
     // The journal has no days before it existed — see KICKOFF.
@@ -181,7 +229,7 @@ const done = (l: LogEntry) => l.done !== false
 const minutes = (ls: LogEntry[]) => ls.filter(done).reduce((a, l) => a + l.mins, 0)
 
 /** Midnight of the Monday on or before `d`. */
-function weekStart(d: Date): Date {
+export function weekStart(d: Date): Date {
   const x = new Date(d.getFullYear(), d.getMonth(), d.getDate())
   // getDay() is 0 for Sunday; the journal's week runs Monday to Sunday.
   x.setDate(x.getDate() - ((x.getDay() + 6) % 7))
