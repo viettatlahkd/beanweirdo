@@ -56,11 +56,11 @@ từ code đã merge, chưa luật nào được ghi vào.
 
 | # | Việc | Trạng thái |
 |---|---|---|
-| D1 | Hai hàm `toCardsData` khác nhau — admin xem trước không giống bản thật (thiếu màu nhóm, thiếu dải màu đầu bài). | CHỜ |
+| D1 | ~~Hai hàm `toCardsData` khác nhau~~ — gộp còn một ở `lib/postToRenderer.ts` (#19), bỏ nốt bộ nối (#21). Có test bắt buộc hai đường cho kết quả giống hệt. | XONG |
 | D2 | Ghi 01 / Ghi 02 định nghĩa hai lần: bảng `modules` và `content/navItems.ts` chép tay tên + màu. | CHỜ |
 | D3 | 15/19 bài có `body` rỗng — vỏ bài không nội dung. | CHỜ |
 | D4 | Trình soạn thảo mới phủ `cards` và `report`; `longform` và `memo` chưa sửa được trong Editor. | CHỜ |
-| D5 | Module chưa có cách ẩn ngoài xoá — nay đã có `visibility`, nên D5 coi như đã gỡ. | XONG |
+| D5 | ~~Module chưa có cách ẩn ngoài xoá~~ — đã có cột `visibility` (migration 0015). | XONG |
 
 ## E. Bản lưu trữ — nhớ soi lại khi rà Content management
 
