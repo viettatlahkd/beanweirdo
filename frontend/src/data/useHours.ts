@@ -10,7 +10,7 @@ import {
   renameKind,
   type TagMove,
 } from '../admin/lib/apiClient'
-import { KINDS, STATS_DAYS, dateStr, dayBefore, type LogEntry } from '../content/hours'
+import { KICKOFF, KINDS, STATS_DAYS, dateStr, dayBefore, type LogEntry } from '../content/hours'
 import { useUndoStack } from '../lib/useUndoStack'
 
 export type UseHoursResult = {
@@ -71,7 +71,11 @@ export function useHours(): UseHoursResult {
   // Twelve weeks: the day list draws far less, but the heatmap and the
   // month-to-date figures read the whole window. Older history than this stays
   // on the server rather than growing the payload every day.
-  const from = dateStr(dayBefore(STATS_DAYS - 1))
+  // Never ask for days before the journal existed — see KICKOFF. While the
+  // record is younger than the stats window this fetches the whole history,
+  // which is the point: it is a few days long.
+  const rolling = dateStr(dayBefore(STATS_DAYS - 1))
+  const from = rolling < KICKOFF ? KICKOFF : rolling
 
   /**
    * `keepError` is for the refetch that follows a failed write: rolling the

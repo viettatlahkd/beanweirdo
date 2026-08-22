@@ -1,4 +1,4 @@
-import { SPAN_DAYS, dateStr, dayBefore, todayStr, type LogEntry } from '../content/hours'
+import { KICKOFF, SPAN_DAYS, dateStr, dayBefore, todayStr, type LogEntry } from '../content/hours'
 
 export const toMin = (t: string) => {
   const p = String(t).split(':')
@@ -32,7 +32,6 @@ export type DayBucket = {
   age: number
 }
 
-/** The rolling span the screen draws, oldest day first. */
 /**
  * The copy of an activity: same work, done again.
  *
@@ -61,14 +60,17 @@ export function cloneOf(l: LogEntry, now: Date = new Date()): Omit<LogEntry, 'id
   }
 }
 
-export function buildAllDays(logs: LogEntry[]): DayBucket[] {
+/** The rolling span the screen draws, oldest day first. */
+export function buildAllDays(logs: LogEntry[], now: Date = new Date()): DayBucket[] {
   const byDate: Record<string, LogEntry[]> = {}
   for (const l of logs) (byDate[l.date] ||= []).push(l)
 
   const all: DayBucket[] = []
   for (let i = SPAN_DAYS - 1; i >= 0; i--) {
-    const d = dayBefore(i)
+    const d = dayBefore(i, now)
     const ds = dateStr(d)
+    // The journal has no days before it existed — see KICKOFF.
+    if (ds < KICKOFF) continue
     const ls = byDate[ds] || []
     all.push({
       ds,
@@ -142,7 +144,7 @@ export function byKind(
         w: pct + '%',
         pct: pct + '%',
         streak: ks ? ks + ' ngày liên tiếp' : 'đứt chuỗi',
-        days: nd + '/' + SPAN_DAYS + ' ngày',
+        days: nd + '/' + all.length + ' ngày',
         _sort: pct,
       }
     })
@@ -159,7 +161,7 @@ export function spanStats(all: DayBucket[]) {
     sum7: fmt(sum7),
     avg7: fmt(Math.round(sum7 / 7)),
     spanTotalTxt: fmt(spanTotal),
-    activeDaysTxt: activeDays + '/' + SPAN_DAYS + ' ngày',
+    activeDaysTxt: activeDays + '/' + all.length + ' ngày',
     bestTxt: fmt(best.mins),
     bestDay:
       String(best.d.getDate()).padStart(2, '0') + '.' + String(best.d.getMonth() + 1).padStart(2, '0'),
@@ -399,10 +401,13 @@ export function heatmap(logs: LogEntry[], weeks = 26, now: Date = new Date()) {
   const byDate: Record<string, number> = {}
   for (const l of logs) if (done(l)) byDate[l.date] = (byDate[l.date] || 0) + l.mins
 
-  // The record runs from the first entry ever written to today. Squares
-  // outside it are drawn as absent rather than as empty days, and future ones
-  // stay in the grid instead of leaving a hole in the current week.
-  const firstEntry = Object.keys(byDate).sort()[0] ?? null
+  // The record runs from the day the journal opened to today. Squares outside
+  // it are drawn as absent rather than as empty days, and future ones stay in
+  // the grid instead of leaving a hole in the current week.
+  //
+  // The floor is KICKOFF, not the first entry on file: a journal opened on the
+  // 20th and first written in on the 21st should show the 20th as a day that
+  // went unlogged, which is true, rather than as a day outside the record.
   const todayStr_ = dateStr(now)
 
   // The grid is anchored to the first entry and runs forward, not backwards
@@ -414,7 +419,7 @@ export function heatmap(logs: LogEntry[], weeks = 26, now: Date = new Date()) {
   // Once the record outgrows the window, the anchor moves: the grid then ends
   // on the current week and shows the most recent stretch.
   const thisWeek = weekStart(now)
-  const openingWeek = firstEntry ? weekStart(new Date(firstEntry)) : thisWeek
+  const openingWeek = weekStart(new Date(KICKOFF))
   const weeksLived = Math.round((+thisWeek - +openingWeek) / (7 * 86400000)) + 1
 
   const start = new Date(openingWeek)
@@ -428,7 +433,7 @@ export function heatmap(logs: LogEntry[], weeks = 26, now: Date = new Date()) {
       day.setDate(day.getDate() + w * 7 + d)
       const ds = dateStr(day)
       const mins = byDate[ds] || 0
-      const outside = firstEntry === null || ds < firstEntry || ds > todayStr_
+      const outside = ds < KICKOFF || ds > todayStr_
       const share = mins / peak
       const level: HeatCell['level'] =
         mins === 0 ? 0 : share > 0.75 ? 4 : share > 0.5 ? 3 : share > 0.25 ? 2 : 1
