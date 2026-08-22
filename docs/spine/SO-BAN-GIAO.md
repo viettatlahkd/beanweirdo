@@ -89,7 +89,9 @@ Các file đáng soi khi rà Content management:
 
 **Đừng merge tag này vào đâu cả** — nó là ảnh chụp trước khi rẽ nhánh, đi từ
 `main` sang nó là 3.176 dòng thêm / 7.598 dòng xoá, 19 file conflict.
-| D6 | Hai tài liệu đối soát design của tôi — `DOI-SOAT-DESIGN-V4.html` và `SO-TUNG-ELEMENT.html` — **chưa commit** và **có lỗi**: số dòng lệch 5, số liệu tự mâu thuẫn, và bảng so sánh **không tái lập được** vì script đọc file design từ một thư mục tạm nay đã mất. Agent tài liệu bắt được ở lượt 03–04. Cần dựng lại từ file design trong repo, hoặc bỏ hẳn. | CHỜ |
+| D6 | ~~Hai tài liệu đối soát design có lỗi và không tái lập được~~ — đã thay bằng `docs/spine/DOI-SOAT-DESIGN.md` + `tools/design-audit.mjs`, chạy lại được. Lộ thêm: file design tôi dùng là bản **cũ hơn** bản trong repo (14 vs 16 màn hình). | XONG |
+| D8 | Chưa đối soát hai màn hình `isLongform` và `isTaste` — trước tưởng không có design. | CHỜ |
+| D9 | 60 giá trị CSS trong design chưa thấy trong code, cần soi tay phân loại. | CHỜ |
 | D7 | Agent QA báo `main` đỏ 9 lỗi typecheck; tôi đo 6 commit gần nhất đều xanh. Chưa rõ nó chạy lệnh gì ở thư mục nào. | CHỜ |
 
 ---
