@@ -365,7 +365,7 @@ export function IndexScreen() {
   const { variant } = useNav()
   const { data: allModules } = useModules()
   const modules = indexModules(allModules)
-  const { data: posts } = usePublishedPosts({ orderBy: 'sort_order', ascending: true })
+  const { data: posts } = usePublishedPosts()
   const postsByModule = useMemo(() => groupByModule(posts), [posts])
 
   return variant === 'A' ? (

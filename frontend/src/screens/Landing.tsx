@@ -200,7 +200,7 @@ export function Landing() {
   const nav = useNav()
   const { data: allModules } = useModules()
   const modules = landingModules(allModules)
-  const { data: posts } = usePublishedPosts({ orderBy: 'sort_order', ascending: true })
+  const { data: posts } = usePublishedPosts()
   const postsByModule = useMemo(() => groupByModule(posts), [posts])
   const { site } = useSiteCopy()
   const title = splitAesc(site.lTitle1)

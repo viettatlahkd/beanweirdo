@@ -83,9 +83,25 @@ export const notePlacement: Placement[] = [
   { col: 'span 4', mt: '116px', ar: '4/3', mw: '84%' },
 ]
 
-export type Filler = {
-  /** insert right after this index in the (filtered) note stream */
-  after: number
+/**
+ * Ghi 01 holds two kinds of cell, and they are not the same kind of thing.
+ *
+ *   FEATURE CELLS  belong to the page's layout — colour blocks, a quotation, a
+ *                  running count. They are numbered F1…F7 and are set up with
+ *                  the page, not with any post.
+ *   POSTS          are what the owner publishes into the module. They are
+ *                  numbered P1…P8 and are set up where posts are written.
+ *
+ * Both land in the same grid, so it is easy to read the code as if they were
+ * one list. They are not: nobody publishes a feature cell, and no post belongs
+ * to the page's furniture. Keeping the numbering separate is what stops the
+ * next person conflating them.
+ */
+export type FeatureCell = {
+  /** F1…F7 — this cell's own number, independent of the posts. */
+  n: number
+  /** Sits directly after post P{afterPost} in the grid. */
+  afterPost: number
   col: string
   mt: string
   kind: 'slot' | 'quote' | 'count'
@@ -97,14 +113,14 @@ export type Filler = {
 }
 
 /** Non-note grid cells woven between the cards — colour slots, a quote, a tally. */
-export const fillers: Filler[] = [
-  { after: 1, col: 'span 3', mt: '250px', kind: 'slot', bg: '#9DBBD4', h: '330px', t: 'ảnh dọc — bàn làm việc, dụng cụ bày ra', ml: '-52px', pl: '80px' },
-  { after: 2, col: 'span 3', mt: '54px', kind: 'quote', bg: '', h: '', t: 'Ghi lại thì mới thấy mình đã nghĩ gì.', ml: '0px', pl: '14px' },
-  { after: 4, col: 'span 3', mt: '86px', kind: 'slot', bg: '#E9B79C', h: '210px', t: 'ảnh vụn — mảnh cắt nhỏ, chèn đè lên bài bên cạnh', ml: '-64px', pl: '92px' },
-  { after: 5, col: 'span 3', mt: '190px', kind: 'count', bg: '', h: '', t: '', ml: '0px', pl: '14px' },
-  { after: 6, col: 'span 4', mt: '68px', kind: 'slot', bg: '#AFC8BC', h: '268px', t: 'ảnh cận cảnh — kết cấu, bề mặt, chất liệu', ml: '0px', pl: '14px' },
-  { after: 5, col: 'span 3', mt: '46px', kind: 'slot', bg: '#9DBBD4', h: '242px', t: 'ảnh dọc hẹp — một vật thể đơn lẻ', ml: '0px', pl: '14px' },
-  { after: 7, col: 'span 3', mt: '200px', kind: 'slot', bg: '#E9B79C', h: '176px', t: 'ảnh vụn — chi tiết nhỏ lặp lại', ml: '0px', pl: '14px' },
+export const featureCells: FeatureCell[] = [
+  { n: 1, afterPost: 1, col: 'span 3', mt: '250px', kind: 'slot', bg: '#9DBBD4', h: '330px', t: 'ảnh dọc — bàn làm việc, dụng cụ bày ra', ml: '-52px', pl: '80px' },
+  { n: 2, afterPost: 2, col: 'span 3', mt: '54px', kind: 'quote', bg: '', h: '', t: 'Ghi lại thì mới thấy mình đã nghĩ gì.', ml: '0px', pl: '14px' },
+  { n: 3, afterPost: 4, col: 'span 3', mt: '86px', kind: 'slot', bg: '#E9B79C', h: '210px', t: 'ảnh vụn — mảnh cắt nhỏ, chèn đè lên bài bên cạnh', ml: '-64px', pl: '92px' },
+  { n: 4, afterPost: 5, col: 'span 3', mt: '190px', kind: 'count', bg: '', h: '', t: '', ml: '0px', pl: '14px' },
+  { n: 5, afterPost: 6, col: 'span 4', mt: '68px', kind: 'slot', bg: '#AFC8BC', h: '268px', t: 'ảnh cận cảnh — kết cấu, bề mặt, chất liệu', ml: '0px', pl: '14px' },
+  { n: 6, afterPost: 5, col: 'span 3', mt: '46px', kind: 'slot', bg: '#9DBBD4', h: '242px', t: 'ảnh dọc hẹp — một vật thể đơn lẻ', ml: '0px', pl: '14px' },
+  { n: 7, afterPost: 7, col: 'span 3', mt: '200px', kind: 'slot', bg: '#E9B79C', h: '176px', t: 'ảnh vụn — chi tiết nhỏ lặp lại', ml: '0px', pl: '14px' },
 ]
 
 export const noteTitleSize = (len: NoteLength) =>

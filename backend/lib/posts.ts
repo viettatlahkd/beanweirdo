@@ -34,7 +34,10 @@ export interface PostRow {
   lead: string | null
   pull_quote: string | null
   further_reading: string[] | null
-  sort_order: number
+  /** Vị trí người dùng tự chọn. Rỗng nghĩa là chưa ai chọn. */
+  sort_order: number | null
+  /** Bài ghim luôn dẫn đầu module, bất kể phần còn lại xếp thế nào. */
+  pinned: boolean
   created_at: string
   status: PostStatus
   template: PostTemplate
@@ -58,7 +61,7 @@ export interface PostRow {
  * and cannot see the real schema.
  */
 export const POST_SUMMARY_COLUMNS =
-  'id, module_id, en, vi, kind, date_label, status, template, hero_image_url, sort_order, created_at, updated_at, published_at, body'
+  'id, module_id, en, vi, kind, date_label, status, template, hero_image_url, sort_order, pinned, created_at, updated_at, published_at, body'
 
 export const POST_DETAIL_COLUMNS = '*'
 
@@ -108,7 +111,10 @@ export interface PostSummary {
    * one, otherwise the first image inside it.
    */
   thumbnail_url: string | null
-  sort_order: number
+  /** Vị trí người dùng tự chọn. Rỗng nghĩa là chưa ai chọn — xếp theo ngày đăng. */
+  sort_order: number | null
+  /** Bài ghim dẫn đầu module, bất kể phần còn lại xếp thế nào. */
+  pinned: boolean
   created_at: string
   updated_at: string
   published_at: string | null
@@ -140,6 +146,7 @@ export function toPostSummary(row: PostRow): PostSummary {
     // takes the post's cover or the first image inside it.
     thumbnail_url: row.hero_image_url || findSrc(row.body),
     sort_order: row.sort_order,
+    pinned: row.pinned,
     created_at: row.created_at,
     updated_at: row.updated_at,
     published_at: row.published_at,
