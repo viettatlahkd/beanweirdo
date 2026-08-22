@@ -306,6 +306,8 @@ export type ActivityRowProps = {
   onName(name: string): void
   onAbandon(): void
   onPatch(patch: Partial<Omit<LogEntry, 'id'>>): void
+  /** Copy this activity to the bottom of its day. */
+  onClone(): void
   onRemove(): void
 }
 
@@ -330,6 +332,7 @@ export function ActivityRow({
   onName,
   onAbandon,
   onPatch,
+  onClone,
   onRemove,
 }: ActivityRowProps) {
   const [picking, setPicking] = useState<'project' | 'task' | null>(null)
@@ -609,6 +612,30 @@ export function ActivityRow({
             hoverStyle={editable ? { background: '#EDE9D6' } : undefined}
           >
             {fmt(log.mins)}
+          </Hover>
+        )}
+
+        {editable && (
+          <Hover
+            onClick={onClone}
+            title="Nhân đôi — bản sao xuống cuối ngày"
+            aria-label={`Nhân đôi ${log.name || 'hoạt động'}`}
+            role="button"
+            style={{
+              flex: 'none',
+              marginTop: 4,
+              width: 20,
+              height: 20,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 12,
+              color: '#CFCFC4',
+              cursor: 'pointer',
+            }}
+            hoverStyle={{ color: '#3E7A4E' }}
+          >
+            ⧉
           </Hover>
         )}
 
