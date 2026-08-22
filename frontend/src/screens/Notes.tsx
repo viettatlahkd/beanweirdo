@@ -13,6 +13,7 @@ import { useNotes } from '../data/useNotes'
 import { usePublishedPosts, type PostRow } from '../data/usePublishedPosts'
 import { postDescription } from '../lib/postText'
 import { postThumbnail } from '../lib/postThumb'
+import { buildNotesGrid } from '../lib/notesGrid'
 import { useModules } from '../data/useModules'
 import { PostRenderer } from 'post-renderer'
 import {
@@ -548,18 +549,16 @@ export function Notes() {
               statistics panel unfolds on Ghi 02 — the reader stays on the page
               they were reading. Open, it takes the full width of the grid and
               everything else steps back. */}
-          {filed.flatMap((p, i) => {
-            const open = openNote === p.id
-            // Bài đứng đầu lưới nên nhận những chỗ đầu của chu kỳ dàn trang —
-            // cùng nhịp lệch hàng với ghi chú rời, không thẳng cột.
-            const place = notePlacement[i % notePlacement.length]
-              // Ô feature phải đứng NGAY SAU bài nó thuộc về. Dồn hết xuống cuối
-              // thì lưới dense chỉ còn chỗ ở đáy, và cả lớp trang trí tụ lại
-              // một cụm dưới cùng.
-              const anhFeature = featureCells
-                .filter((f) => f.afterPost === i)
-                .map((f) => <FeatureCellView key={`F${f.n}`} f={f} dimmed={openNote !== null} />)
-            return [
+            {buildNotesGrid(filed).map((cell, gi) => {
+              if (cell.kind === 'feature') {
+                return (
+                  <FeatureCellView key={`F${cell.cell.n}-${gi}`} f={cell.cell} dimmed={openNote !== null} />
+                )
+              }
+              const p = cell.post
+              const open = openNote === p.id
+              const place = cell.place
+            return (
               <Hover
                 key={p.id}
                 onClick={(e) => {
@@ -616,9 +615,8 @@ export function Notes() {
                     </div>
                   </>
                 )}
-              </Hover>,
-              ...anhFeature,
-            ]
+              </Hover>
+            )
           })}
 
         {!loading && filtered.length === 0 && filed.length === 0 && (
@@ -657,13 +655,6 @@ export function Notes() {
               }}
             />,
           ]
-            // Ghi chú rời đứng sau các bài, nên chỗ của chúng trong nhịp ô
-            // feature cũng phải cộng thêm số bài.
-            featureCells
-              .filter((f) => f.afterPost === filed.length + i)
-              .forEach((f) =>
-                cells.push(<FeatureCellView key={`F${f.n}`} f={f} dimmed={openNote !== null} />),
-              )
           return cells
         })}
       </div>
