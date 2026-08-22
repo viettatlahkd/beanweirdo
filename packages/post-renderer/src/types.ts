@@ -238,7 +238,12 @@ export type LongformPostData = {
 // ---------------------------------------------------------------------------
 
 /** A span inside a memo line; `em` is the design's amber emphasis. */
-export type MemoRun = { t: string; em?: boolean }
+export type MemoRun = {
+  t: string
+  em?: boolean
+  /** a value worth pausing on — drawn with a hairline under it, not a colour */
+  u?: boolean
+}
 
 export type MemoItem = {
   runs: MemoRun[]
@@ -252,6 +257,11 @@ export type MemoPhase = { n: string; label: string; lines: string[] }
 
 export type MemoSection = {
   h: string
+  /**
+   * A conclusion the session arrived at, set on its own tinted ground so it
+   * reads before the notes that led to it.
+   */
+  callout?: { h: string; lines: string[] }
   items?: MemoItem[]
   phases?: MemoPhase[]
   table?: { head: string[]; rows: string[][] }
