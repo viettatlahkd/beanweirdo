@@ -93,6 +93,7 @@ Các file đáng soi khi rà Content management:
 | D8 | Chưa đối soát hai màn hình `isLongform` và `isTaste` — trước tưởng không có design. | CHỜ |
 | D9 | 60 giá trị CSS trong design chưa thấy trong code, cần soi tay phân loại. | CHỜ |
 | D7 | Agent QA báo `main` đỏ 9 lỗi typecheck; tôi đo 6 commit gần nhất đều xanh. Chưa rõ nó chạy lệnh gì ở thư mục nào. | CHỜ |
+| D10 | Ở Ghi 01, bài xếp trong module mở sang **trang riêng**, trong khi nhóm 07 luật 1 nói phải **xổ ra tại chỗ**. Chủ site xác nhận luật đúng, code sai. Cần quyết cách xổ một bài đầy đủ trong lưới ghi chú. | CHỜ |
 
 ---
 

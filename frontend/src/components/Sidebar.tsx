@@ -78,6 +78,29 @@ function Mark({ shape }: { shape: Glyph }) {
   )
 }
 
+/**
+ * A module's mark in the sidebar.
+ *
+ * Reading modules take a round dot; the journals take a square. Both wear the
+ * module's own colour, but the shape is what says at a glance that Ghi 01 is
+ * not another shelf of essays — it reads as a module of a different kind
+ * before you have read its name (System conventions, group 05).
+ */
+function ModuleMark({ m }: { m: ModuleRow }) {
+  const special = m.kind === 'special'
+  return (
+    <div
+      data-kind={m.kind}
+      style={{
+        width: special ? 9 : 10,
+        height: special ? 9 : 10,
+        borderRadius: special ? 0 : '50%',
+        background: m.accent,
+      }}
+    />
+  )
+}
+
 function Row({
   glyph,
   label,
@@ -223,9 +246,7 @@ export function Sidebar() {
               count={countFor(m)}
               muted={t.muted}
               hoverBg={t.hover}
-              glyph={
-                <div style={{ width: 10, height: 10, borderRadius: '50%', background: m.accent }} />
-              }
+              glyph={<ModuleMark m={m} />}
             />,
           )
         }

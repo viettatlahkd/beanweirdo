@@ -86,7 +86,7 @@ export const LOGIC: LogicPart[] = [
       { s: 'Toàn hệ thống', r: 'Trên dải đường dẫn: mũi tên ← quay về trang liền trước, bấm từng chặng thì tới đúng trang đó.', e: '' },
       { s: 'Toàn hệ thống', r: 'Với sidebar: chia ba nhóm, mỗi nhóm có nhãn và đường kẻ ngăn.', e: '[[secPublic]] · [[secPractice]] · [[secAdmin]]' },
       { s: 'Toàn hệ thống', r: 'Với sidebar: chìm ở 64px, chỉ mở rộng khi rê chuột.', e: '268px khi mở' },
-      { s: 'Module', r: 'Với sidebar: mỗi module một chấm tròn màu riêng — kể cả module đặc biệt như [[notes]], vì nó cũng là module.', e: '' },
+      { s: 'Module', r: 'Với sidebar: module thường một chấm tròn màu riêng; module đặc biệt dùng hình vuông — khác hình để nhận ra ngay đây là loại module khác, trước cả khi đọc tên.', e: '' },
         { s: 'Module', r: 'Với mọi module đã tạo và công khai: luôn hiện, kể cả khi chưa có bài nào — số bài hiển thị 0, không tự ẩn đi.', e: 'chưa có bài ≠ chưa tồn tại' },
         { s: 'Module', r: 'Module phân loại theo hai trục độc lập: kind nói nó là gì (thường hay đặc biệt), visibility nói nó có được liệt kê không. Không bao giờ lọc một bề mặt chỉ bằng kind.', e: 'Ghi 01 là module đặc biệt nhưng công khai, nên vẫn có mặt ở [[home]] và sidebar.' },
         { s: 'Module', r: 'Trang chủ chỉ trưng module thường — vì nó là phòng trưng bày module đọc, không phải vì module đặc biệt bị ẩn. [[home]] và sidebar liệt kê mọi module công khai.', e: '' },
@@ -101,7 +101,7 @@ export const LOGIC: LogicPart[] = [
       { s: 'Template', r: 'Với cách trình bày: câu trích Playfair nghiêng 24px màu xanh lá, tên tác giả 12px xám kèm gạch ngắn phía trước.', e: '' }
     ] },
     { n: '07', g: 'Đọc — mở nội dung', items: [
-      { s: 'Toàn hệ thống', r: 'Ở danh sách ghi chú rời và [[cards]], [[archive]]: bấm một mục thì nội dung xổ ra tại chỗ, không mở trang mới.', e: 'GET danh sách trả đủ nội dung' },
+      { s: 'Toàn hệ thống', r: 'Ở mọi danh sách bài ([[notes]], [[cards]], [[archive]]): bấm một mục thì nội dung xổ ra tại chỗ trong danh sách, không mở trang mới.', e: 'GET danh sách trả đủ nội dung' },
       { s: 'Toàn hệ thống', r: 'Ở mọi mục xổ ra: mục đang mở tự cuộn vào giữa khung nhìn.', e: '' },
       { s: 'Toàn hệ thống', r: 'Ở [[notes]] và [[archive]]: mỗi lần chỉ một mục mở, bấm lại để thu.', e: '' }
     ] },
