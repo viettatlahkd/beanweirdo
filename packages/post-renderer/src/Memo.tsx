@@ -27,6 +27,12 @@ const Runs = ({ runs }: { runs: MemoRun[] }) => (
         <em key={i} style={{ fontWeight: 600, fontStyle: 'italic', color: '#8A6420' }}>
           {r.t}
         </em>
+      ) : r.u ? (
+        // Một số đo đáng dừng lại — gạch chân mảnh, giữ nguyên màu chữ, khác
+        // hẳn với nhấn mạnh vốn đổi cả màu lẫn kiểu.
+        <span key={i} style={{ borderBottom: '1px solid #CFCFC4' }}>
+          {r.t}
+        </span>
       ) : (
         <span key={i}>{r.t}</span>
       ),
@@ -41,6 +47,16 @@ const Runs = ({ runs }: { runs: MemoRun[] }) => (
  * the character it belongs to, a caveat under the tasting. So the bullet
  * changes shape with depth — filled, then hollow, then a square against a rule.
  */
+/** Mỗi giai đoạn một màu, xoay vòng — đúng ba màu design dùng. */
+const PHASE_COLORS = ['#F2A0A5', '#3E7A4E', '#8A6420']
+
+/**
+ * Cột đầu của bảng nếm là nhãn ("Liều", "Nhiệt") nên giữ hẹp và cố định;
+ * các cột số chia đều phần còn lại.
+ */
+const tableGrid = (columns: number) =>
+  columns > 1 ? `80px repeat(${columns - 1}, minmax(0,1fr))` : 'minmax(0,1fr)'
+
 function Item({ item, depth = 0 }: { item: MemoItem; depth?: number }) {
   const dot: CSSProperties =
     depth === 0
@@ -51,7 +67,15 @@ function Item({ item, depth = 0 }: { item: MemoItem; depth?: number }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '18px minmax(0,1fr)', gap: 12 }}>
+      {/* Mục lồng bên trong dùng lưới hẹp hơn — 18px cho cấp ngoài,
+          14px cho cấp trong, đúng như design. */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: depth >= 2 ? '14px minmax(0,1fr)' : '18px minmax(0,1fr)',
+          gap: 12,
+        }}
+      >
         <div style={{ ...dot, margin: depth === 2 ? '10px 0 0 5px' : '9px 0 0 6px' }} />
         <div style={{ fontSize: depth === 0 ? 15.5 : 15, lineHeight: 1.62 }}>
           <Runs runs={item.runs} />
@@ -100,6 +124,27 @@ function Section({ section }: { section: MemoSection }) {
         {section.h}
       </h2>
 
+      {section.callout && (
+        <div style={{ background: '#F3EEE1', padding: '26px 28px', marginBottom: 26 }}>
+          <div
+            style={{
+              fontWeight: 600,
+              fontSize: 15.5,
+              lineHeight: 1.5,
+              color: '#7A5230',
+              marginBottom: 10,
+            }}
+          >
+            {section.callout.h}
+          </div>
+          <div style={{ fontSize: 14.5, lineHeight: 1.7, color: '#3B3729' }}>
+            {section.callout.lines.map((l, li) => (
+              <div key={li}>{l}</div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {section.items && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {section.items.map((it, i) => (
@@ -109,15 +154,15 @@ function Section({ section }: { section: MemoSection }) {
       )}
 
       {section.phases && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 26 }}>
-          {section.phases.map((p) => (
-            <div key={p.n} style={{ display: 'grid', gridTemplateColumns: '54px minmax(0,1fr)', gap: 18 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          {section.phases.map((p, pi) => (
+            <div key={p.n} style={{ display: 'grid', gridTemplateColumns: '34px minmax(0,1fr)', gap: 14 }}>
               <div
                 style={{
                   fontFamily: serif,
-                  fontStyle: 'italic',
+
                   fontSize: 26,
-                  color: '#C4C0B0',
+                  color: PHASE_COLORS[pi % PHASE_COLORS.length],
                   fontVariantNumeric: 'tabular-nums',
                   lineHeight: 1,
                 }}
@@ -125,7 +170,7 @@ function Section({ section }: { section: MemoSection }) {
                 {p.n}
               </div>
               <div>
-                <div style={{ fontSize: 15.5, lineHeight: 1.5, marginBottom: 6 }}>{p.label}</div>
+                <div style={{ fontSize: 15, lineHeight: 1.66 }}>{p.label}</div>
                 {p.lines.map((l, i) => (
                   <div key={i} style={{ fontSize: 14.5, lineHeight: 1.66, color: '#4B4A40' }}>
                     {l}
@@ -138,12 +183,12 @@ function Section({ section }: { section: MemoSection }) {
       )}
 
       {section.table && (
-        <div style={{ marginTop: 22 }}>
+        <div style={{ marginTop: 22, maxWidth: 420 }}>
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: `repeat(${section.table.head.length}, minmax(0,1fr))`,
-              gap: 12,
+              gridTemplateColumns: tableGrid(section.table.head.length),
+                gap: '0 14px',
               borderBottom: '1px solid #102F35',
               paddingBottom: 8,
             }}
@@ -159,8 +204,8 @@ function Section({ section }: { section: MemoSection }) {
               key={i}
               style={{
                 display: 'grid',
-                gridTemplateColumns: `repeat(${section.table!.head.length}, minmax(0,1fr))`,
-                gap: 12,
+                gridTemplateColumns: tableGrid(section.table!.head.length),
+                  gap: '0 14px',
                 borderBottom: '1px solid #E3E3DB',
                 padding: '10px 0',
                 fontSize: 15,

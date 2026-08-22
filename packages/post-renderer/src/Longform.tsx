@@ -400,8 +400,11 @@ export function Longform({ post, breadcrumb }: LongformProps) {
               overflowY: 'auto',
               display: navOpen ? 'flex' : 'none',
               flexDirection: 'column',
-              background: 'linear-gradient(to left, rgba(252,252,250,.97) 62%, rgba(252,252,250,0))',
-              padding: '20px 24px 20px 40px',
+                background:
+                  'linear-gradient(to left, rgba(252,252,250,.99) 0%, rgba(252,252,250,.97) 52%, rgba(252,252,250,.86) 78%, rgba(252,252,250,0) 100%)',
+                backdropFilter: 'blur(2px)',
+                WebkitBackdropFilter: 'blur(2px)',
+                padding: '18px 26px 12px 44px',
             }}
           >
             <div style={{ fontSize: 9, letterSpacing: '.24em', textTransform: 'uppercase', color: '#B0B0A6', marginBottom: 4 }}>
