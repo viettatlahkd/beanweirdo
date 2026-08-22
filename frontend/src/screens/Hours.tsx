@@ -18,7 +18,7 @@ import { serif } from '../design/tokens'
 import { Hover } from '../lib/Hover'
 import { useSessionTimer, type SessionView } from '../lib/useSessionTimer'
 import { TimerRail } from '../components/TimerRail'
-import { buildAllDays, spanStats, streak as computeStreak, toMin, fmt } from '../lib/hoursStats'
+import { buildAllDays, cloneOf, spanStats, streak as computeStreak, toMin, fmt } from '../lib/hoursStats'
 
 
 
@@ -117,24 +117,13 @@ export function Hours() {
   }
 
   /**
-   * The same activity, a second time. Everything that says *what* was done
-   * carries over — name, both tags, how long it took, whether it counts — and
-   * only the clock time is new, because the point of copying a row is that the
-   * work happened again, later.
+   * The same activity, a second time — see `cloneOf` for what carries over.
    *
-   * No naming prompt: the copy arrives complete. A row that needed typing
+   * No naming prompt: the copy arrives with its name. A row that needed typing
    * would be `thêm hoạt động`, not this.
    */
   async function cloneRow(l: LogEntry) {
-    await add({
-      date: l.date,
-      name: l.name,
-      kind: l.kind,
-      project: l.project ?? null,
-      mins: l.mins,
-      done: l.done,
-      at: nextSlot(l.date),
-    })
+    await add(cloneOf(l))
   }
 
   /**
