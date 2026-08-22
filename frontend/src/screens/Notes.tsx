@@ -76,6 +76,8 @@ type CardStyle = ReturnType<typeof cardStyle>
 function cardStyle(
   n: Note,
   i: number,
+  /** Chỗ đứng trong chu kỳ 8 vị trí — khác `i`, vì bài đã xếp trước ghi chú. */
+  slot: number,
   isHv: boolean,
   isOpen: boolean,
   openIdx: number,
@@ -85,7 +87,7 @@ function cardStyle(
   my: number | null,
   el: HTMLDivElement | null,
 ) {
-  const p = notePlacement[i % notePlacement.length]
+  const p = notePlacement[slot % notePlacement.length]
 
   let prox = 0
   if (openNote === null && mx !== null && my !== null && el) {
@@ -148,6 +150,7 @@ function cardStyle(
 function NoteCard({
   n,
   i,
+  slot,
   filtered,
   hoverNote,
   openNote,
@@ -161,6 +164,8 @@ function NoteCard({
 }: {
   n: Note
   i: number
+  /** Vị trí trong chu kỳ dàn trang — ghi chú tiếp nối sau các bài đã xếp. */
+  slot: number
   filtered: Note[]
   hoverNote: number | null
   openNote: string | null
@@ -181,7 +186,7 @@ function NoteCard({
   const num = String(total - i).padStart(2, '0')
   const color = noteColor[n.k]
   const block = noteBlock[n.k]
-  const s: CardStyle = cardStyle(n, i, isHv, isOpen, openIdx, openNote, hoverNote, mx, my, el)
+  const s: CardStyle = cardStyle(n, i, slot, isHv, isOpen, openIdx, openNote, hoverNote, mx, my, el)
 
   return (
     <div
@@ -543,8 +548,11 @@ export function Notes() {
               statistics panel unfolds on Ghi 02 — the reader stays on the page
               they were reading. Open, it takes the full width of the grid and
               everything else steps back. */}
-          {filed.map((p) => {
+          {filed.map((p, i) => {
             const open = openNote === p.id
+            // Bài đứng đầu lưới nên nhận những chỗ đầu của chu kỳ dàn trang —
+            // cùng nhịp lệch hàng với ghi chú rời, không thẳng cột.
+            const place = notePlacement[i % notePlacement.length]
             return (
               <Hover
                 key={p.id}
@@ -553,7 +561,8 @@ export function Notes() {
                   setOpenNote((prev) => (prev === p.id ? null : p.id))
                 }}
                 style={{
-                  gridColumn: open ? 'span 12' : 'span 5',
+                  gridColumn: open ? '1 / -1' : place.col,
+                  marginTop: open ? '40px' : place.mt,
                   cursor: 'pointer',
                   opacity: openNote !== null && !open ? 0.18 : 1,
                   transition: 'opacity .45s ease',
@@ -567,7 +576,8 @@ export function Notes() {
                     {postThumbnail(p) && (
                       <div
                         style={{
-                          aspectRatio: '4/3',
+                          aspectRatio: place.ar,
+                          width: place.mw,
                           background: `url(${postThumbnail(p)}) center/cover no-repeat`,
                           marginBottom: 18,
                         }}
@@ -625,6 +635,7 @@ export function Notes() {
               key={n.id}
               n={n}
               i={i}
+              slot={filed.length + i}
               filtered={filtered}
               hoverNote={hoverNote}
               openNote={openNote}

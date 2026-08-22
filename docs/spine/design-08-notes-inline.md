@@ -20,8 +20,27 @@ thống kê trên nền trang Ghi 02 thay vì mở trang mới.
 Ba bản design cũ (base, v2, v3) không giúp được: chúng **không có** Ghi 01 hay
 Ghi 02, và mở bài thì `setState({ screen: 'article' })` — chuyển màn hẳn.
 
+## Bài xếp theo chu kỳ dàn trang, không thẳng cột
+Ban đầu tôi cho mọi bài `span 5` thẳng hàng. Sai: design có sẵn **chu kỳ 8 chỗ
+đứng** (`notePlacement`), mỗi chỗ một bề rộng cột, một độ trồi lên, một tỉ lệ
+ảnh và một bề ngang ảnh:
+
+```
+span 5 · trồi 0px    · 4/3 · 78%
+span 4 · trồi 104px  · 5/4 · 86%
+span 4 · trồi 18px   · 4/3 · 92%
+span 5 · trồi 132px  · 3/2 · 72%
+…
+```
+
+Chu kỳ này **đã có trong code** và khớp design từng số, nhưng chỉ áp cho ghi
+chú rời. Nay áp cho cả bài, và bài đứng trước nên nhận các chỗ đầu — ghi chú
+nối tiếp từ đó, nên nhịp lệch hàng không bị đứt ở chỗ giao nhau.
+
+Đo trên máy với 5 bài: cột `5·4·4·5·5`, trồi `0·104·18·132·34px`.
+
 ## Hệ quả bố cục — cần chủ site nhìn
-Bài mở ra chiếm 12 cột nên **buộc phải xuống hàng mới**. Với ba bài, mở bài
+Bài mở ra chiếm cả chiều ngang (`1 / -1`, đúng như design cho ghi chú mở) nên **buộc phải xuống hàng mới**. Với ba bài, mở bài
 giữa thì hai bài kia dồn lên một hàng, còn bài đang mở nằm **dưới cả hai** —
 tức nó rời khỏi đúng vị trí nó vừa đứng. Đã chụp màn hình.
 

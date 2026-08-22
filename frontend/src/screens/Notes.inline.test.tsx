@@ -34,8 +34,8 @@ const post = (id: string, en: string) => ({
 
 const cards = () =>
   Array.from(document.querySelectorAll<HTMLElement>('div')).filter(
-    // Đúng hai giá trị này thôi — lưới còn vài ô trang trí dùng 'x / span 5'.
-    (d) => d.style.gridColumn === 'span 5' || d.style.gridColumn === 'span 12',
+    // Thẻ bài: hoặc một ô trong chu kỳ dàn trang, hoặc mở hết chiều ngang.
+    (d) => /^span [45]$/.test(d.style.gridColumn) || d.style.gridColumn === '1 / -1',
   )
 
 describe('Ghi 01 — mở bài tại chỗ khi có nhiều bài', () => {
@@ -55,7 +55,9 @@ describe('Ghi 01 — mở bài tại chỗ khi có nhiều bài', () => {
     render(<Notes />)
     const c = cards()
     expect(c).toHaveLength(3)
-    expect(c.every((x) => x.style.gridColumn === 'span 5')).toBe(true)
+    // Không thẳng cột: chu kỳ dàn trang cho mỗi bài một cỡ và một độ trồi.
+    expect(new Set(c.map((x) => x.style.gridColumn)).size).toBeGreaterThan(1)
+    expect(new Set(c.map((x) => x.style.marginTop)).size).toBeGreaterThan(1)
     expect(c.every((x) => x.style.opacity === '1')).toBe(true)
   })
 
@@ -63,8 +65,8 @@ describe('Ghi 01 — mở bài tại chỗ khi có nhiều bài', () => {
     render(<Notes />)
     fireEvent.click(screen.getByText('Bài B'))
 
-    const open = cards().filter((x) => x.style.gridColumn === 'span 12')
-    const rest = cards().filter((x) => x.style.gridColumn === 'span 5')
+    const open = cards().filter((x) => x.style.gridColumn === '1 / -1')
+    const rest = cards().filter((x) => /^span [45]$/.test(x.style.gridColumn))
     expect(open).toHaveLength(1)
     expect(open[0].textContent).toContain('Bài B')
     expect(rest).toHaveLength(2)
@@ -75,7 +77,7 @@ describe('Ghi 01 — mở bài tại chỗ khi có nhiều bài', () => {
     render(<Notes />)
     fireEvent.click(screen.getByText('Bài B'))
     fireEvent.click(screen.getByText('Bài C'))
-    const open = cards().filter((x) => x.style.gridColumn === 'span 12')
+    const open = cards().filter((x) => x.style.gridColumn === '1 / -1')
     expect(open).toHaveLength(1)
     expect(open[0].textContent).toContain('Bài C')
   })
@@ -84,7 +86,7 @@ describe('Ghi 01 — mở bài tại chỗ khi có nhiều bài', () => {
     render(<Notes />)
     fireEvent.click(screen.getByText('Bài B'))
     fireEvent.click(screen.getByText('Bài B'))
-    expect(cards().filter((x) => x.style.gridColumn === 'span 12')).toHaveLength(0)
+    expect(cards().filter((x) => x.style.gridColumn === '1 / -1')).toHaveLength(0)
     expect(cards().every((x) => x.style.opacity === '1')).toBe(true)
   })
 })
