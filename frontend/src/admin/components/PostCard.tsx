@@ -48,10 +48,13 @@ export function PostCard({
   post,
   onAction,
   onEdit,
+  onPin,
 }: {
   post: PostSummary
   onAction: (id: string, action: StatusAction) => void
   onEdit: (id: string) => void
+  /** Ghim bài lên đầu module của nó. Mọi module đều ghim được, không riêng Ghi 01. */
+  onPin: (id: string, pinned: boolean) => void
 }) {
   const [hover, setHover] = useState(false)
   const actions = ACTIONS_BY_STATUS[post.status]
@@ -112,7 +115,29 @@ export function PostCard({
         {post.template ? TEMPLATE_LABEL[post.template] : '—'}
       </div>
 
-      <StatusBadge status={post.status} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        {/* Ghim là việc của mọi module, không riêng Ghi 01: bài ghim dẫn đầu
+            module của nó dù phần còn lại xếp theo gì. */}
+        <div
+          role="button"
+          aria-pressed={post.pinned}
+          onClick={(e) => {
+            e.stopPropagation()
+            onPin(post.id, !post.pinned)
+          }}
+          title={post.pinned ? 'Bỏ ghim' : 'Ghim lên đầu module'}
+          style={{
+            fontSize: 13,
+            cursor: 'pointer',
+            lineHeight: 1,
+            opacity: post.pinned ? 1 : hover ? 0.5 : 0.18,
+            transition: 'opacity .2s ease',
+          }}
+        >
+          📌
+        </div>
+        <StatusBadge status={post.status} />
+      </div>
     </div>
   )
 }
