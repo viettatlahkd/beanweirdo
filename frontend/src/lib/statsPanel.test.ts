@@ -3,6 +3,7 @@ import type { LogEntry } from '../content/hours'
 import {
   NO_PROJECT,
   byProject,
+  cloneOf,
   heatmap,
   neglected,
   periodStats,
@@ -346,5 +347,37 @@ describe('heatmap — the grid runs forward from the first entry', () => {
     const earliest = grid.cells.map((c) => c.ds).sort()[0]
     expect(earliest).toBe('2026-08-17')
     expect(grid.cells.every((c) => c.outside)).toBe(true)
+  })
+})
+
+describe('cloneOf — nhân đôi một hoạt động', () => {
+  const original = (over: Partial<LogEntry> = {}) =>
+    log({ name: 'beanweirdo: web code', kind: 'thực hành', project: 'Work', mins: 200, at: '13:42', done: true, ...over })
+
+  it('carries the name, both tags and the duration', () => {
+    const copy = cloneOf(original(), NOW)
+
+    expect(copy.name).toBe('beanweirdo: web code')
+    expect(copy.kind).toBe('thực hành')
+    expect(copy.project).toBe('Work')
+    expect(copy.mins).toBe(200)
+    expect(copy.date).toBe(original().date)
+  })
+
+  it('stamps the moment the copy was made, not a slot after the last row', () => {
+    // NOW is 18:00 — the copy starts then, whatever time the original ran at.
+    expect(cloneOf(original({ at: '13:42' }), NOW).at).toBe('18:00')
+    expect(cloneOf(original({ at: '23:10' }), NOW).at).toBe('18:00')
+  })
+
+  it('arrives unticked even when the original was done', () => {
+    // A copy is a claim about work nobody has checked yet. Ticking it here
+    // would put minutes into the day's total that the owner never confirmed.
+    expect(cloneOf(original({ done: true }), NOW).done).toBe(false)
+    expect(cloneOf(original({ done: false }), NOW).done).toBe(false)
+  })
+
+  it('pads the clock time to two digits on both sides', () => {
+    expect(cloneOf(original(), new Date('2026-08-22T09:05:00')).at).toBe('09:05')
   })
 })

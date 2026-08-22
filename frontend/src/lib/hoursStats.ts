@@ -33,6 +33,34 @@ export type DayBucket = {
 }
 
 /** The rolling span the screen draws, oldest day first. */
+/**
+ * The copy of an activity: same work, done again.
+ *
+ * Everything that says *what* was done carries over — name, both tags, how
+ * long it took. Two things do not.
+ *
+ * The clock time is the moment the copy was made, not a slot queued after the
+ * last row of the day. The copy exists because the work is happening now, and
+ * a time that has to be corrected on every use is worse than one that is
+ * usually right.
+ *
+ * And it arrives **unticked**, whatever the original was. A copy is a claim
+ * about work that has not been checked yet; ticking it here would put minutes
+ * into the day's total that nobody confirmed. The owner reads it back, then
+ * ticks it or leaves it waiting.
+ */
+export function cloneOf(l: LogEntry, now: Date = new Date()): Omit<LogEntry, 'id'> {
+  return {
+    date: l.date,
+    name: l.name,
+    kind: l.kind,
+    project: l.project ?? null,
+    mins: l.mins,
+    done: false,
+    at: String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0'),
+  }
+}
+
 export function buildAllDays(logs: LogEntry[]): DayBucket[] {
   const byDate: Record<string, LogEntry[]> = {}
   for (const l of logs) (byDate[l.date] ||= []).push(l)
