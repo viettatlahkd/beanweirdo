@@ -38,7 +38,10 @@ export type PostSummary = {
   hero_image_url: string | null
   /** Cover if the post has one, otherwise the first image inside it. */
   thumbnail_url: string | null
-  sort_order: number
+  /** Vị trí tự chọn; rỗng nghĩa là chưa ai chọn. */
+  sort_order: number | null
+  /** Bài ghim dẫn đầu module của nó. */
+  pinned: boolean
   created_at: string
   updated_at: string
   published_at: string | null
@@ -174,7 +177,9 @@ export async function updatePost(
     pull_quote: string
     further_reading: string[]
     date_label: string
-    sort_order: number
+      /** Vị trí tự chọn; null trả bài về xếp theo ngày đăng. */
+      sort_order: number | null
+      pinned: boolean
   }>,
 ): Promise<PostDetail> {
   const result = await request<{ post: PostDetail }>(`/api/posts/${id}`, {
