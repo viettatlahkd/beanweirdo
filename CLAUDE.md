@@ -66,6 +66,37 @@ curl -H "apikey: $SUPABASE_SECRET_KEY" -H "Authorization: Bearer $SUPABASE_SECRE
 Chỗ REST không làm được: **DDL**. Thêm hoặc xoá cột thì cần SQL Editor trên
 dashboard (không phải cài gì) hoặc CLI. Migration dữ liệu thì luôn dùng REST.
 
+## Nhịp làm việc
+
+Ba lỗi tốn thời gian nhất ở repo này, và luật để không lặp lại.
+
+**1. Gom rồi hẵng kiểm.** Sửa một dòng cũng chạy cả bộ test là lãng phí.
+
+| Đang làm gì | Chạy gì |
+|---|---|
+| Sửa trong một file, chưa xong | không chạy gì |
+| Xong một việc trọn vẹn | `npx vitest run <đúng file test đó>` |
+| Xong cả nhóm việc, sắp commit | `npm test` một lần |
+| Sắp mở PR | `npm test` + `vite build` |
+
+Một luồng lớn thì kiểm nhiều; một chỉnh sửa bé thì kiểm bé. Đừng đảo ngược.
+
+**2. Kiểm cái rẻ nhất trước khi chọn đường đắt.** Trước khi đề nghị cài bất cứ
+thứ gì, hỏi ba câu: credential đã có trong `.env.local` chưa · công cụ đã nằm
+sẵn ngoài `PATH` chưa (`/opt/homebrew/bin` — `which` không thấy không có nghĩa
+là chưa cài) · có REST/MCP làm được không.
+
+Đã xảy ra: đề nghị chủ site cài Supabase CLI, link project và nhập mật khẩu
+database — cho một việc mà service key sẵn trong repo làm xong bằng một lệnh
+`curl`. Cài đặt là phương án cuối, không phải phương án đầu.
+
+**3. Chọn thẳng, đừng bày ra để chọn.** Có hai đường mà một đường rõ ràng rẻ
+hơn thì đi luôn và nói một câu vì sao. Chỉ hỏi khi chọn sai thì phải làm lại từ
+đầu, hoặc khi nó đụng dữ liệu thật.
+
+**Báo cáo:** phần *cần chủ site quyết* lên đầu, tối đa ba gạch đầu dòng. Chi
+tiết để dưới. Không nhắc lại thứ đã nói ở lượt trước.
+
 ## Trước khi nói "xong"
 
 Test xanh không chứng minh giao diện đúng — nó chứng minh cái bạn nghĩ để kiểm
