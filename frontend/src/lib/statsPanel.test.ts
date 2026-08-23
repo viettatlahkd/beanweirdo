@@ -7,6 +7,7 @@ import {
   cloneOf,
   heatmap,
   neglected,
+  noteChip,
   periodStats,
   realSpanOfDay,
   spanStats,
@@ -448,5 +449,46 @@ describe('weekGroups — co gọn theo tuần', () => {
     expect(groups[0].mins).toBe(90)
     expect(groups[0].logged).toBe(2)
     expect(groups[0].days).toHaveLength(3)
+  })
+})
+
+describe('noteChip — ghi chú và link', () => {
+  it('shows nothing at all when there is no note', () => {
+    // Almost every row has none, and a row with none must look exactly like a
+    // row from before notes existed.
+    expect(noteChip(null)).toBeNull()
+    expect(noteChip(undefined)).toBeNull()
+    expect(noteChip('   ')).toBeNull()
+  })
+
+  it('shortens a link to its host', () => {
+    const c = noteChip('https://www.arxiv.org/abs/2401.12345?utm_source=twitter#intro')!
+    expect(c.label).toBe('arxiv.org/…')
+    expect(c.isLink).toBe(true)
+    // The address survives the shortening — it is what the click follows.
+    expect(c.href).toBe('https://www.arxiv.org/abs/2401.12345?utm_source=twitter#intro')
+  })
+
+  it('drops the trailing mark when the link is the site itself', () => {
+    expect(noteChip('https://github.com')!.label).toBe('github.com')
+    expect(noteChip('https://github.com/')!.label).toBe('github.com')
+  })
+
+  it('leaves plain text as text, on one line', () => {
+    const c = noteChip('  nhớ đọc lại\n  chương 4  ')!
+    expect(c.label).toBe('nhớ đọc lại chương 4')
+    expect(c.isLink).toBe(false)
+    expect(c.href).toBeNull()
+  })
+
+  it('trims a long note rather than letting it run the width of the row', () => {
+    const c = noteChip('a'.repeat(200))!
+    expect(c.label).toHaveLength(60)
+    expect(c.label.endsWith('…')).toBe(true)
+  })
+
+  it('treats an unparseable address as text, not as a broken link', () => {
+    const c = noteChip('http://')!
+    expect(c.isLink).toBe(false)
   })
 })

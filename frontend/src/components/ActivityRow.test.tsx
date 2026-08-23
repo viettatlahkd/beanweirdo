@@ -471,3 +471,46 @@ describe('ActivityRow — nhân đôi', () => {
     expect(screen.queryByRole('button', { name: /Nhân đôi/ })).not.toBeInTheDocument()
   })
 })
+
+describe('ActivityRow — ghi chú', () => {
+  it('shows nothing extra on a row without a note', () => {
+    row({ log: log({ note: null }) })
+
+    expect(screen.queryByRole('link')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Ghi chú hoặc link')).not.toBeInTheDocument()
+  })
+
+  it('shows a link as its host, opening in its own tab', () => {
+    row({ log: log({ note: 'https://www.arxiv.org/abs/2401.12345?utm_source=x' }) })
+    const a = screen.getByRole('link')
+
+    // The host is what the eye reads; the whole address is what the click gets.
+    expect(a).toHaveTextContent('arxiv.org/…')
+    expect(a).toHaveAttribute('href', 'https://www.arxiv.org/abs/2401.12345?utm_source=x')
+    expect(a).toHaveAttribute('target', '_blank')
+  })
+
+  it('opens the note field alongside the name when the row is being edited', () => {
+    row({ naming: true, log: log({ note: 'nhớ đọc lại chương 4' }) })
+
+    expect(screen.getByLabelText('Ghi chú hoặc link')).toHaveValue('nhớ đọc lại chương 4')
+  })
+
+  it('saves the note with the name on Enter', async () => {
+    const props = row({ naming: true, log: log({ note: null }) })
+    const field = screen.getByLabelText('Ghi chú hoặc link')
+
+    await userEvent.type(field, 'https://github.com/beanweirdo')
+    fireEvent.keyDown(field, { key: 'Enter' })
+
+    expect(props.onPatch).toHaveBeenCalledWith({ note: 'https://github.com/beanweirdo' })
+    expect(props.onName).toHaveBeenCalled()
+  })
+
+  it('does not write the note back when it was not touched', async () => {
+    const props = row({ naming: true, log: log({ note: 'https://github.com/beanweirdo' }) })
+    fireEvent.keyDown(screen.getByLabelText('Ghi chú hoặc link'), { key: 'Enter' })
+
+    expect(props.onPatch).not.toHaveBeenCalled()
+  })
+})
