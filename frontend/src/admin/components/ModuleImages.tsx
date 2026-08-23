@@ -6,8 +6,15 @@ import type { ImageGroup, ModuleImageFields } from '../moduleForm'
 import { coverStyle } from '../../lib/imageFocus'
 import { FocusPicker } from './FocusPicker'
 
-/** Sidebar plus the page's left padding — everything the band does not get. */
-const PAGE_CHROME = 176
+/**
+ * Sidebar plus page padding — everything the content does not get. Measured
+ * per screen, because they do not agree: the homepage band spans 1264px of a
+ * 1440px window, Ghi 01's grid only 1232px.
+ */
+const CHROME = { 'homepage-band': 176, 'notes-footer': 208 } as const
+
+/** Ghi 01 lays its twelve columns out with a wider gutter than the homepage. */
+const NOTES_GAP = 30
 
 /**
  * Width the public page gives the image band, on the screen looking at it.
@@ -18,9 +25,9 @@ const PAGE_CHROME = 176
  * shape the admin never actually sees. Rendering at the real width and scaling
  * down keeps the preview honest — and keeps the crop frame honest with it.
  */
-function pageWidth(): number {
+function pageWidth(kind: ImageGroup['preview']): number {
   if (typeof window === 'undefined') return 1128
-  return Math.max(720, window.innerWidth - PAGE_CHROME)
+  return Math.max(720, window.innerWidth - CHROME[kind])
 }
 
 const label: CSSProperties = {
@@ -64,14 +71,14 @@ function Preview({
 }) {
   const box = useRef<HTMLDivElement>(null)
   const [scale, setScale] = useState(0.3)
-  const [page, setPage] = useState(pageWidth)
+  const [page, setPage] = useState(() => pageWidth(kind))
 
   useEffect(() => {
     const el = box.current
     if (!el) return
     const fit = () => {
-      setPage(pageWidth())
-      setScale(el.clientWidth / pageWidth())
+      setPage(pageWidth(kind))
+      setScale(el.clientWidth / pageWidth(kind))
     }
     fit()
     const ro = new ResizeObserver(fit)
@@ -81,7 +88,7 @@ function Preview({
       ro.disconnect()
       window.removeEventListener('resize', fit)
     }
-  }, [])
+  }, [kind])
 
   const inner =
     kind === 'homepage-band' ? (
@@ -149,7 +156,7 @@ function NotesFooterPreview({
       style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(12,minmax(0,1fr))',
-        gap: 20,
+        gap: NOTES_GAP,
         height: 280,
         alignItems: 'end',
       }}
