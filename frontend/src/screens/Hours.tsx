@@ -141,7 +141,7 @@ export function Hours() {
    * would be `thêm hoạt động`, not this.
    */
   async function cloneRow(l: LogEntry) {
-    await add(cloneOf(l))
+    await add(cloneOf(l, new Date(), today))
   }
 
   /**
@@ -190,7 +190,9 @@ export function Hours() {
         (tagFilter.system === 'task' ? l.kind === tagFilter.name : l.project === tagFilter.name),
       )
       .slice()
-      .sort((a, b) => toMin(a.at) - toMin(b.at))
+      // Clock first; then the order they were written in, so a copy sits under
+      // its original rather than on whichever side the database returned it.
+      .sort((a, b) => toMin(a.at) - toMin(b.at) || (a.createdAt ?? '').localeCompare(b.createdAt ?? ''))
     const isToday = x.ds === today
     return {
       ds: x.ds,

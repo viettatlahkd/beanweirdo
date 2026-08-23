@@ -74,10 +74,14 @@ export function noteChip(note: string | null | undefined) {
  * Everything that says *what* was done carries over — name, both tags, how
  * long it took. Two things do not.
  *
- * The clock time is the moment the copy was made, not a slot queued after the
- * last row of the day. The copy exists because the work is happening now, and
- * a time that has to be corrected on every use is worse than one that is
- * usually right.
+ * **The clock time depends on which day is being copied.** On today's list the
+ * copy takes the current time: the work is happening now, and a time that has
+ * to be corrected on every use is worse than one that is usually right.
+ *
+ * On an older day that reasoning collapses — stamping a row from last Tuesday
+ * with this afternoon's clock drops it into the middle of a finished day for no
+ * reason. There the copy keeps the original's time and lands directly under it,
+ * where the owner can drag it wherever it belongs.
  *
  * And it arrives **unticked**, whatever the original was. A copy is a claim
  * about work that has not been checked yet; ticking it here would put minutes
@@ -87,7 +91,11 @@ export function noteChip(note: string | null | undefined) {
 export const clockHm = (now: Date = new Date()) =>
   String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0')
 
-export function cloneOf(l: LogEntry, now: Date = new Date()): Omit<LogEntry, 'id'> {
+export function cloneOf(
+  l: LogEntry,
+  now: Date = new Date(),
+  today: string = dateStr(now),
+): Omit<LogEntry, 'id'> {
   return {
     date: l.date,
     name: l.name,
@@ -95,7 +103,7 @@ export function cloneOf(l: LogEntry, now: Date = new Date()): Omit<LogEntry, 'id
     project: l.project ?? null,
     mins: l.mins,
     done: false,
-    at: clockHm(now),
+    at: l.date === today ? clockHm(now) : l.at,
   }
 }
 

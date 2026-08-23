@@ -40,6 +40,12 @@ export interface HourLog {
   done: boolean
   note: string | null
   parentId: string | null
+  /**
+   * When the row was written. Not shown anywhere — it breaks ties in the day
+   * list, so two rows sharing a clock time keep the order they were made in
+   * rather than whichever order the database happened to return.
+   */
+  createdAt: string
 }
 
 /** Postgres hands back `HH:MM:SS`; the journal only ever shows `HH:MM`. */
@@ -57,6 +63,7 @@ export function toHourLog(row: HourLogRow): HourLog {
     done: row.done,
     note: row.note ?? null,
     parentId: row.parent_id ?? null,
+    createdAt: row.created_at,
   }
 }
 
