@@ -771,8 +771,11 @@ export function TimerRail({
           marginBottom: 10,
         }}
       >
+        {/* The heading names the thing; the pair of tabs inside a card name the
+            two modes. Sharing one word for both made the heading read as a
+            mode that was already chosen. */}
         <div style={{ ...railLabel, color: '#A2A296' }}>
-          {sessions.length > 1 ? `Đang chạy · ${sessions.length}` : 'Bấm giờ'}
+          {sessions.length > 1 ? `Đang chạy · ${sessions.length}` : 'Đồng hồ bấm giờ'}
         </div>
         <Hover
           onClick={() => canAdd && onAddSession()}

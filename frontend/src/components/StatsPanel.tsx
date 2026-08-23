@@ -1,6 +1,6 @@
 import { useState, type CSSProperties } from 'react'
 import { hashtag, type LogEntry } from '../content/hours'
-import { serif } from '../design/tokens'
+import { serif, space } from '../design/tokens'
 import {
   NO_PROJECT,
   byProject,
@@ -70,27 +70,32 @@ const GAP = 4
  * on one line.
  */
 const CSS = `
-.sp-list { display: grid; gap: 13px; grid-template-columns: 1fr; }
+/*
+ * Everything here counts in the house rhythm — 8 / 20 / 40 / 64, the space
+ * scale in design/tokens. The panel had been written in numbers of its own — 26,
+ * 34, 13, 4 — which is why the bands kept reading as crowded no matter which
+ * one got nudged: they were near the rhythm without ever landing on it.
+ */
+.sp-list { display: grid; gap: 20px; grid-template-columns: 1fr; }
 .sp-lower {
   display: grid;
-  gap: 26px;
+  gap: 40px;
   grid-template-columns: 1fr;
   align-items: start;
-  /* The bands need air between them: the lower headings were landing a few
-     pixels under the last line of the project list, which read as one block
-     broken in half rather than as two. */
-  margin-top: 40px;
-  padding-top: 4px;
+  /* A rule with four pixels under it reads as a lid on the band above, not as
+     the start of a new one. The full section step goes above the rule and an
+     inner step below it, so the heading has somewhere to stand. */
+  margin-top: 64px;
+  padding-top: 20px;
   border-top: 1px solid #EDEDE6;
 }
 @media (min-width: 560px) {
-  .sp-list { grid-template-columns: 1fr 1fr; column-gap: 22px; }
+  .sp-list { grid-template-columns: 1fr 1fr; column-gap: 40px; }
 }
 @media (min-width: 860px) {
-  .sp-list { column-gap: 30px; }
   /* The heatmap has a ceiling of its own, so the kinds column takes whatever
      is left rather than splitting the row down the middle. */
-  .sp-lower { grid-template-columns: minmax(0, auto) minmax(220px, 1fr); column-gap: 34px; }
+  .sp-lower { grid-template-columns: minmax(0, auto) minmax(220px, 1fr); column-gap: 64px; }
 }
 `
 
@@ -180,7 +185,7 @@ export function StatsPanel({
 
   return (
     <div style={{ margin: '30px 0 6px' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: 8, marginBottom: 26 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: space.gap, marginBottom: space.column }}>
         <Tile caption="Tháng này" value={period.mtdTxt} note={deltaTxt} background="#102F35" ink="#F4F4EF" />
         <Tile
           caption="Tuần này"
@@ -206,7 +211,7 @@ export function StatsPanel({
           with. Two columns, so eight projects cost four rows of height
           instead of eight. */}
       <div>
-        <div style={{ ...label, marginBottom: 12 }}>Theo project</div>
+        <div style={{ ...label, marginBottom: space.inner }}>Theo project</div>
         {totalMins === 0 ? (
           <div style={{ fontSize: 12.5, color: '#A2A296' }}>Chưa có giờ nào được ghi.</div>
         ) : (
@@ -254,7 +259,7 @@ export function StatsPanel({
           {/* One square per day. The shades are cut against the busiest day in the
               window rather than fixed hour marks, so a quiet stretch still shows
               its own rhythm instead of washing out to a single pale tone. */}
-          <div style={{ ...label, marginBottom: 10 }}>Đều đặn · {grid.weeks} tuần</div>
+          <div style={{ ...label, marginBottom: space.inner }}>Đều đặn · {grid.weeks} tuần</div>
           <div
             style={{
               display: 'flex',
@@ -309,7 +314,7 @@ export function StatsPanel({
               ))}
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 10.5, color: '#8A8A7C', marginBottom: 26 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: space.inner, fontSize: 10.5, color: '#8A8A7C', marginBottom: 0, flexWrap: 'wrap', rowGap: space.gap }}>
             <span>
               chuỗi hiện tại <strong style={{ fontWeight: 500, color: '#172124' }}>{grid.current} ngày</strong>
             </span>
@@ -331,11 +336,11 @@ export function StatsPanel({
         </div>
 
         <div className="sp-kind">
-          <div style={{ ...label, marginBottom: 12 }}>Theo loại việc</div>
+          <div style={{ ...label, marginBottom: space.inner }}>Theo loại việc</div>
           {kindRows.length === 0 ? (
             <div style={{ fontSize: 12.5, color: '#A2A296' }}>—</div>
           ) : (
-            <div style={{ display: 'grid', gap: 9, fontSize: 12.5 }}>
+            <div style={{ display: 'grid', gap: 11, fontSize: 12.5 }}>
               {shownKinds.map((r) => (
                 <div key={r.k} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span style={{ width: 6, height: 6, background: kindColor[r.k] ?? '#A2A296', flex: 'none' }} />
@@ -358,8 +363,8 @@ export function StatsPanel({
               stopped getting any. */}
           {quiet.length > 0 && (
             <>
-              <div style={{ ...label, margin: '22px 0 10px' }}>Lâu chưa đụng tới</div>
-              <div style={{ display: 'grid', gap: 7, fontSize: 12.5 }}>
+              <div style={{ ...label, margin: `${space.column}px 0 ${space.inner}px` }}>Lâu chưa đụng tới</div>
+              <div style={{ display: 'grid', gap: 11, fontSize: 12.5 }}>
                 {quiet.map((q) => (
                   <div key={q.name} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span
