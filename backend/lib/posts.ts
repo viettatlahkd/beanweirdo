@@ -19,6 +19,43 @@ export const POST_KINDS: PostKind[] = ['note', 'essay', 'ref', 'log']
  * answered 400 for months. `templateContract.test.ts` compares all three.
  */
 export const POST_TEMPLATES: PostTemplate[] = ['article', 'cards', 'report', 'longform', 'memo']
+
+/**
+ * Every column `posts` actually has.
+ *
+ * Migration 0016 dropped `n` and warned, in its own comment, to ship the code
+ * that stops writing it first. The reorder endpoint was changed; the create
+ * endpoint was not, so creating any post failed with "Could not find the 'n'
+ * column" — and the test suite missed it because it mocked the insert away and
+ * only checked the status code.
+ *
+ * So the column list lives here and the endpoints' writes are checked against
+ * it. The next column to go takes a test with it instead of a working feature.
+ */
+export const POST_COLUMNS = [
+  'id',
+  'module_id',
+  'kind',
+  'template',
+  'en',
+  'vi',
+  'slug',
+  'lead',
+  'body',
+  'date_label',
+  'sort_order',
+  'pinned',
+  'status',
+  'previous_status',
+  'hero_image_url',
+  'hero_caption',
+  'pull_quote',
+  'further_reading',
+  'published_at',
+  'deleted_at',
+  'created_at',
+  'updated_at',
+] as const
 export const POST_STATUSES: PostStatus[] = ['draft', 'published', 'archived', 'deleted']
 
 export interface PostRow {

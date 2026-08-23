@@ -7,7 +7,13 @@ vi.mock('formidable', () => ({ default: formidableFactory }))
 
 const readFileMock = vi.fn()
 const unlinkMock = vi.fn()
-vi.mock('node:fs/promises', () => ({ readFile: readFileMock, unlink: unlinkMock }))
+// formidable reaches for the module's default export, so the mock has to carry
+// one as well as the named functions the handler itself calls.
+vi.mock('node:fs/promises', () => ({
+  readFile: readFileMock,
+  unlink: unlinkMock,
+  default: { readFile: readFileMock, unlink: unlinkMock },
+}))
 
 const uploadMock = vi.fn()
 const getPublicUrlMock = vi.fn()

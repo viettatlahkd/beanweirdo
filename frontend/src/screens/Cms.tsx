@@ -1048,7 +1048,9 @@ export function Cms() {
                         onDragEnd={() => setDragEntry(null)}
                         style={{
                           display: 'grid',
-                          gridTemplateColumns: '44px minmax(0,1fr) minmax(0,1.15fr) 74px 48px',
+                          // Titles are short names; descriptions are sentences,
+                          // and the ones that got cut off were always these.
+                          gridTemplateColumns: '44px minmax(0,0.72fr) minmax(0,1.6fr) 74px 48px',
                           gap: 10,
                           alignItems: 'center',
                           padding: '6px 0',
@@ -1182,20 +1184,6 @@ export function Cms() {
                 onBlur={(e) => setCopy('cmsIntro')(e.target.value)}
                 rows={2}
                 style={area}
-              />
-            </Field>
-            <Field label="Archive — tiêu đề">
-              <input
-                defaultValue={copy.archiveTitle}
-                onBlur={(e) => setCopy('archiveTitle')(e.target.value)}
-                style={{ ...serifInput, fontSize: 20 }}
-              />
-            </Field>
-            <Field label="Archive — ghi chú sau số bài">
-              <input
-                defaultValue={copy.archiveNote}
-                onBlur={(e) => setCopy('archiveNote')(e.target.value)}
-                style={boxed}
               />
             </Field>
           </div>
