@@ -17,7 +17,7 @@ import {
   type Module,
   type PostSummary,
 } from '../admin/lib/apiClient'
-import { createPost, transitionStatus, getSite } from '../admin/lib/apiClient'
+import { transitionStatus, getSite } from '../admin/lib/apiClient'
 import { PostsPanel } from '../admin/components/PostsPanel'
 import { ModuleImages } from '../admin/components/ModuleImages'
 import { formShapeOf } from '../admin/moduleForm'
@@ -27,6 +27,7 @@ import { FeatureCellsEditor } from '../admin/components/FeatureCellsEditor'
 import type { FeatureOverride } from '../content/notes'
 import { ink, paper, sans, serif } from '../design/tokens'
 import { Hover } from '../lib/Hover'
+import { useNav } from '../lib/nav'
 
 const sectionHead: CSSProperties = {
   fontFamily: sans,
@@ -263,6 +264,7 @@ function ImageSlot({
  * conventions, rule 08).
  */
 export function Cms() {
+  const nav = useNav()
   const [tab, setTab] = useState<'posts' | 'map' | 'content'>('posts')
   const [site, setSite] = useState<SiteOverrides>({})
   const [modules, setModules] = useState<Module[]>([])
@@ -381,14 +383,6 @@ export function Cms() {
     }
   }
 
-  async function addEntry(module_id: string) {
-    try {
-      await createPost({ module_id, kind: 'note', en: 'Bài mới', vi: 'Một dòng mô tả' })
-      setPosts(await listPosts('all'))
-    } catch (e) {
-      setError((e as Error).message)
-    }
-  }
 
   async function removeEntry(id: string) {
     try {
@@ -1017,8 +1011,14 @@ export function Cms() {
                       >
                         Bài trong module
                       </div>
+                      {/*
+                        Writing a post starts in one place. This list is for
+                        reading the order and changing it, so the button hands
+                        over to the wizard rather than dropping a blank draft
+                        in from the side.
+                      */}
                       <Hover
-                        onClick={() => void addEntry(m.id)}
+                        onClick={() => nav.newPost()}
                         style={{
                           fontFamily: sans,
                           fontSize: 10.5,
