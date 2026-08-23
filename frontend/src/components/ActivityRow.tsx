@@ -615,7 +615,7 @@ export function ActivityRow({
                 if (e.key === 'Enter') commitName.current()
                 if (e.key === 'Escape') onAbandon()
               }}
-              placeholder="ghi chú hoặc dán link"
+              placeholder="ghi chú/link"
               aria-label="Ghi chú hoặc link"
               style={{
                 display: 'block',
@@ -632,9 +632,28 @@ export function ActivityRow({
                 marginTop: 6,
                 outline: 'none',
               }}
+              className="note-field"
             />
+          ) : !chip ? (
+            // Nothing written here yet. On a row that can still be edited the
+            // prompt is the only thing saying notes exist at all; on a locked
+            // day it would be an offer that cannot be taken, so it stays away.
+            editable && (
+              <div
+                onClick={() => onStartNaming()}
+                style={{
+                  marginTop: 5,
+                  fontSize: 11.5,
+                  fontStyle: 'italic',
+                  color: '#C4C3B8',
+                  cursor: 'pointer',
+                }}
+              >
+                ghi chú/link
+              </div>
+            )
           ) : (
-            chip && (
+            (
               <div style={{ marginTop: 5 }}>
                 {chip.isLink ? (
                   <a
