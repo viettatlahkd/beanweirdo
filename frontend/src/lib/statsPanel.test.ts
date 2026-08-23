@@ -389,10 +389,26 @@ describe('cloneOf — nhân đôi một hoạt động', () => {
     expect(copy.date).toBe(original().date)
   })
 
-  it('stamps the moment the copy was made, not a slot after the last row', () => {
-    // NOW is 18:00 — the copy starts then, whatever time the original ran at.
-    expect(cloneOf(original({ at: '13:42' }), NOW).at).toBe('18:00')
-    expect(cloneOf(original({ at: '23:10' }), NOW).at).toBe('18:00')
+  it("stamps today's copy with the current time", () => {
+    // NOW is 18:00 on the 22nd, and the row is from the 22nd — the copy starts
+    // now, whatever time the original ran at.
+    const today = '2026-08-22'
+    expect(cloneOf(original({ date: today, at: '13:42' }), NOW, today).at).toBe('18:00')
+    expect(cloneOf(original({ date: today, at: '23:10' }), NOW, today).at).toBe('18:00')
+  })
+
+  it("keeps an older row's own time, so the copy lands under it", () => {
+    // Stamping a row from three days ago with this afternoon's clock would
+    // drop it into the middle of a finished day for no reason.
+    const copy = cloneOf(original({ date: '2026-08-19', at: '09:10' }), NOW, '2026-08-22')
+
+    expect(copy.at).toBe('09:10')
+    expect(copy.date).toBe('2026-08-19')
+  })
+
+  it('reads today from the clock when nobody says otherwise', () => {
+    // The default third argument is the day `now` falls on.
+    expect(cloneOf(original({ date: '2026-08-22', at: '09:10' }), NOW).at).toBe('18:00')
   })
 
   it('arrives unticked even when the original was done', () => {
