@@ -484,7 +484,18 @@ export type HeatCell = {
  * hour marks — a quiet month still shows its own rhythm rather than a uniform
  * pale wash.
  */
-export function heatmap(logs: LogEntry[], weeks = 26, now: Date = new Date()) {
+/**
+ * Thirteen weeks — a quarter.
+ *
+ * Half a year was the first guess and it read as a wall: at the width the
+ * column gives, twenty-six columns squeeze each day down to something too
+ * small to judge, and most of them were outside the record anyway. A quarter
+ * is the longest stretch a person still remembers day by day, and it leaves
+ * each square big enough to read the shade off.
+ */
+export const HEAT_WEEKS = 13
+
+export function heatmap(logs: LogEntry[], weeks = HEAT_WEEKS, now: Date = new Date()) {
   const byDate: Record<string, number> = {}
   for (const l of logs) if (done(l)) byDate[l.date] = (byDate[l.date] || 0) + l.mins
 
