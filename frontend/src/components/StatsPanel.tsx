@@ -1,6 +1,7 @@
 import { useState, type CSSProperties } from 'react'
 import { hashtag, type LogEntry } from '../content/hours'
 import { serif, space } from '../design/tokens'
+import { countable } from '../lib/subtasks'
 import {
   NO_PROJECT,
   byProject,
@@ -148,17 +149,24 @@ export function StatsPanel({
 }) {
   const [allKinds, setAllKinds] = useState(false)
 
-  const period = periodStats(logs)
-  const ratio = usefulRatio(logs)
-  const grid = heatmap(logs)
-  const rows = byProject(logs, projects, projectColor)
-  const quiet = neglected(logs, projects)
+  /**
+   * Sittings are drawn under their parent and their minutes are already in the
+   * parent's total, so every figure below counts the parents only. Without
+   * this an afternoon returned to twice would read as twice the afternoon.
+   */
+  const totals = countable(logs)
+
+  const period = periodStats(totals)
+  const ratio = usefulRatio(totals)
+  const grid = heatmap(totals)
+  const rows = byProject(totals, projects, projectColor)
+  const quiet = neglected(totals, projects)
 
   const totalMins = rows.reduce((a, r) => a + r.mins, 0)
   const kindRows = kinds
     .map((k) => ({
       k,
-      mins: logs.filter((l) => l.kind === k && l.done !== false).reduce((a, l) => a + l.mins, 0),
+      mins: totals.filter((l) => l.kind === k && l.done !== false).reduce((a, l) => a + l.mins, 0),
     }))
     .filter((x) => x.mins > 0)
     .sort((a, b) => b.mins - a.mins)

@@ -20,6 +20,12 @@ export interface HourLogRow {
   done: boolean
   /** A line the owner attached to this activity — often a URL. */
   note: string | null
+  /**
+   * The activity this row is one sitting of, or null. Nesting is one level:
+   * a row with a parent may not be one. Enforced here rather than by a
+   * trigger — one rule is cheaper to read in the API than in the schema.
+   */
+  parent_id: string | null
   created_at: string
 }
 
@@ -33,6 +39,7 @@ export interface HourLog {
   at: string
   done: boolean
   note: string | null
+  parentId: string | null
 }
 
 /** Postgres hands back `HH:MM:SS`; the journal only ever shows `HH:MM`. */
@@ -49,10 +56,29 @@ export function toHourLog(row: HourLogRow): HourLog {
     at: trimSeconds(row.at),
     done: row.done,
     note: row.note ?? null,
+    parentId: row.parent_id ?? null,
   }
 }
 
-export const HOUR_LOG_WRITABLE = ['date', 'name', 'kind', 'project', 'mins', 'at', 'done', 'note'] as const
+/**
+ * The API speaks the database's own names, with one exception: the journal
+ * calls this `parentId` on the way in and out, because everything else it
+ * hands the browser is camelCase. Translated here, in one place, rather than
+ * leaving one snake_case field loose in the client.
+ */
+export const HOUR_LOG_ALIASES: Record<string, string> = { parentId: 'parent_id' }
+
+export const HOUR_LOG_WRITABLE = [
+  'date',
+  'name',
+  'kind',
+  'project',
+  'mins',
+  'at',
+  'done',
+  'note',
+  'parent_id',
+] as const
 
 /** The two ways an activity is filed — see migration 0009. */
 export const TAG_SYSTEMS = ['task', 'project'] as const

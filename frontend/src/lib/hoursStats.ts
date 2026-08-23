@@ -163,7 +163,9 @@ export function buildAllDays(logs: LogEntry[], now: Date = new Date()): DayBucke
       ds,
       d,
       ls,
-      mins: ls.filter((l) => l.done !== false).reduce((a, l) => a + l.mins, 0),
+      // A parent carries the sum of its sittings, so the day counts parents
+      // only — see `countable`.
+      mins: ls.filter((l) => l.done !== false && !l.parentId).reduce((a, l) => a + l.mins, 0),
       hasAny: ls.length > 0,
       age: i,
     })
