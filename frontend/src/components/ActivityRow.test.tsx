@@ -31,6 +31,9 @@ function row(over: Partial<Parameters<typeof ActivityRow>[0]> = {}) {
     onAbandon: vi.fn(),
     onPatch: vi.fn(),
     onClone: vi.fn(),
+    onAddSitting: vi.fn(),
+    onPatchSitting: vi.fn(),
+    onRemoveSitting: vi.fn(),
     onRemove: vi.fn(),
     ...over,
   }
@@ -53,6 +56,9 @@ function renderRow(over: Partial<Parameters<typeof ActivityRow>[0]> = {}) {
     onAbandon: vi.fn(),
     onPatch: vi.fn(),
     onClone: vi.fn(),
+    onAddSitting: vi.fn(),
+    onPatchSitting: vi.fn(),
+    onRemoveSitting: vi.fn(),
     onRemove: vi.fn(),
     ...over,
   }
@@ -522,5 +528,85 @@ describe('ActivityRow — ghi chú', () => {
     fireEvent.keyDown(screen.getByLabelText('Ghi chú hoặc link'), { key: 'Enter' })
 
     expect(props.onPatch).not.toHaveBeenCalled()
+  })
+})
+
+describe('ActivityRow — một hoạt động nhiều lần', () => {
+  const sitting = (over: Partial<LogEntry> = {}): LogEntry =>
+    log({ id: 's1', name: '', at: '13:42', mins: 180, ...over })
+
+  it('replaces the clock pair with a count', () => {
+    row({
+      log: log({ name: 'beanweirdo: web code' }),
+      sittings: [sitting(), sitting({ id: 's2', at: '23:10', mins: 80 })],
+    })
+
+    // Two ends hours apart, with a gap between them, sitting next to a total
+    // they do not add up to — so the pair goes and the count stays.
+    expect(screen.getByText('2 lần')).toBeInTheDocument()
+    expect(screen.queryByText('13:42 – 16:42')).not.toBeInTheDocument()
+  })
+
+  it('totals the sittings rather than showing the parent own minutes', () => {
+    row({
+      log: log({ mins: 999 }),
+      sittings: [sitting({ mins: 180 }), sitting({ id: 's2', mins: 80 })],
+    })
+
+    expect(screen.getByText('4h 20m')).toBeInTheDocument()
+    expect(screen.queryByText('16h 39m')).not.toBeInTheDocument()
+  })
+
+  it('keeps the name and both tags on the heading only', () => {
+    row({
+      log: log({ name: 'web code', project: 'Sao đâu', kind: 'đọc' }),
+      sittings: [sitting(), sitting({ id: 's2' })],
+    })
+
+    // One name, one project chip, one task chip — not one per sitting.
+    expect(screen.getAllByText('web code')).toHaveLength(1)
+    expect(screen.getAllByText('#Sao đâu')).toHaveLength(1)
+  })
+
+  it('offers a way to add another sitting, and names it for the activity', async () => {
+    const props = row({ log: log({ name: 'web code' }), sittings: [sitting()] })
+    await userEvent.click(screen.getByRole('button', { name: 'Thêm một lần nữa cho web code' }))
+
+    expect(props.onAddSitting).toHaveBeenCalledTimes(1)
+  })
+
+  it('removes one sitting without touching the activity', async () => {
+    const props = row({ sittings: [sitting({ at: '13:42' }), sitting({ id: 's2', at: '23:10' })] })
+    await userEvent.click(screen.getByRole('button', { name: 'Xoá lần 23:10' }))
+
+    expect(props.onRemoveSitting).toHaveBeenCalledWith('s2')
+    expect(props.onRemove).not.toHaveBeenCalled()
+  })
+
+  it('leaves a plain row exactly as it was', () => {
+    row({ log: log({ at: '16:57', mins: 30 }) })
+
+    // No count, no second tier — just the clock pair it has always shown.
+    expect(screen.queryByText(/lần$/)).not.toBeInTheDocument()
+    expect(screen.getByText('16:57')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Xoá lần/ })).not.toBeInTheDocument()
+  })
+
+  it('offers the same control on a plain row, since that is how a group starts', async () => {
+    // The first press turns the row into a heading with two sittings under it.
+    // It is an icon beside the copy button, not a line of text on every row.
+    const props = row({ log: log({ name: 'web code' }) })
+    await userEvent.click(screen.getByRole('button', { name: 'Thêm một lần nữa cho web code' }))
+
+    expect(props.onAddSitting).toHaveBeenCalledTimes(1)
+  })
+
+  it('hides the controls on a day that can no longer be edited', () => {
+    row({ editable: false, sittings: [sitting(), sitting({ id: 's2' })] })
+
+    expect(screen.queryByRole('button', { name: /Thêm một lần nữa/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Xoá lần/ })).not.toBeInTheDocument()
+    // The reading itself stays: a locked day still shows what happened.
+    expect(screen.getByText('2 lần')).toBeInTheDocument()
   })
 })

@@ -308,6 +308,16 @@ export type ActivityRowProps = {
   onPatch(patch: Partial<Omit<LogEntry, 'id'>>): void
   /** Copy this activity to the bottom of its day. */
   onClone(): void
+  /**
+   * The sittings of this activity, earliest first. Empty on an ordinary row —
+   * the second tier appears only once there really is a second sitting, and
+   * the way to make one is the ⊕ beside the copy button rather than a line of
+   * text offering itself on every row of the day.
+   */
+  sittings?: LogEntry[]
+  onAddSitting?(): void
+  onPatchSitting?(id: string, patch: Partial<Omit<LogEntry, 'id'>>): void
+  onRemoveSitting?(id: string): void
   onRemove(): void
 }
 
@@ -320,6 +330,143 @@ export type ActivityRowProps = {
  * panel that closed the moment the pointer left it, which made setting a time
  * a matter of luck.
  */
+/**
+ * One sitting of an activity that was returned to more than once.
+ *
+ * It carries no name and no tags: those live on the parent, and repeating them
+ * under it would be asking the eye to re-read the same fact three times — and
+ * would open the door to two sittings of one activity wearing different tags.
+ * What it does carry is the pair of clock times and its own length, because
+ * that is the whole reason the sitting exists as a row at all.
+ */
+function SittingRow({
+  log,
+  editable,
+  last,
+  color,
+  onPatch,
+  onRemove,
+}: {
+  log: LogEntry
+  editable: boolean
+  last: boolean
+  color: string
+  onPatch(patch: Partial<Omit<LogEntry, 'id'>>): void
+  onRemove(): void
+}) {
+  const [editing, setEditing] = useState<'at' | 'end' | 'mins' | null>(null)
+  const [draft, setDraft] = useState('')
+
+  function openEdit(field: 'at' | 'end' | 'mins') {
+    if (!editable) return
+    setDraft(field === 'at' ? log.at : field === 'end' ? endOf(log) : String(log.mins))
+    setEditing(field)
+  }
+
+  function commit() {
+    const looksLikeTime = /^\d{1,2}:\d{2}$/.test(draft)
+    if (editing === 'at') {
+      if (looksLikeTime && draft !== log.at) onPatch({ at: draft })
+    } else if (editing === 'end' && looksLikeTime) {
+      const mins = atToMin(draft) - atToMin(log.at)
+      if (mins > 0 && mins !== log.mins) onPatch({ mins })
+    }
+    setEditing(null)
+  }
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 0 5px 2px' }}>
+      {/* An elbow rather than a bullet: it says "belongs to the line above"
+          without adding a second kind of mark to a screen that already uses
+          dots for days and squares for ticks. */}
+      <div style={{ fontSize: 11, color: '#CFCFC4', flex: 'none', width: 14 }}>{last ? '└' : '├'}</div>
+      {/* Each sitting is ticked on its own: a morning that happened and an
+          evening still ahead of you are two facts, and the day's total only
+          counts the ones that did happen. */}
+      <div
+        onClick={() => editable && onPatch({ done: log.done === false })}
+        title={log.done === false ? 'Đánh dấu đã xong' : 'Bỏ tick'}
+        role="checkbox"
+        aria-checked={log.done !== false}
+        aria-label={`Lần ${log.at} đã xong`}
+        style={{
+          width: 13,
+          height: 13,
+          flex: 'none',
+          border: `1px solid ${log.done === false ? '#D6D3C6' : color}`,
+          background: log.done === false ? 'transparent' : color,
+          color: '#FDFBF2',
+          fontSize: 9,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: editable ? 'pointer' : 'default',
+        }}
+      >
+        {log.done === false ? '' : '✓'}
+      </div>
+      <TimeField
+        value={log.at}
+        editing={editing === 'at'}
+        draft={draft}
+        editable={editable}
+        onDraft={setDraft}
+        onOpen={() => openEdit('at')}
+        onCommit={commit}
+        onCancel={() => setEditing(null)}
+      />
+      <div style={{ fontSize: 12, color: '#B0AEA2' }}>–</div>
+      <TimeField
+        value={endOf(log)}
+        editing={editing === 'end'}
+        draft={draft}
+        editable={editable}
+        onDraft={setDraft}
+        onOpen={() => openEdit('end')}
+        onCommit={commit}
+        onCancel={() => setEditing(null)}
+      />
+      <div style={{ flex: '1 1 0' }} />
+      {editing === 'mins' ? (
+        <DurationField
+          mins={log.mins}
+          onCommit={(next) => {
+            if (next > 0 && next !== log.mins) onPatch({ mins: next })
+            setEditing(null)
+          }}
+          onCancel={() => setEditing(null)}
+        />
+      ) : (
+        <Hover
+          onClick={() => openEdit('mins')}
+          style={{
+            fontSize: 13.5,
+            color: '#414A42',
+            fontVariantNumeric: 'tabular-nums',
+            cursor: editable ? 'pointer' : 'default',
+            padding: '2px 5px',
+          }}
+          hoverStyle={editable ? { background: '#EDE9D6' } : undefined}
+        >
+          {fmt(log.mins)}
+        </Hover>
+      )}
+      {editable && (
+        <Hover
+          onClick={onRemove}
+          role="button"
+          aria-label={`Xoá lần ${log.at}`}
+          title="Xoá lần này"
+          style={{ width: 18, textAlign: 'center', fontSize: 12, color: '#CFCFC4', cursor: 'pointer' }}
+          hoverStyle={{ color: '#C25C7C' }}
+        >
+          ✕
+        </Hover>
+      )}
+    </div>
+  )
+}
+
 export function ActivityRow({
   log,
   editable,
@@ -334,7 +481,19 @@ export function ActivityRow({
   onPatch,
   onClone,
   onRemove,
+  sittings = [],
+  onAddSitting,
+  onPatchSitting,
+  onRemoveSitting,
 }: ActivityRowProps) {
+  /**
+   * A row with sittings under it is a heading, not an activity in its own
+   * right: its own clock times mean nothing, and its length is whatever the
+   * sittings add up to.
+   */
+  const grouped = sittings.length > 0
+  const total = grouped ? sittings.reduce((a, x) => a + x.mins, 0) : log.mins
+  const allDone = grouped && sittings.every((x) => x.done !== false)
   const [picking, setPicking] = useState<'project' | 'task' | null>(null)
   const [editing, setEditing] = useState<'at' | 'end' | 'mins' | null>(null)
   const [draft, setDraft] = useState('')
@@ -431,15 +590,22 @@ export function ActivityRow({
     >
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
         <div
-          onClick={() => editable && onPatch({ done: !done })}
-          title={done ? 'Bỏ tick' : 'Đánh dấu đã xong'}
+          onClick={() => {
+            if (!editable) return
+            // On a heading the tick belongs to the whole group: it reads as
+            // ticked when every sitting is, and pressing it settles all of
+            // them. The heading's own flag is left alone — nothing reads it.
+            if (grouped) sittings.forEach((x) => onPatchSitting?.(x.id, { done: !allDone }))
+            else onPatch({ done: !done })
+          }}
+          title={(grouped ? allDone : done) ? 'Bỏ tick' : 'Đánh dấu đã xong'}
           style={{
             width: 16,
             height: 16,
             flex: 'none',
             marginTop: 4,
-            border: `1px solid ${done ? color : '#B9B6A6'}`,
-            background: done ? color : 'transparent',
+            border: `1px solid ${(grouped ? allDone : done) ? color : '#B9B6A6'}`,
+            background: (grouped ? allDone : done) ? color : 'transparent',
             color: '#F6F2E6',
             fontSize: 11,
             display: 'flex',
@@ -448,7 +614,7 @@ export function ActivityRow({
             cursor: editable ? 'pointer' : 'default',
           }}
         >
-          {done ? '✓' : ''}
+          {(grouped ? allDone : done) ? '✓' : ''}
         </div>
 
         <div style={{ flex: '1 1 auto', minWidth: 140 }}>
@@ -502,6 +668,15 @@ export function ActivityRow({
                 A new row counts as being worked on: it arrives with a guessed
                 start and 30 minutes on it, and those are exactly what you fix
                 before typing what the activity was. */}
+            {grouped ? (
+              // No clock pair here. The two ends of a grouped activity are hours
+              // apart with gaps in between, so a start and an end would sit next
+              // to a total they do not add up to — a subtraction nobody asked
+              // for, on two numbers saying different things.
+              <div style={{ fontSize: 12, color: '#8A8A7C', padding: '2px 0' }}>
+                {sittings.length} lần
+              </div>
+            ) : (
             <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
               <TimeField
                 value={log.at}
@@ -554,6 +729,7 @@ export function ActivityRow({
                 </>
               )}
             </div>
+            )}
 
             {!editable && <div style={{ fontSize: 11, color: '#AFAFA2' }}>✓ chốt</div>}
           </div>
@@ -682,11 +858,30 @@ export function ActivityRow({
               </div>
             )
           )}
+
+          {grouped && (
+            <div style={{ marginTop: 7 }}>
+              {sittings.map((x, i) => (
+                <SittingRow
+                  key={x.id}
+                  log={x}
+                  editable={editable}
+                  last={i === sittings.length - 1}
+                  color={color}
+                  onPatch={(patch) => onPatchSitting?.(x.id, patch)}
+                  onRemove={() => onRemoveSitting?.(x.id)}
+                />
+              ))}
+            </div>
+          )}
         </div>
 
         {!working && (
           <Hover
-            onClick={() => openEdit('mins')}
+            // The total of a grouped activity is not a field: it is the sum of
+            // the sittings, and the way to change it is to change one of them.
+            onClick={grouped ? undefined : () => openEdit('mins')}
+            title={grouped ? 'Tổng của các lần bên dưới' : undefined}
             style={{
               flex: 'none',
               marginTop: 2,
@@ -694,12 +889,36 @@ export function ActivityRow({
               color: '#172124',
               fontVariantNumeric: 'tabular-nums',
               textAlign: 'right',
-              cursor: editable ? 'pointer' : 'default',
+              cursor: editable && !grouped ? 'pointer' : 'default',
               padding: '2px 5px',
             }}
-            hoverStyle={editable ? { background: '#EDE9D6' } : undefined}
+            hoverStyle={editable && !grouped ? { background: '#EDE9D6' } : undefined}
           >
-            {fmt(log.mins)}
+            {fmt(total)}
+          </Hover>
+        )}
+
+        {editable && onAddSitting && (
+          <Hover
+            onClick={onAddSitting}
+            title="Thêm một lần thực hiện nữa"
+            aria-label={`Thêm một lần nữa cho ${log.name || 'hoạt động'}`}
+            role="button"
+            style={{
+              flex: 'none',
+              marginTop: 4,
+              width: 20,
+              height: 20,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 13,
+              color: '#CFCFC4',
+              cursor: 'pointer',
+            }}
+            hoverStyle={{ color: '#143C43' }}
+          >
+            ⊕
           </Hover>
         )}
 

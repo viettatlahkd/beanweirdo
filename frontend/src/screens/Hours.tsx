@@ -15,6 +15,7 @@ import {
   withUnclassified,
 } from '../content/hours'
 import { useHours } from '../data/useHours'
+import { groupActivities } from '../lib/subtasks'
 import { useToday } from '../lib/useToday'
 import { serif } from '../design/tokens'
 import { Hover } from '../lib/Hover'
@@ -140,6 +141,68 @@ export function Hours() {
    * No naming prompt: the copy arrives with its name. A row that needed typing
    * would be `thêm hoạt động`, not this.
    */
+  /**
+   * Another sitting of the same activity.
+   *
+   * The first press turns a plain row into a heading with two sittings under
+   * it: the work already recorded becomes the first, and a fresh one is added
+   * after it. Nobody has to learn the idea of "make this a parent" — it just
+   * happens when a second sitting appears.
+   *
+   * The new sitting starts a quarter of an hour after the last one ends and
+   * runs as long as it did, because "again, for about as long" is what asking
+   * for another sitting usually means.
+   */
+  async function addSitting(parent: LogEntry) {
+    const existing = logs.filter((l) => l.parentId === parent.id)
+    const first =
+      existing.length === 0
+        ? await add({
+            date: parent.date,
+            name: '',
+            kind: parent.kind,
+            project: parent.project ?? null,
+            mins: parent.mins,
+            at: parent.at,
+            // The work already recorded becomes the first sitting, tick and
+            // all — it happened, and turning a row into a heading must not
+            // quietly un-count it.
+            done: parent.done,
+            parentId: parent.id,
+          })
+        : null
+    if (existing.length === 0 && !first) return
+
+    const sittings = existing.length ? existing : [first as LogEntry]
+    const last = sittings.slice().sort((a, b) => toMin(a.at) - toMin(b.at)).slice(-1)[0]
+    const startMin = Math.min(23 * 60 + 30, toMin(last.at) + last.mins + 15)
+
+    await add({
+      date: parent.date,
+      name: '',
+      kind: parent.kind,
+      project: parent.project ?? null,
+      mins: last.mins,
+      at: String(Math.floor(startMin / 60)).padStart(2, '0') + ':' + String(startMin % 60).padStart(2, '0'),
+      done: false,
+      parentId: parent.id,
+    })
+  }
+
+  /**
+   * Delete an activity and every sitting under it.
+   *
+   * The database cascades, but the screen does not: dropping only the heading
+   * leaves its sittings in the local list as orphans, which are drawn as
+   * ordinary rows and — worse — keep counting towards the day's total until
+   * something forces a refetch. So they go first, one by one, and the heading
+   * last.
+   */
+  async function removeGroup(l: LogEntry, sittings: LogEntry[]) {
+    for (const x of sittings) await remove(x.id)
+    await remove(l.id)
+  }
+
   async function cloneRow(l: LogEntry) {
     await add(cloneOf(l, new Date(), today))
   }
@@ -190,13 +253,17 @@ export function Hours() {
         (tagFilter.system === 'task' ? l.kind === tagFilter.name : l.project === tagFilter.name),
       )
       .slice()
-      // Clock first; then the order they were written in, so a copy sits under
-      // its original rather than on whichever side the database returned it.
-      .sort((a, b) => toMin(a.at) - toMin(b.at) || (a.createdAt ?? '').localeCompare(b.createdAt ?? ''))
+    // Grouped activities first, then everything else by the clock — and, when
+    // two share a clock time, by the order they were written in, so a copy sits
+    // under its original rather than on whichever side the database returned
+    // it. See `groupActivities`.
+    const rowGroups = groupActivities(rows)
     const isToday = x.ds === today
     return {
       ds: x.ds,
       mins: x.mins,
+      groups: rowGroups,
+      hasRows: rows.length > 0,
       dow: ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'][x.d.getDay()],
       num: String(x.d.getDate()).padStart(2, '0'),
       isToday,
@@ -558,15 +625,19 @@ export function Hours() {
                     </div>
 
                     <div>
-                      {d.rows.length === 0 && (
+                      {d.groups.length === 0 && (
                         <div style={{ fontSize: 12.5, color: '#AFAFA2', fontStyle: 'italic', padding: '6px 0' }}>
                           {loading ? 'đang tải…' : 'chưa ghi gì'}
                         </div>
                       )}
-                      {d.rows.map((l) => (
+                      {d.groups.map(({ row: l, children }) => (
                         <ActivityRow
                           key={l.id}
                           log={l}
+                          sittings={children}
+                          onAddSitting={() => void addSitting(l)}
+                          onPatchSitting={(id, p) => void patch(id, p)}
+                          onRemoveSitting={(id) => void remove(id)}
                           editable={d.recent}
                           kinds={kindChoices}
                           projects={projects}
@@ -594,7 +665,7 @@ export function Hours() {
                           }}
                           onPatch={(p) => void patch(l.id, p)}
                           onClone={() => void cloneRow(l)}
-                          onRemove={() => void remove(l.id)}
+                          onRemove={() => void removeGroup(l, children)}
                         />
                       ))}
                       {d.recent && (
