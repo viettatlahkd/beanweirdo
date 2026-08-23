@@ -473,11 +473,33 @@ describe('ActivityRow — nhân đôi', () => {
 })
 
 describe('ActivityRow — ghi chú', () => {
-  it('shows nothing extra on a row without a note', () => {
+  it('offers the prompt on a row without a note, and no link', () => {
     row({ log: log({ note: null }) })
 
     expect(screen.queryByRole('link')).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Ghi chú hoặc link')).not.toBeInTheDocument()
+    expect(screen.getByText('ghi chú/link')).toBeInTheDocument()
+  })
+
+  it('keeps the prompt off a day that can no longer be edited', () => {
+    // An offer that cannot be taken is worse than no offer.
+    row({ editable: false, log: log({ note: null }) })
+
+    expect(screen.queryByText('ghi chú/link')).not.toBeInTheDocument()
+  })
+
+  it('opens the note field when the prompt is clicked', async () => {
+    const props = row({ log: log({ note: null }) })
+    await userEvent.click(screen.getByText('ghi chú/link'))
+
+    expect(props.onStartNaming).toHaveBeenCalled()
+  })
+
+  it('drops the prompt once a note exists', () => {
+    row({ log: log({ note: 'nhớ đọc lại chương 4' }) })
+
+    expect(screen.queryByText('ghi chú/link')).not.toBeInTheDocument()
+    expect(screen.getByText('nhớ đọc lại chương 4')).toBeInTheDocument()
   })
 
   it('shows a link as its host, opening in its own tab', () => {
