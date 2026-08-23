@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { hashtag, type LogEntry } from '../content/hours'
-import { fmt } from '../lib/hoursStats'
+import { fmt, noteChip } from '../lib/hoursStats'
 import { Hover } from '../lib/Hover'
 
 const chipBase: CSSProperties = {
@@ -339,20 +339,27 @@ export function ActivityRow({
   const [editing, setEditing] = useState<'at' | 'end' | 'mins' | null>(null)
   const [draft, setDraft] = useState('')
   const [name, setName] = useState(log.name)
+  const [note, setNote] = useState(log.note ?? '')
   const nameRef = useRef<HTMLInputElement>(null)
   const rowRef = useRef<HTMLDivElement>(null)
   // `onName` closes over the draft, and the listener below is registered once
   // per naming session — without this it would keep calling the version of
   // `onName` that existed when the row first opened.
   const commitName = useRef<() => void>(() => {})
-  commitName.current = () => onName(name.trim())
+  commitName.current = () => {
+    // The note rides along with the name: both are edited in the same pass, so
+    // both are saved by whatever ends it — Enter, or a click outside the row.
+    if (note.trim() !== (log.note ?? '')) onPatch({ note: note.trim() || null })
+    onName(name.trim())
+  }
 
   useEffect(() => {
     if (naming) {
       setName(log.name)
+      setNote(log.note ?? '')
       nameRef.current?.focus()
     }
-  }, [naming, log.name])
+  }, [naming, log.name, log.note])
 
   /**
    * Rule 08.04 says an unnamed new row disappears when you leave it. "Leave"
@@ -375,6 +382,7 @@ export function ActivityRow({
   const working = editing !== null || naming
 
   const done = log.done !== false
+  const chip = noteChip(log.note)
   const color = kindColor[log.kind] ?? '#163F42'
 
   function openEdit(field: 'at' | 'end' | 'mins') {
@@ -593,6 +601,83 @@ export function ActivityRow({
             >
               {log.name || '(chưa đặt tên)'}
             </div>
+          )}
+
+          {/* The note lives under the name and only when there is one to show.
+              A row without a note looks exactly like a row from before notes
+              existed — which is nearly every row. */}
+          {naming ? (
+            <input
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.nativeEvent.isComposing) return
+                if (e.key === 'Enter') commitName.current()
+                if (e.key === 'Escape') onAbandon()
+              }}
+              placeholder="ghi chú hoặc dán link"
+              aria-label="Ghi chú hoặc link"
+              style={{
+                display: 'block',
+                width: '100%',
+                boxSizing: 'border-box',
+                background: 'transparent',
+                border: 0,
+                borderBottom: '1px dotted #CFCFC4',
+                color: '#6A6F63',
+                fontFamily: "'Be Vietnam Pro',sans-serif",
+                fontWeight: 300,
+                fontSize: 12,
+                padding: '5px 0 3px',
+                marginTop: 6,
+                outline: 'none',
+              }}
+            />
+          ) : (
+            chip && (
+              <div style={{ marginTop: 5 }}>
+                {chip.isLink ? (
+                  <a
+                    href={chip.href}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 5,
+                      fontSize: 11,
+                      color: '#2F5D68',
+                      textDecoration: 'none',
+                      border: '1px solid #CBDCDE',
+                      background: '#F3F8F8',
+                      padding: '2px 8px',
+                      maxWidth: '100%',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {chip.label}
+                    <span style={{ fontSize: 9, opacity: 0.7 }}>↗</span>
+                  </a>
+                ) : (
+                  <div
+                    onClick={() => editable && onStartNaming()}
+                    style={{
+                      fontSize: 11.5,
+                      color: '#8A8A7C',
+                      cursor: editable ? 'pointer' : 'default',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {chip.label}
+                  </div>
+                )}
+              </div>
+            )
           )}
         </div>
 

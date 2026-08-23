@@ -16,6 +16,12 @@ export type LogEntry = {
    * field entirely and still counts.
    */
   done?: boolean
+  /**
+   * A line the owner attached to the activity — most often a URL: the paper
+   * that was read, the repo that was worked on. Null or empty means the row
+   * shows nothing extra, which is the case for almost every row.
+   */
+  note?: string | null
 }
 
 /** The four kinds the journal ships with — users can add more from the timer rail. */

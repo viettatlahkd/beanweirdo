@@ -18,6 +18,8 @@ export interface HourLogRow {
   /** `HH:MM:SS` out of Postgres, `HH:MM` going in. */
   at: string
   done: boolean
+  /** A line the owner attached to this activity — often a URL. */
+  note: string | null
   created_at: string
 }
 
@@ -30,6 +32,7 @@ export interface HourLog {
   mins: number
   at: string
   done: boolean
+  note: string | null
 }
 
 /** Postgres hands back `HH:MM:SS`; the journal only ever shows `HH:MM`. */
@@ -45,10 +48,11 @@ export function toHourLog(row: HourLogRow): HourLog {
     mins: row.mins,
     at: trimSeconds(row.at),
     done: row.done,
+    note: row.note ?? null,
   }
 }
 
-export const HOUR_LOG_WRITABLE = ['date', 'name', 'kind', 'project', 'mins', 'at', 'done'] as const
+export const HOUR_LOG_WRITABLE = ['date', 'name', 'kind', 'project', 'mins', 'at', 'done', 'note'] as const
 
 /** The two ways an activity is filed — see migration 0009. */
 export const TAG_SYSTEMS = ['task', 'project'] as const
