@@ -53,7 +53,9 @@ export function groupActivities(rows: LogEntry[]): ActivityGroup[] {
     const pid = r.parentId
     if (pid && byId.has(pid)) continue // drawn under its parent instead
 
-    const children = (kids.get(r.id) ?? []).slice().sort((a, b) => toMin(a.at) - toMin(b.at))
+    const children = (kids.get(r.id) ?? [])
+      .slice()
+      .sort((a, b) => toMin(a.at) - toMin(b.at) || (a.createdAt ?? '').localeCompare(b.createdAt ?? ''))
     groups.push({
       row: r,
       children,
@@ -67,16 +69,27 @@ export function groupActivities(rows: LogEntry[]): ActivityGroup[] {
 
   return groups.sort((a, b) => {
     if (a.grouped !== b.grouped) return a.grouped ? -1 : 1
-    return a.earliest - b.earliest
+    return (
+      a.earliest - b.earliest ||
+      (a.row.createdAt ?? '').localeCompare(b.row.createdAt ?? '')
+    )
   })
 }
 
 /**
- * The rows a total may add up: everything except sittings.
+ * The rows a total may add up: the sittings, and everything that has none.
  *
- * A parent carries the sum of its sittings, so counting both would count the
- * same hours twice. Every figure in the statistics panel runs through here.
+ * A heading is dropped rather than its sittings, which is the opposite of what
+ * it looks like it should be. The alternative — keep the heading, drop the
+ * sittings — needs the heading's own `mins` to stay equal to the sum of its
+ * sittings, and that equality has to be maintained on every add, edit and
+ * delete. Miss one and the day's total quietly disagrees with the number
+ * printed on the row itself.
+ *
+ * Adding up the sittings instead needs nothing kept in step: the minutes are
+ * only ever written down once, in the row that actually holds them.
  */
 export function countable(logs: LogEntry[]): LogEntry[] {
-  return logs.filter((l) => !l.parentId)
+  const headings = new Set(logs.map((l) => l.parentId).filter(Boolean))
+  return logs.filter((l) => !headings.has(l.id))
 }

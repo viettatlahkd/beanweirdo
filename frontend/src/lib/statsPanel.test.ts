@@ -523,12 +523,13 @@ describe('noteChip — ghi chú và link', () => {
 })
 
 describe('tổng của một ngày — không cộng hai lần', () => {
-  it('counts the parent and skips its sittings', () => {
-    // The parent carries 4h20; its two sittings carry 3h and 1h20 of the same
-    // afternoon. Counting all three would report 8h40 for a 4h20 day.
+  it('adds up the sittings and ignores the heading above them', () => {
+    // The heading still stores the 30 minutes it had before it became one.
+    // Counting it as well — or instead — would disagree with the 4h20 printed
+    // on the row itself.
     const all = buildAllDays(
       [
-        log({ id: 'p', date: '2026-08-22', mins: 260 }),
+        log({ id: 'p', date: '2026-08-22', mins: 30 }),
         log({ id: 'c1', date: '2026-08-22', mins: 180, parentId: 'p' }),
         log({ id: 'c2', date: '2026-08-22', mins: 80, parentId: 'p' }),
       ],

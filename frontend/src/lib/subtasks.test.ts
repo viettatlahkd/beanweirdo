@@ -116,12 +116,20 @@ describe('groupActivities — một hoạt động nhiều lần', () => {
 })
 
 describe('countable — cái gì được cộng vào tổng', () => {
-  it('drops the sittings and keeps the parent', () => {
+  it('adds up the sittings and drops the heading above them', () => {
     const rows = [log({ id: 'p', mins: 260 }), log({ parentId: 'p', mins: 180 }), log({ parentId: 'p', mins: 80 })]
 
-    // The parent carries the sum, so counting both would count the same hours
-    // twice — 520 minutes for a 260-minute afternoon.
-    expect(countable(rows).map((l) => l.mins)).toEqual([260])
+    // Counting all three would report 520 minutes for a 260-minute afternoon.
+    expect(countable(rows).map((l) => l.mins)).toEqual([180, 80])
+  })
+
+  it('ignores what the heading happens to have stored', () => {
+    // The heading's own `mins` is whatever it was before the sittings existed.
+    // Nothing keeps it in step, and nothing has to: the minutes are only ever
+    // written down once, in the rows that actually hold them.
+    const rows = [log({ id: 'p', mins: 30 }), log({ parentId: 'p', mins: 90 }), log({ parentId: 'p', mins: 45 })]
+
+    expect(countable(rows).reduce((a, l) => a + l.mins, 0)).toBe(135)
   })
 
   it('leaves a day without any sittings untouched', () => {
