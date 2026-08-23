@@ -17,6 +17,7 @@ import { usePublishedPosts, type PostRow } from '../data/usePublishedPosts'
 import { postDescription } from '../lib/postText'
 import { postThumbnail } from '../lib/postThumb'
 import { buildNotesGrid } from '../lib/notesGrid'
+import { coverStyle } from '../lib/imageFocus'
 import { useModules } from '../data/useModules'
 import { PostRenderer } from 'post-renderer'
 import {
@@ -385,7 +386,7 @@ function FeatureCellView({
     <div style={style}>
       <div
         style={{
-          background: f.img ? `url(${f.img}) center/cover no-repeat` : f.bg,
+          ...(f.img ? coverStyle(f.img) : { background: f.bg }),
           height: f.h,
           display: 'flex',
           alignItems: 'flex-end',
@@ -441,7 +442,7 @@ function FooterImage({
       style={{
         gridColumn: col,
         height,
-        background: img ? `url(${img}) center/cover no-repeat` : tint,
+        ...(img ? coverStyle(img) : { background: tint }),
         display: 'flex',
         alignItems: 'flex-end',
         padding: 14,

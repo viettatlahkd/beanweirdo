@@ -7,6 +7,7 @@ import type { PostRow } from '../data/usePublishedPosts'
 import { usePublishedPosts } from '../data/usePublishedPosts'
 import { Breadcrumbs } from '../components/Breadcrumbs'
 import { useSiteCopy } from '../data/useSiteCopy'
+import { coverStyle } from '../lib/imageFocus'
 import { garden, ink, paper, sans, serif } from '../design/tokens'
 import { Hover } from '../lib/Hover'
 import { rowPad, useNav, useSettings } from '../lib/nav'
@@ -47,7 +48,7 @@ function usePlates() {
   return plateFallback.map((p, i) => ({
     ...p,
     caption: captions[i],
-    background: photos[i] ? `url(${photos[i]}) center/cover no-repeat` : p.bg,
+    fill: photos[i] ? coverStyle(photos[i]) : { background: p.bg },
   }))
 }
 
@@ -126,7 +127,7 @@ function Ledger({ modules, postsByModule }: ModulesProps) {
               key={p.caption}
               style={{
                 aspectRatio: '16/9',
-                background: p.background,
+                ...p.fill,
                 display: 'flex',
                 alignItems: 'flex-end',
                 padding: 16,

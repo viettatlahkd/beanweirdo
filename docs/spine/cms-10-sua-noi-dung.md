@@ -54,3 +54,26 @@ Nhãn số bài đổi thành **"checkbox hàng ngày"**: trang này ghi tick th
 không bao giờ có bài. Nhãn cũ "chưa có bài — chưa hiện trên trang" cũng sai
 với nhóm 05 — module đã tạo và công khai thì luôn hiện, kể cả chưa có bài.
 Nay còn "chưa có bài".
+
+
+## Đặt ảnh vào khung
+
+Tải ảnh lên xong thì mở ngay một màn hình cho co kéo ảnh trong khung. Khung là
+hình dạng thật của ô trên trang công khai, đo từ khung xem trước chứ không tra
+bảng — nên không bao giờ lệch với cái trang vẽ.
+
+Điểm neo lưu **trên chính URL ảnh** dưới dạng `#focus=x,y`, hai số phần trăm
+đọc y như `background-position`. Mảnh `#` không được gửi lên máy chủ nên URL
+vẫn tải đúng file, và giá trị đi qua mọi lớp đã sẵn mang URL ảnh — không thêm
+cột, không migration, không có gì phải giữ đồng bộ. Xem
+`frontend/src/lib/imageFocus.ts`.
+
+Chỉ trục nào ảnh thừa ra mới kéo được: ảnh dọc bỏ vào ô ngang thì kéo lên
+xuống, còn ngang thì đứng yên vì không có gì để lộ ra thêm.
+
+## Lỗi công cụ dev đã sửa nhân tiện
+
+`backend/scripts/dev-server.mjs` đọc cạn thân yêu cầu cho **mọi** route, kể cả
+route khai báo `config.api.bodyParser = false`. `formidable` do đó chờ dữ liệu
+đã trôi qua, nên **tải ảnh treo vô hạn ở máy local** — trên Vercel vẫn chạy vì
+Vercel tôn trọng cờ đó. Nay máy chủ dev cũng tôn trọng.
