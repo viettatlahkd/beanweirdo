@@ -30,6 +30,19 @@ ghi chú bàn giao của lane mình; người khác sẽ sửa.
 ## Nhánh và merge
 
 - Một lỗi hoặc một việc → một nhánh, cắt từ `origin/main`, không stack lên nhau.
+- **Nhưng gộp việc nhỏ lại.** Mỗi PR kích hoạt **hai** lần build Vercel
+  (frontend + backend), và gói đang dùng có trần build mỗi ngày. Ngày
+  2026-08-22 ba agent đẩy 30 lần và chạm trần: từ đó mọi PR đều báo FAILURE với
+  lý do `build-rate-limit`, **kể cả `main`** — nghĩa là những gì đã merge không
+  lên được production, dù trang vẫn chạy bằng bản build cũ.
+
+  Nên "một việc một nhánh" nói về **phạm vi**, không phải kích cỡ. Ba sửa nhỏ
+  cùng một vùng thì đi chung một PR. Tách PR khi chúng cần merge **riêng thứ
+  tự**, hoặc khi một cái rủi ro hơn hẳn cái kia — không tách vì cho gọn.
+
+  Dấu hiệu chạm trần: check Vercel đỏ mà `npm test` ở máy xanh, và đường dẫn
+  lỗi có `upgradeToPro=build-rate-limit`. Đó **không phải lỗi code** — đừng đi
+  tìm bug. Chờ hạn mức reset, hoặc báo chủ site.
 - **Tự chạy mọi lệnh terminal.** Không hỏi, không đưa lệnh cho chủ site chạy
   hộ — `cd`, `git`, `gh`, `curl`, `npm`, cài gói, dựng server, truy vấn API.
   Đưa một khối lệnh kèm câu "m chạy giúp" là đang đẩy việc của mình sang người
