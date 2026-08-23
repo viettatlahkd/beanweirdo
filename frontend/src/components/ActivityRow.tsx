@@ -605,7 +605,9 @@ export function ActivityRow({
 
           {/* The note lives under the name and only when there is one to show.
               A row without a note looks exactly like a row from before notes
-              existed — which is nearly every row. */}
+              existed — which is nearly every row. The field to write one comes
+              up with the name, so nothing has to advertise itself on a row
+              that was left alone. */}
           {naming ? (
             <input
               value={note}
@@ -634,26 +636,8 @@ export function ActivityRow({
               }}
               className="note-field"
             />
-          ) : !chip ? (
-            // Nothing written here yet. On a row that can still be edited the
-            // prompt is the only thing saying notes exist at all; on a locked
-            // day it would be an offer that cannot be taken, so it stays away.
-            editable && (
-              <div
-                onClick={() => onStartNaming()}
-                style={{
-                  marginTop: 5,
-                  fontSize: 11.5,
-                  fontStyle: 'italic',
-                  color: '#C4C3B8',
-                  cursor: 'pointer',
-                }}
-              >
-                ghi chú/link
-              </div>
-            )
           ) : (
-            (
+            chip && (
               <div style={{ marginTop: 5 }}>
                 {chip.isLink ? (
                   <a

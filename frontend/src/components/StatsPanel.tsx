@@ -82,12 +82,10 @@ const CSS = `
   gap: 40px;
   grid-template-columns: 1fr;
   align-items: start;
-  /* A rule with four pixels under it reads as a lid on the band above, not as
-     the start of a new one. The full section step goes above the rule and an
-     inner step below it, so the heading has somewhere to stand. */
-  margin-top: 64px;
-  padding-top: 20px;
-  border-top: 1px solid #EDEDE6;
+  /* The same step the tiles take down to the project heading — one gap for one
+     kind of break, so the panel has a single rhythm rather than a hierarchy of
+     its own. No rule: a line here made the band above look closed off. */
+  margin-top: 40px;
 }
 @media (min-width: 560px) {
   .sp-list { grid-template-columns: 1fr 1fr; column-gap: 40px; }
