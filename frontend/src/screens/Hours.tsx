@@ -11,10 +11,11 @@ import {
   kindColorMap,
   projectColorMap,
   quoteOfTheDay,
-  todayStr,
+  dateStr,
   withUnclassified,
 } from '../content/hours'
 import { useHours } from '../data/useHours'
+import { useToday } from '../lib/useToday'
 import { serif } from '../design/tokens'
 import { Hover } from '../lib/Hover'
 import { useSessionTimer, type SessionView } from '../lib/useSessionTimer'
@@ -78,7 +79,7 @@ export function Hours() {
   } = useHours()
   // A fresh "today" each render would drift across midnight mid-session; one
   // per mount is what the rest of the screen compares against.
-  const today = useMemo(() => todayStr(), [])
+  const today = useToday()
   const [statsOpen, setStatsOpen] = useState(false)
   const [openMonths, setOpenMonths] = useState<Record<string, boolean>>({})
   const [openWeeks, setOpenWeeks] = useState<Record<string, boolean>>({})
@@ -154,7 +155,11 @@ export function Hours() {
     if (!mins || mins < 1) return
     const at = new Date(Date.now() - mins * 60_000)
     void add({
-      date: today,
+      // The day the session *started*, read at the moment of writing — not the
+      // day the screen was opened, and not the day the tick was pressed. A
+      // stopwatch begun at 23:10 and stopped at 00:30 belongs to the evening
+      // it was part of, alongside the `at` it is stamped with.
+      date: dateStr(at),
       name: session.name.trim() || 'Phiên không tên',
       kind: session.kind,
       project: session.project,

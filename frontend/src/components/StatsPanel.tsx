@@ -253,7 +253,10 @@ export function StatsPanel({
           is 439px wide at most (see CELL), so giving it a neighbour costs
           nothing and saves a full screenful of scrolling. */}
       <div className="sp-lower">
-        <div>
+        {/* The grid, its day labels and its legend share one width. Without
+            this the legend — a long single line — set the column, leaving the
+            squares sitting in the left half of a box nothing else filled. */}
+        <div style={{ maxWidth: 21 + grid.weeks * CELL + (grid.weeks - 1) * GAP }}>
           {/* One square per day. The shades are cut against the busiest day in the
               window rather than fixed hour marks, so a quiet stretch still shows
               its own rhythm instead of washing out to a single pale tone. */}

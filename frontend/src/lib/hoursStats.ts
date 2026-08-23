@@ -485,15 +485,15 @@ export type HeatCell = {
  * pale wash.
  */
 /**
- * Thirteen weeks — a quarter.
+ * Fifteen weeks.
  *
- * Half a year was the first guess and it read as a wall: at the width the
- * column gives, twenty-six columns squeeze each day down to something too
- * small to judge, and most of them were outside the record anyway. A quarter
- * is the longest stretch a person still remembers day by day, and it leaves
- * each square big enough to read the shade off.
+ * Half a year was the first guess and it read as a wall: twenty-six columns
+ * squeeze each day down to something too small to judge, and most of them were
+ * outside the record anyway. A quarter — thirteen — was the next guess, and it
+ * left the grid sitting short of the width it had, which reads as an odd
+ * number of columns rather than as a span. Fifteen fills the column.
  */
-export const HEAT_WEEKS = 13
+export const HEAT_WEEKS = 15
 
 export function heatmap(logs: LogEntry[], weeks = HEAT_WEEKS, now: Date = new Date()) {
   const byDate: Record<string, number> = {}
