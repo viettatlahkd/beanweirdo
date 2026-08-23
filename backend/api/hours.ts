@@ -3,6 +3,7 @@ import { withCors } from '../lib/cors.js'
 import { requireAuth } from '../lib/auth.js'
 import { getSupabase } from '../lib/supabase.js'
 import {
+  HOUR_LOG_ALIASES,
   HOUR_LOG_WRITABLE,
   TAG_COLUMN,
   TAG_SYSTEMS,
@@ -342,6 +343,12 @@ async function handleCreate(req: VercelRequest, res: VercelResponse): Promise<vo
       mins: body.mins,
       at: body.at,
       done: body.done === undefined ? true : Boolean(body.done),
+      // Only sent when the row really is a sitting of something. Spread rather
+      // than defaulted to null so nothing names the column until the caller
+      // does — the journal ran for a while before the column existed.
+      ...(typeof body.parentId === 'string' && body.parentId
+        ? { parent_id: body.parentId }
+        : {}),
     })
     .select('*')
     .single()
@@ -359,6 +366,9 @@ async function handlePatch(req: VercelRequest, res: VercelResponse, id: string):
   const patch: Record<string, unknown> = {}
   for (const column of HOUR_LOG_WRITABLE) {
     if (Object.prototype.hasOwnProperty.call(body, column)) patch[column] = body[column]
+  }
+  for (const [sent, column] of Object.entries(HOUR_LOG_ALIASES)) {
+    if (Object.prototype.hasOwnProperty.call(body, sent)) patch[column] = body[sent]
   }
   if (Object.keys(patch).length === 0) {
     res.status(400).json({ error: 'No editable fields in body' })

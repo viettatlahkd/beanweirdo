@@ -17,6 +17,16 @@ export type LogEntry = {
    */
   done?: boolean
   /**
+   * The activity this row is one sitting of. Null on an ordinary row and on a
+   * parent — nesting is one level deep, so a row with a parent can never be
+   * one itself.
+   *
+   * A parent stores the sum of its sittings in `mins`, which is why every
+   * total filters to `parentId == null`: counting a parent and its children
+   * together would count the same hours twice. See `countable`.
+   */
+  parentId?: string | null
+  /**
    * A line the owner attached to the activity — most often a URL: the paper
    * that was read, the repo that was worked on. Null or empty means the row
    * shows nothing extra, which is the case for almost every row.
