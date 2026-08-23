@@ -33,6 +33,42 @@ export type DayBucket = {
 }
 
 /**
+ * How a note reads on the row.
+ *
+ * A URL is shown as its host — `arxiv.org`, `github.com` — not as the whole
+ * address. A full link is thirty to a hundred characters of query string and
+ * hash that say nothing about where it goes, and it would out-shout the name
+ * of the activity it belongs to. The address is still there under the click.
+ *
+ * Anything that is not a link is just text, trimmed to a line.
+ */
+export function noteChip(note: string | null | undefined) {
+  const raw = (note ?? '').trim()
+  if (!raw) return null
+
+  if (/^https?:\/\//i.test(raw)) {
+    try {
+      const u = new URL(raw)
+      const host = u.hostname.replace(/^www\./, '')
+      if (!host) throw new Error('no host')
+      // A path says "somewhere inside this site" — worth one mark, not the
+      // whole slug.
+      const deep = u.pathname !== '/' && u.pathname !== ''
+      return { href: raw, label: deep ? host + '/…' : host, isLink: true as const }
+    } catch {
+      /* a string that starts with http but will not parse — treat as text */
+    }
+  }
+
+  const oneLine = raw.replace(/\s+/g, ' ')
+  return {
+    href: null,
+    label: oneLine.length > 60 ? oneLine.slice(0, 59) + '…' : oneLine,
+    isLink: false as const,
+  }
+}
+
+/**
  * The copy of an activity: same work, done again.
  *
  * Everything that says *what* was done carries over — name, both tags, how
