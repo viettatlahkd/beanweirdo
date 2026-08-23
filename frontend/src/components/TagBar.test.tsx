@@ -14,7 +14,7 @@ const logs: LogEntry[] = [
 function bar(over: Partial<Parameters<typeof TagBar>[0]> = {}) {
   const props = {
     projects: ['Sao đâu'],
-    kinds: ['đọc', 'work'],
+    kinds: ['đọc', 'work', 'khác'],
     logs,
     kindColor: { đọc: '#3E7A4E', work: '#102F35' },
     projectColor: { 'Sao đâu': '#102F35' },
@@ -112,14 +112,17 @@ describe('TagBar — editing a tag in place', () => {
     const bucket = screen.getByText('khác')
     expect(bucket).toBeInTheDocument()
 
+    // It is the floor of the system, not an entry in it: nothing renames it.
     await u.dblClick(bucket)
     expect(screen.queryByLabelText('Đổi tên khác')).not.toBeInTheDocument()
     expect(props.onRename).not.toHaveBeenCalled()
   })
 
-  it('hides the bucket when nothing is sitting in it', () => {
+  it('offers the bucket even when nothing has landed in it yet', () => {
+    // It used to appear only once something fell into it, which meant a person
+    // who wanted to file a row as "none of my kinds" had no way to say so.
     bar({ logs: logs.filter((l) => l.kind !== 'khác') })
-    expect(screen.queryByText('khác')).not.toBeInTheDocument()
+    expect(screen.getByText('khác')).toBeInTheDocument()
   })
 })
 

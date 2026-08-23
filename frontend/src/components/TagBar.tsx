@@ -286,11 +286,10 @@ export function TagBar({
   const isEditing = (system: TagSystem, name: string) =>
     editing?.system === system && editing.name === name
 
-  // Activities whose tag was deleted sit in the bucket. It is listed so they
-  // can still be found and filtered, but it is not a tag: nothing renames it,
-  // and deleting it would mean deleting the fact that they are unfiled.
-  const bucketCount = countTask(UNCLASSIFIED)
-  const taskTags = kinds.includes(UNCLASSIFIED) || bucketCount === 0 ? kinds : kinds.concat([UNCLASSIFIED])
+  // `khác` arrives in `kinds` already — it is offered as a choice now, not
+  // conjured when something lands in it. It still cannot be renamed or
+  // deleted: it is the floor of the system rather than an entry in it.
+  const taskTags = kinds
 
   return (
     <div

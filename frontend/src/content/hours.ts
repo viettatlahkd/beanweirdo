@@ -43,13 +43,19 @@ export const KINDS = ['đọc', 'thực hành', 'viết', 'quan sát']
 export const UNCLASSIFIED = 'khác'
 
 /**
- * `kinds` for the statistics: the tag list, plus the unclassified bucket when
- * anything is actually sitting in it. The bucket has no row in
- * `activity_kinds`, so it would otherwise be missing from every total.
+ * The task list with `khác` on the end of it.
+ *
+ * It used to appear only once something had fallen into it — an implicit
+ * bucket, visible as a consequence and never as a choice. But "this doesn't
+ * belong to any of my kinds" is a real answer, and a person who means it had
+ * no way to say so: they had to leave the row alone and let it default there.
+ *
+ * So it is always offered now. It still catches anything left unclassified,
+ * which is why it has no row in `activity_kinds` and cannot be renamed or
+ * deleted — it is the floor of the system, not an entry in it.
  */
-export function withUnclassified(kinds: string[], logs: LogEntry[]): string[] {
-  if (kinds.includes(UNCLASSIFIED)) return kinds
-  return logs.some((l) => l.kind === UNCLASSIFIED) ? kinds.concat([UNCLASSIFIED]) : kinds
+export function withUnclassified(kinds: string[]): string[] {
+  return kinds.includes(UNCLASSIFIED) ? kinds : kinds.concat([UNCLASSIFIED])
 }
 
 /**

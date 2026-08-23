@@ -7,6 +7,7 @@ import { Breadcrumbs } from '../components/Breadcrumbs'
 import {
   type LogEntry,
   RECENT_DAYS,
+  UNCLASSIFIED,
   kindColorMap,
   projectColorMap,
   quoteOfTheDay,
@@ -91,8 +92,14 @@ export function Hours() {
 
   // The unclassified bucket has no row in `activity_kinds`, so the stats have
   // to be told about it or the hours it holds vanish from every total.
-  const statKinds = useMemo(() => withUnclassified(allKinds, logs), [allKinds, logs])
-  const kindColor = useMemo(() => kindColorMap(statKinds), [statKinds])
+  /**
+   * Every kind that can be chosen — the tag system plus `khác`, which is now
+   * offered rather than only ever landed in. One list for the pickers and for
+   * the statistics, so a total can never name a kind the row could not have
+   * been given.
+   */
+  const kindChoices = useMemo(() => withUnclassified(allKinds), [allKinds])
+  const kindColor = useMemo(() => kindColorMap(kindChoices), [kindChoices])
   const projectColor = useMemo(() => projectColorMap(projects), [projects])
   // One quote per calendar day, same for every visit that day.
   const quote = useMemo(() => quoteOfTheDay(), [])
@@ -114,7 +121,10 @@ export function Hours() {
     const saved = await add({
       date: ds,
       name: '',
-      kind: timer.open?.kind ?? 'đọc',
+      // Whatever the open clock is set to, or `khác` — never a guess at which
+      // kind of work this is. An unclassified row is honest; a row silently
+      // filed under `đọc` is a wrong answer nobody was asked for.
+      kind: timer.open?.kind ?? UNCLASSIFIED,
       mins: 30,
       done: false,
       at: clockHm(),
@@ -403,7 +413,7 @@ export function Hours() {
           the eye learns one sequence and reads it everywhere. */}
       <TagBar
         projects={projects}
-        kinds={allKinds}
+        kinds={kindChoices}
         logs={logs}
         kindColor={kindColor}
         projectColor={projectColor}
@@ -418,7 +428,7 @@ export function Hours() {
         <TagDeleteReview
           target={deleting}
           logs={logs}
-          kinds={allKinds}
+          kinds={kindChoices}
           projects={projects}
           onAddTag={addTag}
           onConfirm={(plan) => {
@@ -437,7 +447,7 @@ export function Hours() {
           projects={projects}
           projectColor={projectColor}
           kindColor={kindColor}
-          kinds={statKinds}
+          kinds={kindChoices}
         />
       )}
 
@@ -551,7 +561,7 @@ export function Hours() {
                           key={l.id}
                           log={l}
                           editable={d.recent}
-                          kinds={allKinds}
+                          kinds={kindChoices}
                           projects={projects}
                           kindColor={kindColor}
                           projectColor={projectColor}
@@ -615,7 +625,7 @@ export function Hours() {
             open={timer.open}
             canAdd={timer.canAdd}
             projects={projects}
-            kinds={allKinds}
+            kinds={kindChoices}
             projectColor={projectColor}
             kindColor={kindColor}
             onOpenSession={timer.openSession}
