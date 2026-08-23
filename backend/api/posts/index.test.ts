@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { queryBuilder, mockReq, mockRes, authHeaders } from '../../lib/test-helpers.js'
+import { POST_COLUMNS } from '../../lib/posts.js'
 
 const fromMock = vi.fn()
 vi.mock('../../lib/supabase.js', () => ({
@@ -98,9 +99,8 @@ describe('POST /api/posts', () => {
   })
 
   it('creates a draft and returns its id', async () => {
-    fromMock
-      .mockReturnValueOnce(queryBuilder({ count: 3, error: null })) // count query
-      .mockReturnValueOnce(queryBuilder({ data: { id: 'new-id' }, error: null })) // insert
+    const insert = queryBuilder({ data: { id: 'new-id' }, error: null })
+    fromMock.mockReturnValueOnce(insert)
 
     const req = mockReq({
       method: 'POST',
@@ -114,10 +114,48 @@ describe('POST /api/posts', () => {
     expect(res.body).toEqual({ id: 'new-id' })
   })
 
+  /*
+   * Migration 0016 dropped `posts.n` and this endpoint kept writing it, so
+   * every attempt to create a post failed with "Could not find the 'n' column"
+   * — the wizard and the module list's "+ bài" alike. The old test mocked the
+   * insert away and asserted only the status code, which a 500 never reached.
+   */
+  it('writes only columns the posts table has', async () => {
+    const insert = queryBuilder({ data: { id: 'new-id' }, error: null })
+    fromMock.mockReturnValueOnce(insert)
+
+    const req = mockReq({
+      method: 'POST',
+      headers: authHeaders(token),
+      body: { module_id: 'sensory', kind: 'essay', en: 'Title', vi: 'Mô tả' },
+    })
+    await handler(req, mockRes())
+
+    const written = Object.keys(insert.insert.mock.calls[0][0] as Record<string, unknown>)
+    expect(written).not.toContain('n')
+    const unknown = written.filter((c) => !(POST_COLUMNS as readonly string[]).includes(c))
+    expect(unknown).toEqual([])
+  })
+
+  it('leaves sort_order null, so a new post follows published_at', async () => {
+    const insert = queryBuilder({ data: { id: 'new-id' }, error: null })
+    fromMock.mockReturnValueOnce(insert)
+
+    const req = mockReq({
+      method: 'POST',
+      headers: authHeaders(token),
+      body: { module_id: 'sensory', kind: 'essay', en: 'Title', vi: 'Mô tả' },
+    })
+    await handler(req, mockRes())
+
+    const row = insert.insert.mock.calls[0][0] as { sort_order: unknown }
+    expect(row.sort_order).toBeNull()
+  })
+
   it('maps a foreign key violation (bad module_id) to 400', async () => {
-    fromMock
-      .mockReturnValueOnce(queryBuilder({ count: 0, error: null }))
-      .mockReturnValueOnce(queryBuilder({ data: null, error: { code: '23503', message: 'fk violation' } }))
+    fromMock.mockReturnValueOnce(
+      queryBuilder({ data: null, error: { code: '23503', message: 'fk violation' } }),
+    )
 
     const req = mockReq({
       method: 'POST',
@@ -180,7 +218,6 @@ describe('POST /api/posts — starting from a template', () => {
     const insert = queryBuilder({ data: { id: 'new' }, error: null })
     fromMock
       .mockReturnValueOnce(queryBuilder({ data: { renderer: 'longform', body: [{ k: 'h1' }] }, error: null }))
-      .mockReturnValueOnce(queryBuilder({ data: [], error: null, count: 2 }))
       .mockReturnValueOnce(insert)
 
     const res = mockRes()
@@ -217,7 +254,7 @@ describe('POST /api/posts — starting from a template', () => {
 
   it('still creates an empty post when no template is named', async () => {
     const insert = queryBuilder({ data: { id: 'new' }, error: null })
-    fromMock.mockReturnValueOnce(queryBuilder({ data: [], error: null, count: 0 })).mockReturnValueOnce(insert)
+    fromMock.mockReturnValueOnce(insert)
 
     const res = mockRes()
     await handler(

@@ -115,22 +115,12 @@ async function handleCreate(req: VercelRequest, res: VercelResponse): Promise<vo
     startingBody = (tpl as { body: unknown }).body ?? null
   }
 
-  // `n` (display index) and `date_label` are NOT NULL with no DB default —
-  // derive reasonable values: n = next sequence number within the module,
-  // date_label = current 'YYYY.MM'.
-  const { count, error: countError } = await supabase
-    .from('posts')
-    .select('id', { count: 'exact', head: true })
-    .eq('module_id', module_id)
-
-  if (countError) {
-    res.status(500).json({ error: countError.message })
-    return
-  }
-
-  const n = String((count ?? 0) + 1).padStart(2, '0')
-  const date_label = formatDateLabel(new Date())
-
+  // `date_label` is NOT NULL with no DB default, so derive one: 'YYYY.MM' now.
+  //
+  // `sort_order` is deliberately left null. It means "the owner put this here",
+  // and nobody has: order falls to `published_at`, which is what a new post
+  // should follow until someone drags it somewhere. Writing a number here would
+  // make every post look hand-placed and so make the real ones indistinguishable.
   const { data, error } = await supabase
     .from('posts')
     .insert({
@@ -139,9 +129,8 @@ async function handleCreate(req: VercelRequest, res: VercelResponse): Promise<vo
       en,
       vi,
       template: template as PostTemplate,
-      n,
-      date_label: date_label,
-      sort_order: (count ?? 0) + 1,
+      date_label: formatDateLabel(new Date()),
+      sort_order: null,
       body: startingBody,
     })
     .select('id')
