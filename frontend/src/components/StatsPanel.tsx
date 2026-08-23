@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react'
+import { useState, type CSSProperties } from 'react'
 import { hashtag, type LogEntry } from '../content/hours'
 import { serif } from '../design/tokens'
 import {
@@ -43,15 +43,18 @@ const DOW = ['T2', '', 'T4', '', 'T6', '', 'CN']
  * A day square, at most this wide.
  *
  * The grid used to take whatever width the column gave it, which on a wide
- * screen blew one day up to seventy pixels — half a year of squares rendered
- * at the size of buttons, reading as a wall rather than as a habit. Anki and
- * the calendars it borrows from keep the square small on purpose: the shape
- * only says anything when a season of them fits in one glance.
+ * screen blew one day up to seventy pixels — squares the size of buttons,
+ * reading as a wall rather than as a habit.
+ *
+ * The first fix capped them at fourteen and kept half a year of columns, which
+ * overcorrected: a quarter of the width went to weeks that predate the journal,
+ * and each square was too small to tell two shades apart. Thirteen weeks at
+ * this size fills the column instead — see HEAT_WEEKS.
  *
  * It is a cap, not a fixed size — the squares still shrink on a narrow screen.
  */
-const CELL = 14
-const GAP = 3
+const CELL = 24
+const GAP = 4
 
 /**
  * The panel reads as two bands: the project ranking across the top, then the
@@ -68,7 +71,18 @@ const GAP = 3
  */
 const CSS = `
 .sp-list { display: grid; gap: 13px; grid-template-columns: 1fr; }
-.sp-lower { display: grid; gap: 26px; grid-template-columns: 1fr; align-items: start; }
+.sp-lower {
+  display: grid;
+  gap: 26px;
+  grid-template-columns: 1fr;
+  align-items: start;
+  /* The bands need air between them: the lower headings were landing a few
+     pixels under the last line of the project list, which read as one block
+     broken in half rather than as two. */
+  margin-top: 40px;
+  padding-top: 4px;
+  border-top: 1px solid #EDEDE6;
+}
 @media (min-width: 560px) {
   .sp-list { grid-template-columns: 1fr 1fr; column-gap: 22px; }
 }
@@ -129,6 +143,8 @@ export function StatsPanel({
   kindColor: Record<string, string>
   kinds: string[]
 }) {
+  const [allKinds, setAllKinds] = useState(false)
+
   const period = periodStats(logs)
   const ratio = usefulRatio(logs)
   const grid = heatmap(logs)
@@ -143,6 +159,17 @@ export function StatsPanel({
     }))
     .filter((x) => x.mins > 0)
     .sort((a, b) => b.mins - a.mins)
+
+  /**
+   * The kinds that get read, and the rest behind a click.
+   *
+   * The list runs as long as the tag system does — a dozen kinds turn a glance
+   * into a scan, and the tail of it is minutes, not hours. Seven is where the
+   * ranking stops telling you anything you did not already have.
+   */
+  const KIND_TOP = 7
+  const shownKinds = allKinds ? kindRows : kindRows.slice(0, KIND_TOP)
+  const hiddenKinds = kindRows.length - shownKinds.length
 
   const deltaTxt =
     period.mtdDelta === null
@@ -309,13 +336,21 @@ export function StatsPanel({
             <div style={{ fontSize: 12.5, color: '#A2A296' }}>—</div>
           ) : (
             <div style={{ display: 'grid', gap: 9, fontSize: 12.5 }}>
-              {kindRows.map((r) => (
+              {shownKinds.map((r) => (
                 <div key={r.k} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span style={{ width: 6, height: 6, background: kindColor[r.k] ?? '#A2A296', flex: 'none' }} />
                   <span style={{ flex: 1, minWidth: 0 }}>{r.k}</span>
                   <span style={{ color: '#6A6F63', fontVariantNumeric: 'tabular-nums' }}>{fmt(r.mins)}</span>
                 </div>
               ))}
+              {(hiddenKinds > 0 || allKinds) && (
+                <div
+                  onClick={() => setAllKinds((v) => !v)}
+                  style={{ fontSize: 11, color: '#A2A296', cursor: 'pointer', marginTop: 2 }}
+                >
+                  {allKinds ? 'thu gọn ↑' : `còn ${hiddenKinds} loại nữa ↓`}
+                </div>
+              )}
             </div>
           )}
 
