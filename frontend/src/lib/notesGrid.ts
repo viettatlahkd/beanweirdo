@@ -1,4 +1,7 @@
 import { featureCells, notePlacement, type FeatureCell } from '../content/notes'
+
+/** A feature cell once the admin's photo has been folded in. */
+export type DrawnCell = FeatureCell & { img?: string | null }
 import type { PostRow } from '../data/usePublishedPosts'
 
 /**
@@ -18,14 +21,14 @@ export const POSTS_PER_BATCH = notePlacement.length
 
 type Cell =
   | { kind: 'post'; post: PostRow; place: (typeof notePlacement)[number]; slot: number }
-  | { kind: 'feature'; cell: FeatureCell }
+  | { kind: 'feature'; cell: DrawnCell }
 
 /** The whole batch as the design draws it, every cell present. */
-function fullBatch(): Array<{ kind: 'post'; slot: number } | { kind: 'feature'; cell: FeatureCell }> {
-  const out: Array<{ kind: 'post'; slot: number } | { kind: 'feature'; cell: FeatureCell }> = []
+function fullBatch(cells: readonly DrawnCell[]): Array<{ kind: 'post'; slot: number } | { kind: 'feature'; cell: DrawnCell }> {
+  const out: Array<{ kind: 'post'; slot: number } | { kind: 'feature'; cell: DrawnCell }> = []
   for (let slot = 0; slot < POSTS_PER_BATCH; slot++) {
     out.push({ kind: 'post', slot })
-    for (const cell of featureCells) if (cell.afterPost === slot) out.push({ kind: 'feature', cell })
+    for (const cell of cells) if (cell.afterPost === slot) out.push({ kind: 'feature', cell })
   }
   return out
 }
@@ -40,11 +43,11 @@ const span = (v: string) => Number(v.replace('span ', '')) || 0
  * out from the complete batch, so a half-filled one still puts its cells where
  * they will eventually sit.
  */
-function rowOfEachCell(): number[] {
+function rowOfEachCell(cells: readonly DrawnCell[]): number[] {
   const rows: number[] = []
   let row = 0
   let used = 0
-  for (const c of fullBatch()) {
+  for (const c of fullBatch(cells)) {
     const w = c.kind === 'post' ? span(notePlacement[c.slot].col) : span(c.cell.col)
     if (used + w > 12) {
       row += 1
@@ -63,9 +66,9 @@ function rowOfEachCell(): number[] {
  * asked for — and simply fill the batch from the top, so a new post takes the
  * highest place left to it.
  */
-export function buildNotesGrid(posts: PostRow[]): Cell[] {
-  const shape = fullBatch()
-  const rows = rowOfEachCell()
+export function buildNotesGrid(posts: PostRow[], cells: readonly DrawnCell[] = featureCells): Cell[] {
+  const shape = fullBatch(cells)
+  const rows = rowOfEachCell(cells)
   const out: Cell[] = []
 
   for (let start = 0; start < posts.length; start += POSTS_PER_BATCH) {

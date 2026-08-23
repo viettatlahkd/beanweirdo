@@ -90,6 +90,9 @@ Các file đáng soi khi rà Content management:
 **Đừng merge tag này vào đâu cả** — nó là ảnh chụp trước khi rẽ nhánh, đi từ
 `main` sang nó là 3.176 dòng thêm / 7.598 dòng xoá, 19 file conflict.
 | D6 | ~~Hai tài liệu đối soát design có lỗi và không tái lập được~~ — đã thay bằng `docs/spine/DOI-SOAT-DESIGN.md` + `tools/design-audit.mjs`, chạy lại được. Lộ thêm: file design tôi dùng là bản **cũ hơn** bản trong repo (14 vs 16 màn hình). | XONG |
+| D11 | **Ảnh Trang chủ và ảnh đầu trang module đang dùng chung một bộ `shot1/2/3`.** Đó là hai khái niệm khác nhau: ảnh giới thiệu module ở Trang chủ chưa chắc là ảnh mở đầu trang module chi tiết. Cần tách thành hai bộ, và cho phép ở Sửa nội dung Trang chủ chọn **lấy theo trang module** hay **đặt riêng**, kèm sắp thứ tự ảnh. Chủ site chốt: **để sau**, xử lý chung khi xong các dàn trang module hiện tại. | CHỜ |
+| D12 | ~~Ảnh module tải lên không trang nào vẽ ra~~ — `img1/2/3` chỉ có trong kiểu dữ liệu, Trang chủ vẫn vẽ ô màu phẳng. Đã nối ở PR hình dạng form. | XONG |
+| D13 | `Hours.tsx` (Ghi 02) **không đọc dòng nào** từ cơ sở dữ liệu — toàn bộ là chữ cứng. Vì thế ô Sửa nội dung của Ghi 02 nay chỉ còn Tên · Màu · danh sách bài, đúng phần chạy thật. Muốn sửa được cả trang thì phải nối trang vào DB — việc riêng, chủ site chốt tạm chưa làm. | CHỜ |
 | D8 | Chưa đối soát hai màn hình `isLongform` và `isTaste` — trước tưởng không có design. | CHỜ |
 | D9 | 60 giá trị CSS trong design chưa thấy trong code, cần soi tay phân loại. | CHỜ |
 | D7 | Agent QA báo `main` đỏ 9 lỗi typecheck; tôi đo 6 commit gần nhất đều xanh. Chưa rõ nó chạy lệnh gì ở thư mục nào. | CHỜ |

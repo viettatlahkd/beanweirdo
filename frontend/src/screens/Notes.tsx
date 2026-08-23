@@ -7,6 +7,9 @@ import {
   noteKinds,
   notePlacement,
   noteTitleSize,
+  withOverrides,
+  type FeatureCell,
+  type FeatureOverride,
   type Note,
 } from '../content/notes'
 import { useNotes } from '../data/useNotes'
@@ -349,7 +352,13 @@ function NoteCard({
   )
 }
 
-function FeatureCellView({ f, dimmed }: { f: (typeof featureCells)[number]; dimmed: boolean }) {
+function FeatureCellView({
+  f,
+  dimmed,
+}: {
+  f: FeatureCell & { img?: string | null }
+  dimmed: boolean
+}) {
   const style: CSSProperties = { gridColumn: f.col, marginTop: f.mt, marginLeft: f.ml, position: 'relative', zIndex: 1, opacity: dimmed ? 0.18 : 1 }
   if (f.kind === 'quote') {
     return (
@@ -376,22 +385,84 @@ function FeatureCellView({ f, dimmed }: { f: (typeof featureCells)[number]; dimm
     <div style={style}>
       <div
         style={{
-          background: f.bg,
+          background: f.img ? `url(${f.img}) center/cover no-repeat` : f.bg,
           height: f.h,
           display: 'flex',
           alignItems: 'flex-end',
           padding: 14,
           paddingLeft: f.pl,
-          fontFamily: "'Be Vietnam Pro',sans-serif",
-          fontSize: 9.5,
-          letterSpacing: '.18em',
-          textTransform: 'uppercase',
-          color: '#1F3A38',
-          lineHeight: 1.5,
         }}
       >
-        {f.t}
+        {f.t ? (
+          <div
+            style={{
+              fontFamily: "'Be Vietnam Pro',sans-serif",
+              fontSize: 9.5,
+              letterSpacing: '.18em',
+              textTransform: 'uppercase',
+              lineHeight: 1.5,
+              color: f.img ? '#FDFBF2' : '#1F3A38',
+              background: f.img ? 'rgba(24,22,17,.55)' : undefined,
+              padding: f.img ? '3px 7px' : undefined,
+            }}
+          >
+            {f.t}
+          </div>
+        ) : null}
       </div>
+    </div>
+  )
+}
+
+/**
+ * One of the two images that close Ghi 01. Ghi 01 is a page, not a card, so it
+ * has no homepage photos — its `img1`/`img2` columns carry these instead, which
+ * is why the CMS shows it a footer image group and no module image group. See
+ * admin/moduleForm.ts.
+ *
+ * Without a photo the cell stays the tinted block the design draws; the caption
+ * is optional and takes no room when empty.
+ */
+function FooterImage({
+  col,
+  height,
+  tint,
+  img,
+  caption,
+}: {
+  col: string
+  height: number
+  tint: string
+  img?: string | null
+  caption?: string
+}) {
+  return (
+    <div
+      style={{
+        gridColumn: col,
+        height,
+        background: img ? `url(${img}) center/cover no-repeat` : tint,
+        display: 'flex',
+        alignItems: 'flex-end',
+        padding: 14,
+      }}
+    >
+      {caption ? (
+        <div
+          style={{
+            fontFamily: "'Be Vietnam Pro',sans-serif",
+            fontSize: 9.5,
+            letterSpacing: '.18em',
+            textTransform: 'uppercase',
+            lineHeight: 1.5,
+            color: img ? '#FDFBF2' : '#1F3A38',
+            background: img ? 'rgba(24,22,17,.55)' : undefined,
+            padding: img ? '3px 7px' : undefined,
+          }}
+        >
+          {caption}
+        </div>
+      ) : null}
     </div>
   )
 }
@@ -408,6 +479,11 @@ export function Notes() {
   // page of its own.
   const { data: allModules } = useModules()
   const ghi01 = allModules.find((m) => m.id === 'ghi01')
+  // The design's cells, carrying whatever photos and words the CMS has set.
+  const drawnCells = useMemo(
+    () => withOverrides(featureCells, ghi01?.feature_cells as FeatureOverride[] | undefined),
+    [ghi01?.feature_cells],
+  )
   // Posts filed under Ghi 01 — the memo lives here, as a post like any other.
   const { data: filed } = usePublishedPosts({ moduleId: 'ghi01' })
   const [noteFilter, setNoteFilter] = useState<'tất cả' | Note['k']>('tất cả')
@@ -549,7 +625,7 @@ export function Notes() {
               statistics panel unfolds on Ghi 02 — the reader stays on the page
               they were reading. Open, it takes the full width of the grid and
               everything else steps back. */}
-            {buildNotesGrid(filed).map((cell, gi) => {
+            {buildNotesGrid(filed, drawnCells).map((cell, gi) => {
               if (cell.kind === 'feature') {
                 return (
                   <FeatureCellView key={`F${cell.cell.n}-${gi}`} f={cell.cell} dimmed={openNote !== null} />
@@ -678,42 +754,8 @@ export function Notes() {
             Ghi chép mới sẽ chèn lên đầu trang.
           </div>
         </div>
-        <div
-          style={{
-            gridColumn: '6 / span 3',
-            height: 150,
-            background: '#AFC8BC',
-            display: 'flex',
-            alignItems: 'flex-end',
-            padding: 14,
-            fontFamily: "'Be Vietnam Pro',sans-serif",
-            fontSize: 9.5,
-            letterSpacing: '.18em',
-            textTransform: 'uppercase',
-            color: '#1F3A38',
-            lineHeight: 1.5,
-          }}
-        >
-          ảnh nhỏ — chi tiết lặp lại của theme
-        </div>
-        <div
-          style={{
-            gridColumn: '9 / span 4',
-            height: 280,
-            background: '#E9B79C',
-            display: 'flex',
-            alignItems: 'flex-end',
-            padding: 14,
-            fontFamily: "'Be Vietnam Pro',sans-serif",
-            fontSize: 9.5,
-            letterSpacing: '.18em',
-            textTransform: 'uppercase',
-            color: '#1F3A38',
-            lineHeight: 1.5,
-          }}
-        >
-          ảnh ngang — quang cảnh rộng, kết thúc mạch đọc
-        </div>
+        <FooterImage col="6 / span 3" height={150} tint="#AFC8BC" img={ghi01?.img1} caption={ghi01?.shot1} />
+        <FooterImage col="9 / span 4" height={280} tint="#E9B79C" img={ghi01?.img2} caption={ghi01?.shot2} />
       </div>
     </div>
   )

@@ -24,6 +24,8 @@ export type ModuleRow = {
   img1: string | null
   img2: string | null
   img3: string | null
+  /** Ghi 01's between-post cells: `{ n, img, t }[]`. Empty elsewhere. */
+  feature_cells: unknown
   sort_order: number
   /**
    * 'normal' — a reading module, one of the gallery on the homepage.
