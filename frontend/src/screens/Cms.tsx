@@ -21,6 +21,8 @@ import { createPost, transitionStatus, getSite } from '../admin/lib/apiClient'
 import { PostsPanel } from '../admin/components/PostsPanel'
 import { ModuleImages } from '../admin/components/ModuleImages'
 import { formShapeOf } from '../admin/moduleForm'
+import { FocusPicker } from '../admin/components/FocusPicker'
+import { coverStyle } from '../lib/imageFocus'
 import { FeatureCellsEditor } from '../admin/components/FeatureCellsEditor'
 import type { FeatureOverride } from '../content/notes'
 import { ink, paper, sans, serif } from '../design/tokens'
@@ -140,14 +142,22 @@ function ImageSlot({
   onCaption,
   onUpload,
   onClear,
+  onPlace,
+  ratio,
 }: {
   label: string
   caption: string
   url: string | null
   onCaption: (v: string) => void
-  onUpload: (f: File) => void
+  /** Uploads and returns the stored URL, so the frame can be set straight away. */
+  onUpload: (f: File) => Promise<string | null>
   onClear: () => void
+  /** The same photo, carrying a focal point. */
+  onPlace: (url: string) => void
+  /** Width ÷ height of the frame this photo fills on the public page. */
+  ratio: number
 }) {
+  const [placing, setPlacing] = useState<string | null>(null)
   return (
     <div>
       <div style={fieldLabel}>{label}</div>
@@ -161,7 +171,7 @@ function ImageSlot({
           style={{
             marginTop: 7,
             aspectRatio: '16/9',
-            background: `url(${url}) center/cover no-repeat`,
+            ...coverStyle(url),
             border: `1px solid ${paper.rule}`,
           }}
         />
@@ -220,6 +230,19 @@ function ImageSlot({
           </Hover>
         )}
       </div>
+
+      {placing && (
+        <FocusPicker
+          url={placing}
+          ratio={ratio}
+          name={label}
+          onCancel={() => setPlacing(null)}
+          onSave={(next) => {
+            onPlace(next)
+            setPlacing(null)
+          }}
+        />
+      )}
     </div>
   )
 }
@@ -290,12 +313,14 @@ export function Cms() {
 
   const setCopy = (key: keyof SiteCopy) => (v: string) => void saveSite({ [key]: v } as SiteOverrides)
 
-  async function savePlate(slot: 1 | 2 | 3, file: File) {
+  async function savePlate(slot: 1 | 2 | 3, file: File): Promise<string | null> {
     try {
       const { url } = await uploadImage(file)
       await saveSite({ [`plateImg${slot}`]: url } as SiteOverrides)
+      return url
     } catch (e) {
       setError((e as Error).message)
+      return null
     }
   }
 
@@ -674,8 +699,10 @@ export function Cms() {
                 caption={copy[`plate${slot}` as const]}
                 url={copy[`plateImg${slot}` as const] || null}
                 onCaption={(v) => void saveSite({ [`plate${slot}`]: v } as SiteOverrides)}
-                onUpload={(f) => void savePlate(slot, f)}
+                onUpload={(f) => savePlate(slot, f)}
                 onClear={() => void saveSite({ [`plateImg${slot}`]: '' } as SiteOverrides)}
+                onPlace={(next) => void saveSite({ [`plateImg${slot}`]: next } as SiteOverrides)}
+                ratio={16 / 9}
               />
             ))}
           </div>
@@ -938,8 +965,10 @@ export function Cms() {
                             await patchModule(m.id, {
                               feature_cells: [...rest, { ...current, img: url }].sort((a, b) => a.n - b.n),
                             })
+                            return url
                           } catch (e) {
                             setError((e as Error).message)
+                            return null
                           }
                         }}
                       />
@@ -954,11 +983,14 @@ export function Cms() {
                           try {
                             const { url } = await uploadImage(f)
                             await patchModule(m.id, { [`img${slot}`]: url })
+                            return url
                           } catch (e) {
                             setError((e as Error).message)
+                            return null
                           }
                         }}
                         onClear={(slot) => void patchModule(m.id, { [`img${slot}`]: null })}
+                        onPlace={(slot, url) => void patchModule(m.id, { [`img${slot}`]: url })}
                       />
                     )}
 

@@ -1,7 +1,9 @@
-import { type CSSProperties } from 'react'
+import { useState, type CSSProperties } from 'react'
 import { featureCells, withOverrides, type FeatureOverride } from '../../content/notes'
 import { ink, paper, sans, serif } from '../../design/tokens'
 import { Hover } from '../../lib/Hover'
+import { coverStyle } from '../../lib/imageFocus'
+import { FocusPicker } from './FocusPicker'
 
 const groupLabel: CSSProperties = {
   fontFamily: sans,
@@ -70,9 +72,25 @@ export function FeatureCellsEditor({
 }: {
   overrides: FeatureOverride[]
   onChange: (next: FeatureOverride[]) => void
-  onUpload: (n: number, f: File) => void
+  /** Uploads and returns the stored URL, so the frame can be set straight away. */
+  onUpload: (n: number, f: File) => Promise<string | null>
 }) {
   const drawn = withOverrides(featureCells, overrides)
+  const [placing, setPlacing] = useState<{ n: number; url: string; ratio: number; name: string } | null>(null)
+
+  /**
+   * A feature cell's shape, from the design's own numbers: `col` is a span of
+   * the twelve-column grid the page lays out at 1128px wide, and `h` is a fixed
+   * height. Nothing measures here because nothing moves — the geometry is the
+   * drawing, and the drawing is fixed.
+   */
+  const ratioOf = (col: string, h: string): number => {
+    const span = Number(/span (\d+)/.exec(col)?.[1] ?? 3)
+    const width = ((1128 - 20 * 11) / 12) * span + 20 * (span - 1)
+    const height = Number.parseFloat(h) || 240
+    return width / height
+  }
+
 
   const set = (n: number, patch: Partial<FeatureOverride>) => {
     const rest = overrides.filter((o) => o.n !== n)
@@ -160,7 +178,7 @@ export function FeatureCellsEditor({
                   width: 72,
                   height: 45,
                   border: `1px solid ${paper.rule}`,
-                  background: f.img ? `url(${f.img}) center/cover no-repeat` : f.bg,
+                  ...(f.img ? coverStyle(f.img) : { background: f.bg }),
                 }}
               />
               <div style={{ minWidth: 0 }}>
@@ -179,12 +197,38 @@ export function FeatureCellsEditor({
                       accept="image/*"
                       onChange={(e) => {
                         const file = e.target.files?.[0]
-                        if (file) onUpload(f.n, file)
                         e.target.value = ''
+                        if (!file) return
+                        void onUpload(f.n, file).then((next) => {
+                          if (next)
+                            setPlacing({
+                              n: f.n,
+                              url: next,
+                              ratio: ratioOf(f.col, f.h),
+                              name: `Ảnh feature · F${f.n}`,
+                            })
+                        })
                       }}
                       style={{ display: 'none' }}
                     />
                   </Hover>
+                  {f.img && (
+                    <Hover
+                      as="button"
+                      onClick={() =>
+                        setPlacing({
+                          n: f.n,
+                          url: f.img!,
+                          ratio: ratioOf(f.col, f.h),
+                          name: `Ảnh feature · F${f.n}`,
+                        })
+                      }
+                      style={{ ...action, background: 'none', border: 'none', padding: 0 }}
+                      hoverStyle={{ color: ink.base }}
+                    >
+                      đặt vào khung
+                    </Hover>
+                  )}
                   {f.img && (
                     <Hover
                       as="button"
@@ -201,6 +245,19 @@ export function FeatureCellsEditor({
           )
         })}
       </div>
+
+      {placing && (
+        <FocusPicker
+          url={placing.url}
+          ratio={placing.ratio}
+          name={placing.name}
+          onCancel={() => setPlacing(null)}
+          onSave={(next) => {
+            set(placing.n, { img: next })
+            setPlacing(null)
+          }}
+        />
+      )}
     </div>
   )
 }

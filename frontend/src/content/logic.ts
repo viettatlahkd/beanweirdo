@@ -108,7 +108,8 @@ export const LOGIC: LogicPart[] = [
     { n: '15', g: 'Ảnh và ô màu', items: [
       { s: 'Toàn hệ thống', r: 'Ô ảnh không có ảnh thì là hộp màu, không tính là ảnh. Dàn trang giữ nguyên hình, ô chỉ đổi giữa ảnh và màu.', e: '' },
       { s: 'Toàn hệ thống', r: 'Chú thích ảnh không bắt buộc. Chú thích rỗng thì không chiếm chỗ và không vẽ nền.', e: '' },
-      { s: 'Toàn hệ thống', r: 'Ảnh tải lên luôn phủ kín ô, cắt phần thừa, căn giữa. Không bao giờ kéo méo.', e: '' },
+      { s: 'Toàn hệ thống', r: 'Ảnh tải lên luôn phủ kín ô và cắt phần thừa, không bao giờ kéo méo. Mặc định căn giữa; người dùng có thể co kéo đặt lại điểm neo.', e: '' },
+      { s: 'Toàn hệ thống', r: 'Tải ảnh lên xong thì mở ngay màn đặt ảnh vào khung, với khung đúng hình dạng ô trên trang công khai.', e: '' },
       { s: 'Module', r: 'Module thường có tối đa 3 ảnh — bản design chỉ vẽ 3 ô. Muốn hơn phải vẽ kiểu dàn trang mới.', e: '' },
       { s: 'Module', r: 'Ô sửa nội dung của một module chỉ hiện những ô mà chính module đó dùng đến, không vẽ chung một form cho mọi module.', e: '' },
       { s: 'Toàn hệ thống', r: 'Khung xem trước phải vẽ bằng đúng thành phần dàn trang của trang công khai, không vẽ lại — ô ảnh co giãn theo bề rộng nên không có tỉ lệ cố định.', e: '' }

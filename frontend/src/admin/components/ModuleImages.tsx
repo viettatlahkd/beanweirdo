@@ -1,15 +1,27 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type RefObject } from 'react'
 import { ImageBand } from '../../screens/Landing'
 import { ink, paper, sans } from '../../design/tokens'
 import { Hover } from '../../lib/Hover'
 import type { ImageGroup, ModuleImageFields } from '../moduleForm'
+import { coverStyle } from '../../lib/imageFocus'
+import { FocusPicker } from './FocusPicker'
+
+/** Sidebar plus the page's left padding — everything the band does not get. */
+const PAGE_CHROME = 176
 
 /**
- * Width the public page gives the image band: the 1240px shell less its 56px
- * side padding. The preview renders at that width and is then scaled down, so
- * every cell keeps the proportions it will really have.
+ * Width the public page gives the image band, on the screen looking at it.
+ *
+ * The band is fluid: it takes whatever the window leaves after the sidebar and
+ * the page padding, while its height is fixed. So a cell's proportions move
+ * with the window, and a preview drawn at some nominal width would show a
+ * shape the admin never actually sees. Rendering at the real width and scaling
+ * down keeps the preview honest — and keeps the crop frame honest with it.
  */
-const PAGE_WIDTH = 1240 - 56 * 2
+function pageWidth(): number {
+  if (typeof window === 'undefined') return 1128
+  return Math.max(720, window.innerWidth - PAGE_CHROME)
+}
 
 const label: CSSProperties = {
   fontFamily: sans,
@@ -40,18 +52,35 @@ const action: CSSProperties = {
 }
 
 /** Renders the real public layout at page scale, then shrinks it to fit. */
-function Preview({ m, kind }: { m: ModuleImageFields; kind: ImageGroup['preview'] }) {
+function Preview({
+  m,
+  kind,
+  gridRef,
+}: {
+  m: ModuleImageFields
+  kind: ImageGroup['preview']
+  /** The layout's own grid, so a cell can be measured rather than guessed. */
+  gridRef?: RefObject<HTMLDivElement>
+}) {
   const box = useRef<HTMLDivElement>(null)
   const [scale, setScale] = useState(0.3)
+  const [page, setPage] = useState(pageWidth)
 
   useEffect(() => {
     const el = box.current
     if (!el) return
-    const fit = () => setScale(el.clientWidth / PAGE_WIDTH)
+    const fit = () => {
+      setPage(pageWidth())
+      setScale(el.clientWidth / pageWidth())
+    }
     fit()
     const ro = new ResizeObserver(fit)
     ro.observe(el)
-    return () => ro.disconnect()
+    window.addEventListener('resize', fit)
+    return () => {
+      ro.disconnect()
+      window.removeEventListener('resize', fit)
+    }
   }, [])
 
   const inner =
@@ -75,8 +104,9 @@ function Preview({ m, kind }: { m: ModuleImageFields; kind: ImageGroup['preview'
     >
       <div style={{ height: tall * scale, overflow: 'hidden' }}>
         <div
+          ref={gridRef}
           style={{
-            width: PAGE_WIDTH,
+            width: page,
             transform: `scale(${scale})`,
             transformOrigin: 'top left',
           }}
@@ -103,7 +133,7 @@ function NotesFooterPreview({
   const cell = (img: string | null, tint: string, height: number, caption: string | null): CSSProperties => ({
     height,
     alignSelf: 'end',
-    background: img ? `url(${img}) center/cover no-repeat` : tint,
+    ...(img ? coverStyle(img) : { background: tint }),
     display: 'flex',
     alignItems: 'flex-end',
     padding: 14,
@@ -144,13 +174,32 @@ export function ModuleImages({
   onCaption,
   onUpload,
   onClear,
+  onPlace,
 }: {
   m: ModuleImageFields
   group: ImageGroup
   onCaption: (slot: 1 | 2 | 3, v: string) => void
-  onUpload: (slot: 1 | 2 | 3, f: File) => void
+  /** Uploads and returns the stored URL, so the frame can be set straight away. */
+  onUpload: (slot: 1 | 2 | 3, f: File) => Promise<string | null>
   onClear: (slot: 1 | 2 | 3) => void
+  /** The same photo, carrying a focal point. */
+  onPlace: (slot: 1 | 2 | 3, url: string) => void
 }) {
+  const grid = useRef<HTMLDivElement>(null)
+  const [placing, setPlacing] = useState<{ slot: 1 | 2 | 3; url: string } | null>(null)
+
+  /**
+   * The shape of the cell this slot fills, taken from the preview rather than
+   * a table — the preview draws the real layout, so measuring it is the one
+   * answer that cannot drift from what the page does.
+   */
+  const ratioOf = (i: number): number => {
+    const cell = grid.current?.firstElementChild?.children[i] as HTMLElement | undefined
+    if (!cell) return 16 / 9
+    const r = cell.getBoundingClientRect()
+    return r.height > 0 ? r.width / r.height : 16 / 9
+  }
+
   return (
     <div
       style={{
@@ -172,7 +221,7 @@ export function ModuleImages({
                     width: 72,
                     height: 45,
                     border: `1px solid ${paper.rule}`,
-                    background: url ? `url(${url}) center/cover no-repeat` : paper.hover,
+                    ...(url ? coverStyle(url) : { background: paper.hover }),
                   }}
                 />
                 <div style={{ minWidth: 0 }}>
@@ -212,12 +261,27 @@ export function ModuleImages({
                         accept="image/*"
                         onChange={(e) => {
                           const f = e.target.files?.[0]
-                          if (f) onUpload(slot, f)
                           e.target.value = ''
+                          if (!f) return
+                          // Straight from the upload into placing it, because a
+                          // photo that has not been placed is only half added.
+                          void onUpload(slot, f).then((next) => {
+                            if (next) setPlacing({ slot, url: next })
+                          })
                         }}
                         style={{ display: 'none' }}
                       />
                     </Hover>
+                    {url && (
+                      <Hover
+                        as="button"
+                        onClick={() => setPlacing({ slot, url })}
+                        style={{ ...action, background: 'none', border: 'none', padding: 0 }}
+                        hoverStyle={{ color: ink.base }}
+                      >
+                        đặt vào khung
+                      </Hover>
+                    )}
                     {url && (
                       <Hover
                         as="button"
@@ -238,8 +302,21 @@ export function ModuleImages({
 
       <div>
         <div style={label}>Xem trước layout</div>
-        <Preview m={m} kind={group.preview} />
+        <Preview m={m} kind={group.preview} gridRef={grid} />
       </div>
+
+      {placing && (
+        <FocusPicker
+          url={placing.url}
+          ratio={ratioOf(group.slots.indexOf(placing.slot))}
+          name={`${group.label} · ${group.names[group.slots.indexOf(placing.slot)]}`}
+          onCancel={() => setPlacing(null)}
+          onSave={(next) => {
+            onPlace(placing.slot, next)
+            setPlacing(null)
+          }}
+        />
+      )}
     </div>
   )
 }

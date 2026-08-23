@@ -3,6 +3,7 @@ import { useMemo } from 'react'
 import { splitAesc } from '../content/site'
 import { landingModules, useModules } from '../data/useModules'
 import type { ModuleImageFields } from '../admin/moduleForm'
+import { coverStyle } from '../lib/imageFocus'
 import type { PostRow } from '../data/usePublishedPosts'
 import { usePublishedPosts } from '../data/usePublishedPosts'
 import { useSiteCopy } from '../data/useSiteCopy'
@@ -34,7 +35,7 @@ const captionOnPhoto: CSSProperties = {
  * empty cell is a colour box, not a gap. See admin/moduleForm.ts.
  */
 const tile = (background: string, padding: number, img?: string | null): CSSProperties => ({
-  background: img ? `url(${img}) center/cover no-repeat` : background,
+  ...(img ? coverStyle(img) : { background }),
   display: 'flex',
   alignItems: 'flex-end',
   padding,

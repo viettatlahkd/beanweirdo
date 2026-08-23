@@ -123,7 +123,11 @@ const server = createHttpServer(async (req, res) => {
   try {
     const mod = await vite.ssrLoadModule(match.file)
     req.query = { ...Object.fromEntries(url.searchParams), ...match.query }
-    req.body = await readBody(req)
+    // A route that opts out of body parsing wants the raw stream — draining it
+    // here would leave the handler waiting on data that has already gone by.
+    // Vercel honours the same `config.api.bodyParser` flag; without this the
+    // multipart upload route hangs locally but works in production.
+    if (mod.config?.api?.bodyParser !== false) req.body = await readBody(req)
     await mod.default(req, decorate(res))
     if (!res.writableEnded) res.end()
   } catch (err) {
