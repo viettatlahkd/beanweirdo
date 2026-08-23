@@ -62,3 +62,15 @@ h4 {
   color: #b0b0a6;
   pointer-events: none;
 }
+
+/*
+ * The note field's own hint, italic and faint so it reads as an offer rather
+ * than as something already written there. The same words appear on a saved
+ * row with no note yet — see ActivityRow — and the two have to look alike, or
+ * clicking one to reach the other feels like a different thing arriving.
+ */
+.note-field::placeholder {
+  font-style: italic;
+  color: #c4c3b8;
+  opacity: 1;
+}
