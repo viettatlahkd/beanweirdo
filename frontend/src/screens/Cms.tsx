@@ -19,6 +19,10 @@ import {
 } from '../admin/lib/apiClient'
 import { createPost, transitionStatus, getSite } from '../admin/lib/apiClient'
 import { PostsPanel } from '../admin/components/PostsPanel'
+import { ModuleImages } from '../admin/components/ModuleImages'
+import { formShapeOf } from '../admin/moduleForm'
+import { FeatureCellsEditor } from '../admin/components/FeatureCellsEditor'
+import type { FeatureOverride } from '../content/notes'
 import { ink, paper, sans, serif } from '../design/tokens'
 import { Hover } from '../lib/Hover'
 
@@ -73,8 +77,47 @@ const grid = (columns: string, marginBottom = 14): CSSProperties => ({
   marginBottom,
 })
 
+const one = 'minmax(0,1fr)'
 const two = 'minmax(0,1fr) minmax(0,1fr)'
 const three = 'repeat(3,minmax(0,1fr))'
+
+/**
+ * Fields are sized by what they hold, not by dividing the row evenly. A colour
+ * is seven characters and a layout is one of three words, so both stay narrow
+ * and the name takes the slack; a sentence gets its own full-width row.
+ */
+const nameRow = 'minmax(0,1fr) 112px 124px 128px'
+const nameRowPlain = 'minmax(0,1fr) 112px'
+
+/**
+ * What a module row counts.
+ *
+ * Ghi 02 keeps daily ticks, not posts, so counting posts there would always
+ * read zero and mean nothing. Everywhere else the count is posts — and an
+ * empty module still appears on the site, so saying otherwise was wrong:
+ * group 05 has it that a created public module always shows.
+ */
+function countLabel(id: string, posts: number): string {
+  if (id === 'ghi02') return 'checkbox hàng ngày'
+  return posts ? `${posts} bài` : 'chưa có bài'
+}
+
+/** Names where a field turns up on the site — identification, not instruction. */
+function Where({ children }: { children: ReactNode }) {
+  return (
+    <span
+      style={{
+        letterSpacing: '.04em',
+        textTransform: 'none',
+        fontStyle: 'italic',
+        opacity: 0.85,
+      }}
+    >
+      {' · '}
+      {children}
+    </span>
+  )
+}
 
 function Field({ label, children }: { label: ReactNode; children: ReactNode }) {
   return (
@@ -688,6 +731,8 @@ export function Cms() {
           {modules.map((m, mi) => {
             const entries = postsOf(m.id)
             const open = openModule === m.id
+            // Which fields this module actually uses — see admin/moduleForm.ts.
+            const shape = formShapeOf(m)
             return (
               <div
                 key={m.id}
@@ -758,7 +803,7 @@ export function Cms() {
                     {m.title}
                   </div>
                   <div style={{ fontFamily: sans, fontWeight: 300, fontSize: 12, color: ink.muted, flex: 'none' }}>
-                    {entries.length ? `${entries.length} bài` : 'chưa có bài — chưa hiện trên trang'}
+                    {countLabel(m.id, entries.length)}
                   </div>
                   <Hover
                     onClick={async () => {
@@ -780,7 +825,7 @@ export function Cms() {
 
                 {open && (
                   <div style={{ padding: '16px 0 6px 39px' }}>
-                    <div style={grid(three)}>
+                    <div style={grid(shape.concept ? nameRow : nameRowPlain)}>
                       <Field label="Tên module">
                         <input
                           defaultValue={m.title}
@@ -788,91 +833,134 @@ export function Cms() {
                           style={boxed}
                         />
                       </Field>
-                      <Field label="Concept">
-                        <input
-                          defaultValue={m.concept}
-                          onBlur={(e) => void patchModule(m.id, { concept: e.target.value })}
-                          style={boxed}
-                        />
-                      </Field>
                       <Field label="Màu">
-                        <input
-                          defaultValue={m.accent}
-                          onBlur={(e) => void patchModule(m.id, { accent: e.target.value })}
-                          style={boxed}
-                        />
+                        <div style={{ position: 'relative' }}>
+                          <span
+                            style={{
+                              position: 'absolute',
+                              left: 10,
+                              top: '50%',
+                              transform: 'translateY(-50%)',
+                              width: 13,
+                              height: 13,
+                              border: `1px solid ${paper.rule}`,
+                              background: m.accent,
+                            }}
+                          />
+                          <input
+                            defaultValue={m.accent}
+                            onBlur={(e) => void patchModule(m.id, { accent: e.target.value })}
+                            style={{ ...boxed, paddingLeft: 31 }}
+                          />
+                        </div>
                       </Field>
+                      {shape.layout && (
+                        <Field label="Dàn trang">
+                          <select
+                            value={m.layout}
+                            onChange={(e) => void patchModule(m.id, { layout: e.target.value })}
+                            style={boxed}
+                          >
+                            <option value="band">band</option>
+                            <option value="specimen">specimen</option>
+                            <option value="sequence">sequence</option>
+                          </select>
+                        </Field>
+                      )}
+                      {shape.concept && (
+                        <Field label="Concept">
+                          <input
+                            defaultValue={m.concept}
+                            onBlur={(e) => void patchModule(m.id, { concept: e.target.value })}
+                            style={boxed}
+                          />
+                        </Field>
+                      )}
                     </div>
 
-                    <div style={grid(two)}>
-                      <Field label="Giới thiệu ngắn — hiện ở Mục lục">
-                        <textarea
-                          defaultValue={m.blurb}
-                          onBlur={(e) => void patchModule(m.id, { blurb: e.target.value })}
-                          rows={3}
-                          style={area}
-                        />
-                      </Field>
-                      <Field label="Mô tả dài — Trang chủ và đầu trang module">
-                        <textarea
-                          defaultValue={m.long_desc}
-                          onBlur={(e) => void patchModule(m.id, { long_desc: e.target.value })}
-                          rows={3}
-                          style={area}
-                        />
-                      </Field>
-                    </div>
+                    {shape.blurb && (
+                      <div style={grid(one)}>
+                        <Field label={<>Mô tả ngắn<Where>hiện ở Mục lục</Where></>}>
+                          <textarea
+                            defaultValue={m.blurb}
+                            onBlur={(e) => void patchModule(m.id, { blurb: e.target.value })}
+                            rows={2}
+                            style={area}
+                          />
+                        </Field>
+                      </div>
+                    )}
 
-                    <div style={grid(three)}>
-                      <Field label="Dàn trang">
-                        <select
-                          value={m.layout}
-                          onChange={(e) => void patchModule(m.id, { layout: e.target.value })}
-                          style={boxed}
-                        >
-                          <option value="band">band</option>
-                          <option value="specimen">specimen</option>
-                          <option value="sequence">sequence</option>
-                        </select>
-                      </Field>
-                      <Field label="Treatment — hiện ở Design system">
-                        <textarea
-                          defaultValue={m.treatment}
-                          onBlur={(e) => void patchModule(m.id, { treatment: e.target.value })}
-                          rows={2}
-                          style={area}
-                        />
-                      </Field>
-                      <Field label="Ghi chú dàn trang — Design system">
-                        <textarea
-                          defaultValue={m.layout_note}
-                          onBlur={(e) => void patchModule(m.id, { layout_note: e.target.value })}
-                          rows={2}
-                          style={area}
-                        />
-                      </Field>
-                    </div>
+                    {shape.longDesc && (
+                      <div style={grid(one)}>
+                        <Field label={<>Mô tả dài<Where>hiện ở Trang chủ và đầu trang module</Where></>}>
+                          <textarea
+                            defaultValue={m.long_desc}
+                            onBlur={(e) => void patchModule(m.id, { long_desc: e.target.value })}
+                            rows={3}
+                            style={area}
+                          />
+                        </Field>
+                      </div>
+                    )}
 
-                    <div style={grid(three)}>
-                      {([1, 2, 3] as const).map((slot) => (
-                        <ImageSlot
-                          key={slot}
-                          label={slot === 1 ? 'Chú thích ảnh chính' : `Chú thích ảnh phụ ${slot - 1}`}
-                          caption={(m[`shot${slot}` as const] ?? '') as string}
-                          url={m[`img${slot}` as const]}
-                          onCaption={(v) => void patchModule(m.id, { [`shot${slot}`]: v })}
-                          onUpload={async (f) => {
-                            try {
-                              const { url } = await uploadImage(f)
-                              await patchModule(m.id, { [`img${slot}`]: url })
-                            } catch (e) {
-                              setError((e as Error).message)
-                            }
-                          }}
-                          onClear={() => void patchModule(m.id, { [`img${slot}`]: null })}
-                        />
-                      ))}
-                    </div>
+                    {shape.designNotes && (
+                      <div style={grid(two)}>
+                        <Field label={<>Treatment<Where>hiện ở Design system</Where></>}>
+                          <textarea
+                            defaultValue={m.treatment}
+                            onBlur={(e) => void patchModule(m.id, { treatment: e.target.value })}
+                            rows={3}
+                            style={area}
+                          />
+                        </Field>
+                        <Field label={<>Ghi chú dàn trang<Where>hiện ở Design system</Where></>}>
+                          <textarea
+                            defaultValue={m.layout_note}
+                            onBlur={(e) => void patchModule(m.id, { layout_note: e.target.value })}
+                            rows={3}
+                            style={area}
+                          />
+                        </Field>
+                      </div>
+                    )}
+
+                    {shape.featureCells && (
+                      <FeatureCellsEditor
+                        overrides={(m.feature_cells as FeatureOverride[] | null) ?? []}
+                        onChange={(next) => void patchModule(m.id, { feature_cells: next })}
+                        onUpload={async (n, f) => {
+                          try {
+                            const { url } = await uploadImage(f)
+                            const prev = (m.feature_cells as FeatureOverride[] | null) ?? []
+                            const rest = prev.filter((o) => o.n !== n)
+                            const current = prev.find((o) => o.n === n) ?? { n }
+                            await patchModule(m.id, {
+                              feature_cells: [...rest, { ...current, img: url }].sort((a, b) => a.n - b.n),
+                            })
+                          } catch (e) {
+                            setError((e as Error).message)
+                          }
+                        }}
+                      />
+                    )}
+
+                    {shape.images && (
+                      <ModuleImages
+                        m={m}
+                        group={shape.images}
+                        onCaption={(slot, v) => void patchModule(m.id, { [`shot${slot}`]: v })}
+                        onUpload={async (slot, f) => {
+                          try {
+                            const { url } = await uploadImage(f)
+                            await patchModule(m.id, { [`img${slot}`]: url })
+                          } catch (e) {
+                            setError((e as Error).message)
+                          }
+                        }}
+                        onClear={(slot) => void patchModule(m.id, { [`img${slot}`]: null })}
+                      />
+                    )}
 
                     <div
                       style={{

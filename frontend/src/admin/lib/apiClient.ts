@@ -78,6 +78,8 @@ export type Module = {
   img1: string | null
   img2: string | null
   img3: string | null
+  /** Ghi 01's between-post cells: `{ n, img, t }[]`. Empty elsewhere. */
+  feature_cells: unknown
   sort_order: number
   /** 'normal' = reading module; 'special' = a journal a post can be filed under. */
   kind: 'normal' | 'special'

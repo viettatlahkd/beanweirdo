@@ -105,6 +105,15 @@ export const LOGIC: LogicPart[] = [
       { s: 'Toàn hệ thống', r: 'Ở mọi mục xổ ra: mục đang mở tự cuộn vào giữa khung nhìn.', e: '' },
       { s: 'Toàn hệ thống', r: 'Ở [[notes]] và [[archive]]: mỗi lần chỉ một mục mở, bấm lại để thu.', e: '' }
     ] },
+    { n: '15', g: 'Ảnh và ô màu', items: [
+      { s: 'Toàn hệ thống', r: 'Ô ảnh không có ảnh thì là hộp màu, không tính là ảnh. Dàn trang giữ nguyên hình, ô chỉ đổi giữa ảnh và màu.', e: '' },
+      { s: 'Toàn hệ thống', r: 'Chú thích ảnh không bắt buộc. Chú thích rỗng thì không chiếm chỗ và không vẽ nền.', e: '' },
+      { s: 'Toàn hệ thống', r: 'Ảnh tải lên luôn phủ kín ô, cắt phần thừa, căn giữa. Không bao giờ kéo méo.', e: '' },
+      { s: 'Module', r: 'Module thường có tối đa 3 ảnh — bản design chỉ vẽ 3 ô. Muốn hơn phải vẽ kiểu dàn trang mới.', e: '' },
+      { s: 'Module', r: 'Ô sửa nội dung của một module chỉ hiện những ô mà chính module đó dùng đến, không vẽ chung một form cho mọi module.', e: '' },
+      { s: 'Toàn hệ thống', r: 'Khung xem trước phải vẽ bằng đúng thành phần dàn trang của trang công khai, không vẽ lại — ô ảnh co giãn theo bề rộng nên không có tỉ lệ cố định.', e: '' }
+    ] },
+
     { n: '08', g: 'Ghi — sửa và lưu', items: [
       { s: 'Toàn hệ thống', r: 'Ở mọi dòng dữ liệu sửa được ([[hours]], bảng [[report]]): bấm thẳng vào giá trị cần sửa, không mở hộp thoại riêng.', e: 'PATCH từng field' },
       { s: 'Toàn hệ thống', r: 'Ở mọi ô đang sửa: Enter để lưu, Esc để bỏ, rời con trỏ cũng lưu.', e: '' },

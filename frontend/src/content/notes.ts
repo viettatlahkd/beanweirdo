@@ -123,6 +123,35 @@ export const featureCells: FeatureCell[] = [
   { n: 7, afterPost: 7, col: 'span 3', mt: '200px', kind: 'slot', bg: '#E9B79C', h: '176px', t: 'ảnh vụn — chi tiết nhỏ lặp lại', ml: '0px', pl: '14px' },
 ]
 
+/**
+ * What the CMS may change about one feature cell.
+ *
+ * Only content moves: the photo and the words. Where a cell sits, how tall it
+ * is and which tint it wears stay in `featureCells` above, because those are
+ * the drawing, not the writing — the batch layout only holds together if the
+ * geometry is fixed. Stored on `modules.feature_cells` for Ghi 01.
+ */
+export type FeatureOverride = {
+  n: number
+  /** Photo for a `slot` cell; a cell without one stays a colour box. */
+  img?: string | null
+  /** Caption for a `slot`, or the sentence for a `quote`. */
+  t?: string
+}
+
+/** Design cells with the admin's words and photos folded in. */
+export function withOverrides(
+  cells: readonly FeatureCell[],
+  overrides: readonly FeatureOverride[] | null | undefined,
+): (FeatureCell & { img?: string | null })[] {
+  if (!overrides?.length) return cells.map((c) => ({ ...c }))
+  return cells.map((c) => {
+    const o = overrides.find((x) => x.n === c.n)
+    if (!o) return { ...c }
+    return { ...c, t: o.t ?? c.t, img: o.img ?? null }
+  })
+}
+
 export const noteTitleSize = (len: NoteLength) =>
   len === 'dài' ? '62px' : len === 'vừa' ? '46px' : len === 'media' ? '40px' : '36px'
 

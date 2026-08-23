@@ -1,8 +1,8 @@
 import type { CSSProperties } from 'react'
 import { useMemo } from 'react'
 import { splitAesc } from '../content/site'
-import type { ModuleRow } from '../data/useModules'
 import { landingModules, useModules } from '../data/useModules'
+import type { ModuleImageFields } from '../admin/moduleForm'
 import type { PostRow } from '../data/usePublishedPosts'
 import { usePublishedPosts } from '../data/usePublishedPosts'
 import { useSiteCopy } from '../data/useSiteCopy'
@@ -21,12 +21,31 @@ const eyebrow: CSSProperties = {
 const shotCaption: CSSProperties = { fontFamily: sans, fontSize: 10, color: ink.strong }
 const shotCaptionSm: CSSProperties = { ...shotCaption, fontSize: 9.5 }
 
-const tile = (background: string, padding: number): CSSProperties => ({
-  background,
+/** Over a photo the caption needs its own ground to stay readable. */
+const captionOnPhoto: CSSProperties = {
+  color: paper.cream,
+  background: 'rgba(24,22,17,.55)',
+  padding: '3px 7px',
+}
+
+/**
+ * One cell of a module's image band. With a photo it is the photo, cropped to
+ * fill and centred; without one it stays the tinted box the design draws — an
+ * empty cell is a colour box, not a gap. See admin/moduleForm.ts.
+ */
+const tile = (background: string, padding: number, img?: string | null): CSSProperties => ({
+  background: img ? `url(${img}) center/cover no-repeat` : background,
   display: 'flex',
   alignItems: 'flex-end',
   padding,
 })
+
+/** Captions are optional — an empty one takes no room and draws no scrim. */
+function Shot({ text, small, over }: { text: string | null; small?: boolean; over?: boolean }) {
+  if (!text) return null
+  const base = small ? shotCaptionSm : shotCaption
+  return <div style={over ? { ...base, ...captionOnPhoto } : base}>{text}</div>
+}
 
 const bandGrid = (columns: string, rows: string): CSSProperties => ({
   display: 'grid',
@@ -52,7 +71,12 @@ function groupByModule(posts: PostRow[]): Map<string, PostRow[]> {
  * cell by a different amount — the band's top and bottom edges are deliberately
  * ragged so scrolling past three modules doesn't read as three identical rows.
  */
-function ImageBand({ m }: { m: ModuleRow }) {
+/**
+  * The homepage image band. Exported because the CMS preview draws this exact
+  * component rather than a copy of it: the cells are fluid, so their aspect
+  * ratios move with the viewport and no redrawn mock could stay truthful.
+  */
+export function ImageBand({ m }: { m: ModuleImageFields }) {
   if (m.layout === 'band') {
     return (
       <div style={bandGrid('minmax(0,1.9fr) minmax(0,1fr) 30px', '1.5fr 1fr')}>
@@ -63,10 +87,10 @@ function ImageBand({ m }: { m: ModuleRow }) {
             gridColumn: 1,
             gridRow: '1/3',
             margin: '-34px 0 0',
-            ...tile(paper.cream, 14),
+            ...tile(paper.cream, 14, m.img1),
           }}
         >
-          <div style={shotCaption}>{m.shot1}</div>
+          <Shot text={m.shot1} over={!!m.img1} />
         </Rise>
         <Rise
           from={['0px', '-22px']}
@@ -75,10 +99,10 @@ function ImageBand({ m }: { m: ModuleRow }) {
             gridColumn: 2,
             gridRow: 1,
             margin: '38px 0 0 -46px',
-            ...tile(paper.cream, 11),
+            ...tile(paper.cream, 11, m.img2),
           }}
         >
-          <div style={shotCaptionSm}>{m.shot2}</div>
+          <Shot text={m.shot2} small over={!!m.img2} />
         </Rise>
         <Rise
           from={['0px', '22px']}
@@ -87,10 +111,10 @@ function ImageBand({ m }: { m: ModuleRow }) {
             gridColumn: 2,
             gridRow: 2,
             margin: '0 0 -36px',
-            ...tile(garden.petalTint, 11),
+            ...tile(garden.petalTint, 11, m.img3),
           }}
         >
-          <div style={shotCaptionSm}>{m.shot3}</div>
+          <Shot text={m.shot3} small over={!!m.img3} />
         </Rise>
         {/* a solid strip, not a photo — it keeps the rhythm without a fourth image */}
         <Rise
@@ -117,10 +141,10 @@ function ImageBand({ m }: { m: ModuleRow }) {
             gridColumn: 1,
             gridRow: '1/3',
             margin: '-22px 0 34px',
-            ...tile(paper.cream, 14),
+            ...tile(paper.cream, 14, m.img1),
           }}
         >
-          <div style={shotCaption}>{m.shot1}</div>
+          <Shot text={m.shot1} over={!!m.img1} />
         </Rise>
         <Rise
           from={['0px', '-24px']}
@@ -129,10 +153,10 @@ function ImageBand({ m }: { m: ModuleRow }) {
             gridColumn: 2,
             gridRow: 1,
             margin: '52px -26px 0 -34px',
-            ...tile(garden.leafTint, 11),
+            ...tile(garden.leafTint, 11, m.img2),
           }}
         >
-          <div style={shotCaptionSm}>{m.shot2}</div>
+          <Shot text={m.shot2} small over={!!m.img2} />
         </Rise>
         <Rise
           from={['0px', '26px']}
@@ -141,10 +165,10 @@ function ImageBand({ m }: { m: ModuleRow }) {
             gridColumn: 2,
             gridRow: 2,
             margin: '24px 34px -40px 22px',
-            ...tile(paper.cream, 11),
+            ...tile(paper.cream, 11, m.img3),
           }}
         >
-          <div style={shotCaptionSm}>{m.shot3}</div>
+          <Shot text={m.shot3} small over={!!m.img3} />
         </Rise>
       </div>
     )
@@ -159,10 +183,10 @@ function ImageBand({ m }: { m: ModuleRow }) {
           gridColumn: 1,
           gridRow: '1/3',
           margin: '26px 0 -34px',
-          ...tile(paper.cream, 14),
+          ...tile(paper.cream, 14, m.img1),
         }}
       >
-        <div style={shotCaption}>{m.shot1}</div>
+        <Shot text={m.shot1} over={!!m.img1} />
       </Rise>
       <Rise
         from={['0px', '-26px']}
@@ -171,10 +195,10 @@ function ImageBand({ m }: { m: ModuleRow }) {
           gridColumn: 2,
           gridRow: 1,
           margin: '-38px 26px 0 -40px',
-          ...tile(garden.honeyTint, 11),
+          ...tile(garden.honeyTint, 11, m.img2),
         }}
       >
-        <div style={shotCaptionSm}>{m.shot2}</div>
+        <Shot text={m.shot2} small over={!!m.img2} />
       </Rise>
       <Rise
         from={['0px', '26px']}
@@ -183,10 +207,10 @@ function ImageBand({ m }: { m: ModuleRow }) {
           gridColumn: 2,
           gridRow: 2,
           margin: '38px -18px 0 44px',
-          ...tile(paper.cream, 11),
+          ...tile(paper.cream, 11, m.img3),
         }}
       >
-        <div style={shotCaptionSm}>{m.shot3}</div>
+        <Shot text={m.shot3} small over={!!m.img3} />
       </Rise>
     </div>
   )

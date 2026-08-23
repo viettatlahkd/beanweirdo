@@ -26,6 +26,12 @@ export interface ModuleRow {
   img1: string | null
   img2: string | null
   img3: string | null
+  /**
+   * Ghi 01's decorative cells — the photos and words for the images that sit
+   * between its posts. An array of `{ n, img, t }`; geometry stays in the
+   * frontend's `content/notes.ts`. Empty for every other module.
+   */
+  feature_cells: unknown
   sort_order: number
   /** 'normal' = reading module; 'special' = a journal you can file under. */
   kind: 'normal' | 'special'
@@ -50,6 +56,7 @@ export interface Module {
   img1: string | null
   img2: string | null
   img3: string | null
+  feature_cells: unknown
   sort_order: number
   kind: 'normal' | 'special'
 }
@@ -71,6 +78,7 @@ export function toModule(row: ModuleRow): Module {
     shot1: row.shot1,
     shot2: row.shot2,
     shot3: row.shot3,
+    feature_cells: row.feature_cells,
     img1: row.img1,
     img2: row.img2,
     img3: row.img3,
@@ -98,6 +106,7 @@ export const MODULE_PATCHABLE: Array<{ jsonKey: string; column: keyof ModuleRow 
   { jsonKey: 'img1', column: 'img1' },
   { jsonKey: 'img2', column: 'img2' },
   { jsonKey: 'img3', column: 'img3' },
+  { jsonKey: 'feature_cells', column: 'feature_cells' },
 ]
 
 /**
@@ -119,6 +128,7 @@ export function newModuleRow(id: string, sort_order: number): Omit<ModuleRow, 'i
     long_desc: '',
     treatment: '',
     layout_note: '',
+    feature_cells: [],
     shot1: 'ảnh chính',
     shot2: 'ảnh phụ',
     shot3: 'ảnh phụ',
