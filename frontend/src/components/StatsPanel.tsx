@@ -54,8 +54,12 @@ const CELL = 14
 const GAP = 3
 
 /**
- * The two breakdowns sit in a three-column bed: projects take two of them, the
- * kinds of work take one — the ranking that matters gets the room.
+ * The panel reads as two bands: the project ranking across the top, then the
+ * heatmap beside the kinds of work.
+ *
+ * The heatmap used to have the whole width to itself, which pushed everything
+ * that answers *where did the time go* below the fold — and the grid never
+ * wanted that width anyway.
  *
  * Written as a stylesheet rather than inline styles because the widths have to
  * respond to the viewport, and `style={}` cannot hold a media query. The column
@@ -63,16 +67,16 @@ const GAP = 3
  * on one line.
  */
 const CSS = `
-.sp-cols { display: grid; gap: 26px; grid-template-columns: 1fr; }
 .sp-list { display: grid; gap: 13px; grid-template-columns: 1fr; }
+.sp-lower { display: grid; gap: 26px; grid-template-columns: 1fr; align-items: start; }
 @media (min-width: 560px) {
-  .sp-cols { grid-template-columns: 1fr 1fr; }
-  .sp-proj { grid-column: span 2; }
   .sp-list { grid-template-columns: 1fr 1fr; column-gap: 22px; }
 }
 @media (min-width: 860px) {
-  .sp-cols { grid-template-columns: 1fr 1fr 1fr; column-gap: 30px; }
-  .sp-proj { grid-column: span 2; }
+  .sp-list { column-gap: 30px; }
+  /* The heatmap has a ceiling of its own, so the kinds column takes whatever
+     is left rather than splitting the row down the middle. */
+  .sp-lower { grid-template-columns: minmax(0, auto) minmax(220px, 1fr); column-gap: 34px; }
 }
 `
 
@@ -169,123 +173,134 @@ export function StatsPanel({
         />
       </div>
 
-      {/* One square per day. The shades are cut against the busiest day in the
-          window rather than fixed hour marks, so a quiet stretch still shows
-          its own rhythm instead of washing out to a single pale tone. */}
-      <div style={{ ...label, marginBottom: 10 }}>Đều đặn · {grid.weeks} tuần</div>
-      <div
-        style={{
-          display: 'flex',
-          gap: 5,
-          marginBottom: 8,
-          maxWidth: 21 + grid.weeks * CELL + (grid.weeks - 1) * GAP,
-        }}
-      >
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateRows: 'repeat(7,1fr)',
-            gap: GAP,
-            fontSize: 8.5,
-            color: '#B4B2A9',
-            flex: 'none',
-            width: 16,
-          }}
-        >
-          {DOW.map((d, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center' }}>
-              {d}
-            </div>
-          ))}
-        </div>
-        <div
-          style={{
-            flex: 1,
-            display: 'grid',
-            gridTemplateColumns: `repeat(${grid.weeks},minmax(0,1fr))`,
-            gridTemplateRows: 'repeat(7,1fr)',
-            gridAutoFlow: 'column',
-            gap: GAP,
-          }}
-        >
-          {grid.cells.map((c) => (
-            <div
-              key={c.ds}
-              title={
-                c.outside
-                  ? `${c.ds.slice(5)} · ngoài khoảng ghi`
-                  : `${c.ds.slice(5)} · ${c.mins ? fmt(c.mins) : 'không ghi'}`
-              }
-              style={{
-                ...(c.outside ? OUTSIDE : { background: HEAT[c.level] }),
-                boxSizing: 'border-box',
-                aspectRatio: '1',
-                gridColumn: c.week + 1,
-                gridRow: c.day + 1,
-              }}
-            />
-          ))}
-        </div>
-      </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 10.5, color: '#8A8A7C', marginBottom: 26 }}>
-        <span>
-          chuỗi hiện tại <strong style={{ fontWeight: 500, color: '#172124' }}>{grid.current} ngày</strong>
-        </span>
-        <span>
-          dài nhất <strong style={{ fontWeight: 500, color: '#172124' }}>{grid.best} ngày</strong>
-        </span>
-        <span style={{ flex: 1 }} />
-        <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-          <span style={{ ...OUTSIDE, width: 9, height: 9, display: 'inline-block', boxSizing: 'border-box' }} />
-          <span style={{ marginRight: 8 }}>chưa ghi nhật ký</span>
-          ít
-          {HEAT.map((c) => (
-            <span key={c} style={{ width: 9, height: 9, background: c, display: 'inline-block' }} />
-          ))}
-          nhiều
-        </span>
+      <style>{CSS}</style>
+
+      {/* Where the time went, first — the ranking the owner asked to lead
+          with. Two columns, so eight projects cost four rows of height
+          instead of eight. */}
+      <div>
+        <div style={{ ...label, marginBottom: 12 }}>Theo project</div>
+        {totalMins === 0 ? (
+          <div style={{ fontSize: 12.5, color: '#A2A296' }}>Chưa có giờ nào được ghi.</div>
+        ) : (
+          <div className="sp-list">
+            {rows.map((r) => (
+              <div key={r.name} style={{ opacity: r.mins ? 1 : 0.45 }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 5 }}>
+                  <span
+                    style={{
+                      width: 7,
+                      height: 7,
+                      flex: 'none',
+                      background: r.name === NO_PROJECT ? 'transparent' : r.color,
+                      border: r.name === NO_PROJECT ? '1px dashed #A2A296' : 'none',
+                    }}
+                  />
+                  <span style={{ fontSize: 12.5, flex: 1, minWidth: 0 }}>
+                    {r.name === NO_PROJECT ? r.name : hashtag(r.name)}
+                  </span>
+                  <span style={{ fontFamily: serif, fontSize: 16, fontVariantNumeric: 'tabular-nums' }}>
+                    {r.durTxt}
+                  </span>
+                  <span style={{ fontSize: 10, color: '#8A8A7C', width: 32, textAlign: 'right' }}>
+                    {r.pct}%
+                  </span>
+                </div>
+                <div style={{ height: 4, background: '#EDEDE6' }}>
+                  <div style={{ height: 4, width: r.pct + '%', background: r.color }} />
+                </div>
+                <div style={{ fontSize: 9.5, color: '#A2A296', marginTop: 4 }}>
+                  {r.count} hoạt động · {r.lastTxt}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
-      <style>{CSS}</style>
-      <div className="sp-cols">
-        <div className="sp-proj">
-          <div style={{ ...label, marginBottom: 12 }}>Theo project</div>
-          {totalMins === 0 ? (
-            <div style={{ fontSize: 12.5, color: '#A2A296' }}>Chưa có giờ nào được ghi.</div>
-          ) : (
-            <div className="sp-list">
-              {rows.map((r) => (
-                <div key={r.name} style={{ opacity: r.mins ? 1 : 0.45 }}>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 5 }}>
-                    <span
-                      style={{
-                        width: 7,
-                        height: 7,
-                        flex: 'none',
-                        background: r.name === NO_PROJECT ? 'transparent' : r.color,
-                        border: r.name === NO_PROJECT ? '1px dashed #A2A296' : 'none',
-                      }}
-                    />
-                    <span style={{ fontSize: 12.5, flex: 1, minWidth: 0 }}>
-                      {r.name === NO_PROJECT ? r.name : hashtag(r.name)}
-                    </span>
-                    <span style={{ fontFamily: serif, fontSize: 16, fontVariantNumeric: 'tabular-nums' }}>
-                      {r.durTxt}
-                    </span>
-                    <span style={{ fontSize: 10, color: '#8A8A7C', width: 32, textAlign: 'right' }}>
-                      {r.pct}%
-                    </span>
-                  </div>
-                  <div style={{ height: 4, background: '#EDEDE6' }}>
-                    <div style={{ height: 4, width: r.pct + '%', background: r.color }} />
-                  </div>
-                  <div style={{ fontSize: 9.5, color: '#A2A296', marginTop: 4 }}>
-                    {r.count} hoạt động · {r.lastTxt}
-                  </div>
+
+      {/* Then the shape of the habit, beside the kinds of work. The grid
+          is 439px wide at most (see CELL), so giving it a neighbour costs
+          nothing and saves a full screenful of scrolling. */}
+      <div className="sp-lower">
+        <div>
+          {/* One square per day. The shades are cut against the busiest day in the
+              window rather than fixed hour marks, so a quiet stretch still shows
+              its own rhythm instead of washing out to a single pale tone. */}
+          <div style={{ ...label, marginBottom: 10 }}>Đều đặn · {grid.weeks} tuần</div>
+          <div
+            style={{
+              display: 'flex',
+              gap: 5,
+              marginBottom: 8,
+              maxWidth: 21 + grid.weeks * CELL + (grid.weeks - 1) * GAP,
+            }}
+          >
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateRows: 'repeat(7,1fr)',
+                gap: GAP,
+                fontSize: 8.5,
+                color: '#B4B2A9',
+                flex: 'none',
+                width: 16,
+              }}
+            >
+              {DOW.map((d, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center' }}>
+                  {d}
                 </div>
               ))}
             </div>
-          )}
+            <div
+              style={{
+                flex: 1,
+                display: 'grid',
+                gridTemplateColumns: `repeat(${grid.weeks},minmax(0,1fr))`,
+                gridTemplateRows: 'repeat(7,1fr)',
+                gridAutoFlow: 'column',
+                gap: GAP,
+              }}
+            >
+              {grid.cells.map((c) => (
+                <div
+                  key={c.ds}
+                  title={
+                    c.outside
+                      ? `${c.ds.slice(5)} · ngoài khoảng ghi`
+                      : `${c.ds.slice(5)} · ${c.mins ? fmt(c.mins) : 'không ghi'}`
+                  }
+                  style={{
+                    ...(c.outside ? OUTSIDE : { background: HEAT[c.level] }),
+                    boxSizing: 'border-box',
+                    aspectRatio: '1',
+                    gridColumn: c.week + 1,
+                    gridRow: c.day + 1,
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 10.5, color: '#8A8A7C', marginBottom: 26 }}>
+            <span>
+              chuỗi hiện tại <strong style={{ fontWeight: 500, color: '#172124' }}>{grid.current} ngày</strong>
+            </span>
+            <span>
+              dài nhất <strong style={{ fontWeight: 500, color: '#172124' }}>{grid.best} ngày</strong>
+            </span>
+            <span style={{ flex: 1 }} />
+            <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+              <span style={{ ...OUTSIDE, width: 9, height: 9, display: 'inline-block', boxSizing: 'border-box' }} />
+              <span style={{ marginRight: 8 }}>chưa ghi nhật ký</span>
+              ít
+              {HEAT.map((c) => (
+                <span key={c} style={{ width: 9, height: 9, background: c, display: 'inline-block' }} />
+              ))}
+              nhiều
+            </span>
+          </div>
+
         </div>
 
         <div className="sp-kind">
