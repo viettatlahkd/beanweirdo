@@ -35,10 +35,21 @@ bản cuối.
 
 - **`logic.ts` nhóm 14, luật thứ hai**: *"Riêng [[hours]]: sửa hoạt động chỉ hai
   nhánh — đổi thời gian, hoặc xoá. Sửa tên là thao tác phụ."*
-  Nay sai hẳn. Sửa một hoạt động có: đổi tên · đổi tag project · đổi tag task ·
-  đổi giờ bắt đầu · đổi giờ kết thúc · đổi thời lượng · thêm/sửa ghi chú ·
-  tick/bỏ tick · thêm một lần thực hiện · nhân đôi · gộp vào hàng trên · xoá.
-  Mười hai nhánh, không phải hai.
+  Nay sai hẳn, ở cả hai vế.
+
+  Sửa một hoạt động chạm được vào: tên · tag project · tag task · giờ bắt đầu ·
+  giờ kết thúc · thời lượng · ghi chú · trạng thái tick · nhân đôi · gộp vào
+  hàng trên · thêm một lần thực hiện · xoá. Và một hoạt động nhiều lần còn có
+  **một tầng nữa**: sửa một lần cụ thể, và xoá một lần — khác với xoá cả hoạt
+  động (luật 24).
+  Bằng chứng: `ActivityRowProps` trong frontend/src/components/ActivityRow.tsx
+  (`onPatchSitting`, `onRemoveSitting`).
+
+  **Đừng thay "hai nhánh" bằng một con số khác.** Bản đầu của ghi chú này viết
+  "mười hai nhánh" và lane tài liệu đếm ra ít nhất mười bốn — cả hai đều là bản
+  kiểm kê, và bản kiểm kê chép vào chỗ đáng ra chứa bất biến thì sẽ sai lại ở
+  PR sau. Vế "Sửa tên là thao tác phụ" cũng không còn đúng: tên nay là ô đầu
+  tiên con trỏ nhảy vào khi tạo hàng.
 
 - **`logic.ts` nhóm 14 chỉ có bốn luật cho `[[hours]]`.** Màn này đã qua mười
   lăm đợt sửa và giờ là màn phức tạp nhất của site, nhưng bộ luật vẫn mô tả nó
@@ -140,6 +151,21 @@ bản cuối.
 39. Bảng thống kê dùng **thang khoảng cách của hệ thiết kế** (8 / 20 / 40 / 64),
     không dùng số riêng. *(qa-22)*
 
+## Một con số chết nằm trong code, đã sửa
+
+Lane tài liệu tìm ra khi rà bản này: `frontend/src/lib/hoursStats.ts` có một khối
+chú thích **mồ côi** mở đầu bằng *"An Anki-style grid: one square per day,
+twenty-six weeks of them"*, dán ngay trên khối *"Fifteen weeks"* và
+`HEAT_WEEKS = 15`. Nó không còn thuộc về khai báo nào — tôi để lại lúc chèn hằng
+số mới ở QA-22 mà không dời khối cũ.
+
+Ai mở code để tra sự thật sẽ gặp **con số chết trước con số sống**, đúng thứ mà
+bảng "luật đã chết" ở đầu file này sinh ra để chặn.
+
+Đã sửa trong PR này: khối ấy vốn mô tả hàm `heatmap` (cách cắt bốn mức đậm), nên
+nó được trả về đúng chỗ, và câu mở đầu nay nói `weeks` columns thay vì một con
+số sẽ già đi.
+
 ## Schema đã đổi
 
 `hour_logs` có thêm hai cột, migration đã viết trong QA-27:
@@ -152,13 +178,28 @@ bản cuối.
 phút nào của riêng nó.** Cột `mins` của hàng cha vẫn là giá trị cũ từ trước khi
 nó thành hàng cha, và không có gì giữ nó cho khớp — cố ý.
 
-## Việc lane tài liệu cần quyết
+## Ba câu hỏi tôi để lại — lane tài liệu đã trả lời
 
-1. Nhóm 14 `[[hours]]` hiện có bốn luật; danh sách trên có ba mươi chín. Tách
-   thành mấy nhóm, hay để chung một nhóm phình to?
-2. Luật *"sửa hoạt động chỉ hai nhánh"* nên **sửa lại** hay **bỏ hẳn**?
-3. `SPEC.html` có cần một mục riêng mô tả Ghi 02 không? Hiện nó chỉ được nhắc
-   như một module đặc biệt không có phần trình bày.
+Trả lời trong `audit-08` (PR #59), chép lại đây để người giữ bút khỏi phải mở
+hai file. Tôi không phản đối cả ba.
+
+1. **Tách nhóm 14 thành bốn nhóm, đánh số từ 16**: 14 giữ cụm ngày (luật 1–9)
+   để dẫn chiếu cũ không gãy hẳn · 16 một hoạt động (10–19, 29–31) · 17 nhiều
+   lần (20–28) · 18 thống kê (32–39).
+   **Không lấy số 15** — nhóm đó đã tồn tại ("Ảnh và ô màu"), và nó nằm giữa 07
+   và 08 theo thứ tự mảng, nên thứ tự đọc vốn đã không trùng thứ tự số.
+   Tôi kiểm lại: đúng, `logic.ts` có `n: '15'` ở giữa `n: '07'` và `n: '08'`.
+
+2. **Bỏ hẳn luật "hai nhánh", không sửa.** Bất biến thật đã nằm ở 08.01 (bấm
+   thẳng vào giá trị cần sửa) và 08.03 (lưu ngay từng thay đổi) — hai luật đó
+   phủ mọi nhánh, kể cả nhánh thêm sau này.
+
+3. **`SPEC.html` có mục riêng cho Ghi 02, nhưng không chép 39 luật sang.** Bốn ý
+   là đủ, và đều là thứ thiếu nó thì đọc sai dữ liệu:
+   (a) một hoạt động có nhiều "lần", nối bằng `parent_id` ·
+   (b) `mins` của hàng cha **không dùng được** — cộng `sum(mins)` là đếm hai lần ·
+   (c) `khác` là chuỗi trong `hour_logs`, không có dòng trong `activity_kinds` ·
+   (d) ngày mở sổ 20/08/2026 là hằng số, mọi tỉ lệ "x/y ngày" tính từ đó.
 
 ## Còn nợ, không thuộc lane tài liệu
 
