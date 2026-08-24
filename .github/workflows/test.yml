@@ -32,3 +32,8 @@ jobs:
       # `npm test` is typecheck across all three projects, then the whole vitest
       # suite — frontend, shared renderer and backend alike.
       - run: npm test
+
+      # SPEC quotes figures that go stale the moment a file is added. The docs
+      # lane reported the same two wrong numbers three times before this ran
+      # here; now the count fails the build instead of a person.
+      - run: node tools/spec-numbers.mjs --check

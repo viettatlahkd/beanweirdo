@@ -119,4 +119,8 @@ Các file đáng soi khi rà Content management:
   giao ở đó sau mỗi PR merge. Mục đáng chú ý nhất là những dòng gắn nhãn
   `[ĐỔI HÀNH VI]`: đó là chỗ tài liệu phải đổi theo, khác với `[SỬA LỖI]` thì
   không.
+- **Agent hot-fix (QA)** — có nợ tài liệu thì thêm dòng vào mục A hoặc D ở đây,
+  không chỉ nộp vào `docs/inbox/qa/`. Sổ này tự nhận là nơi duy nhất để tra nợ,
+  nên bất cứ thứ gì chỉ nằm trong hộp thư đến là thứ sổ không thấy — lane tài
+  liệu đã báo chỗ này ba lượt liền (05, 06, 08).
 - **Chủ site** — mục C là việc cần bạn quyết.
