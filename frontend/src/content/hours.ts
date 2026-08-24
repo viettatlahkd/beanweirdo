@@ -140,19 +140,23 @@ export const KICKOFF = '2026-08-20'
 
 
 /**
- * How much history the statistics ask the server for: twenty-six weeks.
+ * How much history the screen asks the server for: half a year.
  *
- * The day list still draws the recent span; this is the window the heatmap,
- * the month-to-date figures and the "last touched" column need behind it. A
- * personal journal at a few entries a day is a few hundred rows over this
- * span — small enough to fetch in one go, and fetching less would leave the
- * heatmap looking like an empty grid.
+ * Deliberately more than anything draws. The heatmap shows fifteen weeks, but
+ * the figures around it read backwards past that — this month against last
+ * month, and "lâu chưa đụng tới", which has to find a project's most recent
+ * activity however long ago that was. Fetching only what is drawn would leave
+ * those answering from data they cannot see.
  *
- * Twenty-six rather than twelve because the grid is one column per week: at
- * twelve columns a square that fills the panel's width is 58px across and the
- * grid stands 400px tall, which is a wall rather than a glance. At twenty-six
- * the square is 27px and the grid 188px — and a year, the Anki default, would
- * be mostly empty for a journal this young.
+ * Half a year of a personal journal is a few hundred rows: small enough to ask
+ * for in one go, so there is no paging to get wrong.
+ *
+ * This number and the heatmap's width are not the same decision and must not
+ * be made to agree — see HEAT_WEEKS for how wide the grid is drawn. An earlier
+ * version of this comment argued for the span in pixels and columns of that
+ * grid; when the grid changed, the argument outlived what it was defending,
+ * and anyone tidying it up would have moved a fetch window for a reason that
+ * had stopped applying to it.
  */
 export const STATS_DAYS = 182
 
