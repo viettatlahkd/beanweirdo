@@ -9,6 +9,11 @@ export type PostKind = 'note' | 'essay' | 'ref' | 'log'
 export type PostTemplate = 'article' | 'cards' | 'report' | 'longform' | 'memo'
 export type PostStatus = 'draft' | 'published' | 'archived' | 'deleted'
 
+/**
+ * @deprecated The four words `kind` used to be fenced to. Migration 0020 moved
+ * that vocabulary into the `tags` table, where the owner writes their own.
+ * Kept only so the seeded four still typecheck where they appear.
+ */
 export const POST_KINDS: PostKind[] = ['note', 'essay', 'ref', 'log']
 /**
  * Every template a post may be stored as.

@@ -80,6 +80,22 @@ describe('GET /api/posts', () => {
 })
 
 describe('POST /api/posts', () => {
+  /* A description is a nicety; requiring it meant writing about a post twice. */
+  it('creates a post with no description', async () => {
+    const insert = queryBuilder({ data: { id: 'new-id' }, error: null })
+    fromMock.mockReturnValueOnce(insert)
+    const res = mockRes()
+    await handler(
+      mockReq({
+        method: 'POST',
+        headers: authHeaders(token),
+        body: { module_id: 'sensory', kind: 'note', en: 'Chỉ có tiêu đề', vi: '' },
+      }),
+      res,
+    )
+    expect(res.statusCode).toBe(201)
+  })
+
   it('validates required fields', async () => {
     const req = mockReq({ method: 'POST', headers: authHeaders(token), body: {} })
     const res = mockRes()
@@ -87,14 +103,33 @@ describe('POST /api/posts', () => {
     expect(res.statusCode).toBe(400)
   })
 
-  it('rejects an invalid kind', async () => {
-    const req = mockReq({
-      method: 'POST',
-      headers: authHeaders(token),
-      body: { module_id: 'sensory', kind: 'bogus', en: 'E', vi: 'V' },
-    })
+  /*
+   * `kind` was fenced to four words a programmer chose. Migration 0020 moved
+   * that vocabulary into the `tags` table, so any tag the owner has written is
+   * valid — what is left to reject is nothing at all.
+   */
+  it('accepts a tag it has never seen, and rejects an empty one', async () => {
+    const insert = queryBuilder({ data: { id: 'new-id' }, error: null })
+    fromMock.mockReturnValueOnce(insert)
+    await handler(
+      mockReq({
+        method: 'POST',
+        headers: authHeaders(token),
+        body: { module_id: 'sensory', kind: 'thi-nghiem', en: 'Title', vi: 'Mô tả' },
+      }),
+      mockRes(),
+    )
+    expect((insert.insert.mock.calls[0][0] as { kind: string }).kind).toBe('thi-nghiem')
+
     const res = mockRes()
-    await handler(req, res)
+    await handler(
+      mockReq({
+        method: 'POST',
+        headers: authHeaders(token),
+        body: { module_id: 'sensory', kind: '', en: 'Title', vi: 'Mô tả' },
+      }),
+      res,
+    )
     expect(res.statusCode).toBe(400)
   })
 

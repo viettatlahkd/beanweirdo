@@ -163,7 +163,8 @@ export async function listPosts(status: PostStatus | 'all' = 'all'): Promise<Pos
 /** POST /api/posts — create a draft. Server derives n and date_label; status defaults to 'draft'. */
 export async function createPost(input: {
   module_id: string
-  kind: PostKind
+  /** The tag, free text since migration 0020 — see backend/api/tags.ts. */
+  kind: string
   en: string
   vi: string
   /** The stored template to start from; its body is copied into the new post. */
@@ -172,6 +173,19 @@ export async function createPost(input: {
   fromPostId?: string
 }): Promise<{ id: string }> {
   return request<{ id: string }>('/api/posts', { method: 'POST', body: JSON.stringify(input) })
+}
+
+export type Tag = { id: string; label: string }
+
+/** GET /api/tags — every tag the owner has written, oldest first. */
+export async function listTags(): Promise<Tag[]> {
+  const result = await request<{ tags: Tag[] }>('/api/tags')
+  return result.tags
+}
+
+/** POST /api/tags — add one, or get back the one that already says this. */
+export async function createTag(label: string): Promise<Tag> {
+  return request<Tag>('/api/tags', { method: 'POST', body: JSON.stringify({ label }) })
 }
 
 /** GET /api/posts/:id — full post detail. */

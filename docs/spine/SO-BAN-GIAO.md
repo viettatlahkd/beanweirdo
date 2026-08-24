@@ -59,7 +59,7 @@ từ code đã merge, chưa luật nào được ghi vào.
 | D1 | ~~Hai hàm `toCardsData` khác nhau~~ — gộp còn một ở `lib/postToRenderer.ts` (#19), bỏ nốt bộ nối (#21). Có test bắt buộc hai đường cho kết quả giống hệt. | XONG |
 | D2 | Ghi 01 / Ghi 02 định nghĩa hai lần: bảng `modules` và `content/navItems.ts` chép tay tên + màu. Nay nav khai `moduleId`: **sơ đồ trang** và **sidebar** đều lấy tên · màu · danh sách bài từ CSDL. Không còn chỗ nào chép tay hai module này. | XONG |
 | D3 | 15/19 bài có `body` rỗng — vỏ bài không nội dung. | CHỜ |
-| D4 | Trình soạn thảo mới phủ `cards` và `report`; `longform` và `memo` chưa sửa được trong Editor. | CHỜ |
+| D4 | ~~Trình soạn chỉ phủ `cards` và `report`~~ — `longform` và `memo` rơi vào nhánh cuối và bị soạn **như Article**: nhãn Template trống, dàn trang sai, và sửa một bài longform là ghi cấu trúc article đè lên nội dung đã dựng. Nay `memo` sửa được tại chỗ (tiêu đề · phụ đề · tiêu đề đoạn), `longform` hiện đúng renderer của nó và chỉ đọc — tiêu đề nó nằm trong chính khối nội dung nên không có ô nào để nối. Có test phủ cả 5 template. | XONG |
 | D5 | ~~Module chưa có cách ẩn ngoài xoá~~ — đã có cột `visibility` (migration 0015). | XONG |
 | D6 | ~~Hai tài liệu đối soát design có lỗi và không tái lập được~~ — đã thay bằng `docs/spine/DOI-SOAT-DESIGN.md` + `tools/design-audit.mjs`, chạy lại được. Lộ thêm: file design tôi dùng là bản **cũ hơn** bản trong repo (14 vs 16 màn hình). | XONG |
 | D7 | Agent QA báo `main` đỏ 9 lỗi typecheck; tôi đo 6 commit gần nhất đều xanh. Chưa rõ nó chạy lệnh gì ở thư mục nào. | CHỜ |

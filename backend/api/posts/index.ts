@@ -3,7 +3,6 @@ import { withCors } from '../../lib/cors.js'
 import { requireAuth } from '../../lib/auth.js'
 import { getSupabase } from '../../lib/supabase.js'
 import {
-  POST_KINDS,
   POST_STATUSES,
   POST_SUMMARY_COLUMNS,
   POST_TEMPLATES,
@@ -84,18 +83,31 @@ async function handleCreate(req: VercelRequest, res: VercelResponse): Promise<vo
     res.status(400).json({ error: 'module_id is required' })
     return
   }
-  if (!(POST_KINDS as string[]).includes(kind as string)) {
-    res.status(400).json({ error: `kind must be one of: ${POST_KINDS.join(', ')}` })
+  /*
+   * `kind` holds a tag now. It was four words fenced by a database constraint —
+   * note, essay, ref, log — with no way to add a fifth, and migration 0020 took
+   * the fence down. What is left to check is that there is something there.
+   */
+  if (typeof kind !== 'string' || kind.length === 0) {
+    res.status(400).json({ error: 'kind is required' })
     return
   }
+
   if (typeof en !== 'string' || en.length === 0) {
     res.status(400).json({ error: 'en is required' })
     return
   }
-  if (typeof vi !== 'string' || vi.length === 0) {
-    res.status(400).json({ error: 'vi is required' })
+  /*
+   * A description is optional. `en` and `vi` were named for two languages and
+   * both were required, which meant a post could not exist until it had been
+   * written about twice — in particular languages. `en` is the title and it has
+   * to say something; `vi` is a line under it and often does not.
+   */
+  if (typeof vi !== 'string') {
+    res.status(400).json({ error: 'vi must be a string' })
     return
   }
+
   if (!(POST_TEMPLATES as string[]).includes(template as string)) {
     res.status(400).json({ error: `template must be one of: ${POST_TEMPLATES.join(', ')}` })
     return

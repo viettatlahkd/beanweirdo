@@ -166,7 +166,7 @@ export function PostsPanel({
   onChanged?: () => void
 }) {
   const nav = useNav()
-  const { notes, add: addNote, patch: patchNote, remove: removeNote } = useNotes()
+  const { notes, patch: patchNote, remove: removeNote } = useNotes()
   const [openNote, setOpenNote] = useState<string | null>(null)
   const [filter, setFilter] = useState<PostStatus | 'all'>('all')
   const [posts, setPosts] = useState<PostSummary[]>([])
@@ -310,22 +310,13 @@ export function PostsPanel({
               </span>
             </div>
           ))}
-          <button
-            onClick={() => void addNote().then((saved) => saved && setOpenNote(saved.id))}
-            style={{
-              fontSize: 11.5,
-              letterSpacing: '.08em',
-              textTransform: 'uppercase',
-              border: `1px solid ${ink.base}`,
-              cursor: 'pointer',
-              background: 'transparent',
-              color: ink.base,
-              padding: '9px 16px',
-              borderRadius: 4,
-            }}
-          >
-            + Ghi chú
-          </button>
+          {/*
+            "+ Ghi chú" wrote a row into `notes`, a second table Ghi 01 reads
+            alongside its posts. It was a second way to start writing that
+            skipped the tag, the template and the title — and a note filed under
+            Ghi 01 is a post filed under Ghi 01, which the form below already
+            does. The table stays; nothing new is written into it.
+          */}
           <button
             onClick={() => nav.newPost()}
             style={{
