@@ -1,0 +1,35 @@
+import { describe, expect, it } from 'vitest'
+import { PLATE_HEIGHT, PLATE_WIDTH } from './ModuleScreen'
+
+/*
+ * The CMS preview draws `ModulePlates`, the same component the page draws, at
+ * these measurements. A hand-redrawn preview was wrong within a day: it showed
+ * the specimen cells at 1.06:1 and 5.30:1 where the page draws 0.73:1 and
+ * 1.66:1, and a 6:1 hero where the page draws 5:1.
+ *
+ * These numbers are what makes the two agree, so they are worth a test — the
+ * shapes they imply are checked, not just the numbers themselves.
+ */
+describe('module plate measurements', () => {
+  it('keeps the band hero at the 5:1 the design calls a hero', () => {
+    expect(PLATE_WIDTH.band / PLATE_HEIGHT.band).toBeCloseTo(5.05, 1)
+  })
+
+  it('keeps the specimen grid square enough for its 0.73 and 1.66 cells', () => {
+    // Two rows, 1.7fr over 0.75fr, in a grid of two equal columns.
+    const col = PLATE_WIDTH.specimen / 2
+    const top = (PLATE_HEIGHT.specimen * 1.7) / 2.45
+    const bottom = (PLATE_HEIGHT.specimen * 0.75) / 2.45
+    expect(col / top).toBeCloseTo(0.73, 1)
+    expect(col / bottom).toBeCloseTo(1.66, 1)
+  })
+
+  it('keeps the roast strip on 3:4 cells', () => {
+    const cell = PLATE_WIDTH.sequence / 4
+    expect(cell / (cell * (4 / 3))).toBeCloseTo(0.75, 2)
+  })
+
+  it('gives the sequence strip no fixed height — its cells decide it', () => {
+    expect(PLATE_HEIGHT.sequence).toBeUndefined()
+  })
+})

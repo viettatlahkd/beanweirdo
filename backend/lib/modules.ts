@@ -32,6 +32,19 @@ export interface ModuleRow {
    * frontend's `content/notes.ts`. Empty for every other module.
    */
   feature_cells: unknown
+  /**
+   * Ảnh trên chính trang module — khác với `img1..3`, vốn là ảnh giới thiệu
+   * module ở Trang chủ. Số ô dùng tới tuỳ dàn trang: band 1, specimen 3,
+   * sequence 4. Rỗng thì trang module lấy theo ảnh Trang chủ.
+   */
+  page_img1: string | null
+  page_img2: string | null
+  page_img3: string | null
+  page_img4: string | null
+  page_shot1: string
+  page_shot2: string
+  page_shot3: string
+  page_shot4: string
   sort_order: number
   /** 'normal' = reading module; 'special' = a journal you can file under. */
   kind: 'normal' | 'special'
@@ -57,6 +70,19 @@ export interface Module {
   img2: string | null
   img3: string | null
   feature_cells: unknown
+  /**
+   * Ảnh trên chính trang module — khác với `img1..3`, vốn là ảnh giới thiệu
+   * module ở Trang chủ. Số ô dùng tới tuỳ dàn trang: band 1, specimen 3,
+   * sequence 4. Rỗng thì trang module lấy theo ảnh Trang chủ.
+   */
+  page_img1: string | null
+  page_img2: string | null
+  page_img3: string | null
+  page_img4: string | null
+  page_shot1: string
+  page_shot2: string
+  page_shot3: string
+  page_shot4: string
   sort_order: number
   kind: 'normal' | 'special'
 }
@@ -79,6 +105,15 @@ export function toModule(row: ModuleRow): Module {
     shot2: row.shot2,
     shot3: row.shot3,
     feature_cells: row.feature_cells,
+    page_img1: row.page_img1,
+    page_img2: row.page_img2,
+    page_img3: row.page_img3,
+    page_img4: row.page_img4,
+    page_shot1: row.page_shot1,
+    page_shot2: row.page_shot2,
+    page_shot3: row.page_shot3,
+    page_shot4: row.page_shot4,
+
     img1: row.img1,
     img2: row.img2,
     img3: row.img3,
@@ -107,6 +142,15 @@ export const MODULE_PATCHABLE: Array<{ jsonKey: string; column: keyof ModuleRow 
   { jsonKey: 'img2', column: 'img2' },
   { jsonKey: 'img3', column: 'img3' },
   { jsonKey: 'feature_cells', column: 'feature_cells' },
+  { jsonKey: 'page_img1', column: 'page_img1' },
+  { jsonKey: 'page_img2', column: 'page_img2' },
+  { jsonKey: 'page_img3', column: 'page_img3' },
+  { jsonKey: 'page_img4', column: 'page_img4' },
+  { jsonKey: 'page_shot1', column: 'page_shot1' },
+  { jsonKey: 'page_shot2', column: 'page_shot2' },
+  { jsonKey: 'page_shot3', column: 'page_shot3' },
+  { jsonKey: 'page_shot4', column: 'page_shot4' },
+
 ]
 
 /**
@@ -114,7 +158,10 @@ export const MODULE_PATCHABLE: Array<{ jsonKey: string; column: keyof ModuleRow 
  * sees it until it has a post, so the placeholder copy only has to be legible
  * in the editor.
  */
-export function newModuleRow(id: string, sort_order: number): Omit<ModuleRow, 'img1' | 'img2' | 'img3'> {
+export function newModuleRow(
+  id: string,
+  sort_order: number,
+): Omit<ModuleRow, 'img1' | 'img2' | 'img3' | 'page_img1' | 'page_img2' | 'page_img3' | 'page_img4'> {
   return {
     id,
     title: 'module mới',
@@ -129,6 +176,11 @@ export function newModuleRow(id: string, sort_order: number): Omit<ModuleRow, 'i
     treatment: '',
     layout_note: '',
     feature_cells: [],
+    page_shot1: '',
+    page_shot2: '',
+    page_shot3: '',
+    page_shot4: '',
+
     shot1: 'ảnh chính',
     shot2: 'ảnh phụ',
     shot3: 'ảnh phụ',

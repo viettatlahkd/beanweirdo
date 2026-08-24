@@ -6,7 +6,7 @@ import { useModules } from '../data/useModules'
 import type { PostRow } from '../data/usePublishedPosts'
 import { usePublishedPosts } from '../data/usePublishedPosts'
 import { ink, paper, sans, serif } from '../design/tokens'
-import { coverStyle } from '../lib/imageFocus'
+import { pageCaption, pageFill, pageImage } from '../lib/modulePageImages'
 import { Hover } from '../lib/Hover'
 import { useNav, useSettings } from '../lib/nav'
 import { openPost } from '../lib/openPost'
@@ -75,20 +75,7 @@ function Band({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
       </div>
 
       {showPlates && (
-        <div
-          style={{
-            height: 208,
-            ...(m.img1 ? coverStyle(m.img1) : { background: m.tint }),
-            display: 'flex',
-            alignItems: 'flex-end',
-            justifyContent: 'space-between',
-            padding: '16px 18px',
-            width: 1050,
-          }}
-        >
-          <div style={{ fontFamily: sans, fontSize: 10, color: ink.strong }}>{m.shot1}</div>
-          <div style={{ fontFamily: sans, fontSize: 10, color: '#A4908C' }}>16:5 / hero</div>
-        </div>
+        <ModulePlates m={m} />
       )}
 
       <div style={{ padding: '36px 56px 120px', maxWidth: 1240 }}>
@@ -196,53 +183,7 @@ function Specimen({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
         </div>
 
         {showPlates && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
-            <div
-              style={{
-                ...(m.img1 ? coverStyle(m.img1) : { background: m.tint }),
-                display: 'flex',
-                alignItems: 'flex-end',
-                padding: 12,
-                minHeight: 180,
-              }}
-            >
-              <div
-                style={{ fontFamily: sans, fontSize: 9.5, color: ink.strong, lineHeight: 1.25 }}
-              >
-                {m.shot1}
-              </div>
-            </div>
-            <div
-              style={{
-                ...(m.img2 ? coverStyle(m.img2) : { background: '#2B4B33' }),
-                display: 'flex',
-                alignItems: 'flex-end',
-                padding: 12,
-              }}
-            >
-              <div
-                style={{ fontFamily: sans, fontSize: 9.5, color: '#C6D6C6', lineHeight: 1.25 }}
-              >
-                {m.shot2}
-              </div>
-            </div>
-            <div
-              style={{
-                ...(m.img3 ? coverStyle(m.img3) : { background: '#F3F7EC' }),
-                display: 'flex',
-                alignItems: 'flex-end',
-                padding: 12,
-              }}
-            >
-              <div
-                style={{ fontFamily: sans, fontSize: 9.5, color: ink.strong, lineHeight: 1.25 }}
-              >
-                {m.shot3}
-              </div>
-            </div>
-            {/* fourth cell is a solid tint, not a photo slot */}
-            <div style={{ background: '#BBD9A8' }} />
-          </div>
+          <ModulePlates m={m} />
         )}
       </div>
 
@@ -334,6 +275,165 @@ function Specimen({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
 }
 
 /** The four roast stages, as colour rather than photography. */
+/**
+ * The plates on a module's own page.
+ *
+ * Exported because the CMS preview draws this exact component: the three
+ * layouts put their photos in shapes that have nothing in common — a 5:1 hero,
+ * a pair of 0.74:1 cells over a pair of 1.66:1 ones, a strip of 3:4 — and a
+ * preview that redrew them by hand was wrong within a day of being written.
+ *
+ * The widths are the page's own, which is why they are named here rather than
+ * measured: the CMS renders this at `PLATE_WIDTH[layout]` and scales it down,
+ * so both surfaces read one number.
+ */
+export const PLATE_WIDTH: Record<string, number> = {
+  band: 1050,
+  specimen: 380,
+  sequence: 836,
+}
+
+/**
+ * Heights the layouts fix for themselves.
+ *
+ * A band hero is 208 and a roast strip follows from its 3:4 cells, but the
+ * specimen grid used to take its height from the intro text in the column
+ * beside it — so editing the description reshaped the photos, and no preview
+ * could tell you what shape they would end up. Pinned to what the page draws
+ * today, which changes nothing on screen and makes the crop something you can
+ * see before you commit to it.
+ */
+export const PLATE_HEIGHT: Record<string, number> = {
+  band: 208,
+  specimen: 373,
+}
+
+export function ModulePlates({ m }: { m: ModuleRow }) {
+  if (m.layout === 'sequence') {
+    return (
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,minmax(0,1fr))' }}>
+        {roastStrip.map((s, i) => {
+          const slot = (i + 1) as 1 | 2 | 3 | 4
+          const photo = pageImage(m, slot)
+          return (
+            <div
+              key={s.label}
+              style={{
+                aspectRatio: '3/4',
+                ...pageFill(m, slot, s.bg),
+                display: 'flex',
+                alignItems: 'flex-end',
+                padding: 12,
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: sans,
+                  fontSize: 9.5,
+                  color: photo ? paper.cream : s.fg,
+                  background: photo ? 'rgba(24,22,17,.55)' : undefined,
+                  padding: photo ? '3px 7px' : undefined,
+                }}
+              >
+                {pageCaption(m, slot) || s.label}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
+
+  if (m.layout === 'specimen') {
+    return (
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gridTemplateRows: '1.7fr 0.75fr',
+          height: PLATE_HEIGHT.specimen,
+        }}
+      >
+        <PlateCell m={m} slot={1} tint={m.tint} minHeight={180} />
+        <PlateCell m={m} slot={2} tint="#2B4B33" fg="#C6D6C6" />
+        <PlateCell m={m} slot={3} tint="#F3F7EC" />
+        {/* fourth cell is a solid tint, not a photo slot */}
+        <div style={{ background: '#BBD9A8' }} />
+      </div>
+    )
+  }
+
+  return (
+    <div
+      style={{
+        // The hero is a fixed 1050 on the page, not a share of the window.
+        width: PLATE_WIDTH.band,
+        height: 208,
+        ...pageFill(m, 1, m.tint),
+        display: 'flex',
+        alignItems: 'flex-end',
+        justifyContent: 'space-between',
+        padding: '16px 18px',
+      }}
+    >
+      <div
+        style={{
+          fontFamily: sans,
+          fontSize: 10,
+          color: pageImage(m, 1) ? paper.cream : ink.strong,
+          background: pageImage(m, 1) ? 'rgba(24,22,17,.55)' : undefined,
+          padding: pageImage(m, 1) ? '3px 7px' : undefined,
+        }}
+      >
+        {pageCaption(m, 1)}
+      </div>
+      <div style={{ fontFamily: sans, fontSize: 10, color: pageImage(m, 1) ? paper.cream : '#A4908C' }}>
+        16:5 / hero
+      </div>
+    </div>
+  )
+}
+
+function PlateCell({
+  m,
+  slot,
+  tint,
+  fg,
+  minHeight,
+}: {
+  m: ModuleRow
+  slot: 1 | 2 | 3 | 4
+  tint: string
+  fg?: string
+  minHeight?: number
+}) {
+  const photo = pageImage(m, slot)
+  return (
+    <div
+      style={{
+        ...pageFill(m, slot, tint),
+        display: 'flex',
+        alignItems: 'flex-end',
+        padding: 12,
+        minHeight,
+      }}
+    >
+      <div
+        style={{
+          fontFamily: sans,
+          fontSize: 9.5,
+          lineHeight: 1.25,
+          color: photo ? paper.cream : (fg ?? ink.strong),
+          background: photo ? 'rgba(24,22,17,.55)' : undefined,
+          padding: photo ? '3px 7px' : undefined,
+        }}
+      >
+        {pageCaption(m, slot)}
+      </div>
+    </div>
+  )
+}
+
 const roastStrip = [
   { bg: '#F5F2DC', fg: ink.strong, label: '01 — nhân xanh' },
   { bg: '#F6E2B0', fg: ink.strong, label: '02 — vàng' },
@@ -377,22 +477,7 @@ function Sequence({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
       </div>
 
       {showPlates && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,minmax(0,1fr))' }}>
-          {roastStrip.map((s) => (
-            <div
-              key={s.label}
-              style={{
-                aspectRatio: '3/4',
-                background: s.bg,
-                display: 'flex',
-                alignItems: 'flex-end',
-                padding: 12,
-              }}
-            >
-              <div style={{ fontFamily: sans, fontSize: 9.5, color: s.fg }}>{s.label}</div>
-            </div>
-          ))}
-        </div>
+        <ModulePlates m={m} />
       )}
 
       <div style={{ padding: '34px 56px 120px', maxWidth: 1240 }}>
