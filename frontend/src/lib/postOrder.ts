@@ -59,6 +59,17 @@ export function comparePosts(a: Orderable, b: Orderable): number {
   return newestFirst(a, b)
 }
 
+/**
+ * Just the posts a reader can see.
+ *
+ * An order is a fact about a page. A post that is archived, deleted or still a
+ * draft is not on that page, so it has no place in the numbering and nothing to
+ * be dragged above or below.
+ */
+export function onlyLive<T extends { status?: string }>(posts: readonly T[]): T[] {
+  return posts.filter((p) => p.status === 'published')
+}
+
 /** The same list, in the order the site shows it. */
 export function orderPosts<T extends Orderable>(posts: readonly T[]): T[] {
   return [...posts].sort(comparePosts)

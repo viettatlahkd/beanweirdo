@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type CSSProperties, type Rea
 import { Breadcrumbs } from '../components/Breadcrumbs'
 import { NAV } from '../content/navItems'
 import { displayNumber } from '../lib/postText'
-import { orderPosts } from '../lib/postOrder'
+import { onlyLive, orderPosts } from '../lib/postOrder'
 import { SITE_DEFAULTS, type NavGroup, type SiteCopy, type SiteOverrides } from '../content/site'
 import {
   createModule,
@@ -101,9 +101,11 @@ const nameRowPlain = 'minmax(0,1fr) 112px'
  * empty module still appears on the site, so saying otherwise was wrong:
  * group 05 has it that a created public module always shows.
  */
-function countLabel(id: string, posts: number): string {
+function countLabel(id: string, live: number, held: number): string {
   if (id === 'ghi02') return 'checkbox hàng ngày'
-  return posts ? `${posts} bài` : 'chưa có bài'
+  // Counting everything said "6 bài" for a module with nothing on the site.
+  const shown = live ? `${live} bài` : 'chưa có bài nào trên trang'
+  return held ? `${shown} · ${held} chưa đăng` : shown
 }
 
 /** The three tabs, named once so the site map and the tab bar cannot drift. */
@@ -112,6 +114,13 @@ const TABS = [
   { k: 'map', t: 'Sơ đồ trang' },
   { k: 'content', t: 'Sửa nội dung' },
 ] as const
+
+/** What to call a post that is not on the site. */
+const STATUS_LABEL: Record<string, string> = {
+  draft: 'nháp',
+  archived: 'lưu trữ',
+  deleted: 'thùng rác',
+}
 
 /** One page on the site map, and what it holds. */
 type MapRow = { label: string; desc: string; kids: string[] }
@@ -380,6 +389,18 @@ export function Cms() {
   const postsOf = (module_id: string) =>
     orderPosts(posts.filter((p) => p.module_id === module_id))
 
+  /**
+   * The posts a reader can actually see in this module.
+   *
+   * The editor listed every post a module had ever had — drafts, archived,
+   * deleted — and numbered them 01…06 as if that were their running order on
+   * the site. It was not: sensory had one post published and five archived, and
+   * roasting had none at all while the editor said "6 bài". So the numbers named
+   * places no reader would ever count to, and the drag handle rearranged
+   * archived posts in among live ones.
+   */
+  const liveOf = (module_id: string) => onlyLive(postsOf(module_id))
+
   async function patchPost(id: string, patch: { en?: string; vi?: string; date_label?: string }) {
     setPosts((ps) => ps.map((p) => (p.id === id ? { ...p, ...patch } : p)))
     try {
@@ -393,7 +414,10 @@ export function Cms() {
     const src = dragEntry
     setDragEntry(null)
     if (!src || src === targetId) return
-    const order = postsOf(module_id).map((p) => p.id)
+    // Only the posts on the page can be arranged, and only they are given a
+    // `sort_order` — the column means "the owner put this here", so writing it
+    // on an archived post would claim a placement nobody made.
+    const order = liveOf(module_id).map((p) => p.id)
     const i = order.indexOf(src)
     const j = order.indexOf(targetId)
     if (i < 0 || j < 0) return
@@ -463,7 +487,7 @@ export function Cms() {
           rows.push({
             label: m.title,
             desc: m.concept ? `module · ${m.concept}` : 'module',
-            kids: postsOf(m.id).map((p, i) => `${displayNumber(i)} · ${p.en}`),
+            kids: liveOf(m.id).map((p, i) => `${displayNumber(i)} · ${p.en}`),
           })
         }
       }
@@ -474,8 +498,9 @@ export function Cms() {
         // fallback for a module that has not loaded or does not exist yet.
         label: m?.title ?? item.label,
         desc: m?.concept ? `module · ${m.concept}` : item.desc,
+        // A site map shows the site: a post nobody can read is not on it.
         kids: m
-          ? postsOf(m.id).map((p, i) => `${displayNumber(i)} · ${p.en}`)
+          ? liveOf(m.id).map((p, i) => `${displayNumber(i)} · ${p.en}`)
           : childrenOf(item.key),
       })
     }
@@ -578,7 +603,7 @@ export function Cms() {
 
       {tab === 'posts' && (
         <div style={{ padding: '34px 56px 130px', maxWidth: 1080 }}>
-          <PostsPanel />
+          <PostsPanel onChanged={() => void load()} />
         </div>
       )}
 
@@ -813,7 +838,11 @@ export function Cms() {
           </div>
 
           {modules.map((m, mi) => {
-            const entries = postsOf(m.id)
+            // What a reader actually sees, and what is being held back. The
+            // numbers and the drag handle belong to the first list only: order
+            // is a fact about the page, and an archived post is not on it.
+            const entries = liveOf(m.id)
+            const held = postsOf(m.id).filter((p) => p.status !== 'published')
             const open = openModule === m.id
             // Which fields this module actually uses — see admin/moduleForm.ts.
             const shape = formShapeOf(m)
@@ -887,7 +916,7 @@ export function Cms() {
                     {m.title}
                   </div>
                   <div style={{ fontFamily: sans, fontWeight: 300, fontSize: 12, color: ink.muted, flex: 'none' }}>
-                    {countLabel(m.id, entries.length)}
+                    {countLabel(m.id, entries.length, held.length)}
                   </div>
                   <Hover
                     onClick={async () => {
@@ -1187,6 +1216,66 @@ export function Cms() {
                         </Hover>
                       </div>
                     ))}
+
+                    {held.length > 0 && (
+                      <>
+                        <div
+                          style={{
+                            fontFamily: sans,
+                            fontSize: 10,
+                            letterSpacing: '.16em',
+                            textTransform: 'uppercase',
+                            color: ink.faint,
+                            marginTop: 18,
+                            paddingTop: 12,
+                            borderTop: '1px solid #EFEADA',
+                          }}
+                        >
+                          Chưa trên trang
+                        </div>
+                        {/*
+                          Listed, but not numbered and not draggable: a number
+                          here would name a place on a page these posts are not
+                          on, which is what the list used to do.
+                        */}
+                        {held.map((e) => (
+                          <div
+                            key={e.id}
+                            style={{
+                              display: 'grid',
+                              gridTemplateColumns: '44px minmax(0,0.72fr) minmax(0,1.6fr) 74px 48px',
+                              gap: 10,
+                              alignItems: 'center',
+                              padding: '6px 0',
+                              borderBottom: '1px solid #EFEADA',
+                              opacity: 0.55,
+                            }}
+                          >
+                            <div
+                              style={{
+                                fontFamily: sans,
+                                fontSize: 10,
+                                letterSpacing: '.1em',
+                                textTransform: 'uppercase',
+                                color: ink.faint,
+                              }}
+                            >
+                              {STATUS_LABEL[e.status]}
+                            </div>
+                            <div style={{ fontFamily: serif, fontSize: 15, color: ink.base, minWidth: 0 }}>
+                              {e.en}
+                            </div>
+                            <div style={{ fontFamily: sans, fontSize: 12.5, color: ink.soft, minWidth: 0 }}>
+                              {e.vi}
+                            </div>
+                            <div style={{ fontFamily: sans, fontSize: 11.5, color: ink.faint }}>
+                              {e.date_label}
+                            </div>
+                            <div />
+                          </div>
+                        ))}
+                      </>
+                    )}
                   </div>
                 )}
               </div>
