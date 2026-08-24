@@ -58,17 +58,25 @@ export function pageImage(m: PageImageFields, slot: PageSlot): string | null {
   return slot === 4 ? null : m[`img${slot}` as const]
 }
 
-/** The caption for one slot, falling back the same way. */
-export function pageCaption(m: PageImageFields, slot: PageSlot): string {
-  const own = m[`page_shot${slot}` as const]
-  if (own) return own
-  return slot === 4 ? '' : (m[`shot${slot}` as const] ?? '')
-}
-
 /** True when this slot is showing the homepage's photo rather than its own. */
 export function isBorrowed(m: PageImageFields, slot: PageSlot): boolean {
   return !m[`page_img${slot}` as const] && Boolean(slot !== 4 && m[`img${slot}` as const])
 }
+
+/**
+ * The caption for one slot.
+ *
+ * It borrows only when the photo does. A slot with its own picture and the
+ * homepage's words describes something that is not there — which is exactly
+ * what happened the first time roasting's strip was given a photo of its own.
+ */
+export function pageCaption(m: PageImageFields, slot: PageSlot): string {
+  const own = m[`page_shot${slot}` as const]
+  if (own) return own
+  if (!isBorrowed(m, slot) || slot === 4) return ''
+  return m[`shot${slot}` as const] ?? ''
+}
+
 
 /** Fill for a page cell: its photo, or the tint the design draws without one. */
 export function pageFill(m: PageImageFields, slot: PageSlot, tint: string): CSSProperties {
