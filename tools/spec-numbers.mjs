@@ -25,6 +25,21 @@ const migrations = readdirSync(join(root, 'backend/supabase/migrations')).filter
   f.endsWith('.sql'),
 )
 
+/*
+ * Two files sharing a number is not a naming quibble: the convention SPEC
+ * describes — write a new numbered file, never edit one that has run — assumes
+ * the number says what ran first. It has now happened twice, 0017 and 0018, and
+ * the second time it was caught only because someone counted before writing the
+ * next one. Cheaper for the build to count.
+ */
+const collisions = Object.entries(
+  migrations.reduce((acc, f) => {
+    const n = f.slice(0, 4)
+    acc[n] = [...(acc[n] ?? []), f]
+    return acc
+  }, {}),
+).filter(([, fs]) => fs.length > 1)
+
 const logic = read('frontend/src/content/logic.ts')
 /*
  * A rule is `{ s: <scope>, r: <rule>, e: <example> }`. Matching on `{ s: '`
@@ -48,6 +63,11 @@ const counted = {
 }
 
 for (const [k, v] of Object.entries(counted)) console.log(`${String(v).padStart(4)}  ${k}`)
+
+if (collisions.length) {
+  console.log('\nSố hiệu migration trùng:')
+  for (const [n, fs] of collisions) console.log(`  ${n} — ${fs.join(', ')}`)
+}
 
 if (!process.argv.includes('--check')) process.exit(0)
 
@@ -89,6 +109,18 @@ for (const [k, v] of Object.entries(counted)) {
     const re = new RegExp(`${w}\\s+${k}`, 'i')
     if (re.test(spec)) stale.push(`${k}: SPEC ghi "${w}", thật là ${v}`)
   }
+}
+
+/*
+ * The four files already sharing 0017 and 0018 have run; renaming them now
+ * would edit history the database has already acted on. They are recorded in
+ * the handover ledger and allowed here, so the check guards what comes next.
+ */
+const KNOWN = new Set(['0017', '0018'])
+const fresh = collisions.filter(([n]) => !KNOWN.has(n))
+if (fresh.length) {
+  console.log('\nSố hiệu migration mới bị trùng — đổi tên file chưa chạy trước khi đẩy.')
+  process.exit(1)
 }
 
 if (stale.length === 0) {
