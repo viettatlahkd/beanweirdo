@@ -49,6 +49,12 @@ interface CreatePostBody {
   templateId?: unknown
   /** Renderer, when starting from no template at all. */
   template?: unknown
+  /**
+   * An existing post to copy. Its body, renderer and lead come across; the new
+   * post is a draft of its own from then on, and editing either leaves the
+   * other alone.
+   */
+  fromPostId?: unknown
 }
 
 function formatDateLabel(date: Date): string {
@@ -65,11 +71,14 @@ async function handleCreate(req: VercelRequest, res: VercelResponse): Promise<vo
   const en = body.en
   const vi = body.vi
   const templateId = typeof body.templateId === 'string' ? body.templateId : null
+  const fromPostId = typeof body.fromPostId === 'string' ? body.fromPostId : null
   let template = body.template ?? 'article'
   // Starting content. A template hands its body over and the post owns it from
   // then on — editing the post never touches the template it came from, and
   // editing the template never reaches back into posts already written.
   let startingBody: unknown = null
+  /** The rest of a copied post's content, when this is a copy. */
+  let copied: Record<string, unknown> | null = null
 
   if (typeof module_id !== 'string' || module_id.length === 0) {
     res.status(400).json({ error: 'module_id is required' })
@@ -92,7 +101,39 @@ async function handleCreate(req: VercelRequest, res: VercelResponse): Promise<vo
     return
   }
 
+  if (templateId && fromPostId) {
+    res.status(400).json({ error: 'Pass either templateId or fromPostId, not both' })
+    return
+  }
+
   const supabase = getSupabase()
+
+  /*
+   * Copying a post takes its content, not its place in the world. Status,
+   * pinning, publication date and order stay behind: a copy is a draft nobody
+   * has published or positioned yet, and inheriting any of that would put a
+   * post on the site that no one decided to put there.
+   */
+  if (fromPostId) {
+    const { data: src, error: srcError } = await supabase
+      .from('posts')
+      .select('template, body, lead, hero_image_url, hero_caption, pull_quote, further_reading')
+      .eq('id', fromPostId)
+      .maybeSingle()
+
+    if (srcError) {
+      res.status(500).json({ error: srcError.message })
+      return
+    }
+    if (!src) {
+      res.status(400).json({ error: `Post '${fromPostId}' does not exist` })
+      return
+    }
+    const row = src as { template: string; body: unknown }
+    template = row.template
+    startingBody = row.body ?? null
+    copied = src as Record<string, unknown>
+  }
 
   if (templateId) {
     const { data: tpl, error: tplError } = await supabase
@@ -132,6 +173,11 @@ async function handleCreate(req: VercelRequest, res: VercelResponse): Promise<vo
       date_label: formatDateLabel(new Date()),
       sort_order: null,
       body: startingBody,
+      lead: copied?.lead ?? null,
+      hero_image_url: copied?.hero_image_url ?? null,
+      hero_caption: copied?.hero_caption ?? null,
+      pull_quote: copied?.pull_quote ?? null,
+      further_reading: copied?.further_reading ?? null,
     })
     .select('id')
     .single()

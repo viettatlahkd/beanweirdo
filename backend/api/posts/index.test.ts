@@ -238,6 +238,73 @@ describe('POST /api/posts — starting from a template', () => {
     expect(res.statusCode).toBe(201)
   })
 
+  it('copies an existing post: content comes across, status does not', async () => {
+    const insert = queryBuilder({ data: { id: 'copy' }, error: null })
+    fromMock
+      .mockReturnValueOnce(
+        queryBuilder({
+          data: {
+            template: 'memo',
+            body: [{ k: 'p', t: 'thân bài' }],
+            lead: 'dẫn',
+            hero_image_url: '/a.jpg',
+            hero_caption: 'chú thích',
+            pull_quote: 'trích',
+            further_reading: ['x'],
+          },
+          error: null,
+        }),
+      )
+      .mockReturnValueOnce(insert)
+
+    await handler(
+      mockReq({
+        method: 'POST',
+        body: { module_id: 'biochem', kind: 'note', en: 'Bản sao', vi: 'y', fromPostId: 'p1' },
+        headers: authHeaders(signToken()),
+      }),
+      mockRes(),
+    )
+
+    const row = insert.insert.mock.calls[0][0] as Record<string, unknown>
+    expect(row.template).toBe('memo')
+    expect(row.body).toEqual([{ k: 'p', t: 'thân bài' }])
+    expect(row.lead).toBe('dẫn')
+    expect(row.hero_image_url).toBe('/a.jpg')
+    // A copy is a draft nobody has published or placed.
+    expect(row.sort_order).toBeNull()
+    expect(row).not.toHaveProperty('status')
+    expect(row).not.toHaveProperty('pinned')
+    expect(row).not.toHaveProperty('published_at')
+  })
+
+  it('rejects a post id that does not exist', async () => {
+    fromMock.mockReturnValueOnce(queryBuilder({ data: null, error: null }))
+    const res = mockRes()
+    await handler(
+      mockReq({
+        method: 'POST',
+        body: { module_id: 'biochem', kind: 'note', en: 'x', vi: 'y', fromPostId: 'gone' },
+        headers: authHeaders(signToken()),
+      }),
+      res,
+    )
+    expect(res.statusCode).toBe(400)
+  })
+
+  it('refuses a template and a post at once — they disagree about the body', async () => {
+    const res = mockRes()
+    await handler(
+      mockReq({
+        method: 'POST',
+        body: { module_id: 'biochem', kind: 'note', en: 'x', vi: 'y', templateId: 't1', fromPostId: 'p1' },
+        headers: authHeaders(signToken()),
+      }),
+      res,
+    )
+    expect(res.statusCode).toBe(400)
+  })
+
   it('rejects a template id that does not exist', async () => {
     fromMock.mockReturnValueOnce(queryBuilder({ data: null, error: null }))
     const res = mockRes()

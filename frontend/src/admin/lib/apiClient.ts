@@ -156,6 +156,8 @@ export async function createPost(input: {
   vi: string
   /** The stored template to start from; its body is copied into the new post. */
   templateId?: string
+  /** An existing post to copy; its content comes across, its status does not. */
+  fromPostId?: string
 }): Promise<{ id: string }> {
   return request<{ id: string }>('/api/posts', { method: 'POST', body: JSON.stringify(input) })
 }

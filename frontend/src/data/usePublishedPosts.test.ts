@@ -27,7 +27,7 @@ describe('usePublishedPosts', () => {
     from.mockClear()
   })
 
-  it('xếp theo ba tầng: ghim trước, vị trí tự chọn, rồi ngày đăng', async () => {
+  it('xếp theo bốn tầng: ghim, vị trí tự chọn, ngày đăng, rồi ngày trên mặt bài', async () => {
     const rows = [{ id: 'p1', module_id: 'biochem', n: '01' }]
     const builder = makeQueryBuilder({ data: rows, error: null })
     from.mockReturnValue(builder)
@@ -37,12 +37,14 @@ describe('usePublishedPosts', () => {
 
     expect(from).toHaveBeenCalledWith('posts')
     expect(builder.eq).toHaveBeenCalledWith('status', 'published')
-    // Ba tầng, đúng thứ tự này. `sort_order` rỗng xuống dưới, vì rỗng nghĩa là
-    // chưa ai chọn vị trí cho bài đó.
+    // Đúng thứ tự này. `sort_order` rỗng xuống dưới, vì rỗng nghĩa là chưa ai
+    // chọn vị trí cho bài đó. Tầng cuối gỡ hoà khi một loạt bài được đăng cùng
+    // một lượt và chung dấu thời gian — phải khớp với `lib/postOrder.ts`.
     expect(builder.order.mock.calls).toEqual([
       ['pinned', { ascending: false }],
       ['sort_order', { ascending: true, nullsFirst: false }],
       ['published_at', { ascending: false }],
+      ['date_label', { ascending: false }],
     ])
     expect(result.current.data).toEqual(rows)
   })

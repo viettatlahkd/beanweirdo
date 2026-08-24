@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type CSSProperties } from 'react'
 import { PostCard } from './PostCard'
 import {
+  createPost,
   listPosts,
   updatePost,
   transitionStatus,
@@ -209,6 +210,31 @@ export function PostsPanel() {
     }
   }
 
+  /**
+   * Start a new draft from an existing post.
+   *
+   * The copy takes the content and opens in the editor, so the writer lands
+   * where the work is rather than on a list wondering which of two identical
+   * titles is the new one. Its name is marked so the two can be told apart
+   * before anyone has renamed it.
+   */
+  async function handleCopy(id: string) {
+    const src = posts.find((p) => p.id === id)
+    if (!src) return
+    try {
+      const { id: created } = await createPost({
+        module_id: src.module_id,
+        kind: src.kind,
+        en: `${src.en} (bản sao)`,
+        vi: src.vi || 'Một dòng mô tả',
+        fromPostId: id,
+      })
+      nav.editPost(created)
+    } catch (e) {
+      setError((e as Error).message)
+    }
+  }
+
   // A note is live the moment it exists, so it belongs under these two.
   const showNotes = filter === 'all' || filter === 'published'
 
@@ -314,6 +340,7 @@ export function PostsPanel() {
           post={p}
           onAction={handleAction}
           onEdit={(id) => nav.editPost(id)}
+          onCopy={handleCopy}
           onPin={handlePin}
         />
       ))}

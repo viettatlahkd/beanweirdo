@@ -57,7 +57,7 @@ từ code đã merge, chưa luật nào được ghi vào.
 | # | Việc | Trạng thái |
 |---|---|---|
 | D1 | ~~Hai hàm `toCardsData` khác nhau~~ — gộp còn một ở `lib/postToRenderer.ts` (#19), bỏ nốt bộ nối (#21). Có test bắt buộc hai đường cho kết quả giống hệt. | XONG |
-| D2 | Ghi 01 / Ghi 02 định nghĩa hai lần: bảng `modules` và `content/navItems.ts` chép tay tên + màu. | CHỜ |
+| D2 | Ghi 01 / Ghi 02 định nghĩa hai lần: bảng `modules` và `content/navItems.ts` chép tay tên + màu. Nay nav khai `moduleId`, nên **sơ đồ trang** lấy tên · mô tả · danh sách bài từ CSDL. Còn lại: **sidebar** vẫn chép tay nhãn và màu của hai module này. | ĐANG |
 | D3 | 15/19 bài có `body` rỗng — vỏ bài không nội dung. | CHỜ |
 | D4 | Trình soạn thảo mới phủ `cards` và `report`; `longform` và `memo` chưa sửa được trong Editor. | CHỜ |
 | D5 | ~~Module chưa có cách ẩn ngoài xoá~~ — đã có cột `visibility` (migration 0015). | XONG |
@@ -93,6 +93,8 @@ Các file đáng soi khi rà Content management:
 | D11 | **Ảnh Trang chủ và ảnh đầu trang module đang dùng chung một bộ `shot1/2/3`.** Đó là hai khái niệm khác nhau: ảnh giới thiệu module ở Trang chủ chưa chắc là ảnh mở đầu trang module chi tiết. Cần tách thành hai bộ, và cho phép ở Sửa nội dung Trang chủ chọn **lấy theo trang module** hay **đặt riêng**, kèm sắp thứ tự ảnh. Chủ site chốt: **để sau**, xử lý chung khi xong các dàn trang module hiện tại. | CHỜ |
 | D12 | ~~Ảnh module tải lên không trang nào vẽ ra~~ — `img1/2/3` chỉ có trong kiểu dữ liệu, Trang chủ vẫn vẽ ô màu phẳng. Đã nối ở PR hình dạng form. | XONG |
 | D13 | `Hours.tsx` (Ghi 02) **không đọc dòng nào** từ cơ sở dữ liệu — toàn bộ là chữ cứng. Vì thế ô Sửa nội dung của Ghi 02 nay chỉ còn Tên · Màu · danh sách bài, đúng phần chạy thật. Muốn sửa được cả trang thì phải nối trang vào DB — việc riêng, chủ site chốt tạm chưa làm. | CHỜ |
+| D17 | ~~Sơ đồ trang và Sửa nội dung xếp bài sai thứ tự~~ — `postsOf` chỉ sắp theo `sort_order`, mà cột này rỗng với mọi bài, nên danh sách giữ nguyên thứ tự API trả (`updated_at`). Số 01…06 gọi tên một thứ tự trang web không dùng, và tay kéo sắp lại một danh sách không khớp trang nó đang sắp. Nay dùng chung `lib/postOrder.ts`. | XONG |
+| D18 | ~~Hoà `published_at` không có mốc gỡ~~ — 19 bài seed chung một dấu thời gian tới từng giây, nên "mới nhất trước" không phân biệt được gì; ngày hiện trên mặt bài (`date_label`) thì khác nhau. Thêm tầng thứ tư cho cả CSDL lẫn CMS. | XONG |
 | D14 | ~~Tạo bài đăng hỏng hoàn toàn~~ — migration 0016 bỏ cột `posts.n` nhưng `POST /api/posts` vẫn ghi vào nó, nên mọi lối tạo bài (trình tạo bài và nút "+ bài") đều trả 500. Chính migration đó đã dặn "ship the code that stops writing this column first"; endpoint sắp xếp được sửa, endpoint tạo bài bị bỏ sót. | XONG |
 | D15 | ~~Test backend chưa từng chạy tự động~~ — repo không có CI, mỗi PR chỉ được hai lần build Vercel kiểm; và `vitest.config.ts` ở gốc loại trừ `backend/`, nên 139 test backend nằm ngoài `npm test`. Nay `npm test` gồm cả backend, và `.github/workflows/test.yml` chạy nó trên mỗi PR và mỗi lần đẩy lên `main`. | XONG |
 | D16 | Trang **Archive** không còn lối vào: `hiddenFromSidebar: true` và không gì gọi `goArchive`. Hai ô sửa nội dung của nó đã bỏ. Còn lại `Archive.tsx`, `Archive.test.tsx`, route trong `App.tsx`, mục trong `navItems.ts` và nhánh trong `crumbs.ts` — mã chết, cần chủ site quyết có xoá hẳn không. | CHỜ |
