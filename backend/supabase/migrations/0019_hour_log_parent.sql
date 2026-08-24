@@ -23,9 +23,9 @@
 -- Already applied by hand on the hosted database (SQL Editor, 2026-08-23), so
 -- this file exists for a database being built from nothing.
 
-alter table public.hour_logs
-  add column if not exists parent_id uuid references public.hour_logs(id) on delete cascade;
+alter table hour_logs
+  add column if not exists parent_id uuid references hour_logs(id) on delete cascade;
 
 -- Every draw of a day groups sittings under their heading, and every total
 -- filters on this column — both look it up by parent, never by child.
-create index if not exists hour_logs_parent_idx on public.hour_logs (parent_id);
+create index if not exists hour_logs_parent_idx on hour_logs (parent_id);
