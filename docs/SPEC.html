@@ -203,7 +203,7 @@ footer{
     <div class="fig"><span class="n">11</span><span class="l">API endpoint</span></div>
     <div class="fig"><span class="n">17</span><span class="l">màn hình</span></div>
     <div class="fig"><span class="n">5</span><span class="l">kiểu trình bày</span></div>
-    <div class="fig"><span class="n">82</span><span class="l">quy tắc hệ thống</span></div>
+    <div class="fig"><span class="n">119</span><span class="l">quy tắc hệ thống</span></div>
     <div class="fig"><span class="n">399</span><span class="l">test tự động</span></div>
   </div>
 </header>
@@ -288,11 +288,8 @@ footer{
       <li><strong>Đặc biệt</strong> — <em>Ghi 01</em> và <em>Ghi 02</em>. Vẫn là module để bài viết có chỗ xếp vào, nhưng không nằm chung lưới với các module kiến thức trên trang chủ. Chúng cố tình để trống phần trình bày.</li>
     </ul>
     <div class="note">
-      <b>Quy tắc đã chốt:</b> một module đã tạo thì luôn hiện ở sidebar và trang chủ, <em>kể cả khi chưa có bài nào</em> — số bài đơn giản là 0. Module trống là một ý định đã tuyên bố, không phải một thứ còn thiếu.
-    </div>
-
-    <h3>Bài viết — nội dung thật</h3>
-    <p>Mỗi bài là một bản ghi độc lập, thuộc về đúng một module, và mang một <em>kiểu trình bày</em>. Toàn bộ bài viết được quản lý ở tab <strong>Nội dung</strong> trong trang quản trị — bất kể bài đó thuộc module nào.</p>
+      <b>Quy tắc đã chốt:</b> một module đã tạo thì luôn hiện ở sidebar và Mục lục, <em>kể cả khi chưa có bài nào</em> — số bài đơn giản là 0. Trang chủ chỉ trưng module thường.
+    </p>
 
     <h3>Template — khuôn để lấy ra dùng lại</h3>
     <p>Template là một kho riêng, hoàn toàn tách khỏi bài viết. Nó không được đăng, không xuất hiện trên site công khai, không tính vào số bài. Nó chỉ tồn tại để khi cần viết một bài dạng tương tự thì lôi ra dùng.</p>
@@ -489,17 +486,9 @@ footer{
 
   <section id="quy-tac">
     <h2 class="serif"><span class="chip" style="background:var(--teal)"></span>Bộ quy tắc</h2>
-    <p class="deck">Tám mươi hai quy tắc, chia làm 15 nhóm trong 3 phần, đọc được ngay trên site ở trang <em>Quy ước hệ thống</em> trong khu quản trị.</p>
+    <p class="deck">Một trăm mười chín quy tắc, chia làm 18 nhóm trong 3 phần, đọc được ngay trên site ở trang <em>Quy ước hệ thống</em> trong khu quản trị.</p>
 
     <p>Đây không phải tài liệu tham khảo cho vui — nó là ràng buộc. Khi viết code mà phát sinh một luật cố định mới, luật đó phải được thêm vào bộ quy tắc, để người đọc bộ quy tắc thấy được toàn bộ bức tranh mà không phải đọc code.</p>
-
-    <p>Ba luật gần đây nhất được thêm vào, tiện làm ví dụ về loại nội dung thuộc về đây:</p>
-    <ul>
-      <li>Tiêu đề bài chỉ khai báo ở một chỗ, mọi nơi khác dùng lại — để tiêu đề trong module không bao giờ lệch với tiêu đề bài.</li>
-      <li>Mô tả trong danh sách lấy đoạn sapo nếu có, không thì lấy một cụm khoá ngắn.</li>
-      <li>Module đã tạo luôn hiện, kể cả khi chưa có bài.</li>
-    </ul>
-
     <p>Bộ quy tắc có cơ chế chèn tên điều hướng động, nên khi đổi tên một mục trong sidebar thì các quy tắc nhắc tới mục đó cũng đổi theo, không bị lệch.</p>
   </section>
 
@@ -518,7 +507,7 @@ footer{
       </table>
     </div>
 
-    <p><strong>Kiểm thử tự động:</strong> 262 bài cho giao diện, 137 bài cho backend — tất cả đang qua, trừ <em>một</em> bài backend bị cố ý bỏ qua. Chạy bằng <code>npm test</code> ở thư mục gốc: nó kiểm kiểu cả ba phần trước, rồi mới chạy test. Chạy lẻ từng phần sẽ bỏ sót — đó là cách một lần hỏng đã lọt lên nhánh chính.</p>
+    <p><strong>Kiểm thử tự động:</strong> 262 bài cho giao diện, 137 bài cho backend — tất cả đang qua. Hai bài kiểm tra tích hợp tự bỏ qua khi máy chưa dựng Supabase cục bộ; dựng đủ thì cả 137 bài đều chạy. Chạy bằng <code>npm test</code> ở thư mục gốc: nó kiểm kiểu cả ba phần trước, rồi mới chạy test. Chạy lẻ từng phần sẽ bỏ sót — đó là cách một lần hỏng đã lọt lên nhánh chính.</p>
 
     <div class="note caution">
       <b>Việc migration không tự động được.</b> Không có mật khẩu cơ sở dữ liệu trong môi trường làm việc, nên mỗi thay đổi cấu trúc đều cần chủ site tự dán và chạy trong Supabase. Đây là ma sát có ý thức: nó buộc mọi thay đổi cấu trúc phải được nhìn thấy trước khi xảy ra.
@@ -536,7 +525,7 @@ footer{
       </li>
       <li>
         <span class="pill neutral">Dữ liệu</span>
-        <span class="body"><b>Bảng ghi chú cũ còn nằm đó</b><span>Bảng <code>notes</code> hiện rỗng và không còn đường ghi vào — nội dung Ghi 01 đã chuyển hết sang bài viết. Chưa quyết định xoá hay giữ.</span></span>
+        <span class="body"><b>Bảng ghi chú cũ còn nằm đó</b><span>Bảng <code>notes</code> hiện rỗng nhưng vẫn ghi được qua <code>/api/notes</code> và tab Nội dung. Trang Ghi 01 đọc song song cả <code>notes</code> lẫn bài viết. Chưa quyết định gộp hay giữ hai nguồn.</span></span>
       </li>
       <li>
         <span class="pill neutral">Tính năng</span>
@@ -548,7 +537,7 @@ footer{
       </li>
       <li>
         <span class="pill neutral">Tính năng</span>
-        <span class="body"><b>Module chưa có cách ẩn</b><span>Đã có cột <code>visibility</code> (migration 0015). Module riêng tư không hiện ở đâu ngoài khu đã đăng nhập; module đặc biệt công khai như Ghi 01 vẫn hiện ở Mục lục và sidebar, chỉ vắng ở Trang chủ.</span></span>
+        <span class="body"><b>Ẩn module chưa có giao diện</b><span>Đã có cột <code>visibility</code> (migration 0015). Module riêng tư không hiện ở đâu ngoài khu đã đăng nhập; module đặc biệt công khai như Ghi 01 vẫn hiện ở Mục lục và sidebar, chỉ vắng ở Trang chủ.</span></span>
       </li>
       <li>
         <span class="pill neutral">Tồn đọng</span>

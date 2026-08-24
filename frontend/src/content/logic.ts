@@ -8,7 +8,9 @@
  * (see `interpolateNav`).
  */
 
-/** How far a rule reaches. */
+/** How far a rule reaches.  *
+ * Số nhóm là mã định danh, không phải thứ tự đọc.
+ */
 export type Scope = 'Toàn hệ thống' | 'Module' | 'Template'
 
 export type LogicItem = {
@@ -163,11 +165,54 @@ export const LOGIC: LogicPart[] = [
       { s: 'Template', r: 'Với [[notes]]: rê chuột thì các note khác mờ đi, bấm thì note đó giãn hết bề ngang.', e: '' },
       { s: 'Template', r: 'Với [[notes]]: khối màu đặc và câu trích chèn vào chỗ trống của lưới.', e: '' }
     ] },
-    { n: '14', g: '[[hours]]', items: [
+    { n: '14', g: '[[hours]] — ngày', items: [
       { s: 'Template', r: 'Với [[hours]]: chuỗi ngày là phần chính, ô bấm giờ lệch sang phải.', e: '' },
-      { s: 'Template', r: 'Riêng [[hours]]: sửa hoạt động chỉ hai nhánh — đổi thời gian, hoặc xoá. Sửa tên là thao tác phụ.', e: '' },
       { s: 'Template', r: 'Với [[hours]]: ngày trong 7 ngày gần nhất cho sửa, xoá, kéo thả; ngày cũ hơn chỉ hiện việc đã xong.', e: '' },
-      { s: 'Template', r: 'Với [[hours]]: tháng cũ tự thu gọn, không tách khỏi danh mục.', e: '' }
+      { s: 'Template', r: 'Nhật ký có ngày mở sổ cố định 20/08/2026. Không màn hình nào dựng ra ngày trước đó — kể cả một hàng trống hay một ô heatmap.', e: '' },
+      { s: 'Template', r: 'Ngày từ ngày mở sổ tới hôm nay mà không có hoạt động là ngày bỏ lỡ; ngày ngoài khoảng đó không thuộc về nhật ký. Hai thứ không được vẽ giống nhau.', e: '' },
+      { s: 'Template', r: 'Mọi tỉ lệ "x/y ngày" lấy y là số ngày nhật ký thật sự có, không phải hằng số.', e: '' },
+      { s: 'Template', r: 'Danh sách ngày đọc theo ba tầng: tháng → tuần → ngày.', e: '' },
+      { s: 'Template', r: 'Tuần tính từ thứ Hai tới Chủ nhật; tuần vắt qua hai tháng được đọc tách theo từng tháng, nhãn ghi đúng khoảng ngày thuộc nhóm.', e: '' },
+      { s: 'Template', r: 'Từ hai tuần trở lên trong một tháng: tuần mới nhất mở, tuần cũ gom. Một tuần thì không hiện heading tuần.', e: '' },
+      { s: 'Template', r: 'Từ hai tháng trở lên: tháng hiện tại mở, tháng cũ gom.', e: '' },
+      { s: 'Template', r: 'Nhóm đang gom vẫn hiện khoảng thời gian, số ngày có ghi và tổng thời lượng.', e: '' },
+      { s: 'Template', r: 'Màn hình đọc "hôm nay" theo đồng hồ tại thời điểm hỏi, không phải lúc mở trang. Tab để qua đêm phải tự sang ngày mới.', e: '' }
+    ] },
+    { n: '16', g: '[[hours]] — một hoạt động', items: [
+      { s: 'Template', r: 'Hàng mới bắt đầu tại thời điểm bấm "thêm hoạt động".', e: '' },
+      { s: 'Template', r: 'Hàng mới không có ngữ cảnh nào khác thì mang loại khác.', e: '' },
+      { s: 'Template', r: 'khác là lựa chọn luôn có mặt trong hệ tag task, đồng thời là chỗ rơi mặc định. Không đổi tên và không xoá được.', e: '' },
+      { s: 'Template', r: 'Giờ bắt đầu, giờ kết thúc, thời lượng: hai ô sửa gần nhất giữ nguyên, ô còn lại được tính ra. Mới sửa một ô thì giờ bắt đầu được giữ yên.', e: '' },
+      { s: 'Template', r: 'Tab đi dọc ba ô theo thứ tự bắt đầu → kết thúc → thời lượng.', e: '' },
+      { s: 'Template', r: 'Một hoạt động có thể mang một ghi chú; không có thì không hiện gì.', e: '' },
+      { s: 'Template', r: 'Ghi chú nhập cùng lần với tên, không phải thao tác riêng.', e: '' },
+      { s: 'Template', r: 'Ghi chú là địa chỉ web thì hiển thị bằng tên miền, kèm dấu hiệu cho biết nó trỏ vào trong site. Không bao giờ hiện địa chỉ đầy đủ.', e: '' },
+      { s: 'Template', r: 'Nhân đôi giữ tên, cả hai tag và thời lượng; bản sao luôn chưa tick.', e: '' },
+      { s: 'Template', r: 'Giờ của bản sao: hàng hôm nay lấy giờ lúc bấm; hàng ngày cũ giữ giờ bản gốc và nằm ngay dưới nó.', e: '' },
+      { s: 'Template', r: 'Một phiên đồng hồ có hai hành động kết thúc khác nhau: làm lại từ đầu (về 0, giữ tên và cả hai tag) và đặt lại (kết thúc phiên, xoá tên, giữ tag).', e: '' },
+      { s: 'Template', r: 'Làm lại một phiên hẹn giờ đã báo hết giờ thì lần hết giờ sau vẫn được báo.', e: '' },
+      { s: 'Template', r: 'Một phiên bấm giờ được ghi vào ngày nó bắt đầu, không phải ngày bấm hoàn thành. Phiên chạy qua nửa đêm thuộc về buổi tối trước.', e: '' }
+    ] },
+    { n: '17', g: '[[hours]] — nhiều lần', items: [
+      { s: 'Template', r: 'Tên và hai tag nằm ở hoạt động; giờ, thời lượng và trạng thái xong nằm ở từng lần.', e: '' },
+      { s: 'Template', r: 'Thời lượng của hoạt động nhiều lần là tổng thời lượng các lần, không phải hiệu giữa giờ cuối và giờ đầu. Hoạt động không hiển thị cặp giờ.', e: '' },
+      { s: 'Template', r: 'Ô tick của hoạt động nhiều lần là xong khi mọi lần đều xong; bấm vào thì đóng hoặc mở tất cả.', e: '' },
+      { s: 'Template', r: 'Mọi phép cộng thời lượng đếm các lần và bỏ qua hoạt động chứa chúng.', e: '' },
+      { s: 'Template', r: 'Xoá một hoạt động thì xoá cả các lần của nó, và đó là một hành động — một lần Ctrl+Z đưa cả cụm trở lại.', e: '' },
+      { s: 'Template', r: 'Hoạt động nhiều lần xếp lên đầu ngày, trước mọi hoạt động thường; giữa chúng thì theo lần sớm nhất. Hệ quả có chủ ý: cột giờ không còn tăng dần từ trên xuống.', e: '' },
+      { s: 'Template', r: 'Nút gộp chỉ xuất hiện khi hàng phía trên cùng ngày trùng cả tên, tag project và tag task.', e: '' },
+      { s: 'Template', r: 'Gộp vào một hàng thường thì phần việc hàng đó đang giữ trở thành lần thứ nhất.', e: '' },
+      { s: 'Template', r: 'Một lần vừa được tạo mở sẵn ô giờ bắt đầu.', e: '' }
+    ] },
+    { n: '18', g: '[[hours]] — thống kê', items: [
+      { s: 'Template', r: 'Ba mốc thời gian là Tháng này · Tuần này · 7 ngày qua. Tuần bắt đầu từ thứ Hai. Không dùng cửa sổ lấy theo số ngày mà giao diện tình cờ tải về.', e: '' },
+      { s: 'Template', r: 'Tỉ lệ Hữu ích / Thực tế = tổng thời lượng việc đã xong ÷ độ dài khoảng thời gian thật đã trôi qua, trong đó khoảng chồng nhau chỉ tính một lần. Mẫu số chỉ gồm ngày có ghi.', e: '' },
+      { s: 'Template', r: 'Bảng đọc theo hai băng: bảng theo project trải hết bề ngang ở trên, heatmap đứng cạnh danh sách theo loại việc ở dưới.', e: '' },
+      { s: 'Template', r: 'Heatmap hiển thị 15 tuần, ô rộng tối đa 24px, neo vào ngày mở sổ.', e: '' },
+      { s: 'Template', r: 'Ô heatmap có ba trạng thái: có hoạt động (bốn mức đậm) · trong khoảng ghi nhưng không hoạt động · ngoài khoảng nhật ký từng tồn tại. Trạng thái thứ ba không dùng chung màu với thứ hai.', e: '' },
+      { s: 'Template', r: 'Danh sách theo loại việc hiện 7 dòng đầu; phần còn lại mở bằng một cú bấm.', e: '' },
+      { s: 'Template', r: 'Project từng dùng mà không có hoạt động nào trong 7 ngày trở lại được xếp vào "lâu chưa đụng tới".', e: '' },
+      { s: 'Template', r: 'Bảng thống kê dùng thang khoảng cách của hệ thiết kế (8 / 20 / 40 / 64), không dùng số riêng.', e: '' }
     ] }
   ] }
 ]
