@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState, type CSSProperties, type RefObject } from 'react'
 import { ImageBand } from '../../screens/Landing'
+import { ModulePlates, PLATE_HEIGHT, PLATE_WIDTH } from '../../screens/ModuleScreen'
 import { ink, paper, sans } from '../../design/tokens'
 import { Hover } from '../../lib/Hover'
-import type { ImageGroup, ModuleImageFields, PreviewKind } from '../moduleForm'
+import { captionColumn, imageColumn, type ImageGroup, type ModuleImageFields, type PreviewKind } from '../moduleForm'
 import { coverStyle } from '../../lib/imageFocus'
+import { isBorrowed, pageImage } from '../../lib/modulePageImages'
 import { FocusPicker } from './FocusPicker'
 
 /**
@@ -14,13 +16,14 @@ import { FocusPicker } from './FocusPicker'
 const CHROME: Record<PreviewKind, number> = {
   'homepage-band': 176,
   // The module page draws its hero at a fixed 1050px, whatever the window does.
-  'module-header': 176,
+  // The module page draws its images at the same width the homepage band does.
+  'module-page': 176,
   'notes-footer': 208,
 }
 
 const PREVIEW_LABEL: Record<PreviewKind, string> = {
   'homepage-band': 'Xem trước · Trang chủ',
-  'module-header': 'Xem trước · Trang module',
+  'module-page': 'Xem trước · Trang module',
   'notes-footer': 'Xem trước layout',
 }
 
@@ -36,7 +39,11 @@ const NOTES_GAP = 30
  * shape the admin never actually sees. Rendering at the real width and scaling
  * down keeps the preview honest — and keeps the crop frame honest with it.
  */
-function pageWidth(kind: PreviewKind): number {
+function pageWidth(kind: PreviewKind, layout: string): number {
+  // The module page's plates are a fixed width, not a share of the window —
+  // 1050 for a band hero, 380 for a specimen grid, 836 for a roast strip. Using
+  // the window's width here drew a 6:1 hero where the page draws 5:1.
+  if (kind === 'module-page') return PLATE_WIDTH[layout] ?? 1050
   if (typeof window === 'undefined') return 1128
   return Math.max(720, window.innerWidth - CHROME[kind])
 }
@@ -82,14 +89,14 @@ function Preview({
 }) {
   const box = useRef<HTMLDivElement>(null)
   const [scale, setScale] = useState(0.3)
-  const [page, setPage] = useState(() => pageWidth(kind))
+  const [page, setPage] = useState(() => pageWidth(kind, m.layout))
 
   useEffect(() => {
     const el = box.current
     if (!el) return
     const fit = () => {
-      setPage(pageWidth(kind))
-      setScale(el.clientWidth / pageWidth(kind))
+      setPage(pageWidth(kind, m.layout))
+      setScale(el.clientWidth / pageWidth(kind, m.layout))
     }
     fit()
     const ro = new ResizeObserver(fit)
@@ -99,19 +106,26 @@ function Preview({
       ro.disconnect()
       window.removeEventListener('resize', fit)
     }
-  }, [kind])
+  }, [kind, m.layout])
 
   const inner =
     kind === 'homepage-band' ? (
       <ImageBand m={m} />
-    ) : kind === 'module-header' ? (
-      <ModuleHeaderPreview m={m} />
+    ) : kind === 'module-page' ? (
+      <ModulePlates m={m as never} />
     ) : (
       <NotesFooterPreview img1={m.img1} img2={m.img2} shot1={m.shot1} shot2={m.shot2} />
     )
   // Each layout's own height: the band is 310, the module hero 208, the footer
   // pair 280 at its tallest.
-  const tall = kind === 'homepage-band' ? 310 : kind === 'module-header' ? 208 : 280
+  // Each layout's plates are as tall as their own shape makes them: the hero is
+  // a fixed 208, the specimen grid and the roast strip follow from their width.
+  const tall =
+    kind === 'homepage-band'
+      ? 310
+      : kind === 'module-page'
+        ? (PLATE_HEIGHT[m.layout] ?? (PLATE_WIDTH.sequence / 4) * (4 / 3))
+        : 280
 
   return (
     <div
@@ -144,41 +158,6 @@ function Preview({
  * photo. Far wider and flatter than anything on the homepage — 5:1 against the
  * band's 2.3:1 — which is exactly why it needs showing.
  */
-function ModuleHeaderPreview({ m }: { m: ModuleImageFields }) {
-  return (
-    <div
-      style={{
-        width: 1050,
-        height: 208,
-        ...(m.img1 ? coverStyle(m.img1) : { background: paper.hover }),
-        display: 'flex',
-        alignItems: 'flex-end',
-        justifyContent: 'space-between',
-        padding: '16px 18px',
-      }}
-    >
-      {m.shot1 ? (
-        <div
-          style={{
-            fontFamily: sans,
-            fontSize: 10,
-            color: m.img1 ? paper.cream : ink.strong,
-            background: m.img1 ? 'rgba(24,22,17,.55)' : undefined,
-            padding: m.img1 ? '3px 7px' : undefined,
-          }}
-        >
-          {m.shot1}
-        </div>
-      ) : (
-        <span />
-      )}
-      <div style={{ fontFamily: sans, fontSize: 10, color: m.img1 ? paper.cream : '#A4908C' }}>
-        16:5 / hero
-      </div>
-    </div>
-  )
-}
-
 /** The two blocks that close Ghi 01, at the same 12-column rhythm as the page. */
 function NotesFooterPreview({
   img1,
@@ -239,15 +218,16 @@ export function ModuleImages({
 }: {
   m: ModuleImageFields
   group: ImageGroup
-  onCaption: (slot: 1 | 2 | 3, v: string) => void
+  onCaption: (slot: 1 | 2 | 3 | 4, v: string) => void
   /** Uploads and returns the stored URL, so the frame can be set straight away. */
-  onUpload: (slot: 1 | 2 | 3, f: File) => Promise<string | null>
-  onClear: (slot: 1 | 2 | 3) => void
+  onUpload: (slot: 1 | 2 | 3 | 4, f: File) => Promise<string | null>
+  onClear: (slot: 1 | 2 | 3 | 4) => void
   /** The same photo, carrying a focal point. */
-  onPlace: (slot: 1 | 2 | 3, url: string) => void
+  onPlace: (slot: 1 | 2 | 3 | 4, url: string) => void
 }) {
   const grid = useRef<HTMLDivElement>(null)
-  const [placing, setPlacing] = useState<{ slot: 1 | 2 | 3; url: string } | null>(null)
+  const [placing, setPlacing] = useState<{ slot: 1 | 2 | 3 | 4; url: string } | null>(null)
+  const [linking, setLinking] = useState<1 | 2 | 3 | 4 | null>(null)
 
   /**
    * The shape of the cell this slot fills, taken from the preview rather than
@@ -274,7 +254,14 @@ export function ModuleImages({
         <div style={label}>{group.label}</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {group.slots.map((slot, i) => {
-            const url = m[`img${slot}` as const]
+            const url = (m as Record<string, unknown>)[imageColumn(group, slot)] as string | null
+            /*
+             * A page slot with nothing of its own shows the homepage's photo.
+             * That is a convenience, not the same picture: the two sets are
+             * separate, and a slot borrowing says so rather than looking filled.
+             */
+            const borrowed = group.columns === 'module-page' && !url && isBorrowed(m, slot)
+            const shown = url ?? (borrowed ? pageImage(m, slot) : null)
             return (
               <div key={slot} style={rowBox}>
                 <div
@@ -282,7 +269,8 @@ export function ModuleImages({
                     width: 72,
                     height: 45,
                     border: `1px solid ${paper.rule}`,
-                    ...(url ? coverStyle(url) : { background: paper.hover }),
+                    ...(shown ? coverStyle(shown) : { background: paper.hover }),
+                    opacity: borrowed ? 0.5 : 1,
                   }}
                 />
                 <div style={{ minWidth: 0 }}>
@@ -297,9 +285,14 @@ export function ModuleImages({
                     }}
                   >
                     {group.names[i]}
+                    {borrowed && (
+                      <span style={{ letterSpacing: '.04em', textTransform: 'none', fontStyle: 'italic' }}>
+                        {' · lấy từ Trang chủ'}
+                      </span>
+                    )}
                   </div>
                   <input
-                    defaultValue={(m[`shot${slot}` as const] ?? '') as string}
+                    defaultValue={((m as Record<string, unknown>)[captionColumn(group, slot)] ?? '') as string}
                     onBlur={(e) => onCaption(slot, e.target.value)}
                     placeholder="chú thích"
                     style={{
@@ -333,6 +326,14 @@ export function ModuleImages({
                         style={{ display: 'none' }}
                       />
                     </Hover>
+                    <Hover
+                      as="button"
+                      onClick={() => setLinking(linking === slot ? null : slot)}
+                      style={{ ...action, background: 'none', border: 'none', padding: 0 }}
+                      hoverStyle={{ color: ink.base }}
+                    >
+                      dán link
+                    </Hover>
                     {url && (
                       <Hover
                         as="button"
@@ -354,6 +355,42 @@ export function ModuleImages({
                       </Hover>
                     )}
                   </div>
+
+                  {linking === slot && (
+                    /*
+                     * A photo can live somewhere else. Storing the link rather
+                     * than a copy keeps nothing in the bucket that does not have
+                     * to be there — the cost is that the picture is only as
+                     * permanent as whoever is hosting it.
+                     */
+                    <input
+                      autoFocus
+                      defaultValue={url ?? ''}
+                      placeholder="dán link ảnh rồi Enter"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Escape') setLinking(null)
+                        if (e.key !== 'Enter') return
+                        const v = (e.target as HTMLInputElement).value.trim()
+                        setLinking(null)
+                        if (!v) return onClear(slot)
+                        onPlace(slot, v)
+                        setPlacing({ slot, url: v })
+                      }}
+                      onBlur={() => setLinking(null)}
+                      style={{
+                        width: '100%',
+                        boxSizing: 'border-box',
+                        marginTop: 7,
+                        background: paper.white,
+                        border: `1px solid ${ink.green}`,
+                        color: ink.base,
+                        fontFamily: sans,
+                        fontSize: 12,
+                        padding: '6px 9px',
+                        outline: 'none',
+                      }}
+                    />
+                  )}
                 </div>
               </div>
             )

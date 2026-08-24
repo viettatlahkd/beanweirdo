@@ -80,6 +80,18 @@ export type Module = {
   img3: string | null
   /** Ghi 01's between-post cells: `{ n, img, t }[]`. Empty elsewhere. */
   feature_cells: unknown
+  /**
+   * Ảnh trên chính trang module. Rỗng thì lấy theo `img1..3` của Trang chủ.
+   * Số ô dùng tới tuỳ dàn trang: band 1, specimen 3, sequence 4.
+   */
+  page_img1: string | null
+  page_img2: string | null
+  page_img3: string | null
+  page_img4: string | null
+  page_shot1: string
+  page_shot2: string
+  page_shot3: string
+  page_shot4: string
   sort_order: number
   /** 'normal' = reading module; 'special' = a journal a post can be filed under. */
   kind: 'normal' | 'special'

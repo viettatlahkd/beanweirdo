@@ -21,7 +21,7 @@ import {
 import { transitionStatus, getSite, listTemplates, type TemplateSummary } from '../admin/lib/apiClient'
 import { PostsPanel } from '../admin/components/PostsPanel'
 import { ModuleImages } from '../admin/components/ModuleImages'
-import { formShapeOf } from '../admin/moduleForm'
+import { captionColumn, formShapeOf, imageColumn } from '../admin/moduleForm'
 import { FocusPicker } from '../admin/components/FocusPicker'
 import { coverStyle } from '../lib/imageFocus'
 import { FeatureCellsEditor } from '../admin/components/FeatureCellsEditor'
@@ -331,7 +331,7 @@ export function Cms() {
 
   const setCopy = (key: keyof SiteCopy) => (v: string) => void saveSite({ [key]: v } as SiteOverrides)
 
-  async function savePlate(slot: 1 | 2 | 3, file: File): Promise<string | null> {
+  async function savePlate(slot: 1 | 2 | 3 | 4, file: File): Promise<string | null> {
     try {
       const { url } = await uploadImage(file)
       await saveSite({ [`plateImg${slot}`]: url } as SiteOverrides)
@@ -1052,25 +1052,30 @@ export function Cms() {
                       />
                     )}
 
-                    {shape.images && (
+                    {shape.images.map((group) => (
                       <ModuleImages
+                        key={group.label}
                         m={m}
-                        group={shape.images}
-                        onCaption={(slot, v) => void patchModule(m.id, { [`shot${slot}`]: v })}
+                        group={group}
+                        onCaption={(slot, v) =>
+                          void patchModule(m.id, { [captionColumn(group, slot)]: v })
+                        }
                         onUpload={async (slot, f) => {
                           try {
                             const { url } = await uploadImage(f)
-                            await patchModule(m.id, { [`img${slot}`]: url })
+                            await patchModule(m.id, { [imageColumn(group, slot)]: url })
                             return url
                           } catch (e) {
                             setError((e as Error).message)
                             return null
                           }
                         }}
-                        onClear={(slot) => void patchModule(m.id, { [`img${slot}`]: null })}
-                        onPlace={(slot, url) => void patchModule(m.id, { [`img${slot}`]: url })}
+                        onClear={(slot) => void patchModule(m.id, { [imageColumn(group, slot)]: null })}
+                        onPlace={(slot, url) =>
+                          void patchModule(m.id, { [imageColumn(group, slot)]: url })
+                        }
                       />
-                    )}
+                    ))}
 
                     <div
                       style={{
