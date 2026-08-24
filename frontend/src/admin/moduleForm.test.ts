@@ -18,7 +18,8 @@ describe('formShapeOf', () => {
     expect(shape.blurb).toBe(true)
     expect(shape.layout).toBe(true)
     expect(shape.images?.slots).toEqual([1, 2, 3])
-    expect(shape.images?.preview).toBe('homepage-band')
+    // Both frames, because one set of photos serves both today — ledger D11.
+    expect(shape.images?.preview).toEqual(['homepage-band', 'module-header'])
   })
 
   it('gives Ghi 01 footer images and none of the card copy', () => {
@@ -30,6 +31,7 @@ describe('formShapeOf', () => {
     // Ghi 01 is a page, never a card, so it has no module images at all.
     expect(shape.images?.label).toBe('Ảnh chân trang')
     expect(shape.images?.slots).toEqual([1, 2])
+    expect(shape.images?.preview).toEqual(['notes-footer'])
   })
 
   it('offers the feature cells to Ghi 01 and to nothing else', () => {

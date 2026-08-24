@@ -57,16 +57,24 @@ export type ImageGroup = {
   slots: readonly (1 | 2 | 3)[]
   /** Per-slot name shown above each row of the upload list. */
   names: readonly string[]
-  /** Which public layout the preview pane should draw. */
-  preview: 'homepage-band' | 'notes-footer'
+  /**
+   * The layouts these photos land in. More than one, because today the same
+   * three images serve both the homepage band and the module page's own
+   * header — see ledger D11, which will split them. Until it does, the owner
+   * needs to see both crops, since a photo that reads well in a 2.3:1 band can
+   * lose its subject entirely in a 16:5 hero.
+   */
+  preview: readonly PreviewKind[]
 }
+
+export type PreviewKind = 'homepage-band' | 'module-header' | 'notes-footer'
 
 /** Homepage gallery: one tall photo, two stacked beside it. Design v4 draws no fourth. */
 const HOMEPAGE_IMAGES: ImageGroup = {
   label: 'Ảnh module',
   slots: [1, 2, 3],
   names: ['Ảnh 1', 'Ảnh 2', 'Ảnh 3'],
-  preview: 'homepage-band',
+  preview: ['homepage-band', 'module-header'],
 }
 
 /** Ghi 01 closes with two images — a small one, then a larger one. */
@@ -74,7 +82,7 @@ const NOTES_FOOTER_IMAGES: ImageGroup = {
   label: 'Ảnh chân trang',
   slots: [1, 2],
   names: ['Ảnh trái', 'Ảnh phải'],
-  preview: 'notes-footer',
+  preview: ['notes-footer'],
 }
 
 const NORMAL: ModuleFormShape = {

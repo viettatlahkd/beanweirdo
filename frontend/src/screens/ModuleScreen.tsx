@@ -6,6 +6,7 @@ import { useModules } from '../data/useModules'
 import type { PostRow } from '../data/usePublishedPosts'
 import { usePublishedPosts } from '../data/usePublishedPosts'
 import { ink, paper, sans, serif } from '../design/tokens'
+import { coverStyle } from '../lib/imageFocus'
 import { Hover } from '../lib/Hover'
 import { useNav, useSettings } from '../lib/nav'
 import { openPost } from '../lib/openPost'
@@ -77,7 +78,7 @@ function Band({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
         <div
           style={{
             height: 208,
-            background: m.tint,
+            ...(m.img1 ? coverStyle(m.img1) : { background: m.tint }),
             display: 'flex',
             alignItems: 'flex-end',
             justifyContent: 'space-between',
@@ -198,7 +199,7 @@ function Specimen({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
             <div
               style={{
-                background: m.tint,
+                ...(m.img1 ? coverStyle(m.img1) : { background: m.tint }),
                 display: 'flex',
                 alignItems: 'flex-end',
                 padding: 12,
@@ -213,7 +214,7 @@ function Specimen({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
             </div>
             <div
               style={{
-                background: '#2B4B33',
+                ...(m.img2 ? coverStyle(m.img2) : { background: '#2B4B33' }),
                 display: 'flex',
                 alignItems: 'flex-end',
                 padding: 12,
@@ -227,7 +228,7 @@ function Specimen({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
             </div>
             <div
               style={{
-                background: '#F3F7EC',
+                ...(m.img3 ? coverStyle(m.img3) : { background: '#F3F7EC' }),
                 display: 'flex',
                 alignItems: 'flex-end',
                 padding: 12,
