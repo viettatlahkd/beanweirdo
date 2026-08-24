@@ -410,9 +410,6 @@ export function Hours() {
       <div style={{ borderBottom: '1px solid #102F35', paddingBottom: 22 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 56, flexWrap: 'wrap' }}>
           <div>
-            <div style={{ fontSize: 9.5, letterSpacing: '.34em', textTransform: 'uppercase', color: '#7C7C70', marginBottom: 18 }}>
-              beӕn weirdo — 01
-            </div>
             <h1
               style={{
                 fontFamily: serif,
