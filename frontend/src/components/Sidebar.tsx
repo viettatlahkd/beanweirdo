@@ -256,15 +256,25 @@ export function Sidebar() {
         continue
       }
 
+      /*
+       * A page that is a module wears that module's name and colour.
+       *
+       * Ghi 01 already did, because it is drawn from the module list above.
+       * Ghi 02 is private, so it never reaches that list and was drawn from the
+       * nav entry instead — a hand-copied name and a hand-picked glyph that
+       * renaming the module in the CMS left untouched. Ledger D2.
+       */
+      const own = item.moduleId ? allModules.find((m) => m.id === item.moduleId) : undefined
       rows.push(
         <Row
           key={item.key}
           onClick={go(nav, item)}
-          label={item.label}
+          label={own?.title ?? item.label}
           sub={item.sub}
+          count={own ? countFor(own) : undefined}
           muted={t.muted}
           hoverBg={t.hover}
-          glyph={<Mark shape={item.shape} />}
+          glyph={own ? <ModuleMark m={own} /> : <Mark shape={item.shape} />}
         />,
       )
     }

@@ -57,7 +57,7 @@ từ code đã merge, chưa luật nào được ghi vào.
 | # | Việc | Trạng thái |
 |---|---|---|
 | D1 | ~~Hai hàm `toCardsData` khác nhau~~ — gộp còn một ở `lib/postToRenderer.ts` (#19), bỏ nốt bộ nối (#21). Có test bắt buộc hai đường cho kết quả giống hệt. | XONG |
-| D2 | Ghi 01 / Ghi 02 định nghĩa hai lần: bảng `modules` và `content/navItems.ts` chép tay tên + màu. Nay nav khai `moduleId`, nên **sơ đồ trang** lấy tên · mô tả · danh sách bài từ CSDL. Còn lại: **sidebar** vẫn chép tay nhãn và màu của hai module này. | ĐANG |
+| D2 | Ghi 01 / Ghi 02 định nghĩa hai lần: bảng `modules` và `content/navItems.ts` chép tay tên + màu. Nay nav khai `moduleId`: **sơ đồ trang** và **sidebar** đều lấy tên · màu · danh sách bài từ CSDL. Không còn chỗ nào chép tay hai module này. | XONG |
 | D3 | 15/19 bài có `body` rỗng — vỏ bài không nội dung. | CHỜ |
 | D4 | Trình soạn thảo mới phủ `cards` và `report`; `longform` và `memo` chưa sửa được trong Editor. | CHỜ |
 | D5 | ~~Module chưa có cách ẩn ngoài xoá~~ — đã có cột `visibility` (migration 0015). | XONG |
@@ -90,7 +90,7 @@ Các file đáng soi khi rà Content management:
 **Đừng merge tag này vào đâu cả** — nó là ảnh chụp trước khi rẽ nhánh, đi từ
 `main` sang nó là 3.176 dòng thêm / 7.598 dòng xoá, 19 file conflict.
 | D6 | ~~Hai tài liệu đối soát design có lỗi và không tái lập được~~ — đã thay bằng `docs/spine/DOI-SOAT-DESIGN.md` + `tools/design-audit.mjs`, chạy lại được. Lộ thêm: file design tôi dùng là bản **cũ hơn** bản trong repo (14 vs 16 màn hình). | XONG |
-| D11 | **Ảnh Trang chủ và ảnh đầu trang module đang dùng chung một bộ `shot1/2/3`.** Đó là hai khái niệm khác nhau: ảnh giới thiệu module ở Trang chủ chưa chắc là ảnh mở đầu trang module chi tiết. Cần tách thành hai bộ, và cho phép ở Sửa nội dung Trang chủ chọn **lấy theo trang module** hay **đặt riêng**, kèm sắp thứ tự ảnh. Chủ site chốt: **để sau**, xử lý chung khi xong các dàn trang module hiện tại. | CHỜ |
+| D11 | **Ảnh Trang chủ và ảnh đầu trang module đang dùng chung một bộ `shot1/2/3`.** Trong lúc chờ tách: trang module nay **có vẽ ảnh tải lên** (trước chỉ vẽ ô màu), và Sửa nội dung hiện **hai khung xem trước** — Trang chủ và Trang module — vì cùng một ảnh rơi vào 2.3:1 và 5:1, chủ thể có thể mất hẳn ở khung thứ hai. Đó là hai khái niệm khác nhau: ảnh giới thiệu module ở Trang chủ chưa chắc là ảnh mở đầu trang module chi tiết. Cần tách thành hai bộ, và cho phép ở Sửa nội dung Trang chủ chọn **lấy theo trang module** hay **đặt riêng**, kèm sắp thứ tự ảnh. Chủ site chốt: **để sau**, xử lý chung khi xong các dàn trang module hiện tại. | CHỜ |
 | D12 | ~~Ảnh module tải lên không trang nào vẽ ra~~ — `img1/2/3` chỉ có trong kiểu dữ liệu, Trang chủ vẫn vẽ ô màu phẳng. Đã nối ở PR hình dạng form. | XONG |
 | D13 | `Hours.tsx` (Ghi 02) **không đọc dòng nào** từ cơ sở dữ liệu — toàn bộ là chữ cứng. Vì thế ô Sửa nội dung của Ghi 02 nay chỉ còn Tên · Màu · danh sách bài, đúng phần chạy thật. Muốn sửa được cả trang thì phải nối trang vào DB — việc riêng, chủ site chốt tạm chưa làm. | CHỜ |
 | D19 | ~~Admin liệt kê mọi bài như thể đều đang trên trang~~ — sensory có 1 bài đăng và 5 lưu trữ, roasting có **0** bài đăng, nhưng cả sơ đồ lẫn Sửa nội dung đánh số 01…06 cho tất cả, và tay kéo sắp lại bài lưu trữ xen giữa bài sống. Nay khối này chỉ liệt kê bài đã đăng — nháp và lưu trữ quản ở tab Tạo bài đăng. | XONG |

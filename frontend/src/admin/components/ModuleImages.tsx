@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties, type RefObject } from 
 import { ImageBand } from '../../screens/Landing'
 import { ink, paper, sans } from '../../design/tokens'
 import { Hover } from '../../lib/Hover'
-import type { ImageGroup, ModuleImageFields } from '../moduleForm'
+import type { ImageGroup, ModuleImageFields, PreviewKind } from '../moduleForm'
 import { coverStyle } from '../../lib/imageFocus'
 import { FocusPicker } from './FocusPicker'
 
@@ -11,7 +11,18 @@ import { FocusPicker } from './FocusPicker'
  * per screen, because they do not agree: the homepage band spans 1264px of a
  * 1440px window, Ghi 01's grid only 1232px.
  */
-const CHROME = { 'homepage-band': 176, 'notes-footer': 208 } as const
+const CHROME: Record<PreviewKind, number> = {
+  'homepage-band': 176,
+  // The module page draws its hero at a fixed 1050px, whatever the window does.
+  'module-header': 176,
+  'notes-footer': 208,
+}
+
+const PREVIEW_LABEL: Record<PreviewKind, string> = {
+  'homepage-band': 'Xem trước · Trang chủ',
+  'module-header': 'Xem trước · Trang module',
+  'notes-footer': 'Xem trước layout',
+}
 
 /** Ghi 01 lays its twelve columns out with a wider gutter than the homepage. */
 const NOTES_GAP = 30
@@ -25,7 +36,7 @@ const NOTES_GAP = 30
  * shape the admin never actually sees. Rendering at the real width and scaling
  * down keeps the preview honest — and keeps the crop frame honest with it.
  */
-function pageWidth(kind: ImageGroup['preview']): number {
+function pageWidth(kind: PreviewKind): number {
   if (typeof window === 'undefined') return 1128
   return Math.max(720, window.innerWidth - CHROME[kind])
 }
@@ -65,7 +76,7 @@ function Preview({
   gridRef,
 }: {
   m: ModuleImageFields
-  kind: ImageGroup['preview']
+  kind: PreviewKind
   /** The layout's own grid, so a cell can be measured rather than guessed. */
   gridRef?: RefObject<HTMLDivElement>
 }) {
@@ -93,11 +104,14 @@ function Preview({
   const inner =
     kind === 'homepage-band' ? (
       <ImageBand m={m} />
+    ) : kind === 'module-header' ? (
+      <ModuleHeaderPreview m={m} />
     ) : (
       <NotesFooterPreview img1={m.img1} img2={m.img2} shot1={m.shot1} shot2={m.shot2} />
     )
-  // 310px is the band's own height; the footer pair is 280px at its tallest.
-  const tall = kind === 'homepage-band' ? 310 : 280
+  // Each layout's own height: the band is 310, the module hero 208, the footer
+  // pair 280 at its tallest.
+  const tall = kind === 'homepage-band' ? 310 : kind === 'module-header' ? 208 : 280
 
   return (
     <div
@@ -120,6 +134,46 @@ function Preview({
         >
           {inner}
         </div>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * The module page's own header: a 1050px band, 208 tall, carrying the first
+ * photo. Far wider and flatter than anything on the homepage — 5:1 against the
+ * band's 2.3:1 — which is exactly why it needs showing.
+ */
+function ModuleHeaderPreview({ m }: { m: ModuleImageFields }) {
+  return (
+    <div
+      style={{
+        width: 1050,
+        height: 208,
+        ...(m.img1 ? coverStyle(m.img1) : { background: paper.hover }),
+        display: 'flex',
+        alignItems: 'flex-end',
+        justifyContent: 'space-between',
+        padding: '16px 18px',
+      }}
+    >
+      {m.shot1 ? (
+        <div
+          style={{
+            fontFamily: sans,
+            fontSize: 10,
+            color: m.img1 ? paper.cream : ink.strong,
+            background: m.img1 ? 'rgba(24,22,17,.55)' : undefined,
+            padding: m.img1 ? '3px 7px' : undefined,
+          }}
+        >
+          {m.shot1}
+        </div>
+      ) : (
+        <span />
+      )}
+      <div style={{ fontFamily: sans, fontSize: 10, color: m.img1 ? paper.cream : '#A4908C' }}>
+        16:5 / hero
       </div>
     </div>
   )
@@ -307,9 +361,14 @@ export function ModuleImages({
         </div>
       </div>
 
-      <div>
-        <div style={label}>Xem trước layout</div>
-        <Preview m={m} kind={group.preview} gridRef={grid} />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+        {group.preview.map((kind, i) => (
+          <div key={kind}>
+            <div style={label}>{PREVIEW_LABEL[kind]}</div>
+            {/* The first frame is the one a slot's shape is measured against. */}
+            <Preview m={m} kind={kind} gridRef={i === 0 ? grid : undefined} />
+          </div>
+        ))}
       </div>
 
       {placing && (
