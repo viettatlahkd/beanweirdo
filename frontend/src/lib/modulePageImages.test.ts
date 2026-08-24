@@ -35,8 +35,12 @@ describe('pageImage', () => {
     expect(isBorrowed({ ...base, layout: 'sequence' }, 4)).toBe(false)
   })
 
-  it('falls back on the caption the same way', () => {
-    expect(pageCaption({ ...base, shot2: 'từ trang chủ' }, 2)).toBe('từ trang chủ')
-    expect(pageCaption({ ...base, shot2: 'từ trang chủ', page_shot2: 'riêng' }, 2)).toBe('riêng')
+  it('borrows the caption only when the photo is borrowed too', () => {
+    // Borrowing both is one picture shown twice, which is fine.
+    expect(pageCaption({ ...base, img2: '/home.jpg', shot2: 'từ trang chủ' }, 2)).toBe('từ trang chủ')
+    // Its own photo with the homepage's words describes something not there.
+    const own = { ...base, img2: '/home.jpg', shot2: 'từ trang chủ', page_img2: '/riêng.jpg' }
+    expect(pageCaption(own, 2)).toBe('')
+    expect(pageCaption({ ...own, page_shot2: 'riêng' }, 2)).toBe('riêng')
   })
 })
