@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { orderPosts } from './postOrder'
+import { orderPosts, onlyLive } from './postOrder'
 
 const p = (id: string, o: Partial<{ pinned: boolean; sort_order: number | null; published_at: string | null; created_at: string }> = {}) => ({
   id,
@@ -70,5 +70,27 @@ describe('orderPosts', () => {
       { sort_order: null, published_at: '2026-01-01' },
     ])
     expect(out[0].published_at).toBe('2026-01-01')
+  })
+})
+
+describe('onlyLive', () => {
+  /*
+   * The editor listed every post a module had ever had and numbered them
+   * 01…06 as if that were their order on the site. sensory had one post
+   * published and five archived; roasting had none at all while the editor
+   * said "6 bài". The numbers named places no reader would ever count to.
+   */
+  it('keeps only what a reader can see', () => {
+    const out = onlyLive([
+      { status: 'published', sort_order: null, en: 'live' },
+      { status: 'archived', sort_order: null, en: 'archived' },
+      { status: 'draft', sort_order: null, en: 'draft' },
+      { status: 'deleted', sort_order: null, en: 'deleted' },
+    ])
+    expect(out.map((p) => p.en)).toEqual(['live'])
+  })
+
+  it('returns nothing for a module with nothing published', () => {
+    expect(onlyLive([{ status: 'archived', sort_order: null }])).toEqual([])
   })
 })

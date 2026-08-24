@@ -152,7 +152,19 @@ function NoteRow({
   )
 }
 
-export function PostsPanel() {
+export function PostsPanel({
+  onChanged,
+}: {
+  /**
+   * Called after anything here changes a post.
+   *
+   * The site map and Sửa nội dung read their own copy of the post list, so
+   * publishing something on this tab left them showing the site as it was
+   * before: a module could say "1 bài" with two of its posts live. One tab
+   * changing the site has to tell the others.
+   */
+  onChanged?: () => void
+}) {
   const nav = useNav()
   const { notes, add: addNote, patch: patchNote, remove: removeNote } = useNotes()
   const [openNote, setOpenNote] = useState<string | null>(null)
@@ -192,6 +204,7 @@ export function PostsPanel() {
     try {
       await transitionStatus(id, action)
       await Promise.all([load(), loadCounts()])
+      onChanged?.()
     } catch (e) {
       setError((e as Error).message)
     }
@@ -205,6 +218,7 @@ export function PostsPanel() {
     try {
       await updatePost(id, { pinned })
       await load()
+      onChanged?.()
     } catch (e) {
       setError((e as Error).message)
     }
@@ -229,6 +243,7 @@ export function PostsPanel() {
         vi: src.vi || 'Một dòng mô tả',
         fromPostId: id,
       })
+      onChanged?.()
       nav.editPost(created)
     } catch (e) {
       setError((e as Error).message)
