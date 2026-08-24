@@ -328,7 +328,7 @@ footer{
 
   <section id="du-lieu">
     <h2 class="serif"><span class="chip" style="background:var(--leaf)"></span>Cơ sở dữ liệu</h2>
-    <p class="deck">Postgres trên Supabase. Bảy bảng, hai mươi mốt migration. Số liệu dưới đây là trạng thái thật trên bản chạy.</p>
+    <p class="deck">Postgres trên Supabase, dự án <code>kjzxzvuyngeimxxpftxo</code> — cùng một dự án cho bản chạy thật và bản làm việc. Bảy bảng, hai mươi mốt migration. Số liệu dưới đây là trạng thái thật trên dự án đó.</p>
 
     <div class="scroller">
       <table>
@@ -510,7 +510,13 @@ footer{
     <p><strong>Kiểm thử tự động:</strong> 262 bài cho giao diện, 137 bài cho backend — tất cả đang qua. Hai bài kiểm tra tích hợp tự bỏ qua khi máy chưa dựng Supabase cục bộ; dựng đủ thì cả 137 bài đều chạy. Chạy bằng <code>npm test</code> ở thư mục gốc: nó kiểm kiểu cả ba phần trước, rồi mới chạy test. Chạy lẻ từng phần sẽ bỏ sót — đó là cách một lần hỏng đã lọt lên nhánh chính.</p>
 
     <div class="note caution">
-      <b>Việc migration không tự động được.</b> Không có mật khẩu cơ sở dữ liệu trong môi trường làm việc, nên mỗi thay đổi cấu trúc đều cần chủ site tự dán và chạy trong Supabase. Đây là ma sát có ý thức: nó buộc mọi thay đổi cấu trúc phải được nhìn thấy trước khi xảy ra.
+      <b>Việc migration không tự động được.</b> Không có mật khẩu cơ sở dữ liệu trong môi
+      trường làm việc, nên mỗi thay đổi cấu trúc đều cần chủ site tự dán và chạy trong
+      Supabase. Chủ đích là ma sát: thay đổi cấu trúc phải đi qua tay người.
+      <br><br>
+      Ma sát này không phải một bảo đảm. Ngày 23.08 hai cột được chạy tay trước, file
+      migration viết sau — cơ sở dữ liệu đi trước repo trong vài giờ. Muốn tra một cột có
+      thật hay không thì hỏi cơ sở dữ liệu, đừng đếm file.
     </div>
   </section>
 

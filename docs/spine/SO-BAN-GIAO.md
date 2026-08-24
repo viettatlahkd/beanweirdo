@@ -78,7 +78,7 @@ từ code đã merge, chưa luật nào được ghi vào.
 | D20 | ~~Đăng/lưu trữ ở một tab không cập nhật các tab khác~~ — `PostsPanel` và `Cms` giữ hai bản sao riêng của danh sách bài, nạp độc lập, không ai báo ai. Đăng một bài xong thì sơ đồ và Sửa nội dung vẫn hiện trang như trước đó. Nay `PostsPanel` báo ra ngoài sau mỗi thay đổi. | XONG |
 | D21 | ~~Khung xem trước trang module sai tỉ lệ~~ — vẽ lại bằng tay nên hiện 1.06:1 và 5.30:1 chỗ trang vẽ 0.73:1 và 1.66:1, hero 6:1 chỗ trang vẽ 5:1. Nay dùng chung `ModulePlates`. Kèm theo: chiều cao lưới specimen vốn do **độ dài đoạn dẫn** quyết định, nên sửa chữ là ảnh đổi tỉ lệ — đã ghim 373. | XONG |
 | D23 | Bốn file migration dùng hai số hiệu: `0017_pinned_and_optional_order` + `0017_unclassified_lowercase`, và `0018_hour_log_note` + `0018_module_page_images`. Thứ tự chạy giữa mỗi cặp không suy ra được từ tên. **Không đổi tên** — file đã chạy, đổi tên là sửa lịch sử mà cơ sở dữ liệu đã hành động theo. `tools/spec-numbers.mjs --check` nay chặn cặp trùng **mới**, hai cặp cũ được cho qua có chủ ý. | XONG |
-| D22 | **Có một dự án Supabase thứ hai đang tồn tại song song**, bảng `modules` dừng ở khoảng migration 0006 — thiếu `img1..3`, `feature_cells`, `kind`, `visibility`. Migration 0018 đã lỡ chạy vào đó một lần. Nếu không dùng vào việc gì thì nên xoá, kẻo lại chạy nhầm. Dự án đang chạy thật: `kjzxzvuyngeimxxpftxo`. | CHỜ |
+| D22 | **Có một dự án Supabase thứ hai đang tồn tại song song**, bảng `modules` dừng ở khoảng migration 0006. Chủ site chốt **giữ một dự án duy nhất là `kjzxzvuyngeimxxpftxo`** — dự án kia cần xoá trong Supabase, việc này chỉ chủ site làm được. SPEC nay ghi rõ tên dự án. | CHỜ CHỦ SITE XOÁ |
 
 ## E. Bản lưu trữ — nhớ soi lại khi rà Content management
 
