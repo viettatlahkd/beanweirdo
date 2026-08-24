@@ -24,6 +24,8 @@ export type UseHoursResult = {
   add(entry: Omit<LogEntry, 'id'>): Promise<LogEntry | null>
   patch(id: string, patch: Partial<Omit<LogEntry, 'id'>>): Promise<void>
   remove(id: string): Promise<void>
+  /** Delete an activity and its sittings as one undoable action. */
+  removeGroup(parentId: string): Promise<void>
   addTag(name: string, system: 'task' | 'project'): Promise<void>
   /** Rename a tag and everything filed under it, in one go. */
   renameTag(name: string, next: string, system: 'task' | 'project'): Promise<void>
@@ -216,6 +218,54 @@ export function useHours(): UseHoursResult {
     [rawAdd, rawRemove, record],
   )
 
+  /**
+   * Delete an activity together with every sitting under it — one action, one
+   * step of undo.
+   *
+   * Deleting them one at a time would leave Ctrl+Z walking back through the
+   * pieces: four presses to undo one press, past three intermediate states
+   * that never existed as far as the owner is concerned.
+   *
+   * Putting it back is ordered, not parallel: the heading has to exist before
+   * its sittings have anything to point at, and it comes back with a new id,
+   * so each sitting is re-parented onto whatever that turns out to be.
+   */
+  const removeGroup = useCallback(
+    async (parentId: string) => {
+      const all = logsRef.current
+      const parent = all.find((l) => l.id === parentId)
+      if (!parent) return
+      const kids = all.filter((l) => l.parentId === parentId)
+
+      for (const k of kids) await rawRemove(k.id)
+      await rawRemove(parentId)
+
+      const { id: _p, ...parentFields } = parent
+      const kidFields = kids.map(({ id: _k, parentId: _pid, ...rest }) => rest)
+      let restored: string[] = []
+
+      record({
+        label: kids.length ? 'xoá hoạt động và các lần của nó' : 'xoá hoạt động',
+        undo: async () => {
+          const back = await rawAdd(parentFields)
+          if (!back) return
+          restored = [back.id]
+          for (const fields of kidFields) {
+            const k = await rawAdd({ ...fields, parentId: back.id })
+            if (k) restored.push(k.id)
+          }
+        },
+        redo: async () => {
+          // Children first, same as the original delete: a heading with live
+          // sittings under it is a state the screen should never render.
+          for (const id of restored.slice(1)) await rawRemove(id)
+          if (restored[0]) await rawRemove(restored[0])
+        },
+      })
+    },
+    [rawAdd, rawRemove, record],
+  )
+
   const addTag = useCallback(
     async (name: string, system: 'task' | 'project') => {
       const trimmed = name.trim()
@@ -317,6 +367,7 @@ export function useHours(): UseHoursResult {
     add,
     patch,
     remove,
+    removeGroup,
     addTag,
     renameTag,
     removeTag,

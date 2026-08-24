@@ -15,7 +15,7 @@ import {
   withUnclassified,
 } from '../content/hours'
 import { useHours } from '../data/useHours'
-import { groupActivities } from '../lib/subtasks'
+import { groupActivities, mergeTargetFor } from '../lib/subtasks'
 import { useToday } from '../lib/useToday'
 import { serif } from '../design/tokens'
 import { Hover } from '../lib/Hover'
@@ -74,6 +74,7 @@ export function Hours() {
     add,
     patch,
     remove,
+    removeGroup,
     addTag,
     renameTag,
     removeTag,
@@ -190,17 +191,33 @@ export function Hours() {
   }
 
   /**
-   * Delete an activity and every sitting under it.
+   * Fold a row into the matching activity above it.
    *
-   * The database cascades, but the screen does not: dropping only the heading
-   * leaves its sittings in the local list as orphans, which are drawn as
-   * ordinary rows and — worse — keep counting towards the day's total until
-   * something forces a refetch. So they go first, one by one, and the heading
-   * last.
+   * If that activity is still a plain row, the work it already holds becomes
+   * its first sitting — the same move `addSitting` makes — so the two end up as
+   * two sittings of one thing rather than a heading that swallowed a row.
+   *
+   * Only ever offered when the name and both tags already match, so this is
+   * recording what the owner labelled, not guessing that two rows are the same
+   * work.
    */
-  async function removeGroup(l: LogEntry, sittings: LogEntry[]) {
-    for (const x of sittings) await remove(x.id)
-    await remove(l.id)
+  async function mergeInto(target: LogEntry, row: LogEntry) {
+    const hasSittings = logs.some((l) => l.parentId === target.id)
+    if (!hasSittings) {
+      await add({
+        date: target.date,
+        name: '',
+        kind: target.kind,
+        project: target.project ?? null,
+        mins: target.mins,
+        at: target.at,
+        done: target.done,
+        parentId: target.id,
+      })
+    }
+    // The row keeps its own time and length; it only stops being a row of its
+    // own. Its name goes: the heading above carries that now.
+    await patch(row.id, { parentId: target.id, name: '' })
   }
 
   async function cloneRow(l: LogEntry) {
@@ -263,6 +280,8 @@ export function Hours() {
       ds: x.ds,
       mins: x.mins,
       groups: rowGroups,
+      // Worked out here rather than in the row, which cannot see its neighbours.
+      mergeTargets: rowGroups.map((_g, i) => mergeTargetFor(rowGroups, i)?.row ?? null),
       hasRows: rows.length > 0,
       dow: ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'][x.d.getDay()],
       num: String(x.d.getDate()).padStart(2, '0'),
@@ -630,12 +649,17 @@ export function Hours() {
                           {loading ? 'đang tải…' : 'chưa ghi gì'}
                         </div>
                       )}
-                      {d.groups.map(({ row: l, children }) => (
+                      {d.groups.map(({ row: l, children }, gi) => (
                         <ActivityRow
                           key={l.id}
                           log={l}
                           sittings={children}
                           onAddSitting={() => void addSitting(l)}
+                          onMerge={
+                            d.mergeTargets[gi]
+                              ? () => void mergeInto(d.mergeTargets[gi] as LogEntry, l)
+                              : undefined
+                          }
                           onPatchSitting={(id, p) => void patch(id, p)}
                           onRemoveSitting={(id) => void remove(id)}
                           editable={d.recent}
@@ -665,7 +689,7 @@ export function Hours() {
                           }}
                           onPatch={(p) => void patch(l.id, p)}
                           onClone={() => void cloneRow(l)}
-                          onRemove={() => void removeGroup(l, children)}
+                          onRemove={() => void removeGroup(l.id)}
                         />
                       ))}
                       {d.recent && (

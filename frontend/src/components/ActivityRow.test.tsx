@@ -610,3 +610,25 @@ describe('ActivityRow — một hoạt động nhiều lần', () => {
     expect(screen.getByText('2 lần')).toBeInTheDocument()
   })
 })
+
+describe('ActivityRow — gộp vào hàng trên', () => {
+  it('offers the fold only when there is somewhere to fold into', async () => {
+    const props = row({ log: log({ name: 'web code' }), onMerge: vi.fn() })
+    await userEvent.click(screen.getByRole('button', { name: 'Gộp web code vào hàng trên' }))
+
+    expect(props.onMerge).toHaveBeenCalledTimes(1)
+    // Folding is not deleting, and not copying.
+    expect(props.onRemove).not.toHaveBeenCalled()
+    expect(props.onClone).not.toHaveBeenCalled()
+  })
+
+  it('hides the fold when nothing above matches', () => {
+    row({ log: log({ name: 'web code' }) })
+    expect(screen.queryByRole('button', { name: /Gộp/ })).not.toBeInTheDocument()
+  })
+
+  it('hides the fold on a day that can no longer be edited', () => {
+    row({ editable: false, log: log({ name: 'web code' }), onMerge: vi.fn() })
+    expect(screen.queryByRole('button', { name: /Gộp/ })).not.toBeInTheDocument()
+  })
+})
