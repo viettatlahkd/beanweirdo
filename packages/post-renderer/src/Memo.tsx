@@ -3,7 +3,21 @@ import type { CSSProperties } from 'react'
 import { sans, serif } from './tokens'
 import type { MemoItem, MemoPostData, MemoRun, MemoSection } from './types'
 
-export type MemoProps = {
+/**
+ * What the admin canvas may swap for an editable field.
+ *
+ * Memo used to take none, so the editor fell through to Article and edited a
+ * memo as though it were one — writing article-shaped sections over the memo's
+ * own. Its title, the line under it and each section heading are post fields,
+ * so those are the three the canvas can hook.
+ */
+export type MemoOverrides = {
+  renderTitle?: (title: string) => ReactNode
+  renderSubtitle?: (subtitle: string) => ReactNode
+  renderSectionHeading?: (heading: string, index: number) => ReactNode
+}
+
+export type MemoProps = MemoOverrides & {
   post: MemoPostData
   /**
    * The trail back to where this post is filed. Supplied by the app, so the
@@ -106,7 +120,13 @@ function Item({ item, depth = 0 }: { item: MemoItem; depth?: number }) {
   )
 }
 
-function Section({ section }: { section: MemoSection }) {
+function Section({
+  section,
+  renderHeading,
+}: {
+  section: MemoSection
+  renderHeading?: (heading: string) => ReactNode
+}) {
   return (
     <div>
       <h2
@@ -121,7 +141,7 @@ function Section({ section }: { section: MemoSection }) {
           color: '#102F35',
         }}
       >
-        {section.h}
+        {renderHeading ? renderHeading(section.h) : section.h}
       </h2>
 
       {section.callout && (
@@ -230,7 +250,7 @@ function Section({ section }: { section: MemoSection }) {
  * pour) before any prose, because a tasting note nobody can reproduce is just
  * an opinion. Everything below is an outline where indent carries the argument.
  */
-export function Memo({ post, breadcrumb }: MemoProps) {
+export function Memo({ post, breadcrumb, renderTitle, renderSubtitle, renderSectionHeading }: MemoProps) {
   return (
     <div style={{ background: '#FCFCFA', color: '#172124', minHeight: '100vh', fontFamily: sans, fontWeight: 300 }}>
       {/* A memo is short and deliberately plain, so it gets the shallow band
@@ -267,9 +287,9 @@ export function Memo({ post, breadcrumb }: MemoProps) {
                 color: '#102F35',
               }}
             >
-              {post.title}
+              {renderTitle ? renderTitle(post.title) : post.title}
             </h1>
-            {post.subtitle && (
+            {(post.subtitle || renderSubtitle) && (
               <div
                 style={{
                   fontFamily: serif,
@@ -280,7 +300,7 @@ export function Memo({ post, breadcrumb }: MemoProps) {
                   marginTop: 18,
                 }}
               >
-                {post.subtitle}
+                {renderSubtitle ? renderSubtitle(post.subtitle ?? '') : post.subtitle}
               </div>
             )}
           </div>
@@ -329,7 +349,11 @@ export function Memo({ post, breadcrumb }: MemoProps) {
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 52 }}>
           {post.sections.map((s, i) => (
-            <Section key={i} section={s} />
+            <Section
+              key={i}
+              section={s}
+              renderHeading={renderSectionHeading ? (h) => renderSectionHeading(h, i) : undefined}
+            />
           ))}
         </div>
       </div>

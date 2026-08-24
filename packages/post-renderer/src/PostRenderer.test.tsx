@@ -56,7 +56,7 @@ describe('PostRenderer dispatcher', () => {
       <PostRenderer
         template="article"
         post={articlePost}
-        renderTitle={(title) => <input aria-label="dispatched-title" defaultValue={title} />}
+        renderTitle={(title: string) => <input aria-label="dispatched-title" defaultValue={title} />}
       />,
     )
     expect(screen.getByLabelText('dispatched-title')).toHaveValue('An Article Title')

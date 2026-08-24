@@ -9,7 +9,6 @@ import type {
   ReportTable,
   SectionData,
 } from 'post-renderer'
-import { Stepper } from '../components/Stepper'
 import {
   getPost,
   listModules,
@@ -23,7 +22,7 @@ import {
 import { useNav } from '../../lib/nav'
 import { ink, paper, serif } from '../../design/tokens'
 import { blankReportBlock, getBody, resolveTemplate } from '../lib/postData'
-import { toArticleData, toCardsData } from '../../lib/postToRenderer'
+import { toArticleData, toCardsData, toLongformData, toMemoData } from '../../lib/postToRenderer'
 
 /**
  * The patch shape every editable field ultimately produces — a subset of
@@ -49,7 +48,13 @@ type CanvasProps = {
 }
 
 const REPORT_BLUE = '#6FA8C0'
-const TEMPLATE_LABEL: Record<string, string> = { article: 'Article', cards: 'Cards', report: 'Report' }
+const TEMPLATE_LABEL: Record<string, string> = {
+  article: 'Article',
+  cards: 'Cards',
+  report: 'Report',
+  longform: 'Long-form',
+  memo: 'Memo',
+}
 
 /**
  * The outer edit screen — fetches the post + modules by id, wires the
@@ -79,6 +84,11 @@ function EditorContent({ postId }: { postId: string }) {
   if (!post) return <div style={{ padding: 32, color: ink.muted, fontSize: 13 }}>Đang tải...</div>
 
   const template = resolveTemplate(post)
+  // Empty means nothing written yet — a body that is an empty array or an
+  // object with no keys, depending on which template put it there.
+  const hasContent = Array.isArray(post.body)
+    ? post.body.length > 0
+    : Object.keys((post.body ?? {}) as Record<string, unknown>).length > 0
   const activeModule = modules.find((m) => m.id === post.module_id)
 
   // Optimistic local update + fire-and-forget remote save. Functional
@@ -86,6 +96,13 @@ function EditorContent({ postId }: { postId: string }) {
   // to have around hero uploads: every callback below reads the latest
   // `post` via the updater function's `prev`, never via a captured `post`
   // from the render that created the closure.
+  /** The cover, set from the button in the header or by dropping on the page. */
+  async function setHero(file: File) {
+    const { url } = await uploadImage(file)
+    setPost((prev) => (prev ? { ...prev, hero_image_url: url } : prev))
+    updatePost(postId, { hero_image_url: url })
+  }
+
   function applyPatch(patch: EditPatch) {
     setPost((prev) => (prev ? { ...prev, ...(patch as Partial<PostDetail>) } : prev))
     updatePost(postId, patch as Parameters<typeof updatePost>[1])
@@ -93,20 +110,45 @@ function EditorContent({ postId }: { postId: string }) {
 
   return (
     <div style={{ padding: '32px 40px' }}>
-      <Stepper current="editor" />
-      <div style={{ fontSize: 12, color: ink.muted, marginBottom: 14 }}>
-        Template: <b style={{ color: ink.strong, fontWeight: 500 }}>{TEMPLATE_LABEL[template]}</b>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12, color: ink.muted, marginBottom: 14 }}>
+        Template:
+        {/*
+          Changing it here rather than by going back: the post already exists,
+          so there is nowhere to go back to. Only while it is still empty — the
+          templates hold structurally different bodies, and switching one that
+          has been written into would drop the writing on the floor.
+        */}
+        {hasContent ? (
+          <b style={{ color: ink.strong, fontWeight: 500 }}>{TEMPLATE_LABEL[template]}</b>
+        ) : (
+          <select
+            aria-label="Template"
+            value={template}
+            onChange={(e) => applyPatch({ template: e.target.value } as EditPatch)}
+            style={{
+              fontFamily: 'inherit',
+              fontSize: 12,
+              color: ink.strong,
+              background: paper.white,
+              border: `1px solid ${paper.rule}`,
+              padding: '3px 8px',
+            }}
+          >
+            {Object.entries(TEMPLATE_LABEL).map(([id, label]) => (
+              <option key={id} value={id}>
+                {label}
+              </option>
+            ))}
+          </select>
+        )}
+        <HeroPicker onPick={(f) => void setHero(f)} hasHero={Boolean(post.hero_image_url)} />
       </div>
       <EditorCanvas
         template={template}
         post={post}
         module={activeModule}
         onChange={applyPatch}
-        onHeroDrop={async (file) => {
-          const { url } = await uploadImage(file)
-          setPost((prev) => (prev ? { ...prev, hero_image_url: url } : prev))
-          updatePost(postId, { hero_image_url: url })
-        }}
+        onHeroDrop={setHero}
       />
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 20, maxWidth: 1320 }}>
         <span style={{ fontSize: 11, color: ink.muted }}>Tự lưu khi rời khỏi ô soạn · trạng thái hiện tại: {post.status}</span>
@@ -147,14 +189,37 @@ function EditorContent({ postId }: { postId: string }) {
 
 export function EditorCanvas({ template, post, module, onChange, onHeroDrop }: CanvasProps) {
   return (
-    <div style={{ maxWidth: 1320 }}>
+    /*
+      The cover used to have a drop strip of its own above the canvas, so the
+      picture appeared twice: once in a box that was not the page, and again
+      below where the page actually puts it. Now it appears where it appears,
+      and the page itself takes the drop.
+    */
+    <div
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={(e) => {
+        e.preventDefault()
+        const file = e.dataTransfer.files[0]
+        if (file) onHeroDrop(file)
+      }}
+      style={{ maxWidth: 1320 }}
+    >
       <EditorStyles />
-      <HeroUploader hero_image_url={post.hero_image_url} onDrop={onHeroDrop} />
-      <div style={{ marginTop: 16, border: `1px solid ${paper.rule}`, overflow: 'hidden', background: paper.white }}>
+      <div style={{ border: `1px solid ${paper.rule}`, overflow: 'hidden', background: paper.white }}>
         {template === 'cards' ? (
           <CardsEditor post={post} module={module} onChange={onChange} />
         ) : template === 'report' ? (
           <ReportEditor post={post} onChange={onChange} />
+        ) : template === 'memo' ? (
+          <MemoEditor post={post} module={module} onChange={onChange} />
+        ) : template === 'longform' ? (
+          /*
+           * Long-form's words are a parsed export and its title is the first
+           * heading inside them, so there is no field here to hook. Shown as it
+           * will read, and left alone — editing it as an article, which is what
+           * happened before, wrote article-shaped sections over the export.
+           */
+          <PostRenderer template="longform" post={toLongformData(post, module)} />
         ) : (
           <ArticleEditor post={post} module={module} onChange={onChange} />
         )}
@@ -257,36 +322,25 @@ function EditableField({
   )
 }
 
-function HeroUploader({ hero_image_url, onDrop }: { hero_image_url: string | null; onDrop: (file: File) => void }) {
+/** Sets the cover. The picture itself is shown by the page, not by this. */
+function HeroPicker({ onPick, hasHero }: { onPick: (file: File) => void; hasHero: boolean }) {
   const inputRef = useRef<HTMLInputElement>(null)
   return (
-    <div
-      className="awc-hero-drop"
-      onDragOver={(e) => e.preventDefault()}
-      onDrop={(e) => {
-        e.preventDefault()
-        const file = e.dataTransfer.files[0]
-        if (file) onDrop(file)
-      }}
-      onClick={() => inputRef.current?.click()}
-      style={{
-        height: 140,
-        border: '2px dashed rgba(0,0,0,.3)',
-        borderRadius: 8,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontFamily: 'inherit',
-        fontSize: 12,
-        color: 'rgba(0,0,0,.55)',
-        background: 'rgba(255,255,255,.25)',
-        cursor: 'pointer',
-        textAlign: 'center',
-        position: 'relative',
-        overflow: 'hidden',
-        transition: 'border-color .12s',
-      }}
-    >
+    <>
+      <button
+        onClick={() => inputRef.current?.click()}
+        style={{
+          fontFamily: 'inherit',
+          fontSize: 12,
+          color: ink.green,
+          background: 'none',
+          border: 'none',
+          padding: 0,
+          cursor: 'pointer',
+        }}
+      >
+        {hasHero ? 'đổi ảnh bìa' : 'thêm ảnh bìa'}
+      </button>
       <input
         ref={inputRef}
         type="file"
@@ -294,21 +348,11 @@ function HeroUploader({ hero_image_url, onDrop }: { hero_image_url: string | nul
         style={{ display: 'none' }}
         onChange={(e) => {
           const file = e.target.files?.[0]
-          if (file) onDrop(file)
           e.target.value = ''
+          if (file) onPick(file)
         }}
       />
-      {hero_image_url && (
-        <img
-          src={hero_image_url}
-          alt=""
-          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.6 }}
-        />
-      )}
-      <span style={{ position: 'relative' }}>
-        {hero_image_url ? '⬇ kéo ảnh mới vào để thay, hoặc bấm để chọn file' : '⬇ kéo ảnh hero thả vào đây, hoặc bấm để chọn file'}
-      </span>
-    </div>
+    </>
   )
 }
 
@@ -349,6 +393,56 @@ function ArticleEditor({ post, module, onChange }: { post: PostDetail; module?: 
 // cards — Cards has no override for the top-level post title, so that one
 // field gets a small editor bar above the real (otherwise unmodified) canvas.
 // ---------------------------------------------------------------------------
+
+/**
+ * Memo — Ghi 01's format, edited in place.
+ *
+ * Its title, the line under it and each section heading are the post's own
+ * fields, so those are editable; the runs inside a section are the writing
+ * itself and stay as they are, the same as long-form.
+ */
+function MemoEditor({
+  post,
+  module,
+  onChange,
+}: {
+  post: PostDetail
+  module?: Module
+  onChange: (patch: EditPatch) => void
+}) {
+  const data = toMemoData(post, module)
+  const body = (post.body ?? {}) as { sections?: { h: string }[] }
+  const sections = body.sections ?? []
+
+  return (
+    <PostRenderer
+      template="memo"
+      post={data}
+      renderTitle={(title) => <EditableField value={title} onCommit={(v) => onChange({ en: v })} />}
+      renderSubtitle={(subtitle) => (
+        <EditableField
+          value={subtitle}
+          multiline
+          rows={2}
+          onCommit={(v) => onChange({ body: { ...(post.body as object), subtitle: v } })}
+        />
+      )}
+      renderSectionHeading={(heading, i) => (
+        <EditableField
+          value={heading}
+          onCommit={(v) =>
+            onChange({
+              body: {
+                ...(post.body as object),
+                sections: sections.map((s, k) => (k === i ? { ...s, h: v } : s)),
+              },
+            })
+          }
+        />
+      )}
+    />
+  )
+}
 
 function CardsEditor({ post, module, onChange }: { post: PostDetail; module?: Module; onChange: (patch: EditPatch) => void }) {
   const data = toCardsData(post, module)

@@ -67,24 +67,31 @@ describe('EditorCanvas — article', () => {
     expect(onChange).toHaveBeenLastCalledWith({ pull_quote: 'trích dẫn cũ!' })
   })
 
-  it('shows the existing hero image when set, and the drop prompt otherwise', () => {
-    const { rerender } = render(
-      <EditorCanvas template="article" post={basePost({ hero_image_url: 'https://example.com/hero.png' })} onChange={vi.fn()} onHeroDrop={vi.fn()} />,
+  /*
+   * The cover had a drop strip of its own above the canvas, so the picture
+   * showed twice: once in a box that was not the page, and again where the page
+   * puts it. The strip is gone; the canvas takes the drop.
+   */
+  it('takes a dropped cover anywhere on the page', () => {
+    const onHeroDrop = vi.fn()
+    const { container } = render(
+      <EditorCanvas template="article" post={basePost()} onChange={vi.fn()} onHeroDrop={onHeroDrop} />,
     )
-    expect(document.querySelector('img')).toHaveAttribute('src', 'https://example.com/hero.png')
-
-    rerender(<EditorCanvas template="article" post={basePost({ hero_image_url: null })} onChange={vi.fn()} onHeroDrop={vi.fn()} />)
-    expect(document.querySelector('img')).not.toBeInTheDocument()
-    expect(screen.getByText(/kéo ảnh hero thả vào đây/)).toBeInTheDocument()
+    const file = new File(['x'], 'hero.png', { type: 'image/png' })
+    fireEvent.drop(container.firstChild as HTMLElement, { dataTransfer: { files: [file] } })
+    expect(onHeroDrop).toHaveBeenCalledWith(file)
   })
 
-  it('reports a dropped hero file via onHeroDrop', () => {
-    const onHeroDrop = vi.fn()
-    render(<EditorCanvas template="article" post={basePost()} onChange={vi.fn()} onHeroDrop={onHeroDrop} />)
-    const dropZone = screen.getByText(/kéo ảnh hero thả vào đây/).closest('div') as HTMLElement
-    const file = new File(['x'], 'hero.png', { type: 'image/png' })
-    fireEvent.drop(dropZone, { dataTransfer: { files: [file] } })
-    expect(onHeroDrop).toHaveBeenCalledWith(file)
+  it('no longer draws a second copy of the cover above the page', () => {
+    render(
+      <EditorCanvas
+        template="article"
+        post={basePost({ hero_image_url: 'https://example.com/hero.png' })}
+        onChange={vi.fn()}
+        onHeroDrop={vi.fn()}
+      />,
+    )
+    expect(screen.queryByText(/kéo ảnh hero thả vào đây/)).toBeNull()
   })
 })
 

@@ -1,37 +1,33 @@
 import { useState } from 'react'
-import { Stepper } from '../components/Stepper'
 import { createPost } from '../lib/apiClient'
 import { useNav } from '../../lib/nav'
 import { MetadataStep, type Metadata } from './MetadataStep'
-import { TemplateStep } from './TemplateStep'
 
+/**
+ * Starting a post.
+ *
+ * It was three steps: metadata, then template, then the editor. The template
+ * step is folded into the first — choosing the shape of a piece belongs beside
+ * choosing what it is about, not on a page of its own — so this is one form and
+ * then the editor.
+ */
 export function NewPostWizard() {
-  return (
-      <NewPostWizardContent />
-  )
-}
-
-function NewPostWizardContent() {
   const nav = useNav()
-  const [step, setStep] = useState<'metadata' | 'template' | 'editor'>('metadata')
-  const [metadata, setMetadata] = useState<Metadata | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
-  function handleMetadata(m: Metadata) {
-    setMetadata(m)
-    setStep('template')
-  }
-
-  async function handleTemplate(templateId: string) {
-    if (!metadata) return
-    const { id } = await createPost({ ...metadata, templateId })
-    nav.editPost(id)
+  async function start(m: Metadata) {
+    try {
+      const { id } = await createPost(m)
+      nav.editPost(id)
+    } catch (e) {
+      setError((e as Error).message)
+    }
   }
 
   return (
     <div style={{ padding: '32px 40px' }}>
-      <Stepper current={step} />
-      {step === 'metadata' && <MetadataStep onContinue={handleMetadata} />}
-      {step === 'template' && <TemplateStep onContinue={handleTemplate} />}
+      {error && <p role="alert">{error}</p>}
+      <MetadataStep onContinue={(m) => void start(m)} />
     </div>
   )
 }

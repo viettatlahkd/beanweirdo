@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { Article, type ArticleOverrides } from './Article'
 import { Cards, type CardsOverrides } from './Cards'
 import { Longform } from './Longform'
-import { Memo } from './Memo'
+import { Memo, type MemoOverrides } from './Memo'
 import { Report, type ReportOverrides } from './Report'
 import type {
   ArticlePostData,
@@ -24,8 +24,8 @@ export type PostRendererProps = Chrome &
   // an editor fills in, so there is nothing for the admin canvas to hook.
   | { template: 'longform'; post: LongformPostData }
   // Memo belongs to Ghi 01 rather than to a module, but it is a template like
-  // the rest and the admin previews it the same way.
-  | { template: 'memo'; post: MemoPostData }
+  // the rest — and the admin edits it in place, so it takes overrides too.
+  | ({ template: 'memo'; post: MemoPostData } & MemoOverrides)
   )
 
 /**
@@ -44,7 +44,8 @@ export function PostRenderer(props: PostRendererProps) {
     return <Longform post={props.post} breadcrumb={props.breadcrumb} />
   }
   if (props.template === 'memo') {
-    return <Memo post={props.post} breadcrumb={props.breadcrumb} />
+    const { template: _template, post, ...overrides } = props
+    return <Memo post={post} {...overrides} />
   }
   if (props.template === 'report') {
     const { template: _template, post, ...overrides } = props
