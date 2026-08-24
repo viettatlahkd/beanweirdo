@@ -14,5 +14,5 @@
 -- this file exists for a database being built from nothing. `if not exists`
 -- keeps it safe to run against either.
 
-alter table public.hour_logs
+alter table hour_logs
   add column if not exists note text;
