@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { LogEntry } from '../content/hours'
-import { countable, groupActivities } from './subtasks'
+import { countable, groupActivities, mergeTargetFor } from './subtasks'
 
 let seq = 0
 const log = (over: Partial<LogEntry> = {}): LogEntry => ({
@@ -135,5 +135,59 @@ describe('countable — cái gì được cộng vào tổng', () => {
   it('leaves a day without any sittings untouched', () => {
     const rows = [log(), log(), log()]
     expect(countable(rows)).toHaveLength(3)
+  })
+})
+
+describe('mergeTargetFor — gộp vào hàng trên', () => {
+  const day = (rows: LogEntry[]) => groupActivities(rows)
+
+  it('offers the row above when name and both tags match', () => {
+    const rows = [
+      log({ id: 'a', name: 'web code', kind: 'thực hành', project: 'Work', at: '09:00' }),
+      log({ id: 'b', name: 'web code', kind: 'thực hành', project: 'Work', at: '14:00' }),
+    ]
+    const groups = day(rows)
+
+    expect(mergeTargetFor(groups, 1)?.row.id).toBe('a')
+    // Nothing above the first row to fold into.
+    expect(mergeTargetFor(groups, 0)).toBeNull()
+  })
+
+  it('stays quiet when the tags differ', () => {
+    // Two rows called "đọc paper" in one afternoon are quite possibly two
+    // different papers. Only fold when every label already agrees.
+    const groups = day([
+      log({ id: 'a', name: 'đọc paper', kind: 'đọc', project: 'Sao đâu', at: '09:00' }),
+      log({ id: 'b', name: 'đọc paper', kind: 'đọc', project: 'Cà củng', at: '14:00' }),
+    ])
+
+    expect(mergeTargetFor(groups, 1)).toBeNull()
+  })
+
+  it('stays quiet when only the name differs', () => {
+    const groups = day([
+      log({ id: 'a', name: 'web code', kind: 'thực hành', at: '09:00' }),
+      log({ id: 'b', name: 'web design', kind: 'thực hành', at: '14:00' }),
+    ])
+
+    expect(mergeTargetFor(groups, 1)).toBeNull()
+  })
+
+  it('never offers to fold an unnamed row', () => {
+    const groups = day([log({ id: 'a', name: '', at: '09:00' }), log({ id: 'b', name: '', at: '14:00' })])
+    expect(mergeTargetFor(groups, 1)).toBeNull()
+  })
+
+  it('folds into a group that already has sittings', () => {
+    const rows = [
+      log({ id: 'p', name: 'web code', kind: 'thực hành', at: '09:00' }),
+      log({ id: 's', name: '', parentId: 'p', at: '09:00' }),
+      log({ id: 'b', name: 'web code', kind: 'thực hành', at: '14:00' }),
+    ]
+    const groups = day(rows)
+
+    // Groups sort to the top, so the plain row is second in the day.
+    expect(groups.map((g) => g.row.id)).toEqual(['p', 'b'])
+    expect(mergeTargetFor(groups, 1)?.row.id).toBe('p')
   })
 })

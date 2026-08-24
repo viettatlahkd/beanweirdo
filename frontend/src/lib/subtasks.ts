@@ -93,3 +93,34 @@ export function countable(logs: LogEntry[]): LogEntry[] {
   const headings = new Set(logs.map((l) => l.parentId).filter(Boolean))
   return logs.filter((l) => !headings.has(l.id))
 }
+
+/**
+ * The activity above this one that it could be folded into, or null.
+ *
+ * "Could" is strict on purpose: same day, same name, same project, same kind.
+ * Two rows called `đọc paper` in one afternoon are quite possibly two different
+ * papers, so the offer only appears when every label the owner chose already
+ * matches — at which point folding them is describing what is there, not
+ * guessing at it.
+ *
+ * The target is the nearest match *above*, in the order the day is drawn, so
+ * the button can honestly say "gộp vào hàng trên". A row that is already a
+ * sitting has nothing to fold — nesting stops at one level.
+ */
+export function mergeTargetFor(groups: ActivityGroup[], index: number): ActivityGroup | null {
+  const here = groups[index]
+  if (!here || here.row.parentId) return null
+
+  for (let i = index - 1; i >= 0; i--) {
+    const above = groups[i]
+    if (
+      above.row.name &&
+      above.row.name === here.row.name &&
+      (above.row.project ?? null) === (here.row.project ?? null) &&
+      above.row.kind === here.row.kind
+    ) {
+      return above
+    }
+  }
+  return null
+}

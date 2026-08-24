@@ -316,6 +316,11 @@ export type ActivityRowProps = {
    */
   sittings?: LogEntry[]
   onAddSitting?(): void
+  /**
+   * Fold this row into the matching activity above it. Absent when there is
+   * nothing above it to fold into — see `mergeTargetFor`.
+   */
+  onMerge?(): void
   onPatchSitting?(id: string, patch: Partial<Omit<LogEntry, 'id'>>): void
   onRemoveSitting?(id: string): void
   onRemove(): void
@@ -483,6 +488,7 @@ export function ActivityRow({
   onRemove,
   sittings = [],
   onAddSitting,
+  onMerge,
   onPatchSitting,
   onRemoveSitting,
 }: ActivityRowProps) {
@@ -895,6 +901,30 @@ export function ActivityRow({
             hoverStyle={editable && !grouped ? { background: '#EDE9D6' } : undefined}
           >
             {fmt(total)}
+          </Hover>
+        )}
+
+        {editable && onMerge && (
+          <Hover
+            onClick={onMerge}
+            title="Gộp vào hoạt động cùng tên phía trên"
+            aria-label={`Gộp ${log.name || 'hoạt động'} vào hàng trên`}
+            role="button"
+            style={{
+              flex: 'none',
+              marginTop: 4,
+              width: 20,
+              height: 20,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 13,
+              color: '#CFCFC4',
+              cursor: 'pointer',
+            }}
+            hoverStyle={{ color: '#143C43' }}
+          >
+            ⇡
           </Hover>
         )}
 
