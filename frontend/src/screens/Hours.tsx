@@ -90,6 +90,8 @@ export function Hours() {
   /** The tag whose deletion is being worked out, if any. */
   const [deleting, setDeleting] = useState<TagTarget | null>(null)
   const [newId, setNewId] = useState<string | null>(null)
+  /** The sitting just added — its time field opens itself, see ActivityRow. */
+  const [freshSitting, setFreshSitting] = useState<string | null>(null)
   // Several clocks, one of them open — see useSessionTimer.
   const timer = useSessionTimer({ onFinish: beep })
 
@@ -178,7 +180,7 @@ export function Hours() {
     const last = sittings.slice().sort((a, b) => toMin(a.at) - toMin(b.at)).slice(-1)[0]
     const startMin = Math.min(23 * 60 + 30, toMin(last.at) + last.mins + 15)
 
-    await add({
+    const made = await add({
       date: parent.date,
       name: '',
       kind: parent.kind,
@@ -188,6 +190,9 @@ export function Hours() {
       done: false,
       parentId: parent.id,
     })
+    // The start is a guess — a quarter of an hour after the last sitting — so
+    // the field opens on arrival rather than waiting to be found and clicked.
+    if (made) setFreshSitting(made.id)
   }
 
   /**
@@ -654,6 +659,7 @@ export function Hours() {
                           key={l.id}
                           log={l}
                           sittings={children}
+                          freshSitting={freshSitting}
                           onAddSitting={() => void addSitting(l)}
                           onMerge={
                             d.mergeTargets[gi]

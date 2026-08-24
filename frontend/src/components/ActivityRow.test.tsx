@@ -1,9 +1,9 @@
 import '@testing-library/jest-dom/vitest'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import type { LogEntry } from '../content/hours'
-import { ActivityRow, atToMin, endOf, minToAt, splitHm } from './ActivityRow'
+import { ActivityRow, atToMin, endOf, minToAt, rememberEdit, resolveTimes, splitHm } from './ActivityRow'
 
 const log = (over: Partial<LogEntry> = {}): LogEntry => ({
   id: 'log-1',
@@ -630,5 +630,112 @@ describe('ActivityRow — gộp vào hàng trên', () => {
   it('hides the fold on a day that can no longer be edited', () => {
     row({ editable: false, log: log({ name: 'web code' }), onMerge: vi.fn() })
     expect(screen.queryByRole('button', { name: /Gộp/ })).not.toBeInTheDocument()
+  })
+})
+
+describe('resolveTimes — hai thay đổi gần nhất quyết định số thứ ba', () => {
+  const at = '09:00'
+  const end = '10:30'
+  const mins = 90
+
+  it('moves the end when start and length were the last two touched', () => {
+    // 10:00 for two hours ends at 12:00 — the end follows.
+    const out = resolveTimes({ at: '10:00', end, mins: 120 }, ['mins', 'at'])
+    expect(out).toEqual({ at: '10:00', mins: 120 })
+    expect(endOf(out!)).toBe('12:00')
+  })
+
+  it('moves the start when end and length were the last two touched', () => {
+    // Finished at 10:30 after 45 minutes means it began at 09:45.
+    const out = resolveTimes({ at, end: '10:30', mins: 45 }, ['mins', 'end'])
+    expect(out).toEqual({ at: '09:45', mins: 45 })
+  })
+
+  it('recomputes the length when start and end were the last two touched', () => {
+    // 09:15 to 11:00 is 105 minutes, whatever the length used to say.
+    const out = resolveTimes({ at: '09:15', end: '11:00', mins }, ['end', 'at'])
+    expect(out).toEqual({ at: '09:15', mins: 105 })
+  })
+
+  it('drags the end along when the start moves first', () => {
+    // One field spoken for, two could give way — the start stays put.
+    const out = resolveTimes({ at: '08:00', end, mins }, ['at'])
+    expect(out).toEqual({ at: '08:00', mins: 90 })
+    expect(endOf(out!)).toBe('09:30')
+  })
+
+  it('rewrites the length when the end is typed first', () => {
+    // Same rule from the other side: the start is the thing kept still.
+    const out = resolveTimes({ at, end: '10:03', mins }, ['end'])
+    expect(out).toEqual({ at: '09:00', mins: 63 })
+  })
+
+  it('refuses an end that lands before its start', () => {
+    // Only midnight does that honestly, and that activity belongs to two days.
+    expect(resolveTimes({ at: '22:00', end: '01:00', mins }, ['end', 'at'])).toBeNull()
+  })
+
+  it('refuses a length of nothing', () => {
+    expect(resolveTimes({ at: '09:00', end: '09:00', mins }, ['end', 'at'])).toBeNull()
+    expect(resolveTimes({ at, end, mins: 0 }, ['mins', 'at'])).toBeNull()
+  })
+
+  it('refuses a start pushed back past midnight', () => {
+    // 00:30 minus two hours is yesterday, which this row cannot express.
+    expect(resolveTimes({ at, end: '00:30', mins: 120 }, ['mins', 'end'])).toBeNull()
+  })
+})
+
+describe('rememberEdit — hàng đợi hai ô vừa sửa', () => {
+  it('keeps the newest first and drops the third', () => {
+    let recent = rememberEdit([], 'at')
+    expect(recent).toEqual(['at'])
+
+    recent = rememberEdit(recent, 'mins')
+    expect(recent).toEqual(['mins', 'at'])
+
+    recent = rememberEdit(recent, 'end')
+    expect(recent).toEqual(['end', 'mins'])
+  })
+
+  it('moves a field already held back to the front', () => {
+    // Re-typing the start makes it the newest, not a duplicate.
+    expect(rememberEdit(['mins', 'at'], 'at')).toEqual(['at', 'mins'])
+  })
+})
+
+describe('ActivityRow — Tab đi dọc ba ô, và lần mới mở sẵn ô giờ', () => {
+  const sitting = (over: Partial<LogEntry> = {}): LogEntry =>
+    log({ id: 's1', name: '', at: '14:31', mins: 61, ...over })
+
+  it('opens the time field on a sitting that was just added', () => {
+    row({ sittings: [sitting()], freshSitting: 's1' })
+
+    // The start is a guess — a quarter of an hour after the last sitting — so
+    // it arrives ready to be corrected rather than waiting to be clicked.
+    const open = document.activeElement as HTMLInputElement
+    expect(open.tagName).toBe('INPUT')
+    expect(open.value).toBe('14:31')
+  })
+
+  it('leaves an older sitting alone', () => {
+    row({ sittings: [sitting({ id: 'old' })], freshSitting: 's1' })
+    expect(document.activeElement?.tagName).not.toBe('INPUT')
+  })
+
+  it('walks start → end → length on Tab', async () => {
+    const u = userEvent.setup()
+    row({ log: log({ at: '09:00', mins: 90 }) })
+
+    await u.click(screen.getByText('09:00'))
+    expect((document.activeElement as HTMLInputElement).value).toBe('09:00')
+
+    await u.tab()
+    // Tab commits the start and steps to the end, rather than leaving the row
+    // for whatever the browser thinks comes next.
+    await waitFor(() => expect((document.activeElement as HTMLInputElement).value).toBe('10:30'))
+
+    await u.tab()
+    await waitFor(() => expect((document.activeElement as HTMLInputElement).type).toBe('number'))
   })
 })

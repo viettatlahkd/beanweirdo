@@ -145,6 +145,66 @@ export const endOf = (log: Pick<LogEntry, 'at' | 'mins'>): string => minToAt(atT
 /** `95` → `{ h: 1, m: 35 }`. */
 export const splitHm = (mins: number) => ({ h: Math.floor(mins / 60), m: mins % 60 })
 
+/** The three numbers on a row. Only two are stored; the third is worked out. */
+export type TimeField = 'at' | 'end' | 'mins'
+
+export const TIME_ORDER: TimeField[] = ['at', 'end', 'mins']
+
+/**
+ * Start, end and length, given which two the owner touched last.
+ *
+ * They cannot all three be free: pick any two and the third follows. What the
+ * row used to do was fix the rule in advance — moving the start always dragged
+ * the end along, editing the end always rewrote the length — which is right
+ * about half the time and quietly wrong the other half.
+ *
+ * So the rule follows the hand instead. The field the owner has *not* touched
+ * most recently is the one that gives way:
+ *
+ *   start + length → end   = start + length
+ *   end   + length → start = end - length
+ *   start + end    → length = end - start
+ *
+ * `recent` is newest-first and holds at most two. On the first edit of a
+ * session only one field is spoken for, so two could give way; the start is
+ * kept still, because an activity is remembered by when it began far more
+ * often than by when it stopped. Moving the start drags the end along; typing
+ * an end rewrites the length.
+ *
+ * Returns null when the result would not be an activity: a length of zero, or
+ * an end before its start. Midnight is the only way that happens honestly, and
+ * an activity crossing midnight belongs to two days rather than one.
+ */
+export function resolveTimes(
+  next: { at: string; end: string; mins: number },
+  recent: TimeField[],
+): { at: string; mins: number } | null {
+  const held = recent.slice(0, 2)
+  // With two fields held the third is forced. With one there are two
+  // candidates, and the start is the one worth keeping still: an activity is
+  // remembered by when it began far more often than by when it stopped.
+  const gives: TimeField =
+    held.length >= 2
+      ? (TIME_ORDER.find((f) => !held.includes(f)) ?? 'end')
+      : held[0] === 'end'
+        ? 'mins'
+        : 'end'
+
+  if (gives === 'end') {
+    return next.mins > 0 ? { at: next.at, mins: next.mins } : null
+  }
+  if (gives === 'at') {
+    const at = atToMin(next.end) - next.mins
+    return at >= 0 && next.mins > 0 ? { at: minToAt(at), mins: next.mins } : null
+  }
+  const mins = atToMin(next.end) - atToMin(next.at)
+  return mins > 0 ? { at: next.at, mins } : null
+}
+
+/** Remember a field as the most recent edit, keeping only the last two. */
+export const rememberEdit = (recent: TimeField[], field: TimeField): TimeField[] =>
+  [field, ...recent.filter((f) => f !== field)].slice(0, 2)
+
 const clockField: CSSProperties = {
   background: '#FFFFFF',
   border: '1px solid #3E7A4E',
@@ -174,6 +234,7 @@ function TimeField({
   onOpen,
   onCommit,
   onCancel,
+  onTab,
 }: {
   value: string
   editing: boolean
@@ -183,6 +244,8 @@ function TimeField({
   onOpen: () => void
   onCommit: () => void
   onCancel: () => void
+  /** Tab moves along the row — start, end, length — rather than out of it. */
+  onTab?: (back: boolean) => void
 }) {
   if (editing) {
     return (
@@ -194,6 +257,13 @@ function TimeField({
           if (e.nativeEvent.isComposing) return
           if (e.key === 'Enter') onCommit()
           if (e.key === 'Escape') onCancel()
+          if (e.key === 'Tab' && onTab) {
+            // The three numbers are one sum being worked out; Tab should walk
+            // between them, not jump to whatever the browser thinks is next.
+            e.preventDefault()
+            onCommit()
+            onTab(e.shiftKey)
+          }
         }}
         onBlur={onCommit}
         style={clockField}
@@ -231,10 +301,12 @@ function DurationField({
   mins,
   onCommit,
   onCancel,
+  onTab,
 }: {
   mins: number
   onCommit: (mins: number) => void
   onCancel: () => void
+  onTab?: (back: boolean) => void
 }) {
   const start = splitHm(mins)
   const [h, setH] = useState(String(start.h))
@@ -260,13 +332,25 @@ function DurationField({
     if (e.nativeEvent.isComposing) return
     if (e.key === 'Enter') done()
     if (e.key === 'Escape') onCancel()
+    if (e.key === 'Tab' && onTab) {
+      // Hours and minutes are two boxes of one field: Tab between them stays
+      // inside, and only leaves from whichever end you tabbed towards.
+      const inner = e.currentTarget as HTMLElement
+      const boxes = [...inner.querySelectorAll('input')]
+      const i = boxes.indexOf(e.target as HTMLInputElement)
+      const leaving = e.shiftKey ? i <= 0 : i >= boxes.length - 1
+      if (!leaving) return
+      e.preventDefault()
+      onCommit(total())
+      onTab(e.shiftKey)
+    }
   }
 
   const box: CSSProperties = { ...clockField, width: 42, textAlign: 'right' }
   const unit: CSSProperties = { fontSize: 12, color: '#8A8A7C' }
 
   return (
-    <div onBlur={onBlur} style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+    <div onBlur={onBlur} onKeyDown={onKeyDown} style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
       <input
         autoFocus
         type="number"
@@ -315,6 +399,8 @@ export type ActivityRowProps = {
    * text offering itself on every row of the day.
    */
   sittings?: LogEntry[]
+  /** The sitting just added, if any — its time field opens itself. */
+  freshSitting?: string | null
   onAddSitting?(): void
   /**
    * Fold this row into the matching activity above it. Absent when there is
@@ -344,11 +430,70 @@ export type ActivityRowProps = {
  * What it does carry is the pair of clock times and its own length, because
  * that is the whole reason the sitting exists as a row at all.
  */
+/**
+ * Editing the three numbers of one row.
+ *
+ * Shared by the plain rows and by the sittings under a heading, because the
+ * arithmetic has to be the same in both — a length that behaves one way on a
+ * row and another way one line below it is worse than either rule alone.
+ *
+ * `recent` is what makes the arithmetic follow the hand; it lives for as long
+ * as the row is being worked on and is dropped when focus leaves, so a session
+ * tomorrow does not inherit today's last two edits. See `resolveTimes`.
+ */
+function useTimeTriple(
+  log: Pick<LogEntry, 'at' | 'mins'>,
+  editable: boolean,
+  onPatch: (patch: { at?: string; mins?: number }) => void,
+) {
+  const [editing, setEditing] = useState<TimeField | null>(null)
+  const [draft, setDraft] = useState('')
+  const [recent, setRecent] = useState<TimeField[]>([])
+
+  function open(field: TimeField) {
+    if (!editable) return
+    setDraft(field === 'at' ? log.at : field === 'end' ? endOf(log) : String(log.mins))
+    setEditing(field)
+  }
+
+  /** Take the typed value, work out the third number, and save both. */
+  function commit(field: TimeField, typed: string | number) {
+    const next = {
+      at: field === 'at' ? String(typed) : log.at,
+      end: field === 'end' ? String(typed) : endOf(log),
+      mins: field === 'mins' ? Number(typed) : log.mins,
+    }
+    const held = rememberEdit(recent, field)
+    setRecent(held)
+    setEditing(null)
+
+    const looksLikeTime = /^\d{1,2}:\d{2}$/.test(String(typed))
+    if (field !== 'mins' && !looksLikeTime) return
+
+    const out = resolveTimes(next, held)
+    if (!out) return
+    const patch: { at?: string; mins?: number } = {}
+    if (out.at !== log.at) patch.at = out.at
+    if (out.mins !== log.mins) patch.mins = out.mins
+    if (patch.at || patch.mins) onPatch(patch)
+  }
+
+  /** Tab walks start → end → length and back, then stops at either end. */
+  function step(from: TimeField, back: boolean) {
+    const i = TIME_ORDER.indexOf(from) + (back ? -1 : 1)
+    const to = TIME_ORDER[i]
+    if (to) setTimeout(() => open(to), 0)
+  }
+
+  return { editing, draft, setDraft, recent, setRecent, open, commit, step, close: () => setEditing(null) }
+}
+
 function SittingRow({
   log,
   editable,
   last,
   color,
+  fresh,
   onPatch,
   onRemove,
 }: {
@@ -356,28 +501,25 @@ function SittingRow({
   editable: boolean
   last: boolean
   color: string
+  /** Just added, so the cursor starts in the time rather than waiting to be found. */
+  fresh: boolean
   onPatch(patch: Partial<Omit<LogEntry, 'id'>>): void
   onRemove(): void
 }) {
-  const [editing, setEditing] = useState<'at' | 'end' | 'mins' | null>(null)
-  const [draft, setDraft] = useState('')
+  const t = useTimeTriple(log, editable, onPatch)
 
-  function openEdit(field: 'at' | 'end' | 'mins') {
-    if (!editable) return
-    setDraft(field === 'at' ? log.at : field === 'end' ? endOf(log) : String(log.mins))
-    setEditing(field)
-  }
-
-  function commit() {
-    const looksLikeTime = /^\d{1,2}:\d{2}$/.test(draft)
-    if (editing === 'at') {
-      if (looksLikeTime && draft !== log.at) onPatch({ at: draft })
-    } else if (editing === 'end' && looksLikeTime) {
-      const mins = atToMin(draft) - atToMin(log.at)
-      if (mins > 0 && mins !== log.mins) onPatch({ mins })
-    }
-    setEditing(null)
-  }
+  /**
+   * A sitting arrives with a guessed start — a quarter of an hour after the
+   * last one — and that guess is the first thing anyone wants to correct. So
+   * the field opens itself, the way the name field does on a new row. Tab from
+   * here walks on to the end and the length.
+   */
+  const opened = useRef(false)
+  useEffect(() => {
+    if (!fresh || opened.current || !editable) return
+    opened.current = true
+    t.open('at')
+  }, [fresh, editable])
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 0 5px 2px' }}>
@@ -412,38 +554,38 @@ function SittingRow({
       </div>
       <TimeField
         value={log.at}
-        editing={editing === 'at'}
-        draft={draft}
+        editing={t.editing === 'at'}
+        draft={t.draft}
         editable={editable}
-        onDraft={setDraft}
-        onOpen={() => openEdit('at')}
-        onCommit={commit}
-        onCancel={() => setEditing(null)}
+        onDraft={t.setDraft}
+        onOpen={() => t.open('at')}
+        onCommit={() => t.commit('at', t.draft)}
+        onCancel={t.close}
+        onTab={(back) => t.step('at', back)}
       />
       <div style={{ fontSize: 12, color: '#B0AEA2' }}>–</div>
       <TimeField
         value={endOf(log)}
-        editing={editing === 'end'}
-        draft={draft}
+        editing={t.editing === 'end'}
+        draft={t.draft}
         editable={editable}
-        onDraft={setDraft}
-        onOpen={() => openEdit('end')}
-        onCommit={commit}
-        onCancel={() => setEditing(null)}
+        onDraft={t.setDraft}
+        onOpen={() => t.open('end')}
+        onCommit={() => t.commit('end', t.draft)}
+        onCancel={t.close}
+        onTab={(back) => t.step('end', back)}
       />
       <div style={{ flex: '1 1 0' }} />
-      {editing === 'mins' ? (
+      {t.editing === 'mins' ? (
         <DurationField
           mins={log.mins}
-          onCommit={(next) => {
-            if (next > 0 && next !== log.mins) onPatch({ mins: next })
-            setEditing(null)
-          }}
-          onCancel={() => setEditing(null)}
+          onCommit={(next) => t.commit('mins', next)}
+          onCancel={t.close}
+          onTab={(back) => t.step('mins', back)}
         />
       ) : (
         <Hover
-          onClick={() => openEdit('mins')}
+          onClick={() => t.open('mins')}
           style={{
             fontSize: 13.5,
             color: '#414A42',
@@ -487,6 +629,7 @@ export function ActivityRow({
   onClone,
   onRemove,
   sittings = [],
+  freshSitting = null,
   onAddSitting,
   onMerge,
   onPatchSitting,
@@ -501,8 +644,7 @@ export function ActivityRow({
   const total = grouped ? sittings.reduce((a, x) => a + x.mins, 0) : log.mins
   const allDone = grouped && sittings.every((x) => x.done !== false)
   const [picking, setPicking] = useState<'project' | 'task' | null>(null)
-  const [editing, setEditing] = useState<'at' | 'end' | 'mins' | null>(null)
-  const [draft, setDraft] = useState('')
+  const t = useTimeTriple(log, editable, onPatch)
   const [name, setName] = useState(log.name)
   const [note, setNote] = useState(log.note ?? '')
   const nameRef = useRef<HTMLInputElement>(null)
@@ -544,50 +686,16 @@ export function ActivityRow({
   }, [naming])
 
   /** Being worked on: mid-edit, or a new row that hasn't been named yet. */
-  const working = editing !== null || naming
+  const working = t.editing !== null || naming
 
   const done = log.done !== false
   const chip = noteChip(log.note)
   const color = kindColor[log.kind] ?? '#163F42'
 
-  function openEdit(field: 'at' | 'end' | 'mins') {
-    if (!editable) return
-    setDraft(field === 'at' ? log.at : field === 'end' ? endOf(log) : String(log.mins))
-    setEditing(field)
-  }
-
-  /**
-   * Commit rather than discard. The old panel threw the half-typed value away
-   * whenever focus left, so clicking anywhere lost the edit — the one thing a
-   * journal must never do with something you just typed.
-   */
-  function commit() {
-    const looksLikeTime = /^\d{1,2}:\d{2}$/.test(draft)
-    if (editing === 'at') {
-      // Moving the start moves the whole activity: the length is what you
-      // said it was, so the end follows rather than the duration shrinking.
-      if (looksLikeTime && draft !== log.at) onPatch({ at: draft })
-    } else if (editing === 'end') {
-      // The one case where the length gives way instead — you are saying when
-      // it finished, not how long it took.
-      if (looksLikeTime) {
-        const mins = atToMin(draft) - atToMin(log.at)
-        // A day boundary is the only way an end can precede its start here,
-        // and an activity crossing midnight belongs to two days, not one.
-        if (mins > 0 && mins !== log.mins) onPatch({ mins })
-      }
-    } else if (editing === 'mins') {
-      const m = parseInt(draft, 10)
-      if (m > 0 && m !== log.mins) onPatch({ mins: m })
-    }
-    setEditing(null)
-  }
-
-
   return (
     <div
       ref={rowRef}
-      draggable={editable && !naming && !editing}
+      draggable={editable && !naming && !t.editing}
       onDragStart={(e) => {
         e.dataTransfer.setData('text/plain', log.id)
         e.dataTransfer.effectAllowed = 'move'
@@ -686,40 +794,40 @@ export function ActivityRow({
             <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
               <TimeField
                 value={log.at}
-                editing={editing === 'at'}
-                draft={draft}
+                editing={t.editing === 'at'}
+                draft={t.draft}
                 editable={editable}
-                onDraft={setDraft}
-                onOpen={() => openEdit('at')}
-                onCommit={commit}
-                onCancel={() => setEditing(null)}
+                onDraft={t.setDraft}
+                onOpen={() => t.open('at')}
+                onCommit={() => t.commit('at', t.draft)}
+                onCancel={t.close}
+                onTab={(back) => t.step('at', back)}
               />
               <div style={{ fontSize: 12, color: '#B0AEA2' }}>–</div>
               <TimeField
                 value={endOf(log)}
-                editing={editing === 'end'}
-                draft={draft}
+                editing={t.editing === 'end'}
+                draft={t.draft}
                 editable={editable}
-                onDraft={setDraft}
-                onOpen={() => openEdit('end')}
-                onCommit={commit}
-                onCancel={() => setEditing(null)}
+                onDraft={t.setDraft}
+                onOpen={() => t.open('end')}
+                onCommit={() => t.commit('end', t.draft)}
+                onCancel={t.close}
+                onTab={(back) => t.step('end', back)}
               />
               {working && (
                 <>
                   <div style={{ fontSize: 12, color: '#D6D3C6', padding: '0 2px' }}>·</div>
-                  {editing === 'mins' ? (
+                  {t.editing === 'mins' ? (
                     <DurationField
                       mins={log.mins}
-                      onCommit={(next) => {
-                        if (next > 0 && next !== log.mins) onPatch({ mins: next })
-                        setEditing(null)
-                      }}
-                      onCancel={() => setEditing(null)}
+                      onCommit={(next) => t.commit('mins', next)}
+                      onCancel={t.close}
+                      onTab={(back) => t.step('mins', back)}
                     />
                   ) : (
                     <Hover
-                      onClick={() => openEdit('mins')}
+                      onClick={() => t.open('mins')}
                       style={{
                         fontSize: 13,
                         color: '#414A42',
@@ -874,6 +982,7 @@ export function ActivityRow({
                   editable={editable}
                   last={i === sittings.length - 1}
                   color={color}
+                  fresh={x.id === freshSitting}
                   onPatch={(patch) => onPatchSitting?.(x.id, patch)}
                   onRemove={() => onRemoveSitting?.(x.id)}
                 />
@@ -886,7 +995,7 @@ export function ActivityRow({
           <Hover
             // The total of a grouped activity is not a field: it is the sum of
             // the sittings, and the way to change it is to change one of them.
-            onClick={grouped ? undefined : () => openEdit('mins')}
+            onClick={grouped ? undefined : () => t.open('mins')}
             title={grouped ? 'Tổng của các lần bên dưới' : undefined}
             style={{
               flex: 'none',
