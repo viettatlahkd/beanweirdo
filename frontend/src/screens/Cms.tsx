@@ -101,11 +101,11 @@ const nameRowPlain = 'minmax(0,1fr) 112px'
  * empty module still appears on the site, so saying otherwise was wrong:
  * group 05 has it that a created public module always shows.
  */
-function countLabel(id: string, live: number, held: number): string {
+function countLabel(id: string, live: number): string {
   if (id === 'ghi02') return 'checkbox hàng ngày'
-  // Counting everything said "6 bài" for a module with nothing on the site.
-  const shown = live ? `${live} bài` : 'chưa có bài nào trên trang'
-  return held ? `${shown} · ${held} chưa đăng` : shown
+  // Counting every post a module ever had said "6 bài" for a module with
+  // nothing on the site at all.
+  return live ? `${live} bài` : 'chưa có bài nào trên trang'
 }
 
 /** The three tabs, named once so the site map and the tab bar cannot drift. */
@@ -114,13 +114,6 @@ const TABS = [
   { k: 'map', t: 'Sơ đồ trang' },
   { k: 'content', t: 'Sửa nội dung' },
 ] as const
-
-/** What to call a post that is not on the site. */
-const STATUS_LABEL: Record<string, string> = {
-  draft: 'nháp',
-  archived: 'lưu trữ',
-  deleted: 'thùng rác',
-}
 
 /** One page on the site map, and what it holds. */
 type MapRow = { label: string; desc: string; kids: string[] }
@@ -838,11 +831,10 @@ export function Cms() {
           </div>
 
           {modules.map((m, mi) => {
-            // What a reader actually sees, and what is being held back. The
-            // numbers and the drag handle belong to the first list only: order
-            // is a fact about the page, and an archived post is not on it.
+            // Only what a reader sees. Order is a fact about the page, so a
+            // post that is not on the page has no place in this list — the
+            // drafts and the archive are managed on Tạo bài đăng.
             const entries = liveOf(m.id)
-            const held = postsOf(m.id).filter((p) => p.status !== 'published')
             const open = openModule === m.id
             // Which fields this module actually uses — see admin/moduleForm.ts.
             const shape = formShapeOf(m)
@@ -916,7 +908,7 @@ export function Cms() {
                     {m.title}
                   </div>
                   <div style={{ fontFamily: sans, fontWeight: 300, fontSize: 12, color: ink.muted, flex: 'none' }}>
-                    {countLabel(m.id, entries.length, held.length)}
+                    {countLabel(m.id, entries.length)}
                   </div>
                   <Hover
                     onClick={async () => {
@@ -1217,65 +1209,6 @@ export function Cms() {
                       </div>
                     ))}
 
-                    {held.length > 0 && (
-                      <>
-                        <div
-                          style={{
-                            fontFamily: sans,
-                            fontSize: 10,
-                            letterSpacing: '.16em',
-                            textTransform: 'uppercase',
-                            color: ink.faint,
-                            marginTop: 18,
-                            paddingTop: 12,
-                            borderTop: '1px solid #EFEADA',
-                          }}
-                        >
-                          Chưa trên trang
-                        </div>
-                        {/*
-                          Listed, but not numbered and not draggable: a number
-                          here would name a place on a page these posts are not
-                          on, which is what the list used to do.
-                        */}
-                        {held.map((e) => (
-                          <div
-                            key={e.id}
-                            style={{
-                              display: 'grid',
-                              gridTemplateColumns: '44px minmax(0,0.72fr) minmax(0,1.6fr) 74px 48px',
-                              gap: 10,
-                              alignItems: 'center',
-                              padding: '6px 0',
-                              borderBottom: '1px solid #EFEADA',
-                              opacity: 0.55,
-                            }}
-                          >
-                            <div
-                              style={{
-                                fontFamily: sans,
-                                fontSize: 10,
-                                letterSpacing: '.1em',
-                                textTransform: 'uppercase',
-                                color: ink.faint,
-                              }}
-                            >
-                              {STATUS_LABEL[e.status]}
-                            </div>
-                            <div style={{ fontFamily: serif, fontSize: 15, color: ink.base, minWidth: 0 }}>
-                              {e.en}
-                            </div>
-                            <div style={{ fontFamily: sans, fontSize: 12.5, color: ink.soft, minWidth: 0 }}>
-                              {e.vi}
-                            </div>
-                            <div style={{ fontFamily: sans, fontSize: 11.5, color: ink.faint }}>
-                              {e.date_label}
-                            </div>
-                            <div />
-                          </div>
-                        ))}
-                      </>
-                    )}
                   </div>
                 )}
               </div>
