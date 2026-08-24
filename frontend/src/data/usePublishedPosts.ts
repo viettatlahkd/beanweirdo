@@ -104,13 +104,18 @@ export function usePublishedPosts(options: UsePostsOptions = {}): UsePostsResult
     //   1. bài ghim lên trước
     //   2. vị trí người dùng tự kéo — rỗng thì xuống dưới
     //   3. bài đăng mới nhất trước
+    //   4. hoà thì xét ngày hiện trên mặt bài — một loạt bài đăng cùng một
+    //      lượt có chung dấu thời gian tới từng giây, và khi đó thứ duy nhất
+    //      còn phân biệt chúng là cái ngày người đọc nhìn thấy.
     // Người gọi truyền `orderBy` thì mới đi đường khác.
+    // Giữ khớp với `lib/postOrder.ts`, nơi CMS sắp cùng một danh sách.
     const ordered = orderBy
       ? query.order(orderBy, { ascending })
       : query
           .order('pinned', { ascending: false })
           .order('sort_order', { ascending: true, nullsFirst: false })
           .order('published_at', { ascending: false })
+          .order('date_label', { ascending: false })
 
     ordered.then(({ data, error }) => {
       if (cancelled) return

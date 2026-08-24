@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type CSSProperties, type Rea
 import { Breadcrumbs } from '../components/Breadcrumbs'
 import { NAV } from '../content/navItems'
 import { displayNumber } from '../lib/postText'
+import { orderPosts } from '../lib/postOrder'
 import { SITE_DEFAULTS, type NavGroup, type SiteCopy, type SiteOverrides } from '../content/site'
 import {
   createModule,
@@ -17,7 +18,7 @@ import {
   type Module,
   type PostSummary,
 } from '../admin/lib/apiClient'
-import { transitionStatus, getSite } from '../admin/lib/apiClient'
+import { transitionStatus, getSite, listTemplates, type TemplateSummary } from '../admin/lib/apiClient'
 import { PostsPanel } from '../admin/components/PostsPanel'
 import { ModuleImages } from '../admin/components/ModuleImages'
 import { formShapeOf } from '../admin/moduleForm'
@@ -104,6 +105,16 @@ function countLabel(id: string, posts: number): string {
   if (id === 'ghi02') return 'checkbox hàng ngày'
   return posts ? `${posts} bài` : 'chưa có bài'
 }
+
+/** The three tabs, named once so the site map and the tab bar cannot drift. */
+const TABS = [
+  { k: 'posts', t: 'Tạo bài đăng' },
+  { k: 'map', t: 'Sơ đồ trang' },
+  { k: 'content', t: 'Sửa nội dung' },
+] as const
+
+/** One page on the site map, and what it holds. */
+type MapRow = { label: string; desc: string; kids: string[] }
 
 /** Names where a field turns up on the site — identification, not instruction. */
 function Where({ children }: { children: ReactNode }) {
@@ -268,6 +279,8 @@ export function Cms() {
   const [tab, setTab] = useState<'posts' | 'map' | 'content'>('posts')
   const [site, setSite] = useState<SiteOverrides>({})
   const [modules, setModules] = useState<Module[]>([])
+  // The site map names what Templates holds, so it has to know.
+  const [templates, setTemplates] = useState<TemplateSummary[]>([])
   const [posts, setPosts] = useState<PostSummary[]>([])
   const [openModule, setOpenModule] = useState<string | null>(null)
   const [dragModule, setDragModule] = useState<string | null>(null)
@@ -277,9 +290,10 @@ export function Cms() {
 
   const load = useCallback(async () => {
     try {
-      const [s, m, p] = await Promise.all([getSite(), listModules(), listPosts('all')])
+      const [s, m, p, t] = await Promise.all([getSite(), listModules(), listPosts('all'), listTemplates()])
       setSite(s)
       setModules(m)
+      setTemplates(t)
       setPosts(p)
       setError(null)
     } catch (e) {
@@ -353,9 +367,18 @@ export function Cms() {
     }
   }
 
+  /**
+   * A module's posts, in the order the site shows them.
+   *
+   * This used to sort by `sort_order` alone. With every value null — which is
+   * the normal state, since a number there means somebody dragged the post
+   * somewhere — the sort changed nothing and the list stayed in the API's
+   * order, `updated_at`, most recently edited first. So the numbers 01…06 named
+   * an order the site never used, and the drag handle rearranged a list that
+   * did not match the page it was arranging.
+   */
   const postsOf = (module_id: string) =>
-    posts.filter((p) => p.module_id === module_id)// Bài chưa ai đặt vị trí thì xuống cuối, đúng như trang công khai.
-    .sort((a, b) => (a.sort_order ?? Infinity) - (b.sort_order ?? Infinity))
+    orderPosts(posts.filter((p) => p.module_id === module_id))
 
   async function patchPost(id: string, patch: { en?: string; vi?: string; date_label?: string }) {
     setPosts((ps) => ps.map((p) => (p.id === id ? { ...p, ...patch } : p)))
@@ -393,26 +416,70 @@ export function Cms() {
     }
   }
 
-  /** The sidebar's own structure, rendered as a map. */
-  const tree: { group: NavGroup; color: string; rows: { label: string; desc: string; kids: string[] }[] }[] = [
-    { group: 'Public', color: ink.green, rows: [] },
-    { group: 'Practice', color: '#C25C7C', rows: [] },
-    { group: 'Admin', color: '#6FA8C0', rows: [] },
-  ].map((g) => {
-    const rows: { label: string; desc: string; kids: string[] }[] = []
-    for (const item of NAV.filter((n) => n.group === g.group)) {
+  /**
+   * What an admin page holds, for the pages that hold something nameable.
+   *
+   * Content management holds its own three tabs; Templates holds the templates
+   * stored in the database, so adding one shows up here without anyone editing
+   * this list. The rest hold rules and reference, which the page itself is
+   * better at showing than a map row would be.
+   */
+  function childrenOf(key: string): string[] {
+    if (key === 'cms') return TABS.map((t) => t.t)
+    if (key === 'templates') return templates.map((t) => `${t.name} · ${t.renderer}`)
+    return []
+  }
+
+  /**
+   * The site map: every page, and what each one actually holds.
+   *
+   * It used to be assembled from two sources that disagreed. Ghi 01 and Ghi 02
+   * are modules *and* nav entries, so each was listed twice — once with the
+   * hand-typed name from `navItems.ts`, once with the real one from the
+   * database — and Ghi 02, which is private, turned up under Public as well as
+   * Practice. A page that is a module now names itself from that module and
+   * carries its posts; a module with a page of its own is not listed again.
+   *
+   * Rows the admin cannot open do not belong on a map of the site, and rows
+   * that hold something say what they hold, so nothing here is written by hand
+   * twice.
+   */
+  const tree: { group: NavGroup; color: string; rows: MapRow[] }[] = (
+    [
+      { group: 'Public', color: ink.green },
+      { group: 'Practice', color: '#C25C7C' },
+      { group: 'Admin', color: '#6FA8C0' },
+    ] as { group: NavGroup; color: string }[]
+  ).map((g) => {
+    const rows: MapRow[] = []
+    // Modules that a nav entry already speaks for — listing them again is the
+    // duplicate this map used to show.
+    const spokenFor = new Set(NAV.map((n) => n.moduleId).filter(Boolean) as string[])
+
+    for (const item of NAV.filter((n) => n.group === g.group && !n.hiddenFromSidebar)) {
+      // Reading modules sit under Trang chủ, the gallery that shows them.
       if (g.group === 'Public' && item.key === 'notes') {
-        for (const m of modules) {
+        for (const m of modules.filter((x) => !spokenFor.has(x.id))) {
           rows.push({
             label: m.title,
-            desc: `module · ${m.concept}`,
+            desc: m.concept ? `module · ${m.concept}` : 'module',
             kids: postsOf(m.id).map((p, i) => `${displayNumber(i)} · ${p.en}`),
           })
         }
       }
-      rows.push({ label: item.label, desc: item.desc, kids: [] })
+
+      const m = item.moduleId ? modules.find((x) => x.id === item.moduleId) : undefined
+      rows.push({
+        // The database wins where it has something to say; the nav entry is the
+        // fallback for a module that has not loaded or does not exist yet.
+        label: m?.title ?? item.label,
+        desc: m?.concept ? `module · ${m.concept}` : item.desc,
+        kids: m
+          ? postsOf(m.id).map((p, i) => `${displayNumber(i)} · ${p.en}`)
+          : childrenOf(item.key),
+      })
     }
-    return { ...(g as { group: NavGroup; color: string }), rows }
+    return { ...g, rows }
   })
 
   const postCount = posts.length
@@ -473,11 +540,7 @@ export function Cms() {
         </div>
 
         <div style={{ display: 'flex', gap: 4, marginTop: 26 }}>
-          {([
-            { k: 'posts', t: 'Tạo bài đăng' },
-            { k: 'map', t: 'Sơ đồ trang' },
-            { k: 'content', t: 'Sửa nội dung' },
-          ] as const).map((x) => (
+          {TABS.map((x) => (
             <div
               key={x.k}
               onClick={() => setTab(x.k)}

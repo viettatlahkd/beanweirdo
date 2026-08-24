@@ -48,11 +48,14 @@ export function PostCard({
   post,
   onAction,
   onEdit,
+  onCopy,
   onPin,
 }: {
   post: PostSummary
   onAction: (id: string, action: StatusAction) => void
   onEdit: (id: string) => void
+  /** Start a new draft from this one's content. */
+  onCopy: (id: string) => void
   /** Ghim bài lên đầu module của nó. Mọi module đều ghim được, không riêng Ghi 01. */
   onPin: (id: string, pinned: boolean) => void
 }) {
@@ -97,6 +100,13 @@ export function PostCard({
             style={{ background: 'none', border: 'none', padding: 0, font: 'inherit' }}
           >
             Sửa
+          </button>
+          <button
+            onClick={() => onCopy(post.id)}
+            className="admin-link-action"
+            style={{ background: 'none', border: 'none', padding: 0, font: 'inherit' }}
+          >
+            Nhân bản
           </button>
           {actions.map((a) => (
             <button

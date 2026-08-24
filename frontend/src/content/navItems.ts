@@ -32,8 +32,21 @@ export type NavItem = {
   /** Template pages nest under a "Templates" head inside Admin. */
   sub?: boolean
   /**
-   * Kept out of the sidebar, but still a real page: the breadcrumbs and the
-   * CMS site map go on naming it through this entry.
+   * The row in `modules` this page *is*, when it is one.
+   *
+   * Ghi 01 and Ghi 02 are modules with a page of their own, so they were
+   * written down twice — once here as a nav entry with a hand-typed name, once
+   * in the database as a module. The site map listed both and showed each of
+   * them twice. This names the link, so the database is the one place the name,
+   * the description and the posts come from, and renaming a module renames it
+   * everywhere at once.
+   */
+  moduleId?: string
+  /**
+   * Kept out of the sidebar. Breadcrumbs still name the page through this
+   * entry, but the site map does not: a map of the site should list the pages
+   * the admin can actually open, and a row nobody can reach reads as a page
+   * that exists.
    */
   hiddenFromSidebar?: boolean
   shape: Glyph
@@ -71,6 +84,7 @@ export const NAV: NavItem[] = [
   {
     key: 'notes',
     group: 'Public',
+    moduleId: 'ghi01',
     label: 'Ghi 01',
     desc: 'bite-size — ghi chép rời',
     screen: 'notes',
@@ -79,6 +93,7 @@ export const NAV: NavItem[] = [
   {
     key: 'hours',
     group: 'Practice',
+    moduleId: 'ghi02',
     label: 'Ghi 02',
     desc: 'daily journal',
     screen: 'hours',
