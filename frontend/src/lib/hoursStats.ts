@@ -490,14 +490,6 @@ export type HeatCell = {
 }
 
 /**
- * An Anki-style grid: one square per day, twenty-six weeks of them.
- *
- * The point is the shape of the habit rather than any single day's total, so
- * the levels are cut against the busiest day in the window instead of fixed
- * hour marks — a quiet month still shows its own rhythm rather than a uniform
- * pale wash.
- */
-/**
  * Fifteen weeks.
  *
  * Half a year was the first guess and it read as a wall: twenty-six columns
@@ -508,6 +500,14 @@ export type HeatCell = {
  */
 export const HEAT_WEEKS = 15
 
+/**
+ * An Anki-style grid: one square per day, `weeks` columns of them.
+ *
+ * The point is the shape of the habit rather than any single day's total, so
+ * the levels are cut against the busiest day in the window instead of fixed
+ * hour marks — a quiet month still shows its own rhythm rather than a uniform
+ * pale wash.
+ */
 export function heatmap(logs: LogEntry[], weeks = HEAT_WEEKS, now: Date = new Date()) {
   const byDate: Record<string, number> = {}
   for (const l of logs) if (done(l)) byDate[l.date] = (byDate[l.date] || 0) + l.mins
