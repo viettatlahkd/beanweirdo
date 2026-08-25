@@ -335,9 +335,17 @@ function DurationField({
     if (e.key === 'Tab' && onTab) {
       // Hours and minutes are two boxes of one field: Tab between them stays
       // inside, and only leaves from whichever end you tabbed towards.
-      const inner = e.currentTarget as HTMLElement
-      const boxes = [...inner.querySelectorAll('input')]
-      const i = boxes.indexOf(e.target as HTMLInputElement)
+      //
+      // The pair is found from the box that was typed in, not from
+      // `currentTarget`. This handler sits on the wrapper *and* on both inputs,
+      // so `currentTarget` is whichever one React is calling it for — and on an
+      // input, `querySelectorAll('input')` finds nothing, `indexOf` returns -1,
+      // and every Tab read as "leaving from the last box". Which is exactly
+      // what it did: one Tab into the hours, the next one saved and left,
+      // skipping the minutes.
+      const typed = e.target as HTMLInputElement
+      const boxes = [...(typed.closest('[data-duration]')?.querySelectorAll('input') ?? [])]
+      const i = boxes.indexOf(typed)
       const leaving = e.shiftKey ? i <= 0 : i >= boxes.length - 1
       if (!leaving) return
       e.preventDefault()
@@ -350,7 +358,12 @@ function DurationField({
   const unit: CSSProperties = { fontSize: 12, color: '#8A8A7C' }
 
   return (
-    <div onBlur={onBlur} onKeyDown={onKeyDown} style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+    <div
+      data-duration
+      onBlur={onBlur}
+      onKeyDown={onKeyDown}
+      style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}
+    >
       <input
         autoFocus
         type="number"
