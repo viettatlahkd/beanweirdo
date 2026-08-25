@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
-import { CENTRE, readFocus, stripFocus, withFocus, type Focus } from '../../lib/imageFocus'
+import { readFocus, stripFocus, withFocus, type Focus } from '../../lib/imageFocus'
 import { ink, paper, sans, serif } from '../../design/tokens'
 import { Hover } from '../../lib/Hover'
 
@@ -50,6 +50,73 @@ const button = (primary: boolean): CSSProperties => ({
   background: primary ? ink.base : 'transparent',
   color: primary ? paper.cream : ink.soft,
 })
+
+/**
+ * Snap the photo to an edge of its frame, or to the middle of it.
+ *
+ * Dragging is for the in-between; most of the time what someone wants is the
+ * top of a portrait or the left of a panorama, and hunting for the edge by hand
+ * is worse than saying "that edge". Only the axis with something to reveal is
+ * offered — a photo that fits its frame across cannot be aligned across.
+ */
+function AlignRow({
+  axis,
+  value,
+  enabled,
+  onPick,
+}: {
+  axis: 'x' | 'y'
+  value: number
+  enabled: boolean
+  onPick: (v: number) => void
+}) {
+  const stops: { at: number; title: string; d: string }[] =
+    axis === 'x'
+      ? [
+          { at: 0, title: 'Sát trái', d: 'M4 3v14M8 10h9M8 10l-3-3M8 10l-3 3' },
+          { at: 50, title: 'Giữa ngang', d: 'M10 3v14M4 10h4M16 10h-4' },
+          { at: 100, title: 'Sát phải', d: 'M16 3v14M12 10H3M12 10l3-3M12 10l3 3' },
+        ]
+      : [
+          { at: 0, title: 'Sát trên', d: 'M3 4h14M10 8v9M10 8l-3 3M10 8l3 3' },
+          { at: 50, title: 'Giữa dọc', d: 'M3 10h14M10 4v4M10 16v-4' },
+          { at: 100, title: 'Sát dưới', d: 'M3 16h14M10 12V3M10 12l-3-3M10 12l3 3' },
+        ]
+
+  return (
+    <div style={{ display: 'flex', gap: 4, opacity: enabled ? 1 : 0.3 }}>
+      {stops.map((s) => {
+        const on = enabled && Math.round(value) === s.at
+        return (
+          <button
+            key={s.at}
+            title={s.title}
+            aria-label={s.title}
+            aria-pressed={on}
+            disabled={!enabled}
+            onClick={() => onPick(s.at)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 30,
+              height: 28,
+              padding: 0,
+              cursor: enabled ? 'pointer' : 'default',
+              border: `1px solid ${on ? ink.base : paper.rule}`,
+              background: on ? paper.hover : 'transparent',
+              color: on ? ink.base : ink.soft,
+            }}
+          >
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+              <path d={s.d} />
+            </svg>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
 
 /**
  * Place a photo inside the frame it will fill.
@@ -191,14 +258,8 @@ export function FocusPicker({
               : `khung ${ratio.toFixed(2)}:1`}
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
-            <Hover
-              as="button"
-              onClick={() => setFocus(CENTRE)}
-              style={button(false)}
-              hoverStyle={{ borderColor: ink.base, color: ink.base }}
-            >
-              Giữa
-            </Hover>
+            <AlignRow axis="x" value={focus.x} enabled={panX} onPick={(x) => setFocus({ ...focus, x })} />
+            <AlignRow axis="y" value={focus.y} enabled={panY} onPick={(y) => setFocus({ ...focus, y })} />
             <Hover
               as="button"
               onClick={onCancel}
