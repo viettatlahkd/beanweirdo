@@ -1,3 +1,4 @@
+import { toReportBlocks } from './reportBlocks'
 import type {
   ArticlePostData,
   CardsPostData,
@@ -176,7 +177,11 @@ export function toCardsData(post: RenderablePost, mod: RenderableModule | undefi
 
 /** No real "report" content is seeded yet — structurally wired so it can't crash. */
 export function toReportData(post: RenderablePost, mod: RenderableModule | undefined): ReportPostData {
-  const blocks = Array.isArray(post.body) && post.body.length > 0 ? (post.body as ReportBlock[]) : EMPTY_REPORT_BLOCKS
+  // Templates store blocks with short keys; the renderer wants the long ones.
+  // Nothing translated here before, so a post started from a template arrived
+  // with every block unreadable — see lib/reportBlocks.ts.
+  const stored = toReportBlocks(post.body)
+  const blocks = stored.length > 0 ? stored : EMPTY_REPORT_BLOCKS
   return {
     title: post.en,
     blurb: post.vi,
