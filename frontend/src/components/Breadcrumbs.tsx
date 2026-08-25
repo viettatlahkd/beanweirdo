@@ -34,7 +34,7 @@ export function Breadcrumbs({
   const { site } = useSiteCopy()
 
   const crumbs = buildCrumbs(nav, modules, site.sections, { trailing, moduleId, parentGo: onParent })
-  const back = crumbBack(nav, moduleId)
+  const back = crumbBack(nav, moduleId, onParent)
 
   return (
     <div

@@ -115,7 +115,15 @@ export function buildCrumbs(
  * From a private area the step back leads out to the public journal, which is
  * a different entry point rather than a different screen.
  */
-export function crumbBack(nav: Nav, moduleId?: string): () => void {
+export function crumbBack(nav: Nav, moduleId?: string, parentGo?: () => void): () => void {
+  /*
+   * A screen holding a layer of its own owns the first step back: from an open
+   * template, one step is the list, and only the step after that leaves for
+   * Content management. Without this the arrow cleared both at once — the
+   * layer the reader was in was not on the way out at all.
+   */
+  if (parentGo) return parentGo
+
   const out = nav.area === 'public' ? nav.goLanding : () => goToArea('public')
 
   switch (nav.screen) {
