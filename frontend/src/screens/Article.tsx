@@ -106,7 +106,7 @@ export function Article() {
         const sibling = related[i]
         return (
           <span
-            onClick={sibling ? () => nav.openArticle(sibling.id) : undefined}
+            onClick={sibling ? () => nav.openArticle(sibling.id, nav.articleFrom) : undefined}
             style={{ cursor: sibling ? 'pointer' : 'default' }}
           >
             {label}

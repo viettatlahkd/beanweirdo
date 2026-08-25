@@ -44,8 +44,16 @@ export function buildCrumbs(
    * `Notes` name groupings rather than pages, so they point at where their
    * group starts: Content management.
    */
-  const admin: Crumb = { label: sections.Admin, go: nav.goCms }
-  const backend: Crumb = { label: 'Backend', go: nav.goCms }
+  /*
+   * ...but not when that page is the one already open. On Content management
+   * itself both `Admin` and `Backend` point at Content management, so they
+   * would take the pointer cursor and then go nowhere. A crumb that promises a
+   * step and does not take it is the same lie as one that cannot be clicked,
+   * facing the other way.
+   */
+  const atCms = nav.screen === 'cms'
+  const admin: Crumb = atCms ? { label: sections.Admin } : { label: sections.Admin, go: nav.goCms }
+  const backend: Crumb = atCms ? { label: 'Backend' } : { label: 'Backend', go: nav.goCms }
   const templates: Crumb = { label: navLabel('templates'), go: nav.goTemplates }
   const mod = (id: string): Crumb => ({
     label: modules.find((m) => m.id === id)?.title ?? id,
@@ -60,9 +68,14 @@ export function buildCrumbs(
     case 'article':
       // The trail ends on the post's own name. 'Bài viết' told the reader
       // nothing they could not already see.
-      return nav.articleFrom === 'module'
-        ? [landing, index, mod(ctx.moduleId ?? nav.moduleId), { label: ctx.trailing ?? 'Bài viết' }]
-        : [admin, templates, { label: ctx.trailing ?? 'Bài viết' }]
+      // Three doors, three trails. Opened from Archive it used to read
+      // `Admin › Templates › …` — a route through a screen the reader never
+      // touched, on the way from one they did.
+      if (nav.articleFrom === 'module')
+        return [landing, index, mod(ctx.moduleId ?? nav.moduleId), { label: ctx.trailing ?? 'Bài viết' }]
+      if (nav.articleFrom === 'archive')
+        return [admin, { label: navLabel('archive'), go: nav.goArchive }, { label: ctx.trailing ?? 'Bài viết' }]
+      return [admin, templates, { label: ctx.trailing ?? 'Bài viết' }]
     case 'templates':
       return [admin, { label: navLabel('templates') }]
     case 'notes':
@@ -106,7 +119,9 @@ export function crumbBack(nav: Nav, moduleId?: string): () => void {
     case 'article':
       // Back goes to the module this post is actually filed under. It used to
       // go to 'biochem' whatever you were reading.
-      return nav.articleFrom === 'module' ? () => nav.openModule(moduleId ?? nav.moduleId) : out
+      if (nav.articleFrom === 'module') return () => nav.openModule(moduleId ?? nav.moduleId)
+      if (nav.articleFrom === 'archive') return nav.goArchive
+      return out
     case 'archive':
       return nav.goCms
     default:
