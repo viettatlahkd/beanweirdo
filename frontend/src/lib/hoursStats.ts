@@ -61,12 +61,12 @@ export function noteChip(note: string | null | undefined) {
     }
   }
 
-  const oneLine = raw.replace(/\s+/g, ' ')
-  return {
-    href: null,
-    label: oneLine.length > 60 ? oneLine.slice(0, 59) + '…' : oneLine,
-    isLink: false as const,
-  }
+  // Not cut. A URL is shortened above because the rest of it says nothing
+  // about where it leads; a note is the owner's own sentence, and the half
+  // past the cut is usually the half they wrote it for. Runs of whitespace
+  // collapse so a stray double space cannot open a gap in the row, but every
+  // word survives and the line wraps.
+  return { href: null, label: raw.replace(/\s+/g, ' '), isLink: false as const }
 }
 
 /**
