@@ -41,3 +41,25 @@ describe('imageFocus', () => {
     expect(stripFocus('/a.jpg#hash')).toBe('/a.jpg#hash')
   })
 })
+
+/*
+ * The picker offers six alignments — three across, three down — and each is a
+ * focal point at an edge or the middle. Dragging is for the in-between; asking
+ * for "the top" by hand meant hunting for 0 with a mouse.
+ */
+describe('alignment stops', () => {
+  it('names an edge as the focal point that shows it', () => {
+    expect(withFocus('/a.jpg', { x: 0, y: 50 })).toBe('/a.jpg#focus=0,50')
+    expect(withFocus('/a.jpg', { x: 100, y: 50 })).toBe('/a.jpg#focus=100,50')
+    expect(withFocus('/a.jpg', { x: 50, y: 0 })).toBe('/a.jpg#focus=50,0')
+    expect(withFocus('/a.jpg', { x: 50, y: 100 })).toBe('/a.jpg#focus=50,100')
+  })
+
+  it('reads an edge back as the same edge', () => {
+    expect(readFocus('/a.jpg#focus=0,100')).toEqual({ x: 0, y: 100 })
+  })
+
+  it('puts the photo where background-position puts it', () => {
+    expect(coverStyle('/a.jpg#focus=100,0').backgroundPosition).toBe('100% 0%')
+  })
+})
