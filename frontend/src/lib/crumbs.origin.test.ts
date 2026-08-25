@@ -59,3 +59,50 @@ describe('đường dẫn của một bài kể đúng nơi nó được mở ra
     expect(nav.goArchive).toHaveBeenCalled()
   })
 })
+
+/*
+ * Mở một template không đổi màn hình — nó là một tầng do chính màn Templates
+ * giữ. Nên thanh không thể tự đi tới danh sách bằng cách định tuyến; màn hình
+ * phải trao lối về.
+ */
+describe('templates — một tầng màn hình tự giữ', () => {
+  const navT = (): Nav =>
+    ({
+      screen: 'templates',
+      area: 'admin',
+      moduleId: '',
+      articleFrom: 'admin',
+      goLanding: vi.fn(),
+      goHome: vi.fn(),
+      goCms: vi.fn(),
+      goTemplates: vi.fn(),
+      goArchive: vi.fn(),
+      openModule: vi.fn(),
+      openArticle: vi.fn(),
+    }) as never
+
+  it('names the open template and lets the list be returned to', () => {
+    const back = vi.fn()
+    const trail = buildCrumbs(navT(), MODULES, SECTIONS, { trailing: 'Field report', parentGo: back })
+
+    expect(trail.map((c) => c.label)).toEqual(['Admin', 'Templates', 'Field report'])
+    trail[1].go?.()
+    expect(back).toHaveBeenCalled()
+  })
+
+  it('leaves Templates as the current page when no template is open', () => {
+    const trail = buildCrumbs(navT(), MODULES, SECTIONS)
+
+    expect(trail.map((c) => c.label)).toEqual(['Admin', 'Templates'])
+    expect(trail[1].go).toBeUndefined()
+  })
+
+  it('falls back to routing when the screen hands over nothing', () => {
+    // Phòng khi một chỗ gọi quên truyền `parentGo` — thà đi vòng còn hơn đứng im.
+    const nav = navT()
+    const trail = buildCrumbs(nav, MODULES, SECTIONS, { trailing: 'Field report' })
+    trail[1].go?.()
+
+    expect(nav.goTemplates).toHaveBeenCalled()
+  })
+})

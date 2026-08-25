@@ -23,7 +23,17 @@ export function buildCrumbs(
   modules: ModuleRow[],
   sections: Record<NavGroup, string>,
   /** What the screen itself cannot know: which post is open, and under which module. */
-  ctx: { trailing?: string; moduleId?: string } = {},
+  ctx: {
+    trailing?: string
+    moduleId?: string
+    /**
+     * How to get back to the screen's own top level, when the screen holds a
+     * layer the router does not know about. Templates opens a template without
+     * changing screen, so the trail cannot reach the list by routing to it —
+     * the screen has to hand over the way back.
+     */
+    parentGo?: () => void
+  } = {},
 ): Crumb[] {
   /**
    * Crumbs pointing at the public journal have to leave the area when we're
@@ -77,7 +87,11 @@ export function buildCrumbs(
         return [admin, { label: navLabel('archive'), go: nav.goArchive }, { label: ctx.trailing ?? 'Bài viết' }]
       return [admin, templates, { label: ctx.trailing ?? 'Bài viết' }]
     case 'templates':
-      return [admin, { label: navLabel('templates') }]
+      // With a template open the list becomes a place to return to, so the
+      // trail grows a stop and `Templates` stops being the current page.
+      return ctx.trailing
+        ? [admin, { label: navLabel('templates'), go: ctx.parentGo ?? nav.goTemplates }, { label: ctx.trailing }]
+        : [admin, { label: navLabel('templates') }]
     case 'notes':
       return [landing, { label: `beӕn weirdo — ${navLabel('notes')}` }]
     case 'hours':

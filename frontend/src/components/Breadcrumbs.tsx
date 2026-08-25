@@ -16,12 +16,15 @@ export function Breadcrumbs({
   style,
   trailing,
   moduleId,
+  onParent,
 }: {
   color?: string
   /** The name of the thing being looked at — a post's own title, say. */
   trailing?: string
   /** Which module the reader came through, when the screen alone cannot say. */
   moduleId?: string
+  /** How to close a layer the screen owns — see `parentGo` in buildCrumbs. */
+  onParent?: () => void
   /** Screens on a colour block dim the whole bar instead of recolouring it. */
   opacity?: number
   style?: CSSProperties
@@ -30,7 +33,7 @@ export function Breadcrumbs({
   const { data: modules } = useModules()
   const { site } = useSiteCopy()
 
-  const crumbs = buildCrumbs(nav, modules, site.sections, { trailing, moduleId })
+  const crumbs = buildCrumbs(nav, modules, site.sections, { trailing, moduleId, parentGo: onParent })
   const back = crumbBack(nav, moduleId)
 
   return (
