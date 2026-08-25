@@ -771,3 +771,42 @@ describe('ActivityRow — ghi chú dài không bị cắt', () => {
     expect(link.getAttribute('href')).toBe('https://www.arxiv.org/abs/2401.12345?utm_source=x')
   })
 })
+
+describe('DurationField — Tab đi qua cả giờ lẫn phút', () => {
+  it('steps from hours to minutes before leaving the field', async () => {
+    const u = userEvent.setup()
+    row({ log: log({ at: '10:54', mins: 29 }) })
+
+    // Into the duration by way of the two clock fields.
+    await u.click(screen.getByText('10:54'))
+    await u.tab()
+    await u.tab()
+    await waitFor(() => expect((document.activeElement as HTMLInputElement).type).toBe('number'))
+
+    const hours = document.activeElement as HTMLInputElement
+    await u.tab()
+
+    // The minutes box, not the way out. The handler sits on the wrapper and on
+    // both inputs; reading the pair off `currentTarget` made every Tab look
+    // like it came from the last box, so one Tab saved and left, skipping the
+    // minutes entirely.
+    const next = document.activeElement as HTMLInputElement
+    expect(next.type).toBe('number')
+    expect(next).not.toBe(hours)
+  })
+
+  it('leaves the row only from the minutes box', async () => {
+    const u = userEvent.setup()
+    const props = row({ log: log({ at: '10:54', mins: 29 }) })
+
+    await u.click(screen.getByText('10:54'))
+    await u.tab()
+    await u.tab()
+    await waitFor(() => expect((document.activeElement as HTMLInputElement).type).toBe('number'))
+    await u.tab() // hours → minutes
+    await u.tab() // minutes → out
+
+    await waitFor(() => expect(document.activeElement?.tagName).not.toBe('INPUT'))
+    expect(props.onPatch).not.toHaveBeenCalledWith(expect.objectContaining({ mins: 0 }))
+  })
+})
