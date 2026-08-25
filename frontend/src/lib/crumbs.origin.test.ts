@@ -97,6 +97,26 @@ describe('templates — một tầng màn hình tự giữ', () => {
     expect(trail[1].go).toBeUndefined()
   })
 
+  it('steps back to the list first, and only then out of the screen', () => {
+    // Chủ site báo: từ một template, `←` nhảy thẳng về Content management —
+    // bỏ qua chính tầng người dùng đang đứng.
+    const back = vi.fn()
+    const nav = navT()
+    crumbBack(nav, undefined, back)()
+
+    expect(back).toHaveBeenCalled()
+    expect(nav.goCms).not.toHaveBeenCalled()
+  })
+
+  it('leaves the screen once no layer is open', () => {
+    // Ở chính danh sách thì không còn tầng nào để lùi vào, nên bước tiếp theo
+    // mới là rời màn hình.
+    const nav = navT()
+    crumbBack(nav)()
+
+    expect(nav.goCms).toHaveBeenCalled()
+  })
+
   it('falls back to routing when the screen hands over nothing', () => {
     // Phòng khi một chỗ gọi quên truyền `parentGo` — thà đi vòng còn hơn đứng im.
     const nav = navT()
