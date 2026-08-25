@@ -1,0 +1,185 @@
+From 30b882a03e11e6ebd334586d8a3d789261f2fe1c Mon Sep 17 00:00:00 2001
+From: viettatlahkd <314170691+viettatlahkd@users.noreply.github.com>
+Date: Tue, 25 Aug 2026 15:39:00 +0700
+Subject: [PATCH] fix: the breadcrumbs in admin were a caption, not a trail
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Every crumb on every admin screen was a label with no handler — Admin, Backend,
+Notes, Templates, none of them went anywhere. The bar read like a way back and
+was a picture of one, so the only way out was the sidebar or the browser's own
+button.
+
+A crumb that names a page it can reach now carries it. Backend and Notes name
+groupings rather than pages, so they point at where their group starts, Content
+management. And the back arrow stayed inside admin: from Templates it used to
+leave the area entirely and land on the public journal, which is not one step
+back from anywhere.
+
+A test walks all nine screens and asserts every crumb but the last one goes
+somewhere. The last is the page being looked at and stays put.
+
+The "← mọi template" link stays. It looks like a duplicate of the trail and is
+not: opening a template does not change screen, so the Templates crumb is still
+the current page and cannot return from a template to the list. Making the
+trail own that step means putting the open template in the URL, which is a
+larger change than this one.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+---
+ frontend/src/lib/crumbs.reach.test.ts | 74 +++++++++++++++++++++++++++
+ frontend/src/lib/crumbs.ts            | 32 +++++++++---
+ 2 files changed, 100 insertions(+), 6 deletions(-)
+ create mode 100644 frontend/src/lib/crumbs.reach.test.ts
+
+diff --git a/frontend/src/lib/crumbs.reach.test.ts b/frontend/src/lib/crumbs.reach.test.ts
+new file mode 100644
+index 0000000..b220c5d
+--- /dev/null
++++ b/frontend/src/lib/crumbs.reach.test.ts
+@@ -0,0 +1,74 @@
++import { describe, expect, it, vi } from 'vitest'
++import { buildCrumbs, crumbBack } from './crumbs'
++import type { Nav } from './nav'
++
++/*
++ * A trail that does not walk is not a trail.
++ *
++ * Every admin screen's crumbs were labels with no `go`: Admin, Backend, Notes,
++ * Templates — none of them went anywhere. The bar read like a way back and was
++ * a caption. And `←` from an admin screen left the area entirely, landing on
++ * the public journal, which is not one step back from anywhere.
++ */
++const SECTIONS = { Public: 'Public', Practice: 'Practice', Admin: 'Admin' } as never
++const MODULES = [{ id: 'sensory', title: 'sensory' }] as never
++
++function navFor(screen: string, area = 'admin'): Nav {
++  return {
++    screen,
++    area,
++    moduleId: 'sensory',
++    articleFrom: 'module',
++    goLanding: vi.fn(),
++    goHome: vi.fn(),
++    goCms: vi.fn(),
++    goArt: vi.fn(),
++    goLogic: vi.fn(),
++    goTemplates: vi.fn(),
++    goArchive: vi.fn(),
++    goHours: vi.fn(),
++    goNotes: vi.fn(),
++    openModule: vi.fn(),
++    openPost: vi.fn(),
++    editPost: vi.fn(),
++    newPost: vi.fn(),
++  } as unknown as Nav
++}
++
++const ADMIN = ['cms', 'art', 'logic', 'templates', 'archive']
++const PUBLIC = ['home', 'module', 'notes', 'hours']
++
++describe('every crumb but the last one leads somewhere', () => {
++  for (const screen of [...ADMIN, ...PUBLIC]) {
++    it(`${screen}`, () => {
++      const nav = navFor(screen, ADMIN.includes(screen) ? 'admin' : 'public')
++      const crumbs = buildCrumbs(nav, MODULES, SECTIONS)
++      expect(crumbs.length).toBeGreaterThan(0)
++      crumbs.slice(0, -1).forEach((c) => {
++        expect(c.go, `"${c.label}" trên màn ${screen} không đi đâu cả`).toBeTypeOf('function')
++      })
++    })
++  }
++
++  /* The last crumb is the page being looked at, so it stays put. */
++  it('leaves the current page unclickable', () => {
++    const crumbs = buildCrumbs(navFor('cms'), MODULES, SECTIONS)
++    expect(crumbs[crumbs.length - 1].go).toBeUndefined()
++  })
++})
++
++describe('the back arrow', () => {
++  it('stays inside admin instead of leaving for the public journal', () => {
++    for (const screen of ['templates', 'art', 'logic']) {
++      const nav = navFor(screen)
++      crumbBack(nav)()
++      expect(nav.goCms, `← trên màn ${screen} không về admin`).toHaveBeenCalled()
++    }
++  })
++
++  it('walks one step back on a module page', () => {
++    const nav = navFor('module', 'public')
++    crumbBack(nav)()
++    expect(nav.goHome).toHaveBeenCalled()
++  })
++})
+diff --git a/frontend/src/lib/crumbs.ts b/frontend/src/lib/crumbs.ts
+index 7dd93e5..408df02 100644
+--- a/frontend/src/lib/crumbs.ts
++++ b/frontend/src/lib/crumbs.ts
+@@ -35,7 +35,18 @@ export function buildCrumbs(
+ 
+   const landing: Crumb = { label: navLabel('landing'), go: toPublic('landing', nav.goLanding) }
+   const index: Crumb = { label: navLabel('home'), go: toPublic('home', nav.goHome) }
+-  const admin: Crumb = { label: sections.Admin }
++  /*
++   * Admin's crumbs were labels and nothing else — every one of them, on every
++   * admin screen. The trail read like a trail and did not walk, so the only way
++   * back was the sidebar or the browser's own button.
++   *
++   * A crumb that names a page it can reach now carries `go`. `Backend` and
++   * `Notes` name groupings rather than pages, so they point at where their
++   * group starts: Content management.
++   */
++  const admin: Crumb = { label: sections.Admin, go: nav.goCms }
++  const backend: Crumb = { label: 'Backend', go: nav.goCms }
++  const templates: Crumb = { label: navLabel('templates'), go: nav.goTemplates }
+   const mod = (id: string): Crumb => ({
+     label: modules.find((m) => m.id === id)?.title ?? id,
+     go: toPublic('landing', () => nav.openModule(id)),
+@@ -51,7 +62,7 @@ export function buildCrumbs(
+       // nothing they could not already see.
+       return nav.articleFrom === 'module'
+         ? [landing, index, mod(ctx.moduleId ?? nav.moduleId), { label: ctx.trailing ?? 'Bài viết' }]
+-        : [admin, { label: 'Templates' }, { label: ctx.trailing ?? 'Bài viết' }]
++        : [admin, templates, { label: ctx.trailing ?? 'Bài viết' }]
+     case 'templates':
+       return [admin, { label: navLabel('templates') }]
+     case 'notes':
+@@ -59,13 +70,13 @@ export function buildCrumbs(
+     case 'hours':
+       return [landing, { label: `beӕn weirdo — ${navLabel('hours')}` }]
+     case 'archive':
+-      return [admin, { label: 'Notes' }, { label: navLabel('archive') }]
++      return [admin, { label: 'Notes', go: nav.goCms }, { label: navLabel('archive') }]
+     case 'art':
+-      return [admin, { label: 'Backend' }, { label: navLabel('art') }]
++      return [admin, backend, { label: navLabel('art') }]
+     case 'logic':
+-      return [admin, { label: 'Backend' }, { label: navLabel('logic') }]
++      return [admin, backend, { label: navLabel('logic') }]
+     case 'cms':
+-      return [admin, { label: 'Backend' }, { label: navLabel('cms') }]
++      return [admin, backend, { label: navLabel('cms') }]
+     default:
+       return [landing]
+   }
+@@ -81,6 +92,15 @@ export function crumbBack(nav: Nav, moduleId?: string): () => void {
+   const out = nav.area === 'public' ? nav.goLanding : () => goToArea('public')
+ 
+   switch (nav.screen) {
++    /*
++     * Inside admin the step back is to admin's own front door. It used to leave
++     * the area entirely, so `←` from Templates landed on the public journal —
++     * a long way from one step back.
++     */
++    case 'templates':
++    case 'art':
++    case 'logic':
++      return nav.goCms
+     case 'module':
+       return nav.goHome
+     case 'article':
+-- 
+2.39.2 (Apple Git-143)
+
