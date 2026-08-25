@@ -88,7 +88,7 @@ describe('Archive', () => {
 
     // The post's own page is still one deliberate step away.
     await userEvent.click(screen.getByText('mở trang bài →'))
-    expect(openArticle).toHaveBeenCalledWith('p1')
+    expect(openArticle).toHaveBeenCalledWith('p1', 'archive')
   })
 
   it('collapses the open post when another is opened — one at a time', async () => {

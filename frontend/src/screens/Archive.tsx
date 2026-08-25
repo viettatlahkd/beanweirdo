@@ -136,7 +136,7 @@ export function Archive() {
             >
               <PostExcerpt post={p} />
               <Hover
-                onClick={() => nav.openArticle(p.id)}
+                onClick={() => nav.openArticle(p.id, 'archive')}
                 style={{
                   display: 'inline-block',
                   marginTop: 20,

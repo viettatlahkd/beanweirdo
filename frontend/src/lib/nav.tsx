@@ -33,7 +33,14 @@ export type Variant = 'A' | 'B'
  * colour block, labels and breadcrumb trail differ — so the screen has to know
  * which door was used.
  */
-export type Origin = 'module' | 'admin'
+/**
+ * Which door a post was opened through — the breadcrumb reads back the way in.
+ *
+ * `archive` exists because Archive is its own door: a post opened from there
+ * came neither from a module nor from the template list, and saying either is
+ * describing a walk the reader never took.
+ */
+export type Origin = 'module' | 'admin' | 'archive'
 
 export type Nav = {
   screen: Screen

@@ -39,7 +39,13 @@ const ADMIN = ['cms', 'art', 'logic', 'templates', 'archive']
 const PUBLIC = ['home', 'module', 'notes', 'hours']
 
 describe('every crumb but the last one leads somewhere', () => {
-  for (const screen of [...ADMIN, ...PUBLIC]) {
+  /*
+   * Content management is the one screen this cannot ask for. Its trail reads
+   * `Admin › Backend › Content management`, and all three name the page you are
+   * already on — the first two are the group it heads, not places to go back
+   * to. See the block below, which asserts the opposite for that screen.
+   */
+  for (const screen of [...ADMIN, ...PUBLIC].filter((s) => s !== 'cms')) {
     it(`${screen}`, () => {
       const nav = navFor(screen, ADMIN.includes(screen) ? 'admin' : 'public')
       const crumbs = buildCrumbs(nav, MODULES, SECTIONS)
@@ -70,5 +76,32 @@ describe('the back arrow', () => {
     const nav = navFor('module', 'public')
     crumbBack(nav)()
     expect(nav.goHome).toHaveBeenCalled()
+  })
+})
+
+/*
+ * Ba chỗ patch mồi chưa phủ.
+ *
+ * Cái đầu là mặt sau của chính lỗi vừa sửa: một mẩu không bấm được nói dối
+ * bằng cách im lặng, một mẩu bấm được mà không đi đâu nói dối bằng cách hứa.
+ */
+describe('crumbs — không mẩu nào trỏ về chỗ đang đứng', () => {
+  it('leaves Admin and Backend inert on Content management itself', () => {
+    const nav = navFor('cms')
+    const trail = buildCrumbs(nav, MODULES, SECTIONS)
+
+    // Cả ba mẩu đều là Content management theo một nghĩa nào đó, nên không mẩu
+    // nào được nhận con trỏ bấm.
+    expect(trail.map((c) => c.label)).toEqual(['Admin', 'Backend', 'Content management'])
+    expect(trail.filter((c) => c.go)).toHaveLength(0)
+  })
+
+  it('still walks from the other admin screens', () => {
+    // Chỉ Content management mới là chỗ đang đứng; ở Design system thì hai mẩu
+    // đầu vẫn phải đưa về được.
+    for (const screen of ['art', 'logic', 'archive']) {
+      const trail = buildCrumbs(navFor(screen), MODULES, SECTIONS)
+      expect(trail.slice(0, -1).every((c) => c.go), screen).toBe(true)
+    }
   })
 })
