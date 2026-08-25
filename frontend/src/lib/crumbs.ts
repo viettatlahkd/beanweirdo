@@ -35,7 +35,18 @@ export function buildCrumbs(
 
   const landing: Crumb = { label: navLabel('landing'), go: toPublic('landing', nav.goLanding) }
   const index: Crumb = { label: navLabel('home'), go: toPublic('home', nav.goHome) }
-  const admin: Crumb = { label: sections.Admin }
+  /*
+   * Admin's crumbs were labels and nothing else — every one of them, on every
+   * admin screen. The trail read like a trail and did not walk, so the only way
+   * back was the sidebar or the browser's own button.
+   *
+   * A crumb that names a page it can reach now carries `go`. `Backend` and
+   * `Notes` name groupings rather than pages, so they point at where their
+   * group starts: Content management.
+   */
+  const admin: Crumb = { label: sections.Admin, go: nav.goCms }
+  const backend: Crumb = { label: 'Backend', go: nav.goCms }
+  const templates: Crumb = { label: navLabel('templates'), go: nav.goTemplates }
   const mod = (id: string): Crumb => ({
     label: modules.find((m) => m.id === id)?.title ?? id,
     go: toPublic('landing', () => nav.openModule(id)),
@@ -51,7 +62,7 @@ export function buildCrumbs(
       // nothing they could not already see.
       return nav.articleFrom === 'module'
         ? [landing, index, mod(ctx.moduleId ?? nav.moduleId), { label: ctx.trailing ?? 'Bài viết' }]
-        : [admin, { label: 'Templates' }, { label: ctx.trailing ?? 'Bài viết' }]
+        : [admin, templates, { label: ctx.trailing ?? 'Bài viết' }]
     case 'templates':
       return [admin, { label: navLabel('templates') }]
     case 'notes':
@@ -59,13 +70,13 @@ export function buildCrumbs(
     case 'hours':
       return [landing, { label: `beӕn weirdo — ${navLabel('hours')}` }]
     case 'archive':
-      return [admin, { label: 'Notes' }, { label: navLabel('archive') }]
+      return [admin, { label: 'Notes', go: nav.goCms }, { label: navLabel('archive') }]
     case 'art':
-      return [admin, { label: 'Backend' }, { label: navLabel('art') }]
+      return [admin, backend, { label: navLabel('art') }]
     case 'logic':
-      return [admin, { label: 'Backend' }, { label: navLabel('logic') }]
+      return [admin, backend, { label: navLabel('logic') }]
     case 'cms':
-      return [admin, { label: 'Backend' }, { label: navLabel('cms') }]
+      return [admin, backend, { label: navLabel('cms') }]
     default:
       return [landing]
   }
@@ -81,6 +92,15 @@ export function crumbBack(nav: Nav, moduleId?: string): () => void {
   const out = nav.area === 'public' ? nav.goLanding : () => goToArea('public')
 
   switch (nav.screen) {
+    /*
+     * Inside admin the step back is to admin's own front door. It used to leave
+     * the area entirely, so `←` from Templates landed on the public journal —
+     * a long way from one step back.
+     */
+    case 'templates':
+    case 'art':
+    case 'logic':
+      return nav.goCms
     case 'module':
       return nav.goHome
     case 'article':
