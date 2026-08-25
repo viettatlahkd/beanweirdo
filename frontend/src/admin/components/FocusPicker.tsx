@@ -70,17 +70,23 @@ function AlignRow({
   enabled: boolean
   onPick: (v: number) => void
 }) {
+  /*
+   * Each icon is a bar and an arrow flying at it. The three down the page are
+   * exact vertical mirrors of one another, and the three across are the same
+   * shapes rotated — so a glance reads them as one family rather than three
+   * drawings that happen to be nearby.
+   */
   const stops: { at: number; title: string; d: string }[] =
     axis === 'x'
       ? [
-          { at: 0, title: 'Sát trái', d: 'M4 3v14M8 10h9M8 10l-3-3M8 10l-3 3' },
-          { at: 50, title: 'Giữa ngang', d: 'M10 3v14M4 10h4M16 10h-4' },
-          { at: 100, title: 'Sát phải', d: 'M16 3v14M12 10H3M12 10l3-3M12 10l3 3' },
+          { at: 0, title: 'Sát trái', d: 'M4 3v14M17 10H8M11.5 6.5L8 10l3.5 3.5' },
+          { at: 50, title: 'Giữa ngang', d: 'M10 3v14M3 10h4M17 10h-4' },
+          { at: 100, title: 'Sát phải', d: 'M16 3v14M3 10h9M8.5 6.5L12 10l-3.5 3.5' },
         ]
       : [
-          { at: 0, title: 'Sát trên', d: 'M3 4h14M10 8v9M10 8l-3 3M10 8l3 3' },
-          { at: 50, title: 'Giữa dọc', d: 'M3 10h14M10 4v4M10 16v-4' },
-          { at: 100, title: 'Sát dưới', d: 'M3 16h14M10 12V3M10 12l-3-3M10 12l3 3' },
+          { at: 0, title: 'Sát trên', d: 'M3 4h14M10 17V8M6.5 11.5L10 8l3.5 3.5' },
+          { at: 50, title: 'Giữa dọc', d: 'M3 10h14M10 3v4M10 17v-4' },
+          { at: 100, title: 'Sát dưới', d: 'M3 16h14M10 3v9M6.5 8.5L10 12l3.5-3.5' },
         ]
 
   return (
