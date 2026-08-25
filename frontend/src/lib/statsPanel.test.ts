@@ -510,10 +510,20 @@ describe('noteChip — ghi chú và link', () => {
     expect(c.href).toBeNull()
   })
 
-  it('trims a long note rather than letting it run the width of the row', () => {
+  it('keeps a long note whole', () => {
+    // It used to be cut at sixty characters. A URL is shortened because the
+    // rest of it says nothing about where it leads; a note is the owner's own
+    // sentence, and the half past the cut is usually the half they wrote it
+    // for. The row wraps instead.
     const c = noteChip('a'.repeat(200))!
-    expect(c.label).toHaveLength(60)
-    expect(c.label.endsWith('…')).toBe(true)
+    expect(c.label).toHaveLength(200)
+    expect(c.label.endsWith('…')).toBe(false)
+  })
+
+  it('collapses runs of whitespace but drops no word', () => {
+    // A stray double space must not open a gap in the row; every word stays.
+    const c = noteChip('tăng 2 cỡ xay  to   coarser\n\ngiữ nhiệt')!
+    expect(c.label).toBe('tăng 2 cỡ xay to coarser giữ nhiệt')
   })
 
   it('treats an unparseable address as text, not as a broken link', () => {

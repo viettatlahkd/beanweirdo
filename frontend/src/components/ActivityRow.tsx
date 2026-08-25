@@ -959,11 +959,14 @@ export function ActivityRow({
                     onClick={() => editable && onStartNaming()}
                     style={{
                       fontSize: 11.5,
+                      lineHeight: 1.5,
                       color: '#8A8A7C',
                       cursor: editable ? 'pointer' : 'default',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
+                      // Wraps. A link is shortened to its domain because the
+                      // rest of a URL says nothing, but a note is the owner's
+                      // own sentence — cutting it at the width of the column
+                      // loses the half they wrote it for.
+                      overflowWrap: 'anywhere',
                     }}
                   >
                     {chip.label}

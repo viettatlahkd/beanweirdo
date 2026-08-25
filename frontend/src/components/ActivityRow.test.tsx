@@ -739,3 +739,35 @@ describe('ActivityRow — Tab đi dọc ba ô, và lần mới mở sẵn ô gi�
     await waitFor(() => expect((document.activeElement as HTMLInputElement).type).toBe('number'))
   })
 })
+
+describe('ActivityRow — ghi chú dài không bị cắt', () => {
+  const dai =
+    'tăng 2 cỡ xay to coarser - giữ nhiệt và công thức pha - vị chua sáng hơn, hậu vị ngọt kéo dài, thử lại cuối tuần với nước 92 độ'
+
+  it('shows a long note in full', () => {
+    row({ log: log({ note: dai }) })
+
+    // The owner's own sentence, not a URL — cutting it at the width of the
+    // column loses the half they wrote it for.
+    expect(screen.getByText(dai)).toBeInTheDocument()
+  })
+
+  it('lets the note wrap instead of clipping it to one line', () => {
+    row({ log: log({ note: dai }) })
+    const el = screen.getByText(dai)
+
+    expect(el.style.whiteSpace).not.toBe('nowrap')
+    expect(el.style.textOverflow).not.toBe('ellipsis')
+  })
+
+  it('still shortens a link to its domain', () => {
+    // The opposite case, and the reason the two are drawn differently: the
+    // rest of a URL says nothing about where it leads.
+    row({ log: log({ note: 'https://www.arxiv.org/abs/2401.12345?utm_source=x' }) })
+
+    const link = screen.getByRole('link')
+    expect(link.textContent).toContain('arxiv.org')
+    expect(link.textContent).not.toContain('utm_source')
+    expect(link.getAttribute('href')).toBe('https://www.arxiv.org/abs/2401.12345?utm_source=x')
+  })
+})
