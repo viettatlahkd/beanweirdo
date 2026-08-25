@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "beanweirdo-spine",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--workspace", "frontend", "--", "--port", "5199"],
+      "port": 5199
+    }
+  ]
+}
