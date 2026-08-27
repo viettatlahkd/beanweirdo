@@ -1,4 +1,4 @@
-import { toReportBlocks } from './reportBlocks'
+import { toReportBlocks, toReportNotes } from './reportBlocks'
 import type {
   ArticlePostData,
   CardsPostData,
@@ -186,6 +186,9 @@ export function toReportData(post: RenderablePost, mod: RenderableModule | undef
     title: post.en,
     blurb: post.vi,
     blocks,
+    // Names the field-note column; the colour comes from the band above.
+    template: 'report',
+    notes: toReportNotes(post.body),
     band: mod ? { bg: mod.accent, fg: mod.on_color } : undefined,
   }
 }

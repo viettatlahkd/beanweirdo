@@ -9,6 +9,20 @@ export { Longform } from './Longform'
 export { Memo } from './Memo'
 export type { CardsProps, CardsOverrides } from './Cards'
 
+export {
+  EMPTY_NOTES,
+  EXPLORATIONS_LABEL,
+  fieldNotesLabel,
+  hasNotes,
+  liveExplorations,
+  liveFieldNotes,
+  nextId,
+  notesOn,
+  orphanNotes,
+  readNotes,
+} from './notes'
+export type { Exploration, FieldNote, PostNotes } from './notes'
+
 export { Report } from './Report'
 export type { ReportProps, ReportOverrides } from './Report'
 

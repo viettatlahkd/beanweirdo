@@ -1,4 +1,4 @@
-import type { ReportBlock, ReportChartPoint, ReportMetric, ReportTableRow } from 'post-renderer'
+import { readNotes, type PostNotes, type ReportBlock, type ReportChartPoint, type ReportMetric, type ReportTableRow } from 'post-renderer'
 
 /**
  * The stored shape of a report's blocks, and how it becomes the drawn one.
@@ -30,6 +30,18 @@ type StoredBlock = {
 /** True when a block is already in the drawn shape — posts written since. */
 function drawn(b: unknown): b is ReportBlock {
   return typeof (b as { type?: unknown })?.type === 'string'
+}
+
+/**
+ * The notes element rides in `body` beside the blocks, so it travels with the
+ * post when it is cloned and needs no column of its own. It is not a block,
+ * though — it draws in the margin, not in the sequence — so it is lifted out
+ * here rather than left in the array for the renderer to trip over.
+ */
+const NOTES_KEY = 'notes'
+
+function isNotesEntry(b: unknown): boolean {
+  return (b as { type?: unknown })?.type === NOTES_KEY
 }
 
 function one(b: StoredBlock): ReportBlock | null {
@@ -70,8 +82,15 @@ function one(b: StoredBlock): ReportBlock | null {
 export function toReportBlocks(body: unknown): ReportBlock[] {
   if (!Array.isArray(body)) return []
   return body.flatMap((b) => {
+    if (isNotesEntry(b)) return []
     if (drawn(b)) return [b]
     const out = one(b as StoredBlock)
     return out ? [out] : []
   })
+}
+
+/** The notes element out of a stored body, or two empty halves if there is none. */
+export function toReportNotes(body: unknown): PostNotes {
+  if (!Array.isArray(body)) return { explorations: [], fieldNotes: [] }
+  return readNotes(body.find(isNotesEntry))
 }

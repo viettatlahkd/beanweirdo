@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { PostRenderer } from 'post-renderer'
 import type {
   CardData,
@@ -22,7 +22,20 @@ import {
 import { useNav } from '../../lib/nav'
 import { ink, paper, serif } from '../../design/tokens'
 import { blankReportBlock, getBody, resolveTemplate } from '../lib/postData'
+import {
+  cloneBlock,
+  ensureIds,
+  mergeTarget,
+  moveBlock,
+  removeBlock,
+  toBody,
+  vanishesWhenEmpty,
+  type KeepChoice,
+  type ReportContent,
+} from '../lib/reportNotes'
+import { EXPLORATIONS_LABEL, fieldNotesLabel, nextId, notesOn } from 'post-renderer'
 import { toArticleData, toCardsData, toLongformData, toMemoData } from '../../lib/postToRenderer'
+import { toReportBlocks, toReportNotes } from '../../lib/reportBlocks'
 
 /**
  * The patch shape every editable field ultimately produces — a subset of
@@ -209,7 +222,7 @@ export function EditorCanvas({ template, post, module, onChange, onHeroDrop }: C
         {template === 'cards' ? (
           <CardsEditor post={post} module={module} onChange={onChange} />
         ) : template === 'report' ? (
-          <ReportEditor post={post} onChange={onChange} />
+          <ReportEditor post={post} module={module} onChange={onChange} />
         ) : template === 'memo' ? (
           <MemoEditor post={post} module={module} onChange={onChange} />
         ) : template === 'longform' ? (
@@ -243,7 +256,46 @@ function EditorStyles() {
       .awc-insert-menu{ display: flex; flex-wrap: wrap; gap: 6px; padding: 0 0 14px; }
       .awc-insert-menu button{ font-family: 'Be Vietnam Pro', system-ui, sans-serif; font-size: 11px; padding: 6px 10px; border: 1px solid #EBE5D3; border-radius: 4px; background: #fff; cursor: pointer; color: #3B3729; }
       .awc-insert-menu button:hover{ background: #F6F2E2; }
-      .awc-rep-block{ position: relative; padding-right: 34px; margin-bottom: 4px; }
+      .awc-rep-grid{ display: grid; column-gap: 20px; }
+      .awc-split{ position: relative; cursor: col-resize; justify-self: center; width: 1px; background: #EBE5D3; }
+      .awc-split::after{ content: ''; position: absolute; inset: 0 -5px; }
+      .awc-split:hover{ background: #8C8674; }
+      .awc-rep-block{ position: relative; padding-left: 26px; padding-right: 50px; margin-bottom: 4px; }
+
+      /* the handle: drag to reorder, Delete to remove — and it says so */
+      .awc-grip{ position: absolute; left: 0; top: 1px; width: 18px; height: 20px; display: flex; align-items: center; justify-content: center; cursor: grab; font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1; color: #8C8674; background: transparent; border: none; padding: 0; opacity: .35; transition: opacity .12s, color .12s; }
+      .awc-rep-block:hover .awc-grip, .awc-grip:focus-visible{ opacity: 1; }
+      .awc-grip:hover{ color: #3B3729; }
+      .awc-grip:active{ cursor: grabbing; }
+      .awc-grip-tip{ position: absolute; top: calc(100% + 6px); left: 0; white-space: nowrap; background: #23211A; color: #FDFBF2; font-family: 'Be Vietnam Pro', system-ui, sans-serif; font-size: 11px; letter-spacing: .01em; padding: 5px 9px; opacity: 0; pointer-events: none; transition: opacity .12s; z-index: 5; }
+      .awc-grip:hover .awc-grip-tip, .awc-grip:focus-visible .awc-grip-tip{ opacity: 1; }
+      .awc-dropline{ height: 2px; background: #6FA8C0; margin: 6px 0; }
+
+      /* the notes column */
+      .awc-note-head{ font-family: 'Be Vietnam Pro', system-ui, sans-serif; font-size: 9.5px; font-weight: 500; letter-spacing: .16em; text-transform: uppercase; margin-bottom: 8px; }
+      .awc-note-row{ position: relative; border-left: 2px solid #6FA8C0; padding-left: 9px; padding-right: 16px; margin-bottom: 8px; }
+      .awc-note-x{ position: absolute; right: 0; top: 2px; font-size: 10px; color: #8C8674; background: transparent; border: none; cursor: pointer; padding: 2px; opacity: 0; transition: opacity .12s; }
+      .awc-note-row:hover .awc-note-x, .awc-note-x:focus-visible{ opacity: 1; }
+      .awc-note-add{ font-family: 'Be Vietnam Pro', system-ui, sans-serif; font-size: 11.5px; background: transparent; border: none; cursor: pointer; padding: 2px 0; }
+      .awc-note-slot{ opacity: .45; transition: opacity .12s; }
+      .awc-note-slot:hover, .awc-note-slot:focus-visible{ opacity: 1; }
+
+      /* asked when a block with notes is being deleted */
+      .awc-dialog{ position: relative; z-index: 6; border: 1px solid #E4DECB; background: #fff; padding: 14px 16px; max-width: 340px; margin: 10px 0; box-shadow: 0 6px 18px rgba(0,0,0,.1); }
+      .awc-dialog-q{ font-size: 13px; color: #23211A; margin-bottom: 10px; }
+      .awc-dialog-q b{ font-weight: 500; }
+      .awc-opt{ display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 9px; font-family: 'Be Vietnam Pro', system-ui, sans-serif; font-size: 12.5px; color: #5C5745; padding: 7px 9px; border: 1px solid #EFEADA; background: transparent; cursor: pointer; text-align: left; transition: background .12s, color .12s; }
+      .awc-opt + .awc-opt{ border-top: none; }
+      .awc-opt:hover, .awc-opt:focus-visible{ background: #EFEADA; color: #23211A; }
+      .awc-opt-del{ color: #A8443A; }
+      .awc-opt-del:hover, .awc-opt-del:focus-visible{ background: rgba(168,68,58,.1); color: #A8443A; }
+      .awc-tick{ width: 13px; height: 13px; border: 1px solid #8C8674; flex: none; border-radius: 2px; }
+      .awc-opt-del .awc-tick{ border-color: #A8443A; }
+      .awc-bar{ height: 2px; background: #EFEADA; overflow: hidden; margin-bottom: 10px; }
+      .awc-bar i{ display: block; height: 100%; width: 100%; transform-origin: left; animation: awc-run 2s linear forwards; }
+      @keyframes awc-run{ from{ transform: scaleX(1) } to{ transform: scaleX(0) } }
+      @media (prefers-reduced-motion: reduce){ .awc-bar i{ animation: none; transform: scaleX(.45) } }
+      .awc-undo{ font-family: 'Be Vietnam Pro', system-ui, sans-serif; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; border: 1px solid currentColor; background: transparent; padding: 6px 12px; cursor: pointer; }
       .awc-block-controls{ position: absolute; right: 0; top: 2px; display: flex; gap: 2px; opacity: .35; }
       .awc-rep-block:hover .awc-block-controls, .awc-rep-block:focus-within .awc-block-controls{ opacity: 1; }
       .awc-block-controls button{ width: 20px; height: 20px; font-size: 11px; border: 1px solid #EBE5D3; background: #fff; cursor: pointer; border-radius: 3px; color: #5C5745; line-height: 1; }
@@ -267,6 +319,8 @@ function EditableField({
   multiline = false,
   rows = 2,
   placeholder,
+  focus,
+  onFocused,
   style,
 }: {
   value: string
@@ -274,10 +328,23 @@ function EditableField({
   multiline?: boolean
   rows?: number
   placeholder?: string
+  /** Put the cursor here — used when an emptied block merges into the text above. */
+  focus?: boolean
+  onFocused?: () => void
   style?: CSSProperties
 }) {
   const [local, setLocal] = useState(value)
+  const el = useRef<HTMLInputElement & HTMLTextAreaElement>(null)
   useEffect(() => setLocal(value), [value])
+  useEffect(() => {
+    if (!focus || !el.current) return
+    el.current.focus()
+    // The cursor lands at the end, where the writer was typing when the block
+    // below them disappeared — not at the start of somebody else's sentence.
+    const end = el.current.value.length
+    el.current.setSelectionRange(end, end)
+    onFocused?.()
+  }, [focus, onFocused])
 
   const commit = () => {
     if (local !== value) onCommit(local)
@@ -300,6 +367,7 @@ function EditableField({
   if (multiline) {
     return (
       <textarea
+        ref={el}
         className="awc-editable"
         value={local}
         placeholder={placeholder}
@@ -312,6 +380,7 @@ function EditableField({
   }
   return (
     <input
+      ref={el}
       className="awc-editable"
       value={local}
       placeholder={placeholder}
@@ -596,36 +665,109 @@ const BLOCK_TYPES: { type: ReportBlock['type']; label: string }[] = [
   { type: 'image', label: 'Ảnh' },
 ]
 
-function ReportEditor({ post, onChange }: { post: PostDetail; onChange: (patch: EditPatch) => void }) {
-  const blocks = getBody<ReportBlock>(post)
-  const [menuAt, setMenuAt] = useState<number | null>(null)
+/** How long the writer has to take a choice back before it happens. */
+const UNDO_MS = 2000
 
+const KEEP_LABEL: Record<KeepChoice, string> = {
+  up: 'Lưu lên đoạn trên',
+  down: 'Lưu xuống đoạn dưới',
+  explorations: `Chuyển sang ${EXPLORATIONS_LABEL}`,
+  delete: 'Xoá cùng khối',
+}
+
+const KEEP_DONE: Record<KeepChoice, string> = {
+  up: 'chuyển lên đoạn trên',
+  down: 'chuyển xuống đoạn dưới',
+  explorations: `chuyển sang ${EXPLORATIONS_LABEL}`,
+  delete: 'xoá cùng khối',
+}
+
+function ReportEditor({
+  post,
+  module,
+  onChange,
+}: {
+  post: PostDetail
+  module?: Module
+  onChange: (patch: EditPatch) => void
+}) {
+  /*
+   * Read through the same translator the public page uses. The editor read the
+   * stored array raw before, so a post started from a template — which stores
+   * its blocks with short keys — opened as a screenful of empty rows: the
+   * content was there and nothing on this screen could read it.
+   */
+  const content = useMemo<ReportContent>(
+    () => ({ blocks: ensureIds(toReportBlocks(post.body)), notes: toReportNotes(post.body) }),
+    [post.body],
+  )
+  const { blocks, notes } = content
+
+  const [menuAt, setMenuAt] = useState<number | null>(null)
+  const [dragFrom, setDragFrom] = useState<number | null>(null)
+  const [dragOver, setDragOver] = useState<number | null>(null)
+  const [asking, setAsking] = useState<number | null>(null)
+  const [focusAt, setFocusAt] = useState<number | null>(null)
+  /*
+   * How wide the notes column is while composing. Deliberately not stored: the
+   * ratio is a thing the writer does to see better right now, not something
+   * about the post. Saving it would make every reader of the post inherit one
+   * writer's afternoon.
+   */
+  const [asideWidth, setAsideWidth] = useState(262)
+
+  const accent = module?.accent ?? REPORT_BLUE
+  const onAccent = module?.on_color ?? '#0E2C38'
+  const noteIds = [...notes.explorations, ...notes.fieldNotes].map((n) => n.id)
+  // Named once at the top, as on the page — see Report.tsx.
+  const firstAnnotated = blocks.findIndex((b) => notesOn(notes, b.id).length > 0)
+
+  function write(next: ReportContent) {
+    onChange({ body: toBody(next) })
+  }
   function setBlocks(next: ReportBlock[]) {
-    onChange({ body: next })
+    write({ blocks: next, notes })
   }
   function updateBlock(i: number, next: ReportBlock) {
     setBlocks(blocks.map((b, idx) => (idx === i ? next : b)))
   }
-  function removeBlock(i: number) {
-    setBlocks(blocks.filter((_, idx) => idx !== i))
-  }
-  function moveBlock(i: number, dir: -1 | 1) {
-    const j = i + dir
-    if (j < 0 || j >= blocks.length) return
-    const next = [...blocks]
-    ;[next[i], next[j]] = [next[j], next[i]]
-    setBlocks(next)
-  }
   function insertBlock(afterIndex: number, type: ReportBlock['type']) {
     const next = [...blocks]
-    next.splice(afterIndex + 1, 0, blankReportBlock(type))
+    next.splice(afterIndex + 1, 0, { ...blankReportBlock(type), id: nextId('b', blocks.map((b) => b.id ?? '')) })
     setBlocks(next)
     setMenuAt(null)
   }
 
+  /*
+   * Deleting is one path whether the writer pressed Delete on the handle or
+   * emptied the last word out of a paragraph. Both destroy a block, so both
+   * have to ask about the writing hanging off it — an emptied paragraph that
+   * silently took a field note with it would be the worst kind of data loss:
+   * the one nobody was warned about.
+   */
+  function requestRemove(i: number, thenFocus: number | null = null) {
+    if (notesOn(notes, blocks[i]?.id).length > 0) {
+      setAsking(i)
+      return
+    }
+    write(removeBlock(content, i, 'delete'))
+    setFocusAt(thenFocus)
+  }
+
+  function commitRemove(i: number, choice: KeepChoice) {
+    write(removeBlock(content, i, choice))
+    setAsking(null)
+  }
+
+  function drop(to: number) {
+    if (dragFrom !== null && dragFrom !== to) setBlocks(moveBlock(blocks, dragFrom, to))
+    setDragFrom(null)
+    setDragOver(null)
+  }
+
   return (
     <div>
-      <div style={{ background: REPORT_BLUE, color: '#0E2C38', padding: '28px 32px 22px' }}>
+      <div style={{ background: accent, color: onAccent, padding: '28px 32px 22px' }}>
         <EditableField
           value={post.en}
           onCommit={(v) => onChange({ en: v })}
@@ -638,24 +780,350 @@ function ReportEditor({ post, onChange }: { post: PostDetail; onChange: (patch: 
           style={{ fontSize: 13, marginTop: 10, maxWidth: 420 }}
         />
       </div>
+
       <div style={{ padding: '20px 32px 40px' }}>
         <InsertRow open={menuAt === -1} onToggle={() => setMenuAt(menuAt === -1 ? null : -1)} onInsert={(t) => insertBlock(-1, t)} />
-        {blocks.map((b, i) => (
-          <div key={i}>
-            <ReportBlockEditor
-              block={b}
-              onChange={(next) => updateBlock(i, next)}
-              onRemove={() => removeBlock(i)}
-              onMoveUp={i > 0 ? () => moveBlock(i, -1) : undefined}
-              onMoveDown={i < blocks.length - 1 ? () => moveBlock(i, 1) : undefined}
-            />
-            <InsertRow open={menuAt === i} onToggle={() => setMenuAt(menuAt === i ? null : i)} onInsert={(t) => insertBlock(i, t)} />
-          </div>
-        ))}
+
+        <div className="awc-rep-grid" style={{ gridTemplateColumns: `minmax(0,1fr) 11px ${asideWidth}px` }}>
+          <ColumnSplit width={asideWidth} onWidth={setAsideWidth} rows={blocks.length} />
+          {blocks.map((b, i) => (
+            <Fragment key={b.id ?? i}>
+              <div
+                style={{ gridColumn: 1, gridRow: i + 1, minWidth: 0 }}
+                onDragOver={(e) => {
+                  if (dragFrom === null) return
+                  e.preventDefault()
+                  setDragOver(i)
+                }}
+                onDrop={() => drop(i)}
+              >
+                {dragOver === i && dragFrom !== null && dragFrom !== i && <div className="awc-dropline" />}
+                <div className="awc-rep-block">
+                  <BlockGrip
+                    onLift={() => setDragFrom(i)}
+                    onDone={() => {
+                      setDragFrom(null)
+                      setDragOver(null)
+                    }}
+                    onMove={(dir) => setBlocks(moveBlock(blocks, i, i + dir))}
+                    onRemove={() => requestRemove(i)}
+                  />
+                  <div className="awc-block-controls">
+                    <button type="button" onClick={() => write(cloneBlock(content, i))} aria-label="nhân bản khối">
+                      ⧉
+                    </button>
+                    <button type="button" onClick={() => requestRemove(i)} aria-label="xoá khối">
+                      ×
+                    </button>
+                  </div>
+                  <ReportBlockFields
+                    block={b}
+                    focus={focusAt === i}
+                    onFocused={() => setFocusAt(null)}
+                    onChange={(next) => updateBlock(i, next)}
+                    onEmptied={() => requestRemove(i, mergeTarget(blocks, i))}
+                  />
+                  {asking === i && (
+                    <KeepNotesDialog
+                      count={notesOn(notes, b.id).length}
+                      canUp={i > 0}
+                      canDown={i < blocks.length - 1}
+                      accent={accent}
+                      onDo={(choice) => commitRemove(i, choice)}
+                      onCancel={() => setAsking(null)}
+                    />
+                  )}
+                </div>
+                <InsertRow open={menuAt === i} onToggle={() => setMenuAt(menuAt === i ? null : i)} onInsert={(t) => insertBlock(i, t)} />
+              </div>
+
+              <div style={{ gridColumn: 3, gridRow: i + 1, minWidth: 0 }}>
+                <FieldNotesEditor
+                  notes={notes}
+                  blockId={b.id}
+                  label={i === firstAnnotated ? fieldNotesLabel('report') : null}
+                  accent={accent}
+                  takenIds={noteIds}
+                  onChange={(fieldNotes) => write({ blocks, notes: { ...notes, fieldNotes } })}
+                />
+                {/* At the foot, for the same reason the page puts them there. */}
+                {i === blocks.length - 1 && (
+                  <ExplorationsEditor
+                    notes={notes}
+                    accent={accent}
+                    onChange={(explorations) => write({ blocks, notes: { ...notes, explorations } })}
+                  />
+                )}
+              </div>
+            </Fragment>
+          ))}
+        </div>
+
         {blocks.length === 0 && (
           <div style={{ color: ink.muted, fontSize: 13, padding: '8px 0 20px' }}>Chưa có khối nào — bấm "+ thêm khối" để bắt đầu.</div>
         )}
       </div>
+    </div>
+  )
+}
+
+/**
+ * The line between the writing and the notes, and the grip on it.
+ *
+ * Dragging it changes nothing that gets saved — see `asideWidth`. It exists so
+ * a writer working on a long note can give it room for a minute and then take
+ * the room back.
+ */
+function ColumnSplit({ width, onWidth, rows }: { width: number; onWidth: (w: number) => void; rows: number }) {
+  const from = useRef<{ x: number; w: number } | null>(null)
+  return (
+    <div
+      className="awc-split"
+      style={{ gridColumn: 2, gridRow: `1 / ${Math.max(rows, 1) + 1}` }}
+      role="separator"
+      aria-label="kéo để đổi bề rộng cột ghi chú"
+      onPointerDown={(e) => {
+        from.current = { x: e.clientX, w: width }
+        e.currentTarget.setPointerCapture(e.pointerId)
+      }}
+      onPointerMove={(e) => {
+        if (!from.current) return
+        const next = from.current.w - (e.clientX - from.current.x)
+        onWidth(Math.min(460, Math.max(150, next)))
+      }}
+      onPointerUp={() => {
+        from.current = null
+      }}
+    />
+  )
+}
+
+/**
+ * The handle in the left margin.
+ *
+ * One control, and hovering it says so: drag to reorder, Delete to remove.
+ * The same two things work from the keyboard — arrows move, Delete removes —
+ * because a handle that can only be dragged is a handle half the people using
+ * it cannot reach.
+ */
+function BlockGrip({
+  onLift,
+  onDone,
+  onMove,
+  onRemove,
+}: {
+  onLift: () => void
+  onDone: () => void
+  onMove: (dir: -1 | 1) => void
+  onRemove: () => void
+}) {
+  return (
+    <button
+      type="button"
+      className="awc-grip"
+      draggable
+      onDragStart={onLift}
+      onDragEnd={onDone}
+      aria-label="Kéo thả để đổi thứ tự · Delete để xoá"
+      onKeyDown={(e) => {
+        if (e.key === 'ArrowUp') {
+          e.preventDefault()
+          onMove(-1)
+        } else if (e.key === 'ArrowDown') {
+          e.preventDefault()
+          onMove(1)
+        } else if (e.key === 'Delete' || e.key === 'Backspace') {
+          e.preventDefault()
+          onRemove()
+        }
+      }}
+    >
+      ⠿
+      <span className="awc-grip-tip">Kéo thả để đổi thứ tự · Delete để xoá</span>
+    </button>
+  )
+}
+
+/**
+ * Asked when a block being deleted has writing beside it.
+ *
+ * One open list, no confirm step: ticking a line is the decision, and the two
+ * seconds after it are the way back. Deleting the notes is a line in the same
+ * list rather than a button off to the side, because it is the same kind of
+ * choice as the other three — where this writing goes.
+ */
+function KeepNotesDialog({
+  count,
+  canUp,
+  canDown,
+  accent,
+  onDo,
+  onCancel,
+}: {
+  count: number
+  canUp: boolean
+  canDown: boolean
+  accent: string
+  onDo: (choice: KeepChoice) => void
+  onCancel: () => void
+}) {
+  const [choice, setChoice] = useState<KeepChoice | null>(null)
+  const act = useRef(onDo)
+  useEffect(() => {
+    act.current = onDo
+  })
+  useEffect(() => {
+    if (!choice) return
+    const t = setTimeout(() => act.current(choice), UNDO_MS)
+    return () => clearTimeout(t)
+  }, [choice])
+
+  const options: KeepChoice[] = [
+    ...(canUp ? (['up'] as KeepChoice[]) : []),
+    ...(canDown ? (['down'] as KeepChoice[]) : []),
+    'explorations',
+    'delete',
+  ]
+
+  if (choice) {
+    return (
+      <div className="awc-dialog" role="dialog">
+        <div className="awc-dialog-q">
+          Ghi chú <b>{KEEP_DONE[choice]}</b>.
+        </div>
+        <div className="awc-bar">
+          <i style={{ background: accent }} />
+        </div>
+        <button type="button" className="awc-undo" style={{ color: accent, borderColor: accent }} onClick={() => setChoice(null)}>
+          ← quay lại
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="awc-dialog" role="dialog" onKeyDown={(e) => e.key === 'Escape' && onCancel()}>
+      <div className="awc-dialog-q">
+        Khối này có {count} ghi chú. Làm gì với chúng?
+      </div>
+      {options.map((o) => (
+        <button
+          key={o}
+          type="button"
+          className={o === 'delete' ? 'awc-opt awc-opt-del' : 'awc-opt'}
+          onClick={() => setChoice(o)}
+        >
+          {KEEP_LABEL[o]}
+          <span className="awc-tick" />
+        </button>
+      ))}
+    </div>
+  )
+}
+
+/** The consecutive run, at the head of the notes column. */
+function ExplorationsEditor({
+  notes,
+  accent,
+  onChange,
+}: {
+  notes: ReportContent['notes']
+  accent: string
+  onChange: (explorations: ReportContent['notes']['explorations']) => void
+}) {
+  const taken = [...notes.explorations, ...notes.fieldNotes].map((n) => n.id)
+  return (
+    <div style={{ marginTop: 16 }}>
+      <div className="awc-note-head" style={{ color: accent }}>
+        {EXPLORATIONS_LABEL}
+      </div>
+      {notes.explorations.map((e, i) => (
+        <div key={e.id} className="awc-note-row" style={{ borderColor: accent }}>
+          <EditableField
+            value={e.text}
+            multiline
+            rows={2}
+            placeholder="ghi chú"
+            onCommit={(v) => onChange(notes.explorations.map((x, j) => (j === i ? { ...x, text: v } : x)))}
+            style={{ fontSize: 12.5, lineHeight: 1.55, color: ink.strong }}
+          />
+          <button
+            type="button"
+            className="awc-note-x"
+            aria-label="xoá ghi chú"
+            onClick={() => onChange(notes.explorations.filter((_, j) => j !== i))}
+          >
+            ✕
+          </button>
+        </div>
+      ))}
+      <button
+        type="button"
+        className="awc-note-add"
+        aria-label={`thêm vào ${EXPLORATIONS_LABEL}`}
+        style={{ color: accent }}
+        onClick={() => onChange([...notes.explorations, { id: nextId('n', taken), text: '' }])}
+      >
+        + ghi chú
+      </button>
+    </div>
+  )
+}
+
+/** The comments hanging off one block, in that block's own row. */
+function FieldNotesEditor({
+  notes,
+  blockId,
+  label,
+  accent,
+  takenIds,
+  onChange,
+}: {
+  notes: ReportContent['notes']
+  blockId?: string
+  label: string | null
+  accent: string
+  takenIds: string[]
+  onChange: (fieldNotes: ReportContent['notes']['fieldNotes']) => void
+}) {
+  if (!blockId) return null
+  const mine = notes.fieldNotes.filter((n) => n.anchor === blockId)
+  return (
+    <div style={{ marginBottom: 14 }}>
+      {label && mine.length > 0 && (
+        <div className="awc-note-head" style={{ color: accent }}>
+          {label}
+        </div>
+      )}
+      {mine.map((n) => (
+        <div key={n.id} className="awc-note-row" style={{ borderColor: accent }}>
+          <EditableField
+            value={n.text}
+            multiline
+            rows={2}
+            placeholder="ghi chú"
+            onCommit={(v) => onChange(notes.fieldNotes.map((x) => (x.id === n.id ? { ...x, text: v } : x)))}
+            style={{ fontSize: 12.5, lineHeight: 1.55, color: ink.strong }}
+          />
+          <button
+            type="button"
+            className="awc-note-x"
+            aria-label="xoá ghi chú"
+            onClick={() => onChange(notes.fieldNotes.filter((x) => x.id !== n.id))}
+          >
+            ✕
+          </button>
+        </div>
+      ))}
+      <button
+        type="button"
+        className="awc-note-add awc-note-slot"
+        aria-label="thêm ghi chú cho khối này"
+        style={{ color: accent }}
+        onClick={() => onChange([...notes.fieldNotes, { id: nextId('n', takenIds), anchor: blockId, text: '' }])}
+      >
+        + ghi chú
+      </button>
     </div>
   )
 }
@@ -687,48 +1155,44 @@ function InsertRow({
   )
 }
 
-function ReportBlockEditor({
+/** The grey word standing in for a block with nothing written in it yet. */
+const GHOST: Partial<Record<ReportBlock['type'], string>> = Object.fromEntries(
+  BLOCK_TYPES.map((t) => [t.type, t.label]),
+)
+
+function ReportBlockFields({
   block,
+  focus,
+  onFocused,
   onChange,
-  onRemove,
-  onMoveUp,
-  onMoveDown,
+  onEmptied,
 }: {
   block: ReportBlock
+  focus?: boolean
+  onFocused?: () => void
   onChange: (next: ReportBlock) => void
-  onRemove: () => void
-  onMoveUp?: () => void
-  onMoveDown?: () => void
+  onEmptied?: () => void
 }) {
-  return (
-    <div className="awc-rep-block">
-      <div className="awc-block-controls">
-        {onMoveUp && (
-          <button type="button" onClick={onMoveUp} aria-label="chuyển khối lên">
-            ↑
-          </button>
-        )}
-        {onMoveDown && (
-          <button type="button" onClick={onMoveDown} aria-label="chuyển khối xuống">
-            ↓
-          </button>
-        )}
-        <button type="button" onClick={onRemove} aria-label="xoá khối">
-          ×
-        </button>
-      </div>
-      <ReportBlockFields block={block} onChange={onChange} />
-    </div>
-  )
-}
+  /*
+   * Emptying the words out of a paragraph is the writer saying there is no
+   * paragraph, so the block goes and the cursor joins the text above it.
+   * A heading emptied is almost always a heading about to be rewritten, so it
+   * keeps its place and shows its name in grey until it is.
+   */
+  const commitText = (v: string, next: ReportBlock) => {
+    if (v.trim() === '' && vanishesWhenEmpty(block) && onEmptied) onEmptied()
+    else onChange(next)
+  }
 
-function ReportBlockFields({ block, onChange }: { block: ReportBlock; onChange: (next: ReportBlock) => void }) {
   switch (block.type) {
     case 'meta':
       return (
         <EditableField
           value={block.text}
-          onCommit={(v) => onChange({ ...block, text: v })}
+          placeholder={GHOST.meta}
+          focus={focus}
+          onFocused={onFocused}
+          onCommit={(v) => commitText(v, { ...block, text: v })}
           style={{ fontSize: 10.5, letterSpacing: '.18em', textTransform: 'uppercase', color: ink.muted }}
         />
       )
@@ -736,7 +1200,10 @@ function ReportBlockFields({ block, onChange }: { block: ReportBlock; onChange: 
       return (
         <EditableField
           value={block.text}
-          onCommit={(v) => onChange({ ...block, text: v })}
+          placeholder={GHOST.heading}
+          focus={focus}
+          onFocused={onFocused}
+          onCommit={(v) => commitText(v, { ...block, text: v })}
           style={{ fontFamily: serif, fontSize: 28, color: ink.base, margin: '14px 0 6px' }}
         />
       )
@@ -746,7 +1213,10 @@ function ReportBlockFields({ block, onChange }: { block: ReportBlock; onChange: 
           value={block.text}
           multiline
           rows={3}
-          onCommit={(v) => onChange({ ...block, text: v })}
+          placeholder={GHOST.paragraph}
+          focus={focus}
+          onFocused={onFocused}
+          onCommit={(v) => commitText(v, { ...block, text: v })}
           style={{ fontSize: 15, lineHeight: 1.55, color: ink.strong, maxWidth: 620 }}
         />
       )

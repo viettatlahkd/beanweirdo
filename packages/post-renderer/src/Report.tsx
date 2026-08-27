@@ -1,4 +1,13 @@
-import type { ReactNode } from 'react'
+import { Fragment, type ReactNode } from 'react'
+import {
+  EXPLORATIONS_LABEL,
+  fieldNotesLabel,
+  hasNotes,
+  liveExplorations,
+  notesOn,
+  type FieldNote,
+
+} from './notes'
 import { ink, paper, sans, serif } from './tokens'
 import type { ReportBlock, ReportMetric, ReportPostData } from './types'
 
@@ -65,11 +74,148 @@ export function Report({ post, breadcrumb, ...overrides }: ReportProps) {
         </div>
       </div>
 
-      <div style={{ padding: '34px 56px 140px', maxWidth: 1320 }}>
-        {post.blocks.map((block, i) => (
-          <ReportBlockView key={i} block={block} index={i} overrides={overrides} />
-        ))}
-      </div>
+      <ReportBody post={post} overrides={overrides} />
+    </div>
+  )
+}
+
+/**
+ * The blocks, and — when anything is written — the notes column beside them.
+ *
+ * Both shapes are one grid, never a grid for one and a plain flow for the
+ * other. Grid items do not collapse their margins, so a flow fallback would
+ * quietly print a report with notes at different spacing from a report
+ * without: the same template, two rhythms, for no reason a reader could see.
+ *
+ * A field note sits in the same grid row as the block it holds on to, which is
+ * what makes it peer to peer without measuring anything at runtime. The row
+ * grows to whichever side is taller, so a long note pushes its own block's
+ * row open rather than sliding out of line with it.
+ */
+function ReportBody({ post, overrides }: { post: ReportPostData; overrides: ReportOverrides }) {
+  const notes = post.notes
+  const withNotes = hasNotes(notes)
+  const explorations = liveExplorations(notes)
+  const rail = post.band?.bg ?? REPORT_BLUE
+  // The column is named once, at the top of it. Repeating the name over every
+  // note turns a quiet margin into a stack of shouting labels.
+  const firstAnnotated = post.blocks.findIndex((b) => notesOn(notes, b.id).length > 0)
+
+  return (
+    <div
+      style={{
+        padding: '34px 56px 140px',
+        maxWidth: 1320,
+        display: 'grid',
+        gridTemplateColumns: withNotes ? 'minmax(0,1fr) minmax(190px,262px)' : 'minmax(0,1fr)',
+        columnGap: 40,
+      }}
+    >
+      {post.blocks.map((block, i) => {
+        const hanging = withNotes ? notesOn(notes, block.id) : []
+        /*
+         * The explorations close the column rather than open it. A grid row is
+         * as tall as its tallest side, so a run of them at the top would hold
+         * the first block's row open and print a hand-sized hole beside the
+         * opening line. At the foot there is nothing under them to push down,
+         * and they read as what they are: the thinking the piece left behind.
+         */
+        const closesTheColumn = withNotes && i === post.blocks.length - 1 && explorations.length > 0
+        return (
+          <Fragment key={i}>
+            <div style={{ gridColumn: 1, gridRow: i + 1, minWidth: 0 }}>
+              <ReportBlockView block={block} index={i} overrides={overrides} />
+            </div>
+            {(hanging.length > 0 || closesTheColumn) && (
+              <div style={{ gridColumn: 2, gridRow: i + 1, minWidth: 0 }}>
+                <FieldNotes items={hanging} rail={rail} template={post.template} named={i === firstAnnotated} />
+                {closesTheColumn && <Explorations items={explorations} rail={rail} />}
+              </div>
+            )}
+          </Fragment>
+        )
+      })}
+    </div>
+  )
+}
+
+/** The consecutive run — one heading, then bullets, read top-down. */
+function Explorations({ items, rail }: { items: { id: string; text: string }[]; rail: string }) {
+  return (
+    <div style={{ marginTop: 20 }}>
+      <NotesHeading text={EXPLORATIONS_LABEL} rail={rail} />
+      {items.map((e) => (
+        <div
+          key={e.id}
+          style={{
+            fontFamily: sans,
+            fontWeight: 300,
+            fontSize: 12.5,
+            lineHeight: 1.55,
+            color: ink.strong,
+            borderLeft: `2px solid ${rail}`,
+            padding: '1px 0 1px 11px',
+            marginBottom: 12,
+          }}
+        >
+          {e.text}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/** The comments — each already sitting in its block's own row, so no label repeats. */
+function FieldNotes({
+  items,
+  rail,
+  template,
+  named,
+}: {
+  items: FieldNote[]
+  rail: string
+  template?: string
+  named: boolean
+}) {
+  if (items.length === 0) return null
+  return (
+    <div style={{ marginBottom: 20 }}>
+      {named && <NotesHeading text={fieldNotesLabel(template)} rail={rail} />}
+      {items.map((n) => (
+        <div
+          key={n.id}
+          style={{
+            fontFamily: sans,
+            fontWeight: 300,
+            fontSize: 12.5,
+            lineHeight: 1.55,
+            color: ink.strong,
+            borderLeft: `2px solid ${rail}`,
+            padding: '1px 0 1px 11px',
+            marginBottom: 10,
+          }}
+        >
+          {n.text}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function NotesHeading({ text, rail }: { text: string; rail: string }) {
+  return (
+    <div
+      style={{
+        fontFamily: sans,
+        fontWeight: 500,
+        fontSize: 9.5,
+        letterSpacing: '.16em',
+        textTransform: 'uppercase',
+        color: rail,
+        marginBottom: 10,
+      }}
+    >
+      {text}
     </div>
   )
 }
@@ -90,7 +236,7 @@ function ReportBlockView({ block, index, overrides }: { block: ReportBlock; inde
       return (
         <div
           data-testid={`report-block-${index}`}
-          style={{ fontFamily: serif, fontSize: 34, lineHeight: 1.08, letterSpacing: '-.03em', color: '#172124', margin: '26px 0 14px' }}
+          style={{ fontFamily: serif, fontSize: 34, lineHeight: 1.08, letterSpacing: '-.03em', color: '#172124', margin: '20px 0 14px' }}
         >
           {overrides.renderHeading ? overrides.renderHeading(block.text, index) : block.text}
         </div>
@@ -117,7 +263,7 @@ function ReportBlockView({ block, index, overrides }: { block: ReportBlock; inde
               <div style={{ fontFamily: sans, fontSize: 9.5, fontWeight: 500, letterSpacing: '.16em', textTransform: 'uppercase', color: '#8A8A7C', marginBottom: 7 }}>
                 {m.label}
               </div>
-              <div style={{ fontFamily: serif, fontSize: 26, lineHeight: 1, letterSpacing: '-.02em', color: '#172124' }}>
+              <div style={{ fontFamily: serif, fontSize: 26, lineHeight: 1, letterSpacing: '-.02em', color: '#172124', fontVariantNumeric: 'tabular-nums' }}>
                 {overrides.renderMetric ? overrides.renderMetric(m, index, mi) : m.value}
               </div>
             </div>

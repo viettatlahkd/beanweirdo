@@ -14,8 +14,8 @@ tài liệu · `BỎ` đã quyết không làm.
 
 ## A. Luật đề xuất — chờ đưa vào `frontend/src/content/logic.ts`
 
-Bộ quy tắc hiện có **3 phần · 14 nhóm · 75 luật**. Bảy luật dưới đây phát sinh
-từ code đã merge, chưa luật nào được ghi vào.
+Bộ quy tắc hiện có **3 phần · 14 nhóm · 75 luật**. Mười bốn luật dưới đây phát
+sinh từ code đã merge; A1–A7 đã ghi vào, A8–A14 thì chưa.
 
 | # | Luật | Từ PR | Nhóm phù hợp | Trạng thái |
 |---|---|---|---|---|
@@ -26,6 +26,13 @@ từ code đã merge, chưa luật nào được ghi vào.
 | A5 | Sidebar xếp module thường trước, module đặc biệt sau; trong mỗi nhóm theo thứ tự đặt ở Content management. | #4 | 05 | XONG |
 | A6 | Số hiện cạnh một bài là vị trí của nó trong danh sách người đọc đang nhìn, đếm từ 01. Không bao giờ in thẳng thứ tự lúc soạn. | #6 | 05 hoặc 08 | XONG |
 | A7 | Khi chưa biết bài nằm ở đâu trong danh sách thì bỏ số đi, đừng đoán. | #6 | như A6 | XONG |
+| A8 | Ghi chú cạnh bài là một element của nội dung, không phải thuộc tính của template: nó nằm trong `body` cạnh các khối, nên đi theo bài khi nhân bản và không cần cột riêng trong cơ sở dữ liệu. | #65 | 16 (template) | CHỜ |
+| A9 | Element ghi chú có hai nửa. **Explorations** là bullet liền nhau, đọc từ trên xuống, nói về cả bài. **Field notes** là comment, mỗi cái neo vào một khối. Cả hai tồn tại từ lúc tạo; nửa nào không có chữ thì không vẽ — không có bước bật/tắt nào để đi tìm. | #65 | 16 | CHỜ |
+| A10 | Field notes neo vào `id` của khối, không vào vị trí. Đổi chỗ khối thì ghi chú đi theo; nhân bản khối thì ghi chú được nhân bản cùng. | #65 | 16 | CHỜ |
+| A11 | Tên cột ghi chú đi theo template (Field notes · Memo notes · Article notes · Card notes · Longform notes), màu đi theo module. "Explorations" là một chữ chung cho mọi template. Cột được gọi tên **một lần** ở đầu, không lặp trên từng ghi chú. | #65 | 16, và 12 (màu) | CHỜ |
+| A12 | Xoá một khối đang có ghi chú thì hỏi ghi chú đi đâu: lên đoạn trên, xuống đoạn dưới, sang Explorations, hoặc xoá cùng khối. Một danh sách mở sẵn, tick là quyết định — không có bước xác nhận, chỉ có hai giây để quay lại. Không có ghi chú thì không hỏi. | #65 | 16 | CHỜ |
+| A13 | Xoá hết chữ trong một **đoạn văn** thì khối biến mất và con trỏ dồn lên khối chữ phía trên. Khối **có cấp bậc** — tiêu đề, meta, bảng, ảnh, số liệu — giữ nguyên chỗ và hiện tên mình bằng chữ chìm; muốn bỏ hẳn thì xoá thêm một lần hoặc dùng nút. | #65 | 16 | CHỜ |
+| A14 | Tỉ lệ chia hai cột lúc soạn **không lưu**. Kéo vạch là việc người soạn làm để nhìn cho rõ ngay lúc đó, không phải thuộc tính của bài. | #65 | 16 | CHỜ |
 
 ## B. `docs/SPEC.html` đã lỗi thời
 
