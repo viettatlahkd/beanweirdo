@@ -112,7 +112,8 @@ describe('MetadataStep — màu bài', () => {
     render(<MetadataStep onContinue={onContinue} />)
     await waitFor(() => expect(screen.getByLabelText('Module')).toHaveValue('sensory'))
 
-    const other = await screen.findByLabelText('màu Roasting')
+    // Every swatch is named the same way: whose colour it is, then the code.
+    const other = await screen.findByLabelText('Roasting — #8A6420')
     await userEvent.click(other)
     await userEvent.type(screen.getByLabelText('Tiêu đề'), 'Bài mới')
     await userEvent.click(screen.getByRole('button', { name: /soạn bài/i }))
@@ -122,5 +123,43 @@ describe('MetadataStep — màu bài', () => {
         expect.objectContaining({ theme_color: expect.stringMatching(/^#/) }),
       ),
     )
+  })
+})
+
+describe('MetadataStep — mã màu', () => {
+  it('names every colour the same way: whose it is, then the code', async () => {
+    render(<MetadataStep onContinue={vi.fn()} />)
+    await waitFor(() => expect(screen.getByLabelText('Module')).toHaveValue('sensory'))
+
+    expect(screen.getByLabelText('Sensory — #F2A0A5')).toBeInTheDocument()
+    expect(screen.getByLabelText('Roasting — #8A6420')).toBeInTheDocument()
+    expect(screen.getByText('Sensory — #F2A0A5')).toBeInTheDocument()
+  })
+
+  it('takes a code pasted in, and says it belongs to nobody', async () => {
+    const onContinue = vi.fn()
+    render(<MetadataStep onContinue={onContinue} />)
+    await waitFor(() => expect(screen.getByLabelText('Module')).toHaveValue('sensory'))
+
+    const hex = screen.getByLabelText('mã màu')
+    await userEvent.clear(hex)
+    await userEvent.paste('#773236')
+
+    expect(screen.getByText('customize — #773236')).toBeInTheDocument()
+
+    await userEvent.type(screen.getByLabelText('Tiêu đề'), 'Bài mới')
+    await userEvent.click(screen.getByRole('button', { name: /soạn bài/i }))
+    await waitFor(() => expect(onContinue).toHaveBeenCalledWith(expect.objectContaining({ theme_color: '#773236' })))
+  })
+
+  it('holds still while a code is half-typed', async () => {
+    render(<MetadataStep onContinue={vi.fn()} />)
+    await waitFor(() => expect(screen.getByLabelText('Module')).toHaveValue('sensory'))
+
+    const hex = screen.getByLabelText('mã màu')
+    await userEvent.clear(hex)
+    await userEvent.type(hex, '#77')
+    // Three characters are not a colour — the post keeps the one it had.
+    expect(screen.getByText('Sensory — #F2A0A5')).toBeInTheDocument()
   })
 })

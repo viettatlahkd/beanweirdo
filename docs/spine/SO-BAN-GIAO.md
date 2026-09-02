@@ -14,8 +14,8 @@ tài liệu · `BỎ` đã quyết không làm.
 
 ## A. Luật đề xuất — chờ đưa vào `frontend/src/content/logic.ts`
 
-Bộ quy tắc hiện có **3 phần · 14 nhóm · 75 luật**. Hai mươi hai luật dưới đây phát
-sinh từ code đã merge; A1–A7 đã ghi vào, A8–A22 thì chưa.
+Bộ quy tắc hiện có **3 phần · 14 nhóm · 75 luật**. Hai mươi ba luật dưới đây phát
+sinh từ code đã merge; A1–A7 đã ghi vào, A8–A23 thì chưa.
 
 | # | Luật | Từ PR | Nhóm phù hợp | Trạng thái |
 |---|---|---|---|---|
@@ -40,6 +40,7 @@ sinh từ code đã merge; A1–A7 đã ghi vào, A8–A22 thì chưa.
 | A20 | Khối trích dẫn tự in dấu ngoặc kép — dấu ấy là của template, người viết không gõ. | #67 | 16 | CHỜ |
 | A21 | `posts.theme_color` rỗng nghĩa là **theo module**, không phải "chưa đặt màu". Chọn lại đúng màu module thì không ghi gì — nhờ vậy đổi màu một module vẫn lan tới mọi bài chưa ai đặt riêng, thay vì để chúng giữ bản sao màu cũ và trôi dần ra khỏi module. | #68 | 12 (màu) | CHỜ |
 | A22 | Cả năm template lấy dải màu đầu trang qua cùng một chỗ: màu riêng của bài đè màu module. `on_color` chỉ đi cùng màu module — nó là câu trả lời của module cho "chữ gì đọc được trên tôi", và là câu trả lời sai cho một màu khác; với màu khác thì hệ thống tự tính. | #68 | 12 | CHỜ |
+| A23 | Mọi ô màu được gọi tên cùng một kiểu, ở mọi chỗ: `[tên module] — [mã màu]`. Màu không thuộc module nào là `customize`. Chỗ nào cho chọn màu thì cũng phải có ô nhập mã màu — màu thường được chốt ở nơi khác rồi mới mang tới đây dưới dạng sáu ký tự để dán. | #68 | 12 (màu) | CHỜ |
 | A16 | Bảng luôn còn ít nhất một cột và một hàng. Bảng không cột vẽ ra là một khoảng trắng — người viết không phân biệt được bảng rỗng với bảng đã bị xoá. | #67 | 16 | CHỜ |
 
 ## B. `docs/SPEC.html` đã lỗi thời

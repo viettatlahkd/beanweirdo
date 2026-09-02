@@ -31,6 +31,22 @@ thành cái gì.
 Module đặc biệt không có màu riêng thì chỉ hiện danh sách theme của module khác
 cộng ô tự đặt — đúng luồng chủ site mô tả cho Ghi 01.
 
+## [ĐỔI HÀNH VI] Mỗi màu được gọi tên một kiểu, ở mọi chỗ
+
+`[tên module] — [mã màu]`, ví dụ `sensory — #F2A0A5`. Màu không thuộc module nào
+thì là `customize — #773236`. Áp cho mọi ô màu: tên khi rê chuột, tên cho trình
+đọc màn hình, và dòng mô tả dưới dải màu phái sinh.
+
+Kèm một ô nhập mã màu. Màu thường được chốt ở chỗ khác trước — trong một bản
+tham chiếu, một ảnh chụp, một file khác — rồi tới đây dưới dạng sáu ký tự để
+dán. Ô nhận cả `773236` lẫn `#773236`, và giữ nguyên thứ đang gõ dở: ba ký tự
+chưa phải một màu, nên bài vẫn giữ màu cũ cho tới khi đủ sáu.
+
+## [SỬA LỖI] SPEC ghi 22 migration, thật là 23
+
+`spec-numbers.mjs --check` chặn đúng chỗ. Migration 0021 làm con số lệch; đã sửa
+trong `docs/SPEC.html`.
+
 ## [SỬA LỖI] Bộ chọn sập khi gặp module không có màu
 
 Fixture test của `MetadataStep` không đặt `accent` cho module nào, và điều đó làm
@@ -52,6 +68,10 @@ A21, A22 trong `docs/spine/SO-BAN-GIAO.md`.
 
 ## Kiểm thử
 
-`npm test` — 77 file, 740 test, xanh, kể cả test tích hợp chạm cơ sở dữ liệu
-thật sau khi migration đã chạy. Mới: 2 test cho form, 8 test cho quy tắc màu
+`npm test` — 77 file, 743 test, xanh, kể cả test tích hợp chạm cơ sở dữ liệu
+thật sau khi migration đã chạy. Mới: 5 test cho form, 8 test cho quy tắc màu
 chạy qua cả năm template.
+
+Đã soi bằng trình duyệt thật: dán `#773236` vào ô mã màu thì dải màu phái sinh
+đổi theo và dòng mô tả thành `customize — #773236`; bấm lại ô màu module thì về
+`sensory — #F2A0A5`.

@@ -10,13 +10,21 @@
  * back stores nothing, which matters more than it looks — a post that merely
  * *copied* the colour would keep the old one when the module was recoloured
  * later, and the module's own posts would drift apart from it one by one.
+ *
+ * Every colour is named the same way wherever it appears: the module it belongs
+ * to, then the code itself. A colour that belongs to no module is `customize`.
+ * The code is written out rather than implied because a colour is often decided
+ * somewhere else first — in a reference, a screenshot, another file — and
+ * arrives here as six characters to paste.
  */
+import { useEffect, useState } from 'react'
 import { paletteFrom } from 'post-renderer'
 import { ink, paper } from '../../design/tokens'
 
 export type Theme = { id: string; label: string; color: string }
 
 const SWATCH = 22
+const HEX = /^#?([0-9a-fA-F]{6})$/
 
 /** Two colours are the same colour however they were typed — or both absent. */
 const same = (a?: string | null, b?: string | null) =>
@@ -40,6 +48,17 @@ export function ThemePicker({
   const showing = value ?? moduleColor ?? '#6FA8C0'
   const palette = paletteFrom(showing)
 
+  /**
+   * Whose colour this is — a module's, or nobody's. The module this post is
+   * filed under answers first, so its name is right even if it never made it
+   * into the list of themes.
+   */
+  const ownerOf = (color: string) =>
+    (same(color, moduleColor) ? moduleLabel : undefined) ??
+    themes.find((t) => t.color && same(t.color, color))?.label ??
+    'customize'
+  const describe = (color: string) => `${ownerOf(color)} — ${color.toUpperCase()}`
+
   return (
     <div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
@@ -47,9 +66,9 @@ export function ThemePicker({
           <button
             type="button"
             onClick={() => onChange(null)}
-            aria-label={`theo màu module${moduleLabel ? ` ${moduleLabel}` : ''}`}
+            aria-label={describe(moduleColor)}
             aria-pressed={value === null}
-            title={moduleLabel ? `theo ${moduleLabel}` : 'theo module'}
+            title={describe(moduleColor)}
             style={swatchStyle(moduleColor, value === null)}
           />
         )}
@@ -62,9 +81,9 @@ export function ThemePicker({
               key={t.id}
               type="button"
               onClick={() => onChange(t.color)}
-              aria-label={`màu ${t.label}`}
+              aria-label={describe(t.color)}
               aria-pressed={same(value, t.color)}
-              title={t.label}
+              title={describe(t.color)}
               style={swatchStyle(t.color, same(value, t.color))}
             />
           ))}
@@ -75,17 +94,18 @@ export function ThemePicker({
           */}
         <label
           style={{ ...swatchStyle('transparent', false), borderStyle: 'dashed', display: 'grid', placeItems: 'center', cursor: 'pointer' }}
-          title="màu khác"
+          title={`customize — ${showing.toUpperCase()}`}
         >
           <span style={{ fontSize: 13, lineHeight: 1, color: ink.muted }}>+</span>
           <input
             type="color"
-            aria-label="màu khác"
-            value={showing}
+            aria-label="chọn màu khác"
+            value={normalise(showing) ?? '#6FA8C0'}
             onChange={(e) => onChange(e.target.value)}
             style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }}
           />
         </label>
+        <HexField value={showing} onChange={onChange} />
       </div>
 
       {/* The derived set, so the choice is made against what it actually does. */}
@@ -95,12 +115,57 @@ export function ThemePicker({
             <span key={c} style={{ width: 26, height: 14, background: c }} />
           ))}
         </span>
-        <span style={{ fontSize: 11, color: ink.muted }}>
-          {value === null ? `theo module${moduleLabel ? ` — ${moduleLabel}` : ''}` : showing}
-        </span>
+        <span style={{ fontSize: 11, color: ink.muted, fontVariantNumeric: 'tabular-nums' }}>{describe(showing)}</span>
       </div>
     </div>
   )
+}
+
+/**
+ * The code, spelled out and editable.
+ *
+ * Typing runs through half-finished values on its way to a real one, so the
+ * field keeps whatever is being typed and only reports a colour once six hex
+ * digits are there. Leaving it half-written puts the current colour back rather
+ * than holding the post at something that is not a colour.
+ */
+function HexField({ value, onChange }: { value: string; onChange: (next: string) => void }) {
+  const [draft, setDraft] = useState(value.toUpperCase())
+  useEffect(() => setDraft(value.toUpperCase()), [value])
+
+  return (
+    <input
+      aria-label="mã màu"
+      value={draft}
+      spellCheck={false}
+      placeholder="#773236"
+      onChange={(e) => {
+        const next = e.target.value
+        setDraft(next)
+        const hex = normalise(next)
+        if (hex) onChange(hex)
+      }}
+      onBlur={() => setDraft(value.toUpperCase())}
+      style={{
+        fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+        fontSize: 11,
+        letterSpacing: '.02em',
+        width: 84,
+        padding: '4px 6px',
+        color: ink.strong,
+        background: paper.white,
+        border: `1px solid ${paper.rule}`,
+        borderRadius: 4,
+        textTransform: 'uppercase',
+      }}
+    />
+  )
+}
+
+/** `773236`, `#773236`, `#773236 ` — all one colour; anything else is not one yet. */
+function normalise(input: string): string | null {
+  const m = HEX.exec(input.trim())
+  return m ? `#${m[1].toUpperCase()}` : null
 }
 
 function swatchStyle(color: string, on: boolean) {
