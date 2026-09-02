@@ -240,7 +240,8 @@ describe('EditorCanvas — report', () => {
         onHeroDrop={vi.fn()}
       />,
     )
-    expect(screen.getByPlaceholderText('Tiêu đề')).toBeInTheDocument()
+    // The ghost names the level too, so an empty heading says which one it is.
+    expect(screen.getByPlaceholderText('Tiêu đề 1')).toBeInTheDocument()
     expect(screen.getByPlaceholderText('Đoạn văn')).toBeInTheDocument()
   })
 

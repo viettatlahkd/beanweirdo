@@ -152,6 +152,16 @@ export type ReportTableRow = {
 export type ReportTable = {
   columns: string[]
   rows: ReportTableRow[]
+  /**
+   * Column widths as percentages, in column order.
+   *
+   * Unlike the editor's own two-column split — a thing the writer does to see
+   * better for a minute — these belong to the table: a column of dates and a
+   * column of prose want different room, and the reader should get the
+   * proportions the writer settled on. Absent means equal columns, which is
+   * what every table written before this held.
+   */
+  widths?: number[]
 }
 
 /**
@@ -164,12 +174,17 @@ type Identified = { id?: string }
 
 export type ReportBlock =
   | (Identified & { type: 'meta'; text: string })
-  | (Identified & { type: 'heading'; text: string })
+  /** `level` 1–3; absent means 1, which is what every heading written so far is. */
+  | (Identified & { type: 'heading'; text: string; level?: 1 | 2 | 3 })
   | (Identified & { type: 'paragraph'; text: string })
   | (Identified & { type: 'metrics'; items: ReportMetric[] })
   | (Identified & { type: 'chart'; points: ReportChartPoint[] })
   | (Identified & { type: 'table'; table: ReportTable })
   | (Identified & { type: 'image'; caption: string; imageUrl?: string | null })
+  /** A passage set apart on its own tinted ground — the thing worth stopping at. */
+  | (Identified & { type: 'callout'; text: string; heading?: string })
+  /** Somebody else's words. The quote mark is the template's, not the writer's. */
+  | (Identified & { type: 'quote'; text: string; attribution?: string })
 
 export type ReportPostData = {
   /**

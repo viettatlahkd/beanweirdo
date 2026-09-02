@@ -43,6 +43,10 @@ export function blankReportBlock(type: ReportBlock['type']): ReportBlock {
       return { type: 'table', table: blankTable() }
     case 'image':
       return { type: 'image', caption: '', imageUrl: null }
+    case 'callout':
+      return { type: 'callout', text: '', heading: '' }
+    case 'quote':
+      return { type: 'quote', text: '', attribution: '' }
   }
 }
 

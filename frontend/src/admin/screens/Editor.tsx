@@ -23,6 +23,15 @@ import { useNav } from '../../lib/nav'
 import { ink, paper, serif } from '../../design/tokens'
 import { blankReportBlock, getBody, resolveTemplate } from '../lib/postData'
 import {
+  addColumn,
+  addRow,
+  freeColumnName,
+  removeColumn,
+  removeRow,
+  resizeColumn,
+  widthsOf,
+} from '../lib/reportTable'
+import {
   cloneBlock,
   ensureIds,
   mergeTarget,
@@ -33,7 +42,7 @@ import {
   type KeepChoice,
   type ReportContent,
 } from '../lib/reportNotes'
-import { EXPLORATIONS_LABEL, fieldNotesLabel, nextId, notesOn } from 'post-renderer'
+import { EXPLORATIONS_LABEL, fieldNotesLabel, nextId, notesOn, paletteFrom, segmentsFor, type Palette } from 'post-renderer'
 import { toArticleData, toCardsData, toLongformData, toMemoData } from '../../lib/postToRenderer'
 import { toReportBlocks, toReportNotes } from '../../lib/reportBlocks'
 
@@ -269,11 +278,11 @@ function EditorStyles() {
       .awc-grip:active{ cursor: grabbing; }
       .awc-grip-tip{ position: absolute; top: calc(100% + 6px); left: 0; white-space: nowrap; background: #23211A; color: #FDFBF2; font-family: 'Be Vietnam Pro', system-ui, sans-serif; font-size: 11px; letter-spacing: .01em; padding: 5px 9px; opacity: 0; pointer-events: none; transition: opacity .12s; z-index: 5; }
       .awc-grip:hover .awc-grip-tip, .awc-grip:focus-visible .awc-grip-tip{ opacity: 1; }
-      .awc-dropline{ height: 2px; background: #6FA8C0; margin: 6px 0; }
+      .awc-dropline{ height: 2px; margin: 6px 0; }
 
       /* the notes column */
       .awc-note-head{ font-family: 'Be Vietnam Pro', system-ui, sans-serif; font-size: 9.5px; font-weight: 500; letter-spacing: .16em; text-transform: uppercase; margin-bottom: 8px; }
-      .awc-note-row{ position: relative; border-left: 2px solid #6FA8C0; padding-left: 9px; padding-right: 16px; margin-bottom: 8px; }
+      .awc-note-row{ position: relative; border-left: 2px solid currentColor; padding-left: 9px; padding-right: 16px; margin-bottom: 8px; }
       .awc-note-x{ position: absolute; right: 0; top: 2px; font-size: 10px; color: #8C8674; background: transparent; border: none; cursor: pointer; padding: 2px; opacity: 0; transition: opacity .12s; }
       .awc-note-row:hover .awc-note-x, .awc-note-x:focus-visible{ opacity: 1; }
       .awc-note-add{ font-family: 'Be Vietnam Pro', system-ui, sans-serif; font-size: 11.5px; background: transparent; border: none; cursor: pointer; padding: 2px 0; }
@@ -306,9 +315,29 @@ function EditorStyles() {
       .awc-chart-bars{ display: flex; align-items: flex-end; gap: 8px; height: 96px; border-left: 1px solid #DDD9C8; border-bottom: 1px solid #DDD9C8; padding-left: 8px; margin-bottom: 10px; }
       .awc-chart-bar{ flex: 1; min-height: 2px; }
       .awc-chart-row{ display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-      .awc-table-editor{ border-collapse: collapse; width: 100%; }
-      .awc-table-editor th, .awc-table-editor td{ border-bottom: 1px solid #EBE5D3; padding: 6px 8px; text-align: left; vertical-align: top; }
+      .awc-table-wrap{ position: relative; padding-left: 20px; margin: 10px 0; overflow-x: auto; }
+      .awc-table-editor{ border-collapse: collapse; width: 100%; table-layout: fixed; }
+      .awc-table-editor th, .awc-table-editor td{ border-bottom: 1px solid #EBE5D3; padding: 6px 8px; text-align: left; vertical-align: top; position: relative; }
+      .awc-cell-x, .awc-row-x{ position: absolute; font-size: 10px; color: #8C8674; background: transparent; border: none; cursor: pointer; padding: 2px; opacity: 0; transition: opacity .12s; }
+      .awc-cell-x{ right: 10px; top: 4px; }
+      .awc-row-x{ left: -18px; top: 7px; }
+      .awc-table-editor th:hover .awc-cell-x, .awc-table-editor tr:hover .awc-row-x,
+      .awc-cell-x:focus-visible, .awc-row-x:focus-visible{ opacity: 1; }
+      .awc-col-split{ position: absolute; top: 0; left: -5px; width: 11px; height: 100%; cursor: col-resize; z-index: 2; }
+      .awc-col-split::after{ content: ''; position: absolute; left: 5px; top: 4px; bottom: 4px; width: 1px; background: transparent; }
+      .awc-col-split:hover::after{ background: #8C8674; }
+      .awc-table-adds{ display: flex; gap: 12px; }
       .awc-image-drop{ cursor: pointer; }
+      .awc-heading-row{ display: flex; align-items: flex-start; gap: 10px; }
+      .awc-heading-row > :first-child{ flex: 1; min-width: 0; }
+      .awc-levels{ display: flex; gap: 2px; opacity: 0; transition: opacity .12s; margin-top: 12px; }
+      .awc-rep-block:hover .awc-levels, .awc-levels:focus-within{ opacity: 1; }
+      .awc-levels button{ font-family: 'JetBrains Mono', monospace; font-size: 9.5px; width: 22px; height: 20px; border: 1px solid #EBE5D3; background: #fff; color: #8C8674; cursor: pointer; border-radius: 3px; }
+      .awc-levels button.on{ background: #23211A; border-color: #23211A; color: #FDFBF2; }
+      .awc-quote{ display: flex; gap: 10px; align-items: flex-start; border-left: 2px solid; padding-left: 12px; margin: 10px 0; max-width: 620px; }
+      .awc-quote > span{ font-family: 'Playfair Display', Georgia, serif; font-size: 38px; line-height: .8; }
+      .awc-quote > div{ flex: 1; min-width: 0; }
+      .awc-callout{ border-left: 2px solid; padding: 14px 16px; margin: 10px 0; max-width: 620px; }
     `}</style>
   )
 }
@@ -659,6 +688,8 @@ const BLOCK_TYPES: { type: ReportBlock['type']; label: string }[] = [
   { type: 'meta', label: 'Meta' },
   { type: 'heading', label: 'Tiêu đề' },
   { type: 'paragraph', label: 'Đoạn văn' },
+  { type: 'quote', label: 'Trích dẫn' },
+  { type: 'callout', label: 'Khối nhấn' },
   { type: 'metrics', label: 'Số liệu' },
   { type: 'chart', label: 'Biểu đồ' },
   { type: 'table', label: 'Bảng' },
@@ -716,11 +747,27 @@ function ReportEditor({
    */
   const [asideWidth, setAsideWidth] = useState(262)
 
-  const accent = module?.accent ?? REPORT_BLUE
-  const onAccent = module?.on_color ?? '#0E2C38'
+  /*
+   * Everything this screen tints comes from the module's colour, the same way
+   * the page derives it — so what the writer sees while composing is what a
+   * reader gets, down to the colour of a table heading.
+   */
+  const palette = paletteFrom(module?.accent ?? REPORT_BLUE, module?.on_color)
+  const accent = palette.accent
+  const onAccent = palette.onAccent
   const noteIds = [...notes.explorations, ...notes.fieldNotes].map((n) => n.id)
-  // Named once at the top, as on the page — see Report.tsx.
-  const firstAnnotated = blocks.findIndex((b) => notesOn(notes, b.id).length > 0)
+  /*
+   * The same segments the page uses, so what the writer arranges here is what
+   * a reader gets — the explorations at the head of the column in both, and a
+   * note still level with the block it hangs off. See `segmentsFor`.
+   */
+  const segments = segmentsFor(blocks, notes)
+  const firstAnnotated = segments.findIndex((seg) => seg.anchor)
+
+  function addFieldNote(blockId?: string) {
+    if (!blockId) return
+    write({ blocks, notes: { ...notes, fieldNotes: [...notes.fieldNotes, { id: nextId('n', noteIds), anchor: blockId, text: '' }] } })
+  }
 
   function write(next: ReportContent) {
     onChange({ body: toBody(next) })
@@ -785,75 +832,90 @@ function ReportEditor({
         <InsertRow open={menuAt === -1} onToggle={() => setMenuAt(menuAt === -1 ? null : -1)} onInsert={(t) => insertBlock(-1, t)} />
 
         <div className="awc-rep-grid" style={{ gridTemplateColumns: `minmax(0,1fr) 11px ${asideWidth}px` }}>
-          <ColumnSplit width={asideWidth} onWidth={setAsideWidth} rows={blocks.length} />
-          {blocks.map((b, i) => (
-            <Fragment key={b.id ?? i}>
-              <div
-                style={{ gridColumn: 1, gridRow: i + 1, minWidth: 0 }}
-                onDragOver={(e) => {
-                  if (dragFrom === null) return
-                  e.preventDefault()
-                  setDragOver(i)
-                }}
-                onDrop={() => drop(i)}
-              >
-                {dragOver === i && dragFrom !== null && dragFrom !== i && <div className="awc-dropline" />}
-                <div className="awc-rep-block">
-                  <BlockGrip
-                    onLift={() => setDragFrom(i)}
-                    onDone={() => {
-                      setDragFrom(null)
-                      setDragOver(null)
-                    }}
-                    onMove={(dir) => setBlocks(moveBlock(blocks, i, i + dir))}
-                    onRemove={() => requestRemove(i)}
-                  />
-                  <div className="awc-block-controls">
-                    <button type="button" onClick={() => write(cloneBlock(content, i))} aria-label="nhân bản khối">
-                      ⧉
-                    </button>
-                    <button type="button" onClick={() => requestRemove(i)} aria-label="xoá khối">
-                      ×
-                    </button>
-                  </div>
-                  <ReportBlockFields
-                    block={b}
-                    focus={focusAt === i}
-                    onFocused={() => setFocusAt(null)}
-                    onChange={(next) => updateBlock(i, next)}
-                    onEmptied={() => requestRemove(i, mergeTarget(blocks, i))}
-                  />
-                  {asking === i && (
-                    <KeepNotesDialog
-                      count={notesOn(notes, b.id).length}
-                      canUp={i > 0}
-                      canDown={i < blocks.length - 1}
-                      accent={accent}
-                      onDo={(choice) => commitRemove(i, choice)}
-                      onCancel={() => setAsking(null)}
-                    />
-                  )}
-                </div>
-                <InsertRow open={menuAt === i} onToggle={() => setMenuAt(menuAt === i ? null : i)} onInsert={(t) => insertBlock(i, t)} />
+          <ColumnSplit width={asideWidth} onWidth={setAsideWidth} rows={segments.length} />
+
+          {segments.map((seg, si) => (
+            <Fragment key={seg.start}>
+              <div style={{ gridColumn: 1, gridRow: si + 1, minWidth: 0 }}>
+                {blocks.slice(seg.start, seg.end).map((b, bi) => {
+                  const i = seg.start + bi
+                  return (
+                    <div
+                      key={b.id ?? i}
+                      onDragOver={(e) => {
+                        if (dragFrom === null) return
+                        e.preventDefault()
+                        setDragOver(i)
+                      }}
+                      onDrop={() => drop(i)}
+                    >
+                      {dragOver === i && dragFrom !== null && dragFrom !== i && <div className="awc-dropline" style={{ background: accent }} />}
+                      <div className="awc-rep-block">
+                        <BlockGrip
+                          onLift={() => setDragFrom(i)}
+                          onDone={() => {
+                            setDragFrom(null)
+                            setDragOver(null)
+                          }}
+                          onMove={(dir) => setBlocks(moveBlock(blocks, i, i + dir))}
+                          onRemove={() => requestRemove(i)}
+                        />
+                        <div className="awc-block-controls">
+                          {/*
+                            * Annotating a block is a thing you do to that block,
+                            * so the control is on it — not a faint slot in the
+                            * margin you have to find first.
+                            */}
+                          <button type="button" onClick={() => addFieldNote(b.id)} aria-label="thêm ghi chú cho khối này">
+                            ✎
+                          </button>
+                          <button type="button" onClick={() => write(cloneBlock(content, i))} aria-label="nhân bản khối">
+                            ⧉
+                          </button>
+                          <button type="button" onClick={() => requestRemove(i)} aria-label="xoá khối">
+                            ×
+                          </button>
+                        </div>
+                        <ReportBlockFields
+                          block={b}
+                          palette={palette}
+                          focus={focusAt === i}
+                          onFocused={() => setFocusAt(null)}
+                          onChange={(next) => updateBlock(i, next)}
+                          onEmptied={() => requestRemove(i, mergeTarget(blocks, i))}
+                        />
+                        {asking === i && (
+                          <KeepNotesDialog
+                            count={notesOn(notes, b.id).length}
+                            canUp={i > 0}
+                            canDown={i < blocks.length - 1}
+                            accent={accent}
+                            onDo={(choice) => commitRemove(i, choice)}
+                            onCancel={() => setAsking(null)}
+                          />
+                        )}
+                      </div>
+                      <InsertRow open={menuAt === i} onToggle={() => setMenuAt(menuAt === i ? null : i)} onInsert={(t) => insertBlock(i, t)} />
+                    </div>
+                  )
+                })}
               </div>
 
-              <div style={{ gridColumn: 3, gridRow: i + 1, minWidth: 0 }}>
-                <FieldNotesEditor
-                  notes={notes}
-                  blockId={b.id}
-                  label={i === firstAnnotated ? fieldNotesLabel('report') : null}
-                  accent={accent}
-                  takenIds={noteIds}
-                  onChange={(fieldNotes) => write({ blocks, notes: { ...notes, fieldNotes } })}
-                />
-                {/* At the foot, for the same reason the page puts them there. */}
-                {i === blocks.length - 1 && (
+              <div style={{ gridColumn: 3, gridRow: si + 1, minWidth: 0 }}>
+                {si === 0 && (
                   <ExplorationsEditor
                     notes={notes}
                     accent={accent}
                     onChange={(explorations) => write({ blocks, notes: { ...notes, explorations } })}
                   />
                 )}
+                <FieldNotesEditor
+                  notes={notes}
+                  blockId={seg.anchor}
+                  label={si === firstAnnotated ? fieldNotesLabel('report') : null}
+                  accent={accent}
+                  onChange={(fieldNotes) => write({ blocks, notes: { ...notes, fieldNotes } })}
+                />
               </div>
             </Fragment>
           ))}
@@ -1076,14 +1138,12 @@ function FieldNotesEditor({
   blockId,
   label,
   accent,
-  takenIds,
   onChange,
 }: {
   notes: ReportContent['notes']
   blockId?: string
   label: string | null
   accent: string
-  takenIds: string[]
   onChange: (fieldNotes: ReportContent['notes']['fieldNotes']) => void
 }) {
   if (!blockId) return null
@@ -1115,15 +1175,6 @@ function FieldNotesEditor({
           </button>
         </div>
       ))}
-      <button
-        type="button"
-        className="awc-note-add awc-note-slot"
-        aria-label="thêm ghi chú cho khối này"
-        style={{ color: accent }}
-        onClick={() => onChange([...notes.fieldNotes, { id: nextId('n', takenIds), anchor: blockId, text: '' }])}
-      >
-        + ghi chú
-      </button>
     </div>
   )
 }
@@ -1155,6 +1206,8 @@ function InsertRow({
   )
 }
 
+const HEADING_SIZE: Record<1 | 2 | 3, number> = { 1: 28, 2: 22, 3: 17 }
+
 /** The grey word standing in for a block with nothing written in it yet. */
 const GHOST: Partial<Record<ReportBlock['type'], string>> = Object.fromEntries(
   BLOCK_TYPES.map((t) => [t.type, t.label]),
@@ -1162,12 +1215,14 @@ const GHOST: Partial<Record<ReportBlock['type'], string>> = Object.fromEntries(
 
 function ReportBlockFields({
   block,
+  palette,
   focus,
   onFocused,
   onChange,
   onEmptied,
 }: {
   block: ReportBlock
+  palette: Palette
   focus?: boolean
   onFocused?: () => void
   onChange: (next: ReportBlock) => void
@@ -1196,16 +1251,75 @@ function ReportBlockFields({
           style={{ fontSize: 10.5, letterSpacing: '.18em', textTransform: 'uppercase', color: ink.muted }}
         />
       )
-    case 'heading':
+    case 'heading': {
+      const level = block.level ?? 1
       return (
-        <EditableField
-          value={block.text}
-          placeholder={GHOST.heading}
-          focus={focus}
-          onFocused={onFocused}
-          onCommit={(v) => commitText(v, { ...block, text: v })}
-          style={{ fontFamily: serif, fontSize: 28, color: ink.base, margin: '14px 0 6px' }}
-        />
+        <div className="awc-heading-row">
+          <EditableField
+            value={block.text}
+            placeholder={`${GHOST.heading} ${level}`}
+            focus={focus}
+            onFocused={onFocused}
+            onCommit={(v) => commitText(v, { ...block, text: v })}
+            style={{ fontFamily: serif, fontSize: HEADING_SIZE[level], color: level === 3 ? palette.ink : ink.base, margin: '10px 0 6px' }}
+          />
+          <div className="awc-levels">
+            {([1, 2, 3] as const).map((n) => (
+              <button
+                key={n}
+                type="button"
+                className={n === level ? 'on' : undefined}
+                aria-label={`tiêu đề cấp ${n}`}
+                aria-pressed={n === level}
+                onClick={() => onChange({ ...block, level: n })}
+              >
+                H{n}
+              </button>
+            ))}
+          </div>
+        </div>
+      )
+    }
+    case 'quote':
+      return (
+        <div className="awc-quote" style={{ borderColor: palette.edge }}>
+          <span aria-hidden style={{ color: palette.edge }}>“</span>
+          <div>
+            <EditableField
+              value={block.text}
+              multiline
+              rows={2}
+              placeholder="trích dẫn"
+              onCommit={(v) => onChange({ ...block, text: v })}
+              style={{ fontFamily: serif, fontSize: 19, lineHeight: 1.35, color: ink.base }}
+            />
+            <EditableField
+              value={block.attribution ?? ''}
+              placeholder="nguồn (tuỳ chọn)"
+              onCommit={(v) => onChange({ ...block, attribution: v })}
+              style={{ fontSize: 11, letterSpacing: '.08em', textTransform: 'uppercase', color: palette.ink }}
+            />
+          </div>
+        </div>
+      )
+    case 'callout':
+      return (
+        <div className="awc-callout" style={{ background: palette.tint, borderColor: palette.accent }}>
+          <EditableField
+            value={block.heading ?? ''}
+            placeholder="nhãn (tuỳ chọn)"
+            onCommit={(v) => onChange({ ...block, heading: v })}
+            style={{ fontSize: 9.5, fontWeight: 500, letterSpacing: '.16em', textTransform: 'uppercase', color: palette.ink }}
+          />
+          <EditableField
+            value={block.text}
+            multiline
+            rows={3}
+            placeholder="nội dung khối nhấn"
+            onCommit={(v) => onChange({ ...block, text: v })}
+            style={{ fontSize: 14.5, lineHeight: 1.55, color: ink.strong }}
+          />
+        </div>
       )
     case 'paragraph':
       return (
@@ -1223,14 +1337,15 @@ function ReportBlockFields({
     case 'metrics':
       return <MetricsEditor items={block.items} onChange={(items) => onChange({ ...block, items })} />
     case 'chart':
-      return <ChartEditor points={block.points} onChange={(points) => onChange({ ...block, points })} />
+      return <ChartEditor points={block.points} accent={palette.accent} onChange={(points) => onChange({ ...block, points })} />
     case 'table':
-      return <TableEditor table={block.table} onChange={(table) => onChange({ ...block, table })} />
+      return <TableEditor table={block.table} palette={palette} onChange={(table) => onChange({ ...block, table })} />
     case 'image':
       return (
         <ImageBlockEditor
           caption={block.caption}
           imageUrl={block.imageUrl}
+          palette={palette}
           onChange={(patch) => onChange({ ...block, ...patch })}
         />
       )
@@ -1269,7 +1384,7 @@ function MetricsEditor({ items, onChange }: { items: ReportMetric[]; onChange: (
   )
 }
 
-function ChartEditor({ points, onChange }: { points: ReportChartPoint[]; onChange: (points: ReportChartPoint[]) => void }) {
+function ChartEditor({ points, accent, onChange }: { points: ReportChartPoint[]; accent: string; onChange: (points: ReportChartPoint[]) => void }) {
   function update(i: number, patch: Partial<ReportChartPoint>) {
     onChange(points.map((p, idx) => (idx === i ? { ...p, ...patch } : p)))
   }
@@ -1277,7 +1392,7 @@ function ChartEditor({ points, onChange }: { points: ReportChartPoint[]; onChang
     <div>
       <div className="awc-chart-bars">
         {points.map((p, i) => (
-          <div key={i} className="awc-chart-bar" style={{ height: `${Math.max(0, Math.min(100, p.heightPct))}%`, background: REPORT_BLUE }} />
+          <div key={i} className="awc-chart-bar" style={{ height: `${Math.max(0, Math.min(100, p.heightPct))}%`, background: accent }} />
         ))}
       </div>
       {points.map((p, i) => (
@@ -1305,41 +1420,77 @@ function ChartEditor({ points, onChange }: { points: ReportChartPoint[]; onChang
   )
 }
 
-function TableEditor({ table, onChange }: { table: ReportTable; onChange: (table: ReportTable) => void }) {
-  function addColumn() {
-    onChange({ columns: [...table.columns, `Cột ${table.columns.length + 1}`], rows: table.rows.map((r) => ({ cells: [...r.cells, ''] })) })
-  }
-  function removeColumn(ci: number) {
-    onChange({ columns: table.columns.filter((_, i) => i !== ci), rows: table.rows.map((r) => ({ cells: r.cells.filter((_, i) => i !== ci) })) })
-  }
-  function addRow() {
-    onChange({ ...table, rows: [...table.rows, { cells: table.columns.map(() => '') }] })
-  }
-  function removeRow(ri: number) {
-    onChange({ ...table, rows: table.rows.filter((_, i) => i !== ri) })
-  }
+/**
+ * The table, drawn the shape it will be read in.
+ *
+ * The controls used to live inside the table — a spare header cell holding
+ * "+ cột", a spare cell on every row holding "xoá hàng" — which gave the
+ * editor a column the page does not have, so the widths a writer set here were
+ * never the widths a reader saw. They sit outside it now, and the boundaries
+ * between headings can be dragged.
+ */
+function TableEditor({ table, palette, onChange }: { table: ReportTable; palette: Palette; onChange: (table: ReportTable) => void }) {
+  const el = useRef<HTMLTableElement>(null)
+  const drag = useRef<{ x: number; table: ReportTable } | null>(null)
+  const widths = widthsOf(table)
+
   return (
-    <div style={{ overflowX: 'auto' }}>
-      <table className="awc-table-editor">
+    <div className="awc-table-wrap">
+      <table ref={el} className="awc-table-editor">
+        <colgroup>
+          {widths.map((w, ci) => (
+            <col key={ci} style={{ width: `${w}%` }} />
+          ))}
+        </colgroup>
         <thead>
           <tr>
             {table.columns.map((c, ci) => (
               <th key={ci}>
                 <EditableField
                   value={c}
+                  placeholder="tên cột"
                   onCommit={(v) => onChange({ ...table, columns: table.columns.map((col, i) => (i === ci ? v : col)) })}
-                  style={{ fontSize: 9.5, letterSpacing: '.16em', textTransform: 'uppercase', color: REPORT_BLUE }}
+                  style={{ fontSize: 9.5, letterSpacing: '.16em', textTransform: 'uppercase', color: palette.ink }}
                 />
-                <button type="button" className="awc-mini-remove" onClick={() => removeColumn(ci)} aria-label={`xoá cột ${ci + 1}`}>
-                  xoá cột
-                </button>
+                {table.columns.length > 1 && (
+                  <button
+                    type="button"
+                    className="awc-cell-x"
+                    onClick={() => onChange(removeColumn(table, ci))}
+                    aria-label={`xoá cột ${ci + 1}`}
+                  >
+                    ✕
+                  </button>
+                )}
+                {/*
+                  * The grip for the boundary to this column's LEFT, drawn
+                  * inside this cell rather than off the right edge of the one
+                  * before it: sibling cells paint in order, so a grip hanging
+                  * out of the earlier cell ends up underneath the later one's
+                  * field, and the drag selects a heading instead of moving it.
+                  */}
+                {ci > 0 && (
+                  <span
+                    className="awc-col-split"
+                    role="separator"
+                    aria-label={`kéo để đổi bề rộng cột ${ci}`}
+                    onPointerDown={(e) => {
+                      drag.current = { x: e.clientX, table }
+                      e.currentTarget.setPointerCapture(e.pointerId)
+                    }}
+                    onPointerMove={(e) => {
+                      const from = drag.current
+                      const box = el.current?.getBoundingClientRect()
+                      if (!from || !box || box.width === 0) return
+                      onChange(resizeColumn(from.table, ci - 1, ((e.clientX - from.x) / box.width) * 100))
+                    }}
+                    onPointerUp={() => {
+                      drag.current = null
+                    }}
+                  />
+                )}
               </th>
             ))}
-            <th>
-              <button type="button" className="awc-mini-add" onClick={addColumn}>
-                + cột
-              </button>
-            </th>
           </tr>
         </thead>
         <tbody>
@@ -1347,27 +1498,37 @@ function TableEditor({ table, onChange }: { table: ReportTable; onChange: (table
             <tr key={ri}>
               {row.cells.map((cell, ci) => (
                 <td key={ci}>
+                  {ci === 0 && table.rows.length > 1 && (
+                    <button
+                      type="button"
+                      className="awc-row-x"
+                      onClick={() => onChange(removeRow(table, ri))}
+                      aria-label={`xoá hàng ${ri + 1}`}
+                    >
+                      ✕
+                    </button>
+                  )}
                   <EditableField
                     value={cell}
                     onCommit={(v) =>
                       onChange({ ...table, rows: table.rows.map((r, i) => (i === ri ? { cells: r.cells.map((c, ci2) => (ci2 === ci ? v : c)) } : r)) })
                     }
-                    style={{ fontSize: 14 }}
+                    style={{ fontSize: 14, fontVariantNumeric: 'tabular-nums' }}
                   />
                 </td>
               ))}
-              <td>
-                <button type="button" className="awc-mini-remove" onClick={() => removeRow(ri)} aria-label={`xoá hàng ${ri + 1}`}>
-                  xoá hàng
-                </button>
-              </td>
             </tr>
           ))}
         </tbody>
       </table>
-      <button type="button" className="awc-mini-add" onClick={addRow}>
-        + hàng
-      </button>
+      <div className="awc-table-adds">
+        <button type="button" className="awc-mini-add" onClick={() => onChange(addColumn(table, freeColumnName(table.columns)))}>
+          + cột
+        </button>
+        <button type="button" className="awc-mini-add" onClick={() => onChange(addRow(table))}>
+          + hàng
+        </button>
+      </div>
     </div>
   )
 }
@@ -1375,10 +1536,12 @@ function TableEditor({ table, onChange }: { table: ReportTable; onChange: (table
 function ImageBlockEditor({
   caption,
   imageUrl,
+  palette,
   onChange,
 }: {
   caption: string
   imageUrl?: string | null
+  palette: Palette
   onChange: (patch: { caption?: string; imageUrl?: string | null }) => void
 }) {
   const [uploading, setUploading] = useState(false)
@@ -1407,7 +1570,7 @@ function ImageBlockEditor({
         onClick={() => inputRef.current?.click()}
         style={{
           height: 160,
-          background: imageUrl ? undefined : '#E9F1F4',
+          background: imageUrl ? undefined : palette.tint,
           backgroundImage: imageUrl ? `url(${imageUrl})` : undefined,
           backgroundSize: 'cover',
           display: 'flex',
@@ -1426,9 +1589,9 @@ function ImageBlockEditor({
             e.target.value = ''
           }}
         />
-        {!imageUrl && <span style={{ fontFamily: 'inherit', fontSize: 11, color: '#4B6873' }}>{uploading ? 'đang tải…' : 'thả ảnh hoặc bấm để chọn'}</span>}
+        {!imageUrl && <span style={{ fontFamily: 'inherit', fontSize: 11, color: palette.ink }}>{uploading ? 'đang tải…' : 'thả ảnh hoặc bấm để chọn'}</span>}
       </div>
-      <EditableField value={caption} placeholder="chú thích ảnh" onCommit={(v) => onChange({ caption: v })} style={{ fontSize: 10, color: '#4B6873', marginTop: 8 }} />
+      <EditableField value={caption} placeholder="chú thích ảnh" onCommit={(v) => onChange({ caption: v })} style={{ fontSize: 10, color: palette.ink, marginTop: 8 }} />
     </div>
   )
 }
