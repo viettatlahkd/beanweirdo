@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
+import { paletteFrom, type Palette } from './palette'
 import { sans, serif } from './tokens'
 import type { LongformBlock, LongformPostData, LongformRun } from './types'
 
@@ -35,6 +36,9 @@ type Prepared = {
  * heading of the same rank — which the flat block list doesn't say. This is
  * where that structure is recovered, so rendering can stay a straight map.
  */
+/** Only a long-form with no module behind it — the standalone sample. */
+const LONGFORM_BLUE = '#EAF1F4'
+
 function prepare(blocks: LongformBlock[]): Prepared[] {
   let h1n = 0
   let curH1 = ''
@@ -85,12 +89,19 @@ const Runs = ({ runs }: { runs?: LongformRun[] }) => (
 const plain = (runs?: LongformRun[]) => (runs ?? []).map((r) => r.t).join('')
 
 /** li indent and bullet shape both come from the nesting level. */
-function bullet(lvl = 1) {
+/**
+ * The mark at the head of a list item, by depth.
+ *
+ * The third level is a filled square, and its fill used to be one fixed amber —
+ * roasting's colour, on every long-form whatever module it was filed under.
+ * The colour is passed in now.
+ */
+function bullet(lvl = 1, accent: string) {
   return {
     width: lvl === 3 ? 3 : 4,
     height: lvl === 3 ? 3 : 4,
     borderRadius: lvl === 2 ? '50%' : 0,
-    background: lvl === 1 ? '#172124' : lvl === 2 ? 'transparent' : '#8A6420',
+    background: lvl === 1 ? '#172124' : lvl === 2 ? 'transparent' : accent,
     border: lvl === 2 ? '1px solid #172124' : 0,
   }
 }
@@ -108,10 +119,10 @@ function noteLines(runs: LongformRun[] = []): LongformRun[][] {
   return groups.filter((g) => g.length > 0)
 }
 
-function NoteBlock({ runs }: { runs?: LongformRun[] }) {
+function NoteBlock({ runs, palette }: { runs?: LongformRun[]; palette: Palette }) {
   const [open, setOpen] = useState(true)
   return (
-    <div style={{ background: '#EAF1F4', borderLeft: '2px solid #6FA8C0', margin: '16px 0 20px' }}>
+    <div style={{ background: palette.tint, borderLeft: `2px solid ${palette.accent}`, margin: '16px 0 20px' }}>
       <div
         onClick={() => setOpen((o) => !o)}
         style={{
@@ -157,7 +168,7 @@ function NoteBlock({ runs }: { runs?: LongformRun[] }) {
 }
 
 /** Blocks nested inside an `aside` — quieter, on its own sand ground. */
-function AsideBlock({ items }: { items: LongformBlock[] }) {
+function AsideBlock({ items, palette }: { items: LongformBlock[]; palette: Palette }) {
   return (
     <div style={{ background: '#F3EEE1', padding: '24px 26px 20px', margin: '22px 0 26px' }}>
       {items.map((a, i) => {
@@ -180,7 +191,7 @@ function AsideBlock({ items }: { items: LongformBlock[] }) {
               key={i}
               style={{ display: 'grid', gridTemplateColumns: '14px minmax(0,1fr)', gap: 10, margin: '0 0 8px', paddingLeft: pad }}
             >
-              <div style={{ ...bullet(a.lvl), margin: '9px 0 0 4px' }} />
+              <div style={{ ...bullet(a.lvl, palette.accent), margin: '9px 0 0 4px' }} />
               <div style={{ fontSize: 14.5, lineHeight: 1.62, color: '#3B3729' }}>
                 <Runs runs={a.runs} />
               </div>
@@ -195,7 +206,7 @@ function AsideBlock({ items }: { items: LongformBlock[] }) {
                 fontSize: 11.5,
                 letterSpacing: '.16em',
                 textTransform: 'uppercase',
-                color: '#7A5230',
+                color: palette.ink,
                 margin: '6px 0 10px',
               }}
             >
@@ -224,11 +235,11 @@ function AsideBlock({ items }: { items: LongformBlock[] }) {
               key={i}
               style={{
                 background: '#FFFFFF',
-                borderLeft: '2px solid #7A5230',
+                borderLeft: `2px solid ${palette.ink}`,
                 padding: '12px 16px',
                 margin: '10px 0 12px',
                 fontSize: 13.5,
-                color: '#7A5230',
+                color: palette.ink,
               }}
             >
               {a.v}
@@ -249,6 +260,8 @@ function AsideBlock({ items }: { items: LongformBlock[] }) {
  * parses.
  */
 export function Longform({ post, breadcrumb }: LongformProps) {
+  // Everything this template tints comes from the one colour the post wears.
+  const palette = paletteFrom(post.band?.bg ?? LONGFORM_BLUE, post.band?.fg)
   const prepared = useMemo(() => prepare(post.blocks), [post.blocks])
   const [folded, setFolded] = useState<Record<string, boolean>>({})
   const [navOpen, setNavOpen] = useState(false)
@@ -324,7 +337,7 @@ export function Longform({ post, breadcrumb }: LongformProps) {
           at the top would push the first paragraph off the screen. */}
       <div
         style={{
-          background: post.band?.bg ?? '#EAF1F4',
+          background: palette.accent,
           color: post.band?.fg ?? '#172124',
           padding: '22px 56px 20px',
         }}
@@ -504,8 +517,8 @@ export function Longform({ post, breadcrumb }: LongformProps) {
                         fontSize: title ? 70 : 42,
                         lineHeight: title ? 0.94 : 1.04,
                         letterSpacing: '-.03em',
-                        color: title ? '#172124' : '#102F35',
-                        borderTop: title ? 0 : '2px solid #102F35',
+                        color: title ? '#172124' : palette.ink,
+                        borderTop: title ? 0 : `2px solid ${palette.ink}`,
                         paddingTop: title ? 0 : 22,
                         margin: title ? '0 0 8px' : '58px 0 14px',
                       }}
@@ -519,7 +532,7 @@ export function Longform({ post, breadcrumb }: LongformProps) {
                             lineHeight: 1,
                             verticalAlign: 'middle',
                             marginRight: 16,
-                            color: isFolded ? '#8A6420' : '#B5AE99',
+                            color: isFolded ? palette.mid : '#B5AE99',
                           }}
                         >
                           {isFolded ? '▸' : '▾'}
@@ -528,7 +541,7 @@ export function Longform({ post, breadcrumb }: LongformProps) {
                       {title ? post.title : <Runs runs={b.runs} />}
                     </h1>
                     {title && post.subtitle && (
-                      <div style={{ fontFamily: serif, fontStyle: 'italic', fontSize: 24, lineHeight: 1.3, color: '#3E7A4E', margin: '-4px 0 8px' }}>
+                      <div style={{ fontFamily: serif, fontStyle: 'italic', fontSize: 24, lineHeight: 1.3, color: palette.mid, margin: '-4px 0 8px' }}>
                         {post.subtitle}
                       </div>
                     )}
@@ -557,7 +570,7 @@ export function Longform({ post, breadcrumb }: LongformProps) {
                         lineHeight: 1,
                         verticalAlign: 'middle',
                         marginRight: 12,
-                        color: isFolded ? '#8A6420' : '#B5AE99',
+                        color: isFolded ? palette.mid : '#B5AE99',
                       }}
                     >
                       {isFolded ? '▸' : '▾'}
@@ -574,7 +587,7 @@ export function Longform({ post, breadcrumb }: LongformProps) {
                       fontWeight: 400,
                       fontSize: 20,
                       lineHeight: 1.22,
-                      color: '#3E7A4E',
+                      color: palette.mid,
                       margin: '32px 0 10px',
                     }}
                   >
@@ -590,7 +603,7 @@ export function Longform({ post, breadcrumb }: LongformProps) {
                       fontSize: 12,
                       letterSpacing: '.16em',
                       textTransform: 'uppercase',
-                      color: '#8A6420',
+                      color: palette.mid,
                       margin: '32px 0 12px',
                     }}
                   >
@@ -618,26 +631,26 @@ export function Longform({ post, breadcrumb }: LongformProps) {
 
                 {b.k === 'li' && (
                   <div style={{ display: 'grid', gridTemplateColumns: '16px minmax(0,1fr)', gap: 11, margin: '0 0 10px', paddingLeft: pad }}>
-                    <div style={{ ...bullet(b.lvl), margin: '9px 0 0 5px' }} />
+                    <div style={{ ...bullet(b.lvl, palette.accent), margin: '9px 0 0 5px' }} />
                     <div style={{ fontSize: 15, lineHeight: 1.66, color: '#2E2A20' }}>
                       <Runs runs={b.runs} />
                     </div>
                   </div>
                 )}
 
-                {b.k === 'note' && <NoteBlock runs={b.runs} />}
+                {b.k === 'note' && <NoteBlock palette={palette} runs={b.runs} />}
 
                 {b.k === 'formula' && (
                   <div
                     style={{
                       background: '#F1F4EF',
-                      borderLeft: '2px solid #102F35',
+                      borderLeft: `2px solid ${palette.ink}`,
                       padding: '14px 18px',
                       margin: '14px 0 16px',
                       fontFamily: sans,
                       fontSize: 14,
                       letterSpacing: '.02em',
-                      color: '#102F35',
+                      color: palette.ink,
                     }}
                   >
                     {b.v}
@@ -659,7 +672,7 @@ export function Longform({ post, breadcrumb }: LongformProps) {
                   />
                 )}
 
-                {b.k === 'aside' && <AsideBlock items={b.items ?? []} />}
+                {b.k === 'aside' && <AsideBlock palette={palette} items={b.items ?? []} />}
               </Fragment>
             )
           })}

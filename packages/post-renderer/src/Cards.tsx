@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { Fragment, type ReactNode } from 'react'
 import { useMemo, useState } from 'react'
 import { ink, paper, sans, serif } from './tokens'
 import type { CardData, CardPart, CardsPostData } from './types'
@@ -10,6 +10,13 @@ export type CardsOverrides = {
   renderPartHeading?: (heading: string, cardIndex: number, partIndex: number) => ReactNode
   /** overrides the whole body of a part (method text / detail rows / callout lines) */
   renderPartBody?: (part: CardPart, cardIndex: number, partIndex: number) => ReactNode
+  /**
+   * Wraps one card, so the admin can hang its move / copy / delete handles on
+   * it. The page passes the card straight through.
+   */
+  wrapCard?: (card: ReactNode, cardIndex: number) => ReactNode
+  /** Shown under the last card — where the editor puts "add a card". */
+  renderAfterCards?: () => ReactNode
 }
 
 export type CardsProps = CardsOverrides & {
@@ -109,8 +116,19 @@ export function Cards({ post, breadcrumb, ...overrides }: CardsProps) {
   const [clearHover, setClearHover] = useState(false)
 
   const groups = useMemo(() => groupsOf(post.cards, post.groupHues), [post.cards, post.groupHues])
+  /**
+   * The cards on screen, each still carrying where it sits in the real list.
+   *
+   * The filtered position used to be the only index there was, and it was the
+   * one handed to the editing overrides — so with a group filter on, renaming
+   * the first card on screen renamed the first card in the post, which is a
+   * different card. Everything below keys off `at`, the real index.
+   */
   const visibleCards = useMemo(
-    () => (activeGroup ? post.cards.filter((c) => c.groups.includes(activeGroup)) : post.cards),
+    () =>
+      post.cards
+        .map((card, at) => ({ card, at }))
+        .filter(({ card }) => !activeGroup || card.groups.includes(activeGroup)),
     [post.cards, activeGroup],
   )
 
@@ -261,7 +279,7 @@ export function Cards({ post, breadcrumb, ...overrides }: CardsProps) {
             }}
           >
             <div style={{ color: '#8A8A7C', flex: 1 }}>{visibleCards.length} mục</div>
-            <div role="button" onClick={() => setOpenIndexes(new Set(visibleCards.map((_, i) => i)))} style={{ cursor: 'pointer', color: ink.faint }}>
+            <div role="button" onClick={() => setOpenIndexes(new Set(visibleCards.map((v) => v.at)))} style={{ cursor: 'pointer', color: ink.faint }}>
               mở hết
             </div>
             <div role="button" onClick={() => setOpenIndexes(new Set())} style={{ cursor: 'pointer', color: ink.faint }}>
@@ -269,10 +287,10 @@ export function Cards({ post, breadcrumb, ...overrides }: CardsProps) {
             </div>
           </div>
 
-          {visibleCards.map((c, i) => {
+          {visibleCards.map(({ card: c, at: i }) => {
             const open = openIndexes.has(i)
-            return (
-              <div key={c.n} style={{ borderBottom: `1px solid ${paper.rule}` }}>
+            const card = (
+              <div style={{ borderBottom: `1px solid ${paper.rule}` }}>
                 <div
                   role="button"
                   aria-expanded={open}
@@ -317,7 +335,11 @@ export function Cards({ post, breadcrumb, ...overrides }: CardsProps) {
                 )}
               </div>
             )
+            return (
+              <Fragment key={c.n}>{overrides.wrapCard ? overrides.wrapCard(card, i) : card}</Fragment>
+            )
           })}
+          {overrides.renderAfterCards?.()}
         </div>
 
         <div style={{ position: 'sticky', top: 24 }}>

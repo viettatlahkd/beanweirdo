@@ -3,6 +3,7 @@ import { PostRenderer } from 'post-renderer'
 import type {
   CardData,
   CardPart,
+  MemoSection,
   ReportBlock,
   ReportChartPoint,
   ReportMetric,
@@ -44,6 +45,9 @@ import {
   type ReportContent,
 } from '../lib/reportNotes'
 import { EXPLORATIONS_LABEL, fieldNotesLabel, nextId, notesOn, paletteFrom, segmentsFor, type Palette } from 'post-renderer'
+import { AddRow, RowShell } from '../components/RowShell'
+import { duplicateAt, insertAt, move, removeAt } from '../lib/listOps'
+import { useRowDrag } from '../lib/useRowDrag'
 import { toArticleData, toCardsData, toLongformData, toMemoData } from '../../lib/postToRenderer'
 import { toReportBlocks, toReportNotes } from '../../lib/reportBlocks'
 
@@ -482,6 +486,15 @@ function ArticleEditor({ post, module, onChange }: { post: PostDetail; module?: 
   const data = toArticleData(post, module?.title ?? post.module_id, [], -1, module)
   const sections = getBody<SectionData>(post)
   const further_reading = post.further_reading ?? []
+  /*
+   * The list operations hand back the very same array when they refused — the
+   * last section, a move to nowhere. Writing that would send a PATCH saying
+   * nothing changed, and tell the writer their click did something.
+   */
+  const setSections = (next: SectionData[]) => {
+    if (next !== sections) onChange({ body: next })
+  }
+  const drag = useRowDrag((from, to) => setSections(move(sections, from, to)))
 
   function updateSection(index: number, patch: Partial<SectionData>) {
     onChange({ body: sections.map((s, i) => (i === index ? { ...s, ...patch } : s)) })
@@ -500,6 +513,21 @@ function ArticleEditor({ post, module, onChange }: { post: PostDetail; module?: 
       renderSectionBody={(p, i) => <EditableField value={p} multiline rows={3} onCommit={(v) => updateSection(i, { p: v })} />}
       renderPullQuote={(pull) => <EditableField value={pull} multiline rows={3} onCommit={(v) => onChange({ pull_quote: v })} />}
       renderFurtherReadingItem={(item, i) => <EditableField value={item} onCommit={(v) => updateFurtherReading(i, v)} />}
+      wrapSection={(section, i) => (
+        <RowShell
+          noun="phần"
+          index={i}
+          drag={drag}
+          onMove={(dir) => setSections(move(sections, i, i + dir))}
+          onRemove={() => setSections(removeAt(sections, i, true))}
+          onDuplicate={() => setSections(duplicateAt(sections, i))}
+        >
+          {section}
+        </RowShell>
+      )}
+      renderAfterSections={() => (
+        <AddRow label="phần" onAdd={() => setSections(insertAt(sections, sections.length, { h: '', p: '' }))} />
+      )}
     />
   )
 }
@@ -526,8 +554,15 @@ function MemoEditor({
   onChange: (patch: EditPatch) => void
 }) {
   const data = toMemoData(post, module)
-  const body = (post.body ?? {}) as { sections?: { h: string }[] }
+  const body = (post.body ?? {}) as { sections?: MemoSection[] }
   const sections = body.sections ?? []
+
+  /* A memo keeps its sections under a key rather than as the body itself, so
+     every write puts the rest of the body back around them. */
+  const setSections = (next: MemoSection[]) => {
+    if (next !== sections) onChange({ body: { ...(post.body as object), sections: next } })
+  }
+  const drag = useRowDrag((from, to) => setSections(move(sections, from, to)))
 
   return (
     <PostRenderer
@@ -545,23 +580,50 @@ function MemoEditor({
       renderSectionHeading={(heading, i) => (
         <EditableField
           value={heading}
-          onCommit={(v) =>
-            onChange({
-              body: {
-                ...(post.body as object),
-                sections: sections.map((s, k) => (k === i ? { ...s, h: v } : s)),
-              },
-            })
-          }
+          placeholder="Tên mục"
+          onCommit={(v) => setSections(sections.map((s, k) => (k === i ? { ...s, h: v } : s)))}
         />
+      )}
+      wrapSection={(section, i) => (
+        <RowShell
+          noun="mục"
+          index={i}
+          drag={drag}
+          onMove={(dir) => setSections(move(sections, i, i + dir))}
+          onRemove={() => setSections(removeAt(sections, i, true))}
+          onDuplicate={() => setSections(duplicateAt(sections, i, copyMemoSection))}
+        >
+          {section}
+        </RowShell>
+      )}
+      renderAfterSections={() => (
+        <AddRow label="mục" onAdd={() => setSections(insertAt(sections, sections.length, { h: '', items: [] }))} />
       )}
     />
   )
 }
 
+/**
+ * A memo section carries lists inside it, so a shallow copy would hand the copy
+ * the very same array — editing one would silently edit the other.
+ */
+function copyMemoSection(s: MemoSection): MemoSection {
+  return {
+    ...s,
+    items: s.items?.map((i) => ({ ...i })),
+    phases: s.phases?.map((p) => ({ ...p, lines: [...p.lines] })),
+    table: s.table ? { head: [...s.table.head], rows: s.table.rows.map((r) => [...r]) } : undefined,
+    callout: s.callout ? { ...s.callout, lines: [...s.callout.lines] } : undefined,
+  }
+}
+
 function CardsEditor({ post, module, onChange }: { post: PostDetail; module?: Module; onChange: (patch: EditPatch) => void }) {
   const data = toCardsData(post, module)
   const cards = getBody<CardData>(post)
+  const setCards = (next: CardData[]) => {
+    if (next !== cards) onChange({ body: next })
+  }
+  const drag = useRowDrag((from, to) => setCards(move(cards, from, to)))
 
   function updateCard(cardIndex: number, patch: Partial<CardData>) {
     onChange({ body: cards.map((c, i) => (i === cardIndex ? { ...c, ...patch } : c)) })
@@ -600,9 +662,48 @@ function CardsEditor({ post, module, onChange }: { post: PostDetail; module?: Mo
         renderPartBody={(part, ci, pi) => (
           <CardPartBodyEditor part={part} onCommitHeading={(v) => updatePartHeading(ci, pi, v)} onChange={(next) => updatePart(ci, pi, next)} />
         )}
+        wrapCard={(card, i) => (
+          <RowShell
+            noun="thẻ"
+            index={i}
+            drag={drag}
+            onMove={(dir) => setCards(move(cards, i, i + dir))}
+            onRemove={() => setCards(removeAt(cards, i, true))}
+            onDuplicate={() => setCards(duplicateAt(cards, i, copyCard))}
+          >
+            {card}
+          </RowShell>
+        )}
+        renderAfterCards={() => <AddRow label="thẻ" onAdd={() => setCards(insertAt(cards, cards.length, blankCard(cards)))} />}
       />
     </div>
   )
+}
+
+/**
+ * A fresh card.
+ *
+ * It borrows the colour and the flavour groups of the card before it: a new
+ * card almost always belongs beside the one it was added after, and a card
+ * with no group at all cannot be found by the filter bar at the top of the
+ * page — it would be written and then invisible.
+ */
+function blankCard(cards: CardData[]): CardData {
+  const last = cards[cards.length - 1]
+  return {
+    n: String(cards.length + 1).padStart(2, '0'),
+    hue: last?.hue ?? '#8A8A7C',
+    groups: last ? [...last.groups] : [],
+    title: '',
+    sub: '',
+    tag: '',
+    parts: [],
+  }
+}
+
+/** A card owns its groups and its parts; a copy must not share either. */
+function copyCard(c: CardData): CardData {
+  return { ...c, groups: [...c.groups], parts: c.parts.map((p) => ({ ...p })) }
 }
 
 function CardPartBodyEditor({

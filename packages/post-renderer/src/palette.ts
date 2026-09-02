@@ -24,6 +24,8 @@ export type Palette = {
   accent: string
   onAccent: string
   ink: string
+  /** Between `ink` and `accent` — a second text weight, for a second role. */
+  mid: string
   tint: string
   edge: string
 }
@@ -79,6 +81,19 @@ function luminance(hex: string): number {
   return l
 }
 
+/**
+ * The same hue at a chosen lightness.
+ *
+ * Templates that told two things apart by using two different colours — a navy
+ * heading beside an amber emphasis — need two colours still. Taking both from
+ * one hue keeps the distinction while letting the module decide the hue, which
+ * a fixed second colour never could.
+ */
+export function shade(accent: string, lightness: number): string {
+  const { h, s } = toHsl(accent)
+  return toHex({ h, s: Math.min(s, 62), l: lightness })
+}
+
 export function paletteFrom(accent: string, onAccent?: string): Palette {
   const { h, s } = toHsl(accent)
   return {
@@ -87,6 +102,7 @@ export function paletteFrom(accent: string, onAccent?: string): Palette {
     // that can be read rather than the side that looks tasteful in one case.
     onAccent: onAccent ?? (luminance(accent) > 62 ? toHex({ h, s: Math.min(s, 70), l: 14 }) : '#FFFFFF'),
     ink: toHex({ h, s: Math.min(s, 62), l: 30 }),
+    mid: toHex({ h, s: Math.min(s, 62), l: 44 }),
     tint: toHex({ h, s: Math.min(s, 46), l: 94 }),
     edge: toHex({ h, s: Math.min(s, 40), l: 84 }),
   }

@@ -49,12 +49,17 @@ describe('memo khớp design', () => {
     expect(colours.size).toBeGreaterThan(1)
   })
 
-  it('khối kết luận có nền riêng', () => {
-    const { container } = render(<Memo post={post} />)
-    const painted = Array.from(container.querySelectorAll<HTMLElement>('div')).some(
-      (d) => d.style.background === 'rgb(243, 238, 225)',
-    )
-    expect(painted).toBe(true)
+  it('khối kết luận có nền riêng, sinh từ màu bài', () => {
+    // Nền ấy từng là một mã màu cố định. Nay nó nhạt cùng tông với màu module,
+    // nên test chốt ý — có nền riêng, và nền ấy mang tông của bài — chứ không
+    // chốt một mã màu mà mỗi module một khác.
+    const { container } = render(<Memo post={{ ...post, band: { bg: '#C25C7C', fg: '#FFFFFF' } }} />)
+    const grounds = Array.from(container.querySelectorAll<HTMLElement>('div'))
+      .map((d) => d.style.background)
+      .filter((b) => b.startsWith('rgb'))
+      .map((b) => b.match(/\d+/g)!.map(Number))
+    const tinted = grounds.find(([r, g, b]) => r > 200 && r > g && b > g)
+    expect(tinted).toBeTruthy()
   })
 
   it('số liệu đáng chú ý có gạch chân mảnh, không đổi màu', () => {

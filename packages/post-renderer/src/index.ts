@@ -24,7 +24,7 @@ export {
 } from './notes'
 export type { Exploration, FieldNote, NotesSegment, PostNotes } from './notes'
 
-export { paletteFrom } from './palette'
+export { paletteFrom, shade } from './palette'
 export type { Palette } from './palette'
 
 export { Report } from './Report'

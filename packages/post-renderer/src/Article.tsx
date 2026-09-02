@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from 'react'
+import { Fragment, type CSSProperties, type ReactNode } from 'react'
 import { garden, ink, layout, paper, sans, serif } from './tokens'
 import type { ArticlePlateData, ArticlePostData, FigureData } from './types'
 
@@ -16,6 +16,14 @@ export type ArticleOverrides = {
   /** the four decorative tint plates: hero, opener-primary, opener-secondary, rail-detail */
   renderPlateCaption?: (plate: ArticlePlateData, slot: 'hero' | 'primary' | 'secondary' | 'detail') => ReactNode
   renderSectionHeading?: (h: string, index: number) => ReactNode
+  /**
+   * Wraps one section, so the admin can hang its move / copy / delete handles
+   * on it. The page passes the section straight through; only the editor puts
+   * anything around it.
+   */
+  wrapSection?: (section: ReactNode, index: number) => ReactNode
+  /** Shown under the last section — where the editor puts "add a section". */
+  renderAfterSections?: () => ReactNode
   renderSectionBody?: (p: string, index: number) => ReactNode
   renderFigure?: (fig: FigureData, index: number) => ReactNode
   renderPullQuote?: (pull: string) => ReactNode
@@ -170,8 +178,9 @@ export function Article({ post, breadcrumb, ...overrides }: ArticleProps) {
               </div>
             </div>
 
-            {post.sections.map((s, i) => (
-              <div key={i} style={{ marginBottom: 34 }}>
+            {post.sections.map((s, i) => {
+              const section = (
+                <div style={{ marginBottom: 34 }}>
                 <h3
                   style={{
                     fontFamily: sans,
@@ -230,8 +239,15 @@ export function Article({ post, breadcrumb, ...overrides }: ArticleProps) {
                       </div>
                     </div>
                   ))}
-              </div>
-            ))}
+                </div>
+              )
+              return (
+                <Fragment key={i}>
+                  {overrides.wrapSection ? overrides.wrapSection(section, i) : section}
+                </Fragment>
+              )
+            })}
+            {overrides.renderAfterSections?.()}
           </div>
 
           <div style={{ position: 'sticky', top: 44, display: 'flex', flexDirection: 'column', gap: 20 }}>
