@@ -56,6 +56,59 @@ luật. **Không** làm sticky như luật ấy nói tiếp — ghi chú phải 
 khối nó neo vào, sticky là đúng cho rail điều hướng của article chứ không đúng
 ở đây. Nói ra để lane tài liệu biết đây là chỗ cố ý lệch, không phải bỏ sót.
 
+## [ĐỔI HÀNH VI] Explorations trở lại đầu cột — và lần này đúng cách
+
+Bàn giao của #65 nói tôi tự quyết đưa Explorations xuống **chân** cột, vì đặt ở
+đầu thì hàng lưới đầu tiên cao bằng chùm bullet và in ra một khoảng trống to
+cạnh dòng mở bài. Chủ site bác: hai bên phải giống nhau, và người soạn không
+nên phải kéo xuống cuối mỗi lần muốn thêm một dòng.
+
+Cách né ấy sai. Lỗi thật không phải chỗ đặt Explorations mà là **mỗi khối một
+hàng lưới**. Nay cột được cắt theo *đoạn*: một đoạn mở ra ở khối có ghi chú và
+chạy tiếp qua mọi khối không có, nên ô chứa ghi chú vẫn bắt đầu đúng chỗ khối
+của nó bắt đầu — vẫn ngang hàng, vẫn không đo đạc gì lúc chạy — còn hàng thì cao
+bằng cả cụm khối phía sau, tức là đúng chỗ mà Explorations cần.
+
+Kèm theo: **nút thêm ghi chú chuyển về chính khối** (`✎` cạnh nhân bản và xoá),
+thay cho ô mờ "+ ghi chú" trong lề. Ghi chú một khối là việc làm với khối đó,
+nên nút nằm ở đó — không phải một chỗ mờ trong lề phải đi tìm. Nút thêm
+Exploration nằm ngay dưới danh sách Explorations, ở đầu cột.
+
+## [SỬA LỖI] Bài dưới module hồng vẫn vẽ bảng màu xanh
+
+Chủ site thấy: tạo bài dưới `sensory` thì dải đầu trang ra hồng, nhưng chữ tiêu
+đề cột bảng vẫn xanh dương. Đúng — `#6FA8C0`, màu riêng của mẫu Field report,
+được viết cứng vào bốn chỗ: cột biểu đồ, chữ tiêu đề cột bảng, nền ảnh, và chú
+thích ảnh. Chỉ có dải đầu trang biết bài thuộc module nào.
+
+Nay có `paletteFrom` — một màu vào, một bộ ra: `accent` (cột biểu đồ, gờ, nhãn
+in hoa), `onAccent` (chữ nằm trên nó), `ink` (cùng tông, đủ đậm để đọc trên nền
+kem), `tint` (nền nhạt cho ảnh và khối nhấn), `edge` (gờ mảnh). Các sắc phái
+sinh **giữ nguyên tông, chỉ đổi độ sáng**, nên màu module vẫn nhận ra được ở mọi
+độ đậm nhạt thay vì trôi sang màu khác khi nhạt đi.
+
+Cả trang lẫn màn soạn đọc cùng bộ ấy.
+
+## [ĐỔI HÀNH VI] Ba loại khối mới
+
+- **Tiêu đề ba cấp.** H1 / H2 / H3, chọn bằng ba nút hiện khi rê chuột. Cấp 3
+  mang màu module, để phân cấp bằng màu chứ không chỉ bằng vài điểm cỡ chữ.
+  Tiêu đề viết trước khi có cấp thì là cấp 1 — không bài nào phải sửa.
+- **Khối nhấn** — nền nhạt màu module, gờ trái đậm, có nhãn tuỳ chọn.
+- **Trích dẫn** — dấu ngoặc kép do template in, người viết không gõ; có dòng
+  nguồn tuỳ chọn.
+
+## Chưa làm — trường theme color
+
+Chủ site còn muốn: thêm một trường **theme color** ở "+ bài mới"; bài thuộc
+module thì mặc định lấy màu module và cho sửa; bài thuộc module đặc biệt như
+Ghi 01 thì cho chọn trong danh sách theme có sẵn hoặc tự thêm.
+
+Việc đó cần một cột mới trong bảng `posts`, tức là một migration chủ site phải
+tự chạy — nên tách sang PR riêng để migration đứng một mình, dễ soi và dễ lùi.
+Bộ sinh màu ở PR này chính là thứ trường ấy sẽ dùng: đổi một dòng, từ "lấy màu
+module" sang "lấy màu bài, mặc định là màu module".
+
 ## Luật mới
 
 A15, A16 trong `docs/spine/SO-BAN-GIAO.md`.

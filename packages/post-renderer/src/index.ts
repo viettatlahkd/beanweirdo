@@ -20,8 +20,12 @@ export {
   notesOn,
   orphanNotes,
   readNotes,
+  segmentsFor,
 } from './notes'
-export type { Exploration, FieldNote, PostNotes } from './notes'
+export type { Exploration, FieldNote, NotesSegment, PostNotes } from './notes'
+
+export { paletteFrom } from './palette'
+export type { Palette } from './palette'
 
 export { Report } from './Report'
 export type { ReportProps, ReportOverrides } from './Report'

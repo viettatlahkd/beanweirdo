@@ -6,6 +6,7 @@ import {
   liveExplorations,
   nextId,
   notesOn,
+  segmentsFor,
   orphanNotes,
   readNotes,
   type PostNotes,
@@ -126,3 +127,45 @@ describe('the notes column on the page', () => {
   })
 })
 
+describe('how the column is cut into cells', () => {
+  const blocks = [{ id: 'b1' }, { id: 'b2' }, { id: 'b3' }, { id: 'b4' }]
+
+  it('opens a run at each annotated block and keeps the unannotated ones with it', () => {
+    const n = { explorations: [], fieldNotes: [{ id: 'n1', anchor: 'b2', text: 'x' }] }
+    expect(segmentsFor(blocks, n)).toEqual([
+      { start: 0, end: 1, anchor: undefined },
+      { start: 1, end: 4, anchor: 'b2' },
+    ])
+  })
+
+  it('gives the explorations the whole column when no block is annotated', () => {
+    expect(segmentsFor(blocks, undefined)).toEqual([{ start: 0, end: 4, anchor: undefined }])
+  })
+
+  it('still opens at block 0 when that is the annotated one', () => {
+    const n = { explorations: [], fieldNotes: [{ id: 'n1', anchor: 'b1', text: 'x' }] }
+    expect(segmentsFor(blocks, n)).toEqual([{ start: 0, end: 4, anchor: 'b1' }])
+  })
+
+  it('handles a post with no blocks at all', () => {
+    expect(segmentsFor([], undefined)).toEqual([])
+  })
+})
+
+describe('where the explorations sit', () => {
+  it('at the head of the column, above the field notes — not at the foot', () => {
+    // Two cells here — one opens the column, one holds the note — so read the
+    // order across the whole column, not inside a single cell.
+    const { container } = render(<Report post={post} />)
+    const text = Array.from(container.querySelectorAll('div')).map((d) => d.textContent)
+    expect(text.indexOf('Explorations')).toBeGreaterThan(-1)
+    expect(text.indexOf('Explorations')).toBeLessThan(text.indexOf('Field notes'))
+  })
+
+  it('shares the first cell with the run of blocks before the first note', () => {
+    const { container } = render(<Report post={post} />)
+    const exp = Array.from(container.querySelectorAll('div')).find((d) => d.textContent === 'Explorations')
+    const cell = exp?.closest('div[style*="grid-row"]') as HTMLElement
+    expect(cell.style.gridRow).toBe('1')
+  })
+})

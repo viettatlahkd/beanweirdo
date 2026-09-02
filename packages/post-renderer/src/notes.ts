@@ -132,6 +132,45 @@ function isFieldNote(x: unknown): x is FieldNote {
 }
 
 /**
+ * A stretch of blocks that shares one cell of the notes column.
+ *
+ * The column cannot simply give every block a row of its own. A grid row is as
+ * tall as its tallest side, so the explorations — which belong at the head of
+ * the column, where the writer can reach them without going looking — would
+ * hold the first block's row open and print a hole beside the opening line.
+ *
+ * A segment starts at a block that has notes and runs until the next one that
+ * does. So the cell holding a note still begins exactly where its own block
+ * begins — peer to peer, with nothing measured at runtime — while the row it
+ * sits in is as tall as that block *and everything unannotated after it*, which
+ * is the room the explorations needed all along.
+ */
+export type NotesSegment = {
+  /** First block in the run. */
+  start: number
+  /** One past the last. */
+  end: number
+  /** The block this cell's notes hang off, if the run opens with one. */
+  anchor?: string
+}
+
+export function segmentsFor(
+  blocks: readonly { id?: string }[],
+  notes: PostNotes | undefined,
+): NotesSegment[] {
+  const annotated = blocks.map((b) => notesOn(notes, b.id).length > 0)
+  const out: NotesSegment[] = []
+  for (let i = 0; i < blocks.length; i += 1) {
+    if (i > 0 && !annotated[i]) {
+      out[out.length - 1].end = i + 1
+      continue
+    }
+    out.push({ start: i, end: i + 1, anchor: annotated[i] ? blocks[i].id : undefined })
+  }
+  return out
+}
+
+/**
  * The next free id in a set — `n1`, `n2`, and so on.
  *
  * Ids only have to be unique inside one post, so counting up from what is

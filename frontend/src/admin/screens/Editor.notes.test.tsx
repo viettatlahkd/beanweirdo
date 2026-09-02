@@ -159,3 +159,30 @@ describe('deleting a block that has writing beside it', () => {
     10000,
   )
 })
+
+describe('the blocks a report can hold', () => {
+  it('offers a quote and a highlight box beside the older kinds', async () => {
+    draw(blocks)
+    await userEvent.click(screen.getAllByText('+ thêm khối')[0])
+    expect(screen.getByRole('button', { name: 'Trích dẫn' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Khối nhấn' })).toBeInTheDocument()
+  })
+
+  it('sets a heading to one of three levels', async () => {
+    const onChange = draw([{ id: 'b1', type: 'heading', text: 'Tổng quan' }])
+    await userEvent.click(screen.getByLabelText('tiêu đề cấp 3'))
+    expect(onChange).toHaveBeenLastCalledWith({ body: [{ id: 'b1', type: 'heading', text: 'Tổng quan', level: 3 }] })
+  })
+
+  it('marks which level a heading is already on', () => {
+    draw([{ id: 'b1', type: 'heading', text: 'Tổng quan', level: 2 }])
+    expect(screen.getByLabelText('tiêu đề cấp 2')).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByLabelText('tiêu đề cấp 1')).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('writes the quote mark itself, so nobody types one', () => {
+    draw([{ id: 'b1', type: 'quote', text: 'Vị mỏng ở cuối.', attribution: 'sổ rang' }])
+    expect(screen.getByDisplayValue('Vị mỏng ở cuối.')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('sổ rang')).toBeInTheDocument()
+  })
+})

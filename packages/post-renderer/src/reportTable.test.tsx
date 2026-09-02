@@ -86,3 +86,65 @@ describe('the spacing rhythm', () => {
     expect(gaps.filter((g) => !scale.includes(g))).toEqual([])
   })
 })
+
+describe('a post wears its module’s colour all the way down', () => {
+  const pink = (blocks: ReportPostData['blocks']): ReportPostData => ({
+    title: 'Rang thử',
+    band: { bg: '#C25C7C', fg: '#FFFFFF' },
+    blocks,
+  })
+
+  const rgb = (c: string) => c.match(/\d+/g)!.map(Number)
+
+  it('tints the table headings, not the template’s own blue', () => {
+    const { getByText } = render(<Report post={pink([{ type: 'table', table }])} />)
+    const [r, g, b] = rgb(getComputedStyle(getByText('Mốc')).color)
+    expect(r).toBeGreaterThan(g)
+    expect(b).toBeGreaterThan(g)
+  })
+
+  it('tints the chart bars', () => {
+    const { container } = render(
+      <Report post={pink([{ type: 'chart', points: [{ label: '0:00', heightPct: 40 }] }])} />,
+    )
+    const bar = container.querySelector('[data-testid="report-block-0"] div div div') as HTMLElement
+    expect(rgb(bar.style.background)).toEqual([194, 92, 124])
+  })
+
+  it('tints the ground an image sits on', () => {
+    const { container } = render(<Report post={pink([{ type: 'image', caption: 'x' }])} />)
+    const [r, g, b] = rgb(getComputedStyle(container.querySelector('[data-testid="report-block-0"]')!).backgroundColor)
+    expect(r).toBeGreaterThan(g)
+    expect(b).toBeGreaterThan(g)
+  })
+})
+
+describe('the three new kinds of block', () => {
+  it('sizes a heading by its level, and treats a levelless one as the first', () => {
+    const size = (level?: 1 | 2 | 3) => {
+      const { container } = render(
+        <Report post={{ title: 'x', blocks: [{ type: 'heading', text: 'Tổng quan', level }] }} />,
+      )
+      return parseInt(getComputedStyle(container.querySelector('[data-testid="report-block-0"]')!).fontSize, 10)
+    }
+    expect(size(undefined)).toBe(size(1))
+    expect(size(1)).toBeGreaterThan(size(2))
+    expect(size(2)).toBeGreaterThan(size(3))
+  })
+
+  it('draws a highlight box on its own ground', () => {
+    const { getByText } = render(
+      <Report post={{ title: 'x', blocks: [{ type: 'callout', heading: 'Lưu ý', text: 'Chưa đo được độ ẩm.' }] }} />,
+    )
+    expect(getByText('Lưu ý')).toBeInTheDocument()
+    expect(getByText('Chưa đo được độ ẩm.')).toBeInTheDocument()
+  })
+
+  it('prints the quote mark itself', () => {
+    const { container, getByText } = render(
+      <Report post={{ title: 'x', blocks: [{ type: 'quote', text: 'Vị mỏng ở cuối.', attribution: 'sổ rang' }] }} />,
+    )
+    expect(container.textContent).toContain('“')
+    expect(getByText('sổ rang')).toBeInTheDocument()
+  })
+})

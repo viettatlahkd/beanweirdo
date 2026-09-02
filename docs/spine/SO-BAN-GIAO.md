@@ -14,8 +14,8 @@ tài liệu · `BỎ` đã quyết không làm.
 
 ## A. Luật đề xuất — chờ đưa vào `frontend/src/content/logic.ts`
 
-Bộ quy tắc hiện có **3 phần · 14 nhóm · 75 luật**. Mười sáu luật dưới đây phát
-sinh từ code đã merge; A1–A7 đã ghi vào, A8–A16 thì chưa.
+Bộ quy tắc hiện có **3 phần · 14 nhóm · 75 luật**. Hai mươi luật dưới đây phát
+sinh từ code đã merge; A1–A7 đã ghi vào, A8–A20 thì chưa.
 
 | # | Luật | Từ PR | Nhóm phù hợp | Trạng thái |
 |---|---|---|---|---|
@@ -34,6 +34,10 @@ sinh từ code đã merge; A1–A7 đã ghi vào, A8–A16 thì chưa.
 | A13 | Xoá hết chữ trong một **đoạn văn** thì khối biến mất và con trỏ dồn lên khối chữ phía trên. Khối **có cấp bậc** — tiêu đề, meta, bảng, ảnh, số liệu — giữ nguyên chỗ và hiện tên mình bằng chữ chìm; muốn bỏ hẳn thì xoá thêm một lần hoặc dùng nút. | #65 | 16 | CHỜ |
 | A14 | Tỉ lệ chia hai cột lúc soạn **không lưu**. Kéo vạch là việc người soạn làm để nhìn cho rõ ngay lúc đó, không phải thuộc tính của bài. | #65 | 16 | CHỜ |
 | A15 | Bề rộng cột trong **bảng** thì ngược lại: **có lưu**, theo bài. Một cột ngày và một cột văn xuôi cần chỗ khác nhau, và người đọc phải thấy đúng tỉ lệ người viết chốt. Bảng viết trước khi có bề rộng thì chia đều; danh sách bề rộng không còn khớp số cột thì bỏ qua, không co giãn cho vừa. | #67 | 16 | CHỜ |
+| A17 | Cột ghi chú xếp giống nhau ở màn soạn và trên trang: Explorations ở **đầu** cột, field notes bên dưới, ngang hàng khối chúng neo vào. Cột cắt theo đoạn — một đoạn mở ra ở khối có ghi chú và chạy tiếp qua các khối không có — nên ghi chú vẫn ngang hàng khối của nó mà Explorations không phải nhường chỗ. Nút thêm ghi chú nằm trên chính khối, không nằm trong lề. | #67 | 16 | CHỜ |
+| A18 | **Mọi thứ một template tô màu đều sinh ra từ đúng một màu: màu của module.** Dải đầu trang, chữ tiêu đề cột, cột biểu đồ, nền ảnh, gờ ghi chú, khối nhấn, dấu trích dẫn. Không màu nào được viết cứng trong template. Các sắc phái sinh giữ nguyên tông, chỉ đổi độ sáng, để màu module vẫn nhận ra được ở mọi độ đậm nhạt. | #67 | 12 (màu) | CHỜ |
+| A19 | Tiêu đề có ba cấp. Cấp 3 mang màu module, để phân biệt cấp bằng màu chứ không chỉ bằng vài điểm cỡ chữ. Tiêu đề viết trước khi có cấp thì là cấp 1. | #67 | 02 (chữ) | CHỜ |
+| A20 | Khối trích dẫn tự in dấu ngoặc kép — dấu ấy là của template, người viết không gõ. | #67 | 16 | CHỜ |
 | A16 | Bảng luôn còn ít nhất một cột và một hàng. Bảng không cột vẽ ra là một khoảng trắng — người viết không phân biệt được bảng rỗng với bảng đã bị xoá. | #67 | 16 | CHỜ |
 
 ## B. `docs/SPEC.html` đã lỗi thời

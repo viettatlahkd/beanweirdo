@@ -5,9 +5,10 @@ import {
   hasNotes,
   liveExplorations,
   notesOn,
+  segmentsFor,
   type FieldNote,
-
 } from './notes'
+import { paletteFrom, type Palette } from './palette'
 import { ink, paper, sans, serif } from './tokens'
 import type { ReportBlock, ReportMetric, ReportPostData, ReportTable } from './types'
 
@@ -31,7 +32,14 @@ export type ReportProps = ReportOverrides & {
   post: ReportPostData
 }
 
+/** Only a template with no module behind it — the standalone sample — uses this. */
 const REPORT_BLUE = '#6FA8C0'
+
+const HEADING: Record<1 | 2 | 3, { size: number; top: number; accented: boolean }> = {
+  1: { size: 34, top: 40, accented: false },
+  2: { size: 26, top: 20, accented: false },
+  3: { size: 20, top: 20, accented: true },
+}
 
 /**
  * The "report" template — a block-based document: meta / heading / paragraph
@@ -41,9 +49,10 @@ const REPORT_BLUE = '#6FA8C0'
  * editing chrome is not part of this shared package.
  */
 export function Report({ post, breadcrumb, ...overrides }: ReportProps) {
+  const palette = paletteFrom(post.band?.bg ?? REPORT_BLUE, post.band?.fg)
   return (
     <div style={{ background: paper.cream, color: ink.base, minHeight: '100vh' }}>
-      <div style={{ background: post.band?.bg ?? REPORT_BLUE, color: post.band?.fg ?? '#0E2C38', padding: '44px 56px 40px' }}>
+      <div style={{ background: palette.accent, color: palette.onAccent, padding: '44px 56px 40px' }}>
         {breadcrumb}
         <div
           style={{
@@ -74,7 +83,7 @@ export function Report({ post, breadcrumb, ...overrides }: ReportProps) {
         </div>
       </div>
 
-      <ReportBody post={post} overrides={overrides} />
+      <ReportBody post={post} palette={palette} overrides={overrides} />
     </div>
   )
 }
@@ -92,14 +101,15 @@ export function Report({ post, breadcrumb, ...overrides }: ReportProps) {
  * grows to whichever side is taller, so a long note pushes its own block's
  * row open rather than sliding out of line with it.
  */
-function ReportBody({ post, overrides }: { post: ReportPostData; overrides: ReportOverrides }) {
+function ReportBody({ post, palette, overrides }: { post: ReportPostData; palette: Palette; overrides: ReportOverrides }) {
   const notes = post.notes
   const withNotes = hasNotes(notes)
   const explorations = liveExplorations(notes)
-  const rail = post.band?.bg ?? REPORT_BLUE
+  const rail = palette.accent
+  const segments = segmentsFor(post.blocks, notes)
   // The column is named once, at the top of it. Repeating the name over every
   // note turns a quiet margin into a stack of shouting labels.
-  const firstAnnotated = post.blocks.findIndex((b) => notesOn(notes, b.id).length > 0)
+  const firstAnnotated = segments.findIndex((seg) => seg.anchor)
 
   return (
     <div
@@ -111,25 +121,20 @@ function ReportBody({ post, overrides }: { post: ReportPostData; overrides: Repo
         columnGap: 40,
       }}
     >
-      {post.blocks.map((block, i) => {
-        const hanging = withNotes ? notesOn(notes, block.id) : []
-        /*
-         * The explorations close the column rather than open it. A grid row is
-         * as tall as its tallest side, so a run of them at the top would hold
-         * the first block's row open and print a hand-sized hole beside the
-         * opening line. At the foot there is nothing under them to push down,
-         * and they read as what they are: the thinking the piece left behind.
-         */
-        const closesTheColumn = withNotes && i === post.blocks.length - 1 && explorations.length > 0
+      {segments.map((seg, si) => {
+        const hanging = withNotes ? notesOn(notes, seg.anchor) : []
+        const opensTheColumn = withNotes && si === 0 && explorations.length > 0
         return (
-          <Fragment key={i}>
-            <div style={{ gridColumn: 1, gridRow: i + 1, minWidth: 0 }}>
-              <ReportBlockView block={block} index={i} overrides={overrides} />
+          <Fragment key={seg.start}>
+            <div style={{ gridColumn: 1, gridRow: si + 1, minWidth: 0 }}>
+              {post.blocks.slice(seg.start, seg.end).map((block, bi) => (
+                <ReportBlockView key={seg.start + bi} block={block} index={seg.start + bi} palette={palette} overrides={overrides} />
+              ))}
             </div>
-            {(hanging.length > 0 || closesTheColumn) && (
-              <div style={{ gridColumn: 2, gridRow: i + 1, minWidth: 0 }}>
-                <FieldNotes items={hanging} rail={rail} template={post.template} named={i === firstAnnotated} />
-                {closesTheColumn && <Explorations items={explorations} rail={rail} />}
+            {(hanging.length > 0 || opensTheColumn) && (
+              <div style={{ gridColumn: 2, gridRow: si + 1, minWidth: 0 }}>
+                {opensTheColumn && <Explorations items={explorations} rail={rail} />}
+                <FieldNotes items={hanging} rail={rail} template={post.template} named={si === firstAnnotated} />
               </div>
             )}
           </Fragment>
@@ -142,7 +147,7 @@ function ReportBody({ post, overrides }: { post: ReportPostData; overrides: Repo
 /** The consecutive run — one heading, then bullets, read top-down. */
 function Explorations({ items, rail }: { items: { id: string; text: string }[]; rail: string }) {
   return (
-    <div style={{ marginTop: 20 }}>
+    <div style={{ marginBottom: 20 }}>
       <NotesHeading text={EXPLORATIONS_LABEL} rail={rail} />
       {items.map((e) => (
         <div
@@ -234,7 +239,17 @@ function NotesHeading({ text, rail }: { text: string; rail: string }) {
   )
 }
 
-function ReportBlockView({ block, index, overrides }: { block: ReportBlock; index: number; overrides: ReportOverrides }) {
+function ReportBlockView({
+  block,
+  index,
+  palette,
+  overrides,
+}: {
+  block: ReportBlock
+  index: number
+  palette: Palette
+  overrides: ReportOverrides
+}) {
   switch (block.type) {
     case 'meta':
       return (
@@ -246,13 +261,55 @@ function ReportBlockView({ block, index, overrides }: { block: ReportBlock; inde
         </div>
       )
 
-    case 'heading':
+    case 'heading': {
+      // Three sizes, one family. The smallest wears the accent so a level is
+      // legible at a glance instead of resting on a few points of type size.
+      const step = HEADING[block.level ?? 1]
       return (
         <div
           data-testid={`report-block-${index}`}
-          style={{ fontFamily: serif, fontSize: 34, lineHeight: 1.08, letterSpacing: '-.03em', color: '#172124', margin: '20px 0 20px' }}
+          style={{
+            fontFamily: serif,
+            fontSize: step.size,
+            lineHeight: 1.08,
+            letterSpacing: '-.03em',
+            color: step.accented ? palette.ink : '#172124',
+            margin: `${step.top}px 0 20px`,
+          }}
         >
           {overrides.renderHeading ? overrides.renderHeading(block.text, index) : block.text}
+        </div>
+      )
+    }
+
+    case 'callout':
+      return (
+        <div
+          data-testid={`report-block-${index}`}
+          style={{ background: palette.tint, borderLeft: `2px solid ${palette.accent}`, padding: 20, margin: '0 0 20px', maxWidth: 660 }}
+        >
+          {block.heading && (
+            <div style={{ fontFamily: sans, fontWeight: 500, fontSize: 9.5, letterSpacing: '.16em', textTransform: 'uppercase', color: palette.ink, marginBottom: 8 }}>
+              {block.heading}
+            </div>
+          )}
+          <div style={{ fontFamily: sans, fontWeight: 300, fontSize: 14.5, lineHeight: 1.55, color: ink.strong }}>{block.text}</div>
+        </div>
+      )
+
+    case 'quote':
+      return (
+        <div data-testid={`report-block-${index}`} style={{ margin: '20px 0', maxWidth: 660, position: 'relative', paddingLeft: 40 }}>
+          {/* The mark belongs to the template — nobody should have to type it. */}
+          <span aria-hidden style={{ position: 'absolute', left: 0, top: -8, fontFamily: serif, fontSize: 52, lineHeight: 1, color: palette.edge }}>
+            “
+          </span>
+          <div style={{ fontFamily: serif, fontSize: 21, lineHeight: 1.35, color: '#172124' }}>{block.text}</div>
+          {block.attribution && (
+            <div style={{ fontFamily: sans, fontSize: 11, letterSpacing: '.08em', textTransform: 'uppercase', color: palette.ink, marginTop: 8 }}>
+              {block.attribution}
+            </div>
+          )}
         </div>
       )
 
@@ -294,7 +351,7 @@ function ReportBlockView({ block, index, overrides }: { block: ReportBlock; inde
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 168 }}>
             {block.points.map((p, pi) => (
               <div key={pi} style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', height: '100%' }}>
-                <div style={{ height: `${p.heightPct}%`, background: REPORT_BLUE }} />
+                <div style={{ height: `${p.heightPct}%`, background: palette.accent }} />
               </div>
             ))}
           </div>
@@ -324,7 +381,7 @@ function ReportBlockView({ block, index, overrides }: { block: ReportBlock; inde
               <tr>
                 {block.table.columns.map((h, hi) => (
                   <th key={hi} style={{ textAlign: 'left', padding: 0, borderBottom: `1px solid ${ink.base}` }}>
-                    <div style={{ padding: '0 10px 8px', fontWeight: 500, fontSize: 9.5, letterSpacing: '.16em', textTransform: 'uppercase', color: REPORT_BLUE }}>
+                    <div style={{ padding: '0 10px 8px', fontWeight: 500, fontSize: 9.5, letterSpacing: '.16em', textTransform: 'uppercase', color: palette.ink }}>
                       {h}
                     </div>
                   </th>
@@ -364,7 +421,7 @@ function ReportBlockView({ block, index, overrides }: { block: ReportBlock; inde
           data-testid={`report-block-${index}`}
           style={{
             height: 250,
-            background: '#E9F1F4',
+            background: palette.tint,
             display: 'flex',
             alignItems: 'flex-end',
             padding: 20,
@@ -373,7 +430,7 @@ function ReportBlockView({ block, index, overrides }: { block: ReportBlock; inde
             backgroundSize: 'cover',
           }}
         >
-          <div style={{ fontFamily: sans, fontSize: 10, color: '#4B6873' }}>
+          <div style={{ fontFamily: sans, fontSize: 10, color: palette.ink }}>
             {overrides.renderImageCaption ? overrides.renderImageCaption(block.caption, index) : block.caption}
           </div>
         </div>
