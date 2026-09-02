@@ -1,3 +1,5 @@
+import { paletteFrom, shade, type Palette } from './palette'
+import { Fragment } from 'react'
 import type { ReactNode } from 'react'
 import type { CSSProperties } from 'react'
 import { sans, serif } from './tokens'
@@ -15,6 +17,13 @@ export type MemoOverrides = {
   renderTitle?: (title: string) => ReactNode
   renderSubtitle?: (subtitle: string) => ReactNode
   renderSectionHeading?: (heading: string, index: number) => ReactNode
+  /**
+   * Wraps one section, so the admin can hang its move / copy / delete handles
+   * on it. The page passes the section straight through.
+   */
+  wrapSection?: (section: ReactNode, index: number) => ReactNode
+  /** Shown under the last section — where the editor puts "add a section". */
+  renderAfterSections?: () => ReactNode
 }
 
 export type MemoProps = MemoOverrides & {
@@ -26,6 +35,9 @@ export type MemoProps = MemoOverrides & {
   breadcrumb?: ReactNode
 }
 
+/** Only a memo with no module behind it — the standalone sample — uses this. */
+const MEMO_BLUE = '#EAF1F4'
+
 const label: CSSProperties = {
   fontSize: 10,
   letterSpacing: '.18em',
@@ -33,12 +45,18 @@ const label: CSSProperties = {
   color: '#A2A296',
 }
 
-/** Emphasis is amber and italic — the design marks judgements this way. */
-const Runs = ({ runs }: { runs: MemoRun[] }) => (
+/**
+ * Emphasis is italic and coloured — the design marks judgements this way.
+ *
+ * The colour used to be one fixed amber, which is roasting's colour: a memo
+ * filed under sensory marked its judgements in another module's ink. It takes
+ * the post's own second weight now.
+ */
+const Runs = ({ runs, palette }: { runs: MemoRun[]; palette: Palette }) => (
   <>
     {runs.map((r, i) =>
       r.em ? (
-        <em key={i} style={{ fontWeight: 600, fontStyle: 'italic', color: '#8A6420' }}>
+        <em key={i} style={{ fontWeight: 600, fontStyle: 'italic', color: palette.mid }}>
           {r.t}
         </em>
       ) : r.u ? (
@@ -61,8 +79,15 @@ const Runs = ({ runs }: { runs: MemoRun[] }) => (
  * the character it belongs to, a caveat under the tasting. So the bullet
  * changes shape with depth — filled, then hollow, then a square against a rule.
  */
-/** Mỗi giai đoạn một màu, xoay vòng — đúng ba màu design dùng. */
-const PHASE_COLORS = ['#F2A0A5', '#3E7A4E', '#8A6420']
+/**
+ * Mỗi giai đoạn một sắc, xoay vòng.
+ *
+ * Trước đây là ba màu cố định — hồng của sensory, xanh của biochemistry, hổ
+ * phách của roasting — nên một bài dưới bất cứ module nào cũng đánh dấu các
+ * giai đoạn bằng màu của ba module khác. Nay là ba độ đậm của chính màu bài,
+ * nên vẫn phân biệt được mà không mượn màu của ai.
+ */
+const phaseShades = (accent: string) => [shade(accent, 30), shade(accent, 44), shade(accent, 58)]
 
 /**
  * Cột đầu của bảng nếm là nhãn ("Liều", "Nhiệt") nên giữ hẹp và cố định;
@@ -71,7 +96,7 @@ const PHASE_COLORS = ['#F2A0A5', '#3E7A4E', '#8A6420']
 const tableGrid = (columns: number) =>
   columns > 1 ? `80px repeat(${columns - 1}, minmax(0,1fr))` : 'minmax(0,1fr)'
 
-function Item({ item, depth = 0 }: { item: MemoItem; depth?: number }) {
+function Item({ item, depth = 0, palette }: { item: MemoItem; depth?: number; palette: Palette }) {
   const dot: CSSProperties =
     depth === 0
       ? { width: 5, height: 5, borderRadius: '50%', background: '#172124' }
@@ -92,7 +117,7 @@ function Item({ item, depth = 0 }: { item: MemoItem; depth?: number }) {
       >
         <div style={{ ...dot, margin: depth === 2 ? '10px 0 0 5px' : '9px 0 0 6px' }} />
         <div style={{ fontSize: depth === 0 ? 15.5 : 15, lineHeight: 1.62 }}>
-          <Runs runs={item.runs} />
+          <Runs runs={item.runs} palette={palette} />
           {item.cont?.map((c, i) => (
             <div key={i} style={{ color: '#4B4A40', fontSize: 14.5, lineHeight: 1.66 }}>
               {c}
@@ -112,7 +137,7 @@ function Item({ item, depth = 0 }: { item: MemoItem; depth?: number }) {
           }}
         >
           {item.children.map((c, i) => (
-            <Item key={i} item={c} depth={depth + 1} />
+            <Item key={i} item={c} depth={depth + 1} palette={palette} />
           ))}
         </div>
       )}
@@ -121,10 +146,12 @@ function Item({ item, depth = 0 }: { item: MemoItem; depth?: number }) {
 }
 
 function Section({
+  palette,
   section,
   renderHeading,
 }: {
   section: MemoSection
+  palette: Palette
   renderHeading?: (heading: string) => ReactNode
 }) {
   return (
@@ -138,20 +165,20 @@ function Section({
           lineHeight: 1.1,
           letterSpacing: '-.02em',
           margin: '0 0 22px',
-          color: '#102F35',
+          color: palette.ink,
         }}
       >
         {renderHeading ? renderHeading(section.h) : section.h}
       </h2>
 
       {section.callout && (
-        <div style={{ background: '#F3EEE1', padding: '26px 28px', marginBottom: 26 }}>
+        <div style={{ background: palette.tint, padding: '26px 28px', marginBottom: 26 }}>
           <div
             style={{
               fontWeight: 600,
               fontSize: 15.5,
               lineHeight: 1.5,
-              color: '#7A5230',
+              color: palette.ink,
               marginBottom: 10,
             }}
           >
@@ -168,7 +195,7 @@ function Section({
       {section.items && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {section.items.map((it, i) => (
-            <Item key={i} item={it} />
+            <Item key={i} item={it} palette={palette} />
           ))}
         </div>
       )}
@@ -182,7 +209,7 @@ function Section({
                   fontFamily: serif,
 
                   fontSize: 26,
-                  color: PHASE_COLORS[pi % PHASE_COLORS.length],
+                  color: phaseShades(palette.accent)[pi % 3],
                   fontVariantNumeric: 'tabular-nums',
                   lineHeight: 1,
                 }}
@@ -209,7 +236,7 @@ function Section({
               display: 'grid',
               gridTemplateColumns: tableGrid(section.table.head.length),
                 gap: '0 14px',
-              borderBottom: '1px solid #102F35',
+              borderBottom: `1px solid ${palette.ink}`,
               paddingBottom: 8,
             }}
           >
@@ -250,15 +277,17 @@ function Section({
  * pour) before any prose, because a tasting note nobody can reproduce is just
  * an opinion. Everything below is an outline where indent carries the argument.
  */
-export function Memo({ post, breadcrumb, renderTitle, renderSubtitle, renderSectionHeading }: MemoProps) {
+export function Memo({ post, breadcrumb, renderTitle, renderSubtitle, renderSectionHeading, wrapSection, renderAfterSections }: MemoProps) {
+  // Everything this template tints comes from the one colour the post wears.
+  const palette = paletteFrom(post.band?.bg ?? MEMO_BLUE, post.band?.fg)
   return (
     <div style={{ background: '#FCFCFA', color: '#172124', minHeight: '100vh', fontFamily: sans, fontWeight: 300 }}>
       {/* A memo is short and deliberately plain, so it gets the shallow band
           too — enough to say where it is filed, not enough to crowd the note. */}
       <div
         style={{
-          background: post.band?.bg ?? '#EAF1F4',
-          color: post.band?.fg ?? '#172124',
+          background: palette.accent,
+          color: palette.onAccent,
           padding: '22px 56px 20px',
         }}
       >
@@ -271,7 +300,7 @@ export function Memo({ post, breadcrumb, renderTitle, renderSubtitle, renderSect
             gridTemplateColumns: 'minmax(0,1fr) 300px',
             gap: 56,
             alignItems: 'end',
-            borderBottom: '1px solid #102F35',
+            borderBottom: `1px solid ${palette.ink}`,
             paddingBottom: 26,
           }}
         >
@@ -284,7 +313,7 @@ export function Memo({ post, breadcrumb, renderTitle, renderSubtitle, renderSect
                 lineHeight: 0.88,
                 letterSpacing: '-.045em',
                 margin: 0,
-                color: '#102F35',
+                color: palette.ink,
               }}
             >
               {renderTitle ? renderTitle(post.title) : post.title}
@@ -296,7 +325,7 @@ export function Memo({ post, breadcrumb, renderTitle, renderSubtitle, renderSect
                   fontStyle: 'italic',
                   fontSize: 27,
                   lineHeight: 1.3,
-                  color: '#8A6420',
+                  color: palette.mid,
                   marginTop: 18,
                 }}
               >
@@ -333,7 +362,7 @@ export function Memo({ post, breadcrumb, renderTitle, renderSubtitle, renderSect
             <img src={post.img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
           </div>
           <div style={{ display: 'flex', gap: 10, alignItems: 'baseline', marginTop: 10, fontSize: 11, color: '#A2A296' }}>
-            <div style={{ width: 22, height: 1, background: '#F2A0A5', transform: 'translateY(-4px)' }} />
+            <div style={{ width: 22, height: 1, background: palette.accent, transform: 'translateY(-4px)' }} />
             <div>{post.imgCaption ?? 'ảnh features'}</div>
           </div>
         </div>
@@ -348,13 +377,17 @@ export function Memo({ post, breadcrumb, renderTitle, renderSubtitle, renderSect
         }}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 52 }}>
-          {post.sections.map((s, i) => (
-            <Section
-              key={i}
-              section={s}
-              renderHeading={renderSectionHeading ? (h) => renderSectionHeading(h, i) : undefined}
-            />
-          ))}
+          {post.sections.map((s, i) => {
+            const section = (
+              <Section
+                section={s}
+                palette={palette}
+                renderHeading={renderSectionHeading ? (h) => renderSectionHeading(h, i) : undefined}
+              />
+            )
+            return <Fragment key={i}>{wrapSection ? wrapSection(section, i) : section}</Fragment>
+          })}
+          {renderAfterSections?.()}
         </div>
       </div>
     </div>

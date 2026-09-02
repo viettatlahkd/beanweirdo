@@ -14,8 +14,8 @@ tài liệu · `BỎ` đã quyết không làm.
 
 ## A. Luật đề xuất — chờ đưa vào `frontend/src/content/logic.ts`
 
-Bộ quy tắc hiện có **3 phần · 14 nhóm · 75 luật**. Hai mươi ba luật dưới đây phát
-sinh từ code đã merge; A1–A7 đã ghi vào, A8–A23 thì chưa.
+Bộ quy tắc hiện có **3 phần · 14 nhóm · 75 luật**. Hai mươi sáu luật dưới đây phát
+sinh từ code đã merge; A1–A7 đã ghi vào, A8–A26 thì chưa.
 
 | # | Luật | Từ PR | Nhóm phù hợp | Trạng thái |
 |---|---|---|---|---|
@@ -41,6 +41,9 @@ sinh từ code đã merge; A1–A7 đã ghi vào, A8–A23 thì chưa.
 | A21 | `posts.theme_color` rỗng nghĩa là **theo module**, không phải "chưa đặt màu". Chọn lại đúng màu module thì không ghi gì — nhờ vậy đổi màu một module vẫn lan tới mọi bài chưa ai đặt riêng, thay vì để chúng giữ bản sao màu cũ và trôi dần ra khỏi module. | #68 | 12 (màu) | CHỜ |
 | A22 | Cả năm template lấy dải màu đầu trang qua cùng một chỗ: màu riêng của bài đè màu module. `on_color` chỉ đi cùng màu module — nó là câu trả lời của module cho "chữ gì đọc được trên tôi", và là câu trả lời sai cho một màu khác; với màu khác thì hệ thống tự tính. | #68 | 12 | CHỜ |
 | A23 | Mọi ô màu được gọi tên cùng một kiểu, ở mọi chỗ: `[tên module] — [mã màu]`. Màu không thuộc module nào là `customize`. Chỗ nào cho chọn màu thì cũng phải có ô nhập mã màu — màu thường được chốt ở nơi khác rồi mới mang tới đây dưới dạng sáu ký tự để dán. | #68 | 12 (màu) | CHỜ |
+| A24 | Luật màu áp cho **mọi** template, không riêng report: dải đầu trang, chữ tiêu đề mục, mốc giai đoạn, dấu đầu dòng, nền khối nhấn, gờ chú thích — tất cả sinh từ màu bài. Không template nào được viết cứng màu của một module. | #69 | 12 (màu) | CHỜ |
+| A25 | Mọi danh sách trong bài đều thêm / xoá / đổi chỗ / nhân bản được, bằng cùng một bộ tay nắm: phần của article, mục của memo, thẻ của cards, khối của report. Danh sách luôn còn ít nhất một mục — bài rỗng vẽ ra là trang trắng, người viết không phân biệt được với trang lỗi. | #69 | 16 (template) | CHỜ |
+| A26 | Bản sao của một mục không được dùng chung mảng con với bản gốc. Sao chép nông thì sửa bản này đổi luôn bản kia, và không có gì trên màn hình cho biết điều đó. | #69 | 16 | CHỜ |
 | A16 | Bảng luôn còn ít nhất một cột và một hàng. Bảng không cột vẽ ra là một khoảng trắng — người viết không phân biệt được bảng rỗng với bảng đã bị xoá. | #67 | 16 | CHỜ |
 
 ## B. `docs/SPEC.html` đã lỗi thời
