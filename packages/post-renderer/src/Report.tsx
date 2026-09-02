@@ -9,7 +9,7 @@ import {
 
 } from './notes'
 import { ink, paper, sans, serif } from './tokens'
-import type { ReportBlock, ReportMetric, ReportPostData } from './types'
+import type { ReportBlock, ReportMetric, ReportPostData, ReportTable } from './types'
 
 export type ReportOverrides = {
   renderTitle?: (title: string) => ReactNode
@@ -43,7 +43,7 @@ const REPORT_BLUE = '#6FA8C0'
 export function Report({ post, breadcrumb, ...overrides }: ReportProps) {
   return (
     <div style={{ background: paper.cream, color: ink.base, minHeight: '100vh' }}>
-      <div style={{ background: post.band?.bg ?? REPORT_BLUE, color: post.band?.fg ?? '#0E2C38', padding: '40px 56px 34px' }}>
+      <div style={{ background: post.band?.bg ?? REPORT_BLUE, color: post.band?.fg ?? '#0E2C38', padding: '44px 56px 40px' }}>
         {breadcrumb}
         <div
           style={{
@@ -104,10 +104,10 @@ function ReportBody({ post, overrides }: { post: ReportPostData; overrides: Repo
   return (
     <div
       style={{
-        padding: '34px 56px 140px',
+        padding: '44px 56px 96px',
         maxWidth: 1320,
         display: 'grid',
-        gridTemplateColumns: withNotes ? 'minmax(0,1fr) minmax(190px,262px)' : 'minmax(0,1fr)',
+        gridTemplateColumns: withNotes ? 'minmax(0,1fr) minmax(200px,260px)' : 'minmax(0,1fr)',
         columnGap: 40,
       }}
     >
@@ -202,6 +202,20 @@ function FieldNotes({
   )
 }
 
+/**
+ * A column's share of the table.
+ *
+ * A table written before widths existed has none, and the writer of one that
+ * does may have added a column since — so a stored list that no longer matches
+ * the columns is ignored rather than stretched to fit, which would move every
+ * boundary the writer had set.
+ */
+function columnWidth(table: ReportTable, index: number): string {
+  const w = table.widths
+  if (!w || w.length !== table.columns.length) return `${100 / Math.max(table.columns.length, 1)}%`
+  return `${w[index]}%`
+}
+
 function NotesHeading({ text, rail }: { text: string; rail: string }) {
   return (
     <div
@@ -226,7 +240,7 @@ function ReportBlockView({ block, index, overrides }: { block: ReportBlock; inde
       return (
         <div
           data-testid={`report-block-${index}`}
-          style={{ fontFamily: sans, fontSize: 10.5, letterSpacing: '.18em', textTransform: 'uppercase', color: '#8A8A7C', margin: '0 0 18px' }}
+          style={{ fontFamily: sans, fontSize: 10.5, letterSpacing: '.18em', textTransform: 'uppercase', color: '#8A8A7C', margin: '0 0 20px' }}
         >
           {overrides.renderMeta ? overrides.renderMeta(block.text, index) : block.text}
         </div>
@@ -236,7 +250,7 @@ function ReportBlockView({ block, index, overrides }: { block: ReportBlock; inde
       return (
         <div
           data-testid={`report-block-${index}`}
-          style={{ fontFamily: serif, fontSize: 34, lineHeight: 1.08, letterSpacing: '-.03em', color: '#172124', margin: '20px 0 14px' }}
+          style={{ fontFamily: serif, fontSize: 34, lineHeight: 1.08, letterSpacing: '-.03em', color: '#172124', margin: '20px 0 20px' }}
         >
           {overrides.renderHeading ? overrides.renderHeading(block.text, index) : block.text}
         </div>
@@ -256,7 +270,7 @@ function ReportBlockView({ block, index, overrides }: { block: ReportBlock; inde
       return (
         <div
           data-testid={`report-block-${index}`}
-          style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(132px,1fr))', gap: 1, background: '#E6E2D2', margin: '0 0 24px' }}
+          style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(132px,1fr))', gap: 1, background: '#E6E2D2', margin: '0 0 20px' }}
         >
           {block.items.map((m, mi) => (
             <div key={mi} style={{ background: '#FFFFFF', padding: '13px 14px 14px' }}>
@@ -275,7 +289,7 @@ function ReportBlockView({ block, index, overrides }: { block: ReportBlock; inde
       return (
         <div
           data-testid={`report-block-${index}`}
-          style={{ margin: '0 0 26px', borderLeft: '1px solid #DDD9C8', borderBottom: '1px solid #DDD9C8', padding: '0 0 0 12px' }}
+          style={{ margin: '0 0 20px', borderLeft: '1px solid #DDD9C8', borderBottom: '1px solid #DDD9C8', padding: '0 0 0 8px' }}
         >
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 168 }}>
             {block.points.map((p, pi) => (
@@ -286,7 +300,10 @@ function ReportBlockView({ block, index, overrides }: { block: ReportBlock; inde
           </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 7 }}>
             {block.points.map((p, pi) => (
-              <div key={pi} style={{ flex: 1, textAlign: 'center', fontFamily: sans, fontSize: 9.5, color: '#8A8A7C' }}>
+              <div
+                key={pi}
+                style={{ flex: 1, textAlign: 'center', fontFamily: sans, fontSize: 9.5, color: '#8A8A7C', fontVariantNumeric: 'tabular-nums' }}
+              >
                 {p.label}
               </div>
             ))}
@@ -296,8 +313,13 @@ function ReportBlockView({ block, index, overrides }: { block: ReportBlock; inde
 
     case 'table':
       return (
-        <div data-testid={`report-block-${index}`} style={{ margin: '0 0 26px' }}>
+        <div data-testid={`report-block-${index}`} style={{ margin: '0 0 20px', overflowX: 'auto' }}>
           <table style={{ borderCollapse: 'collapse', width: '100%', tableLayout: 'fixed', fontFamily: sans }}>
+            <colgroup>
+              {block.table.columns.map((_, ci) => (
+                <col key={ci} style={{ width: columnWidth(block.table, ci) }} />
+              ))}
+            </colgroup>
             <thead>
               <tr>
                 {block.table.columns.map((h, hi) => (
@@ -314,7 +336,17 @@ function ReportBlockView({ block, index, overrides }: { block: ReportBlock; inde
                 <tr key={ri}>
                   {row.cells.map((cell, ci) => (
                     <td key={ci} style={{ padding: 0, borderBottom: `1px solid ${paper.rule}`, verticalAlign: 'top' }}>
-                      <div style={{ fontWeight: 300, fontSize: 14, lineHeight: 1.45, color: ink.strong, padding: 10, overflowWrap: 'break-word' }}>
+                      <div
+                        style={{
+                          fontWeight: 300,
+                          fontSize: 14,
+                          lineHeight: 1.45,
+                          color: ink.strong,
+                          padding: 10,
+                          overflowWrap: 'break-word',
+                          fontVariantNumeric: 'tabular-nums',
+                        }}
+                      >
                         {overrides.renderTableCell ? overrides.renderTableCell(cell, index, ri, ci) : cell}
                       </div>
                     </td>
@@ -335,8 +367,8 @@ function ReportBlockView({ block, index, overrides }: { block: ReportBlock; inde
             background: '#E9F1F4',
             display: 'flex',
             alignItems: 'flex-end',
-            padding: 14,
-            margin: '0 0 26px',
+            padding: 20,
+            margin: '0 0 20px',
             backgroundImage: block.imageUrl ? `url(${block.imageUrl})` : undefined,
             backgroundSize: 'cover',
           }}

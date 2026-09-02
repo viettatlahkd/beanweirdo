@@ -152,6 +152,16 @@ export type ReportTableRow = {
 export type ReportTable = {
   columns: string[]
   rows: ReportTableRow[]
+  /**
+   * Column widths as percentages, in column order.
+   *
+   * Unlike the editor's own two-column split — a thing the writer does to see
+   * better for a minute — these belong to the table: a column of dates and a
+   * column of prose want different room, and the reader should get the
+   * proportions the writer settled on. Absent means equal columns, which is
+   * what every table written before this held.
+   */
+  widths?: number[]
 }
 
 /**

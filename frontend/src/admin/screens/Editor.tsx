@@ -23,6 +23,15 @@ import { useNav } from '../../lib/nav'
 import { ink, paper, serif } from '../../design/tokens'
 import { blankReportBlock, getBody, resolveTemplate } from '../lib/postData'
 import {
+  addColumn,
+  addRow,
+  freeColumnName,
+  removeColumn,
+  removeRow,
+  resizeColumn,
+  widthsOf,
+} from '../lib/reportTable'
+import {
   cloneBlock,
   ensureIds,
   mergeTarget,
@@ -306,8 +315,18 @@ function EditorStyles() {
       .awc-chart-bars{ display: flex; align-items: flex-end; gap: 8px; height: 96px; border-left: 1px solid #DDD9C8; border-bottom: 1px solid #DDD9C8; padding-left: 8px; margin-bottom: 10px; }
       .awc-chart-bar{ flex: 1; min-height: 2px; }
       .awc-chart-row{ display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-      .awc-table-editor{ border-collapse: collapse; width: 100%; }
-      .awc-table-editor th, .awc-table-editor td{ border-bottom: 1px solid #EBE5D3; padding: 6px 8px; text-align: left; vertical-align: top; }
+      .awc-table-wrap{ position: relative; padding-left: 20px; margin: 10px 0; overflow-x: auto; }
+      .awc-table-editor{ border-collapse: collapse; width: 100%; table-layout: fixed; }
+      .awc-table-editor th, .awc-table-editor td{ border-bottom: 1px solid #EBE5D3; padding: 6px 8px; text-align: left; vertical-align: top; position: relative; }
+      .awc-cell-x, .awc-row-x{ position: absolute; font-size: 10px; color: #8C8674; background: transparent; border: none; cursor: pointer; padding: 2px; opacity: 0; transition: opacity .12s; }
+      .awc-cell-x{ right: 10px; top: 4px; }
+      .awc-row-x{ left: -18px; top: 7px; }
+      .awc-table-editor th:hover .awc-cell-x, .awc-table-editor tr:hover .awc-row-x,
+      .awc-cell-x:focus-visible, .awc-row-x:focus-visible{ opacity: 1; }
+      .awc-col-split{ position: absolute; top: 0; left: -5px; width: 11px; height: 100%; cursor: col-resize; z-index: 2; }
+      .awc-col-split::after{ content: ''; position: absolute; left: 5px; top: 4px; bottom: 4px; width: 1px; background: transparent; }
+      .awc-col-split:hover::after{ background: #8C8674; }
+      .awc-table-adds{ display: flex; gap: 12px; }
       .awc-image-drop{ cursor: pointer; }
     `}</style>
   )
@@ -1305,41 +1324,77 @@ function ChartEditor({ points, onChange }: { points: ReportChartPoint[]; onChang
   )
 }
 
+/**
+ * The table, drawn the shape it will be read in.
+ *
+ * The controls used to live inside the table — a spare header cell holding
+ * "+ cột", a spare cell on every row holding "xoá hàng" — which gave the
+ * editor a column the page does not have, so the widths a writer set here were
+ * never the widths a reader saw. They sit outside it now, and the boundaries
+ * between headings can be dragged.
+ */
 function TableEditor({ table, onChange }: { table: ReportTable; onChange: (table: ReportTable) => void }) {
-  function addColumn() {
-    onChange({ columns: [...table.columns, `Cột ${table.columns.length + 1}`], rows: table.rows.map((r) => ({ cells: [...r.cells, ''] })) })
-  }
-  function removeColumn(ci: number) {
-    onChange({ columns: table.columns.filter((_, i) => i !== ci), rows: table.rows.map((r) => ({ cells: r.cells.filter((_, i) => i !== ci) })) })
-  }
-  function addRow() {
-    onChange({ ...table, rows: [...table.rows, { cells: table.columns.map(() => '') }] })
-  }
-  function removeRow(ri: number) {
-    onChange({ ...table, rows: table.rows.filter((_, i) => i !== ri) })
-  }
+  const el = useRef<HTMLTableElement>(null)
+  const drag = useRef<{ x: number; table: ReportTable } | null>(null)
+  const widths = widthsOf(table)
+
   return (
-    <div style={{ overflowX: 'auto' }}>
-      <table className="awc-table-editor">
+    <div className="awc-table-wrap">
+      <table ref={el} className="awc-table-editor">
+        <colgroup>
+          {widths.map((w, ci) => (
+            <col key={ci} style={{ width: `${w}%` }} />
+          ))}
+        </colgroup>
         <thead>
           <tr>
             {table.columns.map((c, ci) => (
               <th key={ci}>
                 <EditableField
                   value={c}
+                  placeholder="tên cột"
                   onCommit={(v) => onChange({ ...table, columns: table.columns.map((col, i) => (i === ci ? v : col)) })}
                   style={{ fontSize: 9.5, letterSpacing: '.16em', textTransform: 'uppercase', color: REPORT_BLUE }}
                 />
-                <button type="button" className="awc-mini-remove" onClick={() => removeColumn(ci)} aria-label={`xoá cột ${ci + 1}`}>
-                  xoá cột
-                </button>
+                {table.columns.length > 1 && (
+                  <button
+                    type="button"
+                    className="awc-cell-x"
+                    onClick={() => onChange(removeColumn(table, ci))}
+                    aria-label={`xoá cột ${ci + 1}`}
+                  >
+                    ✕
+                  </button>
+                )}
+                {/*
+                  * The grip for the boundary to this column's LEFT, drawn
+                  * inside this cell rather than off the right edge of the one
+                  * before it: sibling cells paint in order, so a grip hanging
+                  * out of the earlier cell ends up underneath the later one's
+                  * field, and the drag selects a heading instead of moving it.
+                  */}
+                {ci > 0 && (
+                  <span
+                    className="awc-col-split"
+                    role="separator"
+                    aria-label={`kéo để đổi bề rộng cột ${ci}`}
+                    onPointerDown={(e) => {
+                      drag.current = { x: e.clientX, table }
+                      e.currentTarget.setPointerCapture(e.pointerId)
+                    }}
+                    onPointerMove={(e) => {
+                      const from = drag.current
+                      const box = el.current?.getBoundingClientRect()
+                      if (!from || !box || box.width === 0) return
+                      onChange(resizeColumn(from.table, ci - 1, ((e.clientX - from.x) / box.width) * 100))
+                    }}
+                    onPointerUp={() => {
+                      drag.current = null
+                    }}
+                  />
+                )}
               </th>
             ))}
-            <th>
-              <button type="button" className="awc-mini-add" onClick={addColumn}>
-                + cột
-              </button>
-            </th>
           </tr>
         </thead>
         <tbody>
@@ -1347,27 +1402,37 @@ function TableEditor({ table, onChange }: { table: ReportTable; onChange: (table
             <tr key={ri}>
               {row.cells.map((cell, ci) => (
                 <td key={ci}>
+                  {ci === 0 && table.rows.length > 1 && (
+                    <button
+                      type="button"
+                      className="awc-row-x"
+                      onClick={() => onChange(removeRow(table, ri))}
+                      aria-label={`xoá hàng ${ri + 1}`}
+                    >
+                      ✕
+                    </button>
+                  )}
                   <EditableField
                     value={cell}
                     onCommit={(v) =>
                       onChange({ ...table, rows: table.rows.map((r, i) => (i === ri ? { cells: r.cells.map((c, ci2) => (ci2 === ci ? v : c)) } : r)) })
                     }
-                    style={{ fontSize: 14 }}
+                    style={{ fontSize: 14, fontVariantNumeric: 'tabular-nums' }}
                   />
                 </td>
               ))}
-              <td>
-                <button type="button" className="awc-mini-remove" onClick={() => removeRow(ri)} aria-label={`xoá hàng ${ri + 1}`}>
-                  xoá hàng
-                </button>
-              </td>
             </tr>
           ))}
         </tbody>
       </table>
-      <button type="button" className="awc-mini-add" onClick={addRow}>
-        + hàng
-      </button>
+      <div className="awc-table-adds">
+        <button type="button" className="awc-mini-add" onClick={() => onChange(addColumn(table, freeColumnName(table.columns)))}>
+          + cột
+        </button>
+        <button type="button" className="awc-mini-add" onClick={() => onChange(addRow(table))}>
+          + hàng
+        </button>
+      </div>
     </div>
   )
 }

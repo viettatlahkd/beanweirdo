@@ -125,3 +125,4 @@ describe('the notes column on the page', () => {
     expect((withNotes as HTMLElement).style.margin).toBe((without as HTMLElement).style.margin)
   })
 })
+
