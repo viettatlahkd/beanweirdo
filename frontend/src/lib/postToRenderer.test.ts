@@ -72,3 +72,53 @@ describe('one shape, one adapter', () => {
     expect(toCardsData(asAdminSendsIt, mod)).toEqual(toCardsData(post, mod))
   })
 })
+
+describe('the colour a post wears', () => {
+  const post = {
+    en: 'Rang thử',
+    vi: '',
+    lead: null,
+    kind: 'note',
+    date_label: '2026.02',
+    body: [],
+    hero_caption: null,
+    hero_image_url: null,
+    pull_quote: null,
+    further_reading: null,
+  }
+  const mod = { title: 'Sensory', accent: '#F2A0A5', on_color: '#3B1F22' }
+
+  // Article also wants a module title, its neighbours and its position; the
+  // rest take the post and its module.
+  const each = [
+    ['article', (p: unknown, m?: unknown) => toArticleData(p as never, 'Sensory', [], 1, m as never)],
+    ['cards', (p: unknown, m?: unknown) => toCardsData(p as never, m as never)],
+    ['report', (p: unknown, m?: unknown) => toReportData(p as never, m as never)],
+    ['longform', (p: unknown, m?: unknown) => toLongformData(p as never, m as never)],
+    ['memo', (p: unknown, m?: unknown) => toMemoData(p as never, m as never)],
+  ] as const
+
+  it.each(each)('%s takes its module’s colour', (_name, adapt) => {
+    expect(adapt(post, mod).band).toEqual({ bg: '#F2A0A5', fg: '#3B1F22' })
+  })
+
+  it.each(each)('%s takes the post’s own colour over the module’s', (_name, adapt) => {
+    const band = adapt({ ...post, theme_color: '#C25C7C' }, mod).band
+    expect(band?.bg).toBe('#C25C7C')
+  })
+
+  it('works out what reads on a colour the module never spoke for', () => {
+    // `on_color` answers "what reads on *me*" — it is the wrong answer for a
+    // colour the module was not asked about.
+    const band = toReportData({ ...post, theme_color: '#23211A' } as never, mod).band
+    expect(band?.fg).not.toBe('#3B1F22')
+  })
+
+  it('leaves a post with no module and no colour of its own bandless', () => {
+    expect(toReportData(post as never, undefined).band).toBeUndefined()
+  })
+
+  it('gives a journal post a band once it has been given a colour', () => {
+    expect(toMemoData({ ...post, theme_color: '#8A6420' } as never, undefined).band?.bg).toBe('#8A6420')
+  })
+})

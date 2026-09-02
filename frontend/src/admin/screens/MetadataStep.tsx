@@ -9,6 +9,7 @@ import {
   type TemplateSummary,
 } from '../lib/apiClient'
 import { ink, paper } from '../../design/tokens'
+import { ThemePicker } from '../components/ThemePicker'
 
 /**
  * Everything a post needs before it exists.
@@ -24,6 +25,8 @@ export type Metadata = {
   en: string
   vi: string
   templateId: string
+  /** Màu riêng; rỗng nghĩa là bài đi theo màu module. */
+  theme_color: string | null
 }
 
 const fieldLabelStyle = {
@@ -44,6 +47,7 @@ export function MetadataStep({ onContinue }: { onContinue: (m: Metadata) => void
   const [templateId, setTemplateId] = useState('')
   const [en, setEn] = useState('')
   const [vi, setVi] = useState('')
+  const [theme, setTheme] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
@@ -77,6 +81,7 @@ export function MetadataStep({ onContinue }: { onContinue: (m: Metadata) => void
         en: en.trim(),
         vi: vi.trim(),
         templateId,
+        theme_color: theme,
       })
     } finally {
       setBusy(false)
@@ -129,6 +134,15 @@ export function MetadataStep({ onContinue }: { onContinue: (m: Metadata) => void
           <option key={t.id} value={t.label} />
         ))}
       </datalist>
+
+      <label style={fieldLabelStyle}>Màu bài</label>
+      <ThemePicker
+        value={theme}
+        moduleColor={modules.find((m) => m.id === module_id)?.accent}
+        moduleLabel={modules.find((m) => m.id === module_id)?.title}
+        themes={modules.map((m) => ({ id: m.id, label: m.title, color: m.accent }))}
+        onChange={setTheme}
+      />
 
       <label htmlFor="template" style={fieldLabelStyle}>
         Template

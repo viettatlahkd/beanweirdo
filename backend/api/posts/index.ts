@@ -54,7 +54,15 @@ interface CreatePostBody {
    * other alone.
    */
   fromPostId?: unknown
+  /**
+   * The colour this post wears. Absent means it follows its module, which is
+   * what almost every post does — see migration 0021.
+   */
+  theme_color?: unknown
 }
+
+/** Six hex digits, or nothing. The value ends up in a CSS property. */
+const HEX = /^#[0-9A-Fa-f]{6}$/
 
 function formatDateLabel(date: Date): string {
   const year = date.getUTCFullYear()
@@ -105,6 +113,12 @@ async function handleCreate(req: VercelRequest, res: VercelResponse): Promise<vo
    */
   if (typeof vi !== 'string') {
     res.status(400).json({ error: 'vi must be a string' })
+    return
+  }
+
+  const theme_color = body.theme_color == null || body.theme_color === '' ? null : body.theme_color
+  if (theme_color !== null && (typeof theme_color !== 'string' || !HEX.test(theme_color))) {
+    res.status(400).json({ error: 'theme_color must be a colour like #C25C7C' })
     return
   }
 
@@ -186,6 +200,7 @@ async function handleCreate(req: VercelRequest, res: VercelResponse): Promise<vo
       sort_order: null,
       body: startingBody,
       lead: copied?.lead ?? null,
+      theme_color,
       hero_image_url: copied?.hero_image_url ?? null,
       hero_caption: copied?.hero_caption ?? null,
       pull_quote: copied?.pull_quote ?? null,

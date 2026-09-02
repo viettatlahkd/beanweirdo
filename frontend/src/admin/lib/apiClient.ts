@@ -36,6 +36,8 @@ export type PostSummary = {
   status: PostStatus
   template: PostTemplate | null
   hero_image_url: string | null
+  /** Màu riêng của bài; rỗng nghĩa là theo màu module — xem migration 0021. */
+  theme_color: string | null
   /** Cover if the post has one, otherwise the first image inside it. */
   thumbnail_url: string | null
   /** Vị trí tự chọn; rỗng nghĩa là chưa ai chọn. */
@@ -171,6 +173,8 @@ export async function createPost(input: {
   templateId?: string
   /** An existing post to copy; its content comes across, its status does not. */
   fromPostId?: string
+  /** Màu riêng; bỏ trống để bài đi theo màu module. */
+  theme_color?: string | null
 }): Promise<{ id: string }> {
   return request<{ id: string }>('/api/posts', { method: 'POST', body: JSON.stringify(input) })
 }
