@@ -21,6 +21,7 @@ import {
 } from '../lib/apiClient'
 import { useNav } from '../../lib/nav'
 import { ink, paper, serif } from '../../design/tokens'
+import { ThemePicker } from '../components/ThemePicker'
 import { blankReportBlock, getBody, resolveTemplate } from '../lib/postData'
 import {
   addColumn,
@@ -59,6 +60,8 @@ export type EditPatch = Partial<{
   further_reading: string[]
   body: unknown
   hero_image_url: string
+  /** Màu riêng của bài; null trả nó về theo màu module. */
+  theme_color: string | null
 }>
 
 type CanvasProps = {
@@ -164,6 +167,20 @@ function EditorContent({ postId }: { postId: string }) {
           </select>
         )}
         <HeroPicker onPick={(f) => void setHero(f)} hasHero={Boolean(post.hero_image_url)} />
+        {/*
+          * The colour a post wears stays changeable after it exists — it is
+          * decided when the post is made, and the first draft is exactly when
+          * somebody discovers the colour was wrong.
+          */}
+        <span style={{ marginLeft: 'auto' }}>
+          <ThemePicker
+            value={post.theme_color}
+            moduleColor={activeModule?.accent}
+            moduleLabel={activeModule?.title}
+            themes={modules.map((m) => ({ id: m.id, label: m.title, color: m.accent }))}
+            onChange={(theme_color) => applyPatch({ theme_color })}
+          />
+        </span>
       </div>
       <EditorCanvas
         template={template}
@@ -752,7 +769,8 @@ function ReportEditor({
    * the page derives it — so what the writer sees while composing is what a
    * reader gets, down to the colour of a table heading.
    */
-  const palette = paletteFrom(module?.accent ?? REPORT_BLUE, module?.on_color)
+  // The post's own colour wins; without one it follows its module. See 0021.
+  const palette = paletteFrom(post.theme_color ?? module?.accent ?? REPORT_BLUE, post.theme_color ? undefined : module?.on_color)
   const accent = palette.accent
   const onAccent = palette.onAccent
   const noteIds = [...notes.explorations, ...notes.fieldNotes].map((n) => n.id)

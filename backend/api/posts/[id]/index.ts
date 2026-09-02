@@ -30,6 +30,8 @@ interface PatchPostBody {
   en?: unknown
   vi?: unknown
   body?: unknown
+  /** Màu riêng của bài; null trả nó về theo màu module. */
+  theme_color?: unknown
   hero_image_url?: unknown
   hero_caption?: unknown
   lead?: unknown
@@ -50,6 +52,7 @@ const PATCHABLE = [
   'en',
   'vi',
   'body',
+  'theme_color',
   'hero_image_url',
   'hero_caption',
   'lead',

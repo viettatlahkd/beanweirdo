@@ -1,3 +1,4 @@
+import { paletteFrom } from 'post-renderer'
 import { toReportBlocks, toReportNotes } from './reportBlocks'
 import type {
   ArticlePostData,
@@ -47,6 +48,8 @@ export type RenderablePost = {
   body: unknown
   hero_caption: string | null
   hero_image_url: string | null
+  /** Màu riêng của bài; rỗng nghĩa là theo màu module — xem migration 0021. */
+  theme_color?: string | null
   pull_quote: string | null
   further_reading: string[] | null
 }
@@ -56,6 +59,22 @@ export type RenderableModule = {
   title: string
   accent: string
   on_color: string
+}
+
+/**
+ * The colour block at the head of a post — for every template, not just one.
+ *
+ * A post wears its module's colour; a post that was given a colour of its own
+ * wears that instead. `on_color` only travels with the module's own colour: it
+ * is the module's answer to "what reads on me", and it is the wrong answer for
+ * some other colour. Left out, the renderer works one out.
+ */
+function bandOf(
+  post: Pick<RenderablePost, 'theme_color'>,
+  mod: RenderableModule | undefined,
+): { bg: string; fg: string } | undefined {
+  if (post.theme_color) return { bg: post.theme_color, fg: paletteFrom(post.theme_color).onAccent }
+  return mod ? { bg: mod.accent, fg: mod.on_color } : undefined
 }
 
 const EMPTY_SECTIONS: SectionData[] = [
@@ -109,7 +128,7 @@ export function toArticleData(
     detailPlate: { ...PLATE_FALLBACK.detail, imageUrl: null },
     furtherReadingHeading: 'Đọc thêm',
     furtherReading: post.further_reading ?? [],
-    band: mod ? { bg: mod.accent, fg: mod.on_color } : undefined,
+    band: bandOf(post, mod),
   }
 }
 
@@ -128,7 +147,7 @@ export function toMemoData(post: RenderablePost, mod: RenderableModule | undefin
     img: post.hero_image_url,
     imgCaption: post.hero_caption ?? undefined,
     sections: body.sections ?? [],
-    band: mod ? { bg: mod.accent, fg: mod.on_color } : undefined,
+    band: bandOf(post, mod),
   }
 }
 
@@ -144,7 +163,7 @@ export function toLongformData(post: RenderablePost, mod: RenderableModule | und
     title: postTitle(post),
     subtitle: postDescription(post),
     blocks: Array.isArray(post.body) ? (post.body as LongformBlock[]) : [],
-    band: mod ? { bg: mod.accent, fg: mod.on_color } : undefined,
+    band: bandOf(post, mod),
   }
 }
 
@@ -170,7 +189,7 @@ export function toCardsData(post: RenderablePost, mod: RenderableModule | undefi
         ? (post.further_reading ?? [postDescription(post)])
         : [postDescription(post), 'Chưa có mục nào trong glossary này.'],
     cards,
-    band: mod ? { bg: mod.accent, fg: mod.on_color } : undefined,
+    band: bandOf(post, mod),
     groupHues,
   }
 }
@@ -189,6 +208,6 @@ export function toReportData(post: RenderablePost, mod: RenderableModule | undef
     // Names the field-note column; the colour comes from the band above.
     template: 'report',
     notes: toReportNotes(post.body),
-    band: mod ? { bg: mod.accent, fg: mod.on_color } : undefined,
+    band: bandOf(post, mod),
   }
 }

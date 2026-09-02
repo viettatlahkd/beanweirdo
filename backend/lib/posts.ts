@@ -54,6 +54,7 @@ export const POST_COLUMNS = [
   'previous_status',
   'hero_image_url',
   'hero_caption',
+  'theme_color',
   'pull_quote',
   'further_reading',
   'published_at',
@@ -84,6 +85,8 @@ export interface PostRow {
   status: PostStatus
   template: PostTemplate
   hero_image_url: string | null
+  /** Màu riêng của bài; rỗng nghĩa là theo màu module. */
+  theme_color: string | null
   published_at: string | null
   deleted_at: string | null
   previous_status: string | null
@@ -103,7 +106,7 @@ export interface PostRow {
  * and cannot see the real schema.
  */
 export const POST_SUMMARY_COLUMNS =
-  'id, module_id, en, vi, kind, date_label, status, template, hero_image_url, sort_order, pinned, created_at, updated_at, published_at, body'
+  'id, module_id, en, vi, kind, date_label, status, template, hero_image_url, theme_color, sort_order, pinned, created_at, updated_at, published_at, body'
 
 export const POST_DETAIL_COLUMNS = '*'
 
@@ -149,6 +152,12 @@ export interface PostSummary {
   template: PostTemplate
   hero_image_url: string | null
   /**
+   * The colour this post wears. Null means it follows its module — which is
+   * what almost every post does, and why the column is not filled in by
+   * default: a module recoloured later should carry its posts with it.
+   */
+  theme_color: string | null
+  /**
    * The picture that stands for the post in a listing: its cover if it has
    * one, otherwise the first image inside it.
    */
@@ -184,6 +193,7 @@ export function toPostSummary(row: PostRow): PostSummary {
     status: row.status,
     template: row.template,
     hero_image_url: row.hero_image_url,
+    theme_color: row.theme_color,
     // The one field with no column behind it: a listing wants a picture, and
     // takes the post's cover or the first image inside it.
     thumbnail_url: row.hero_image_url || findSrc(row.body),

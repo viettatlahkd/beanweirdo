@@ -7,8 +7,10 @@ const createTag = vi.fn().mockResolvedValue({ id: 'thi-nghiem', label: 'thí ngh
 
 vi.mock('../lib/apiClient', () => ({
   listModules: vi.fn().mockResolvedValue([
-    { id: 'sensory', title: 'Sensory', kind: 'normal' },
-    { id: 'roasting', title: 'Roasting', kind: 'normal' },
+    { id: 'sensory', title: 'Sensory', kind: 'normal', accent: '#F2A0A5', on_color: '#3B1F22' },
+    { id: 'roasting', title: 'Roasting', kind: 'normal', accent: '#8A6420', on_color: '#FFFFFF' },
+    // A journal has no colour of its own — the picker must not fall over on it,
+    // and it is exactly the case that needs the list of other themes.
     { id: 'ghi01', title: 'Ghi 01', kind: 'special' },
   ]),
   listTags: vi.fn().mockResolvedValue([{ id: 'note', label: 'note' }]),
@@ -42,6 +44,9 @@ describe('MetadataStep', () => {
         en: 'Senses of Flavors',
         vi: 'mô tả',
         templateId: 't-longform',
+        // Null, not the module's colour: a post that merely copied the colour
+        // would keep the old one when the module was recoloured later.
+        theme_color: null,
       }),
     )
   })
@@ -87,5 +92,35 @@ describe('MetadataStep', () => {
 
     await userEvent.type(screen.getByLabelText('Tiêu đề'), 'Bài mới')
     expect(screen.getByRole('button', { name: /soạn bài/i })).toBeEnabled()
+  })
+})
+
+describe('MetadataStep — màu bài', () => {
+  it('follows the module by default, and stores nothing for it', async () => {
+    const onContinue = vi.fn()
+    render(<MetadataStep onContinue={onContinue} />)
+    await waitFor(() => expect(screen.getByLabelText('Module')).toHaveValue('sensory'))
+
+    await userEvent.type(screen.getByLabelText('Tiêu đề'), 'Bài mới')
+    await userEvent.click(screen.getByRole('button', { name: /soạn bài/i }))
+
+    await waitFor(() => expect(onContinue).toHaveBeenCalledWith(expect.objectContaining({ theme_color: null })))
+  })
+
+  it('takes a colour of its own when one is picked', async () => {
+    const onContinue = vi.fn()
+    render(<MetadataStep onContinue={onContinue} />)
+    await waitFor(() => expect(screen.getByLabelText('Module')).toHaveValue('sensory'))
+
+    const other = await screen.findByLabelText('màu Roasting')
+    await userEvent.click(other)
+    await userEvent.type(screen.getByLabelText('Tiêu đề'), 'Bài mới')
+    await userEvent.click(screen.getByRole('button', { name: /soạn bài/i }))
+
+    await waitFor(() =>
+      expect(onContinue).toHaveBeenCalledWith(
+        expect.objectContaining({ theme_color: expect.stringMatching(/^#/) }),
+      ),
+    )
   })
 })
