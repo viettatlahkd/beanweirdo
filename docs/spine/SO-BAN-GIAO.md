@@ -33,8 +33,8 @@ sinh từ code đã merge; A1–A7 đã ghi vào, A8–A16 thì chưa.
 | A12 | Xoá một khối đang có ghi chú thì hỏi ghi chú đi đâu: lên đoạn trên, xuống đoạn dưới, sang Explorations, hoặc xoá cùng khối. Một danh sách mở sẵn, tick là quyết định — không có bước xác nhận, chỉ có hai giây để quay lại. Không có ghi chú thì không hỏi. | #65 | 16 | CHỜ |
 | A13 | Xoá hết chữ trong một **đoạn văn** thì khối biến mất và con trỏ dồn lên khối chữ phía trên. Khối **có cấp bậc** — tiêu đề, meta, bảng, ảnh, số liệu — giữ nguyên chỗ và hiện tên mình bằng chữ chìm; muốn bỏ hẳn thì xoá thêm một lần hoặc dùng nút. | #65 | 16 | CHỜ |
 | A14 | Tỉ lệ chia hai cột lúc soạn **không lưu**. Kéo vạch là việc người soạn làm để nhìn cho rõ ngay lúc đó, không phải thuộc tính của bài. | #65 | 16 | CHỜ |
-| A15 | Bề rộng cột trong **bảng** thì ngược lại: **có lưu**, theo bài. Một cột ngày và một cột văn xuôi cần chỗ khác nhau, và người đọc phải thấy đúng tỉ lệ người viết chốt. Bảng viết trước khi có bề rộng thì chia đều; danh sách bề rộng không còn khớp số cột thì bỏ qua, không co giãn cho vừa. | #66 | 16 | CHỜ |
-| A16 | Bảng luôn còn ít nhất một cột và một hàng. Bảng không cột vẽ ra là một khoảng trắng — người viết không phân biệt được bảng rỗng với bảng đã bị xoá. | #66 | 16 | CHỜ |
+| A15 | Bề rộng cột trong **bảng** thì ngược lại: **có lưu**, theo bài. Một cột ngày và một cột văn xuôi cần chỗ khác nhau, và người đọc phải thấy đúng tỉ lệ người viết chốt. Bảng viết trước khi có bề rộng thì chia đều; danh sách bề rộng không còn khớp số cột thì bỏ qua, không co giãn cho vừa. | #67 | 16 | CHỜ |
+| A16 | Bảng luôn còn ít nhất một cột và một hàng. Bảng không cột vẽ ra là một khoảng trắng — người viết không phân biệt được bảng rỗng với bảng đã bị xoá. | #67 | 16 | CHỜ |
 
 ## B. `docs/SPEC.html` đã lỗi thời
 

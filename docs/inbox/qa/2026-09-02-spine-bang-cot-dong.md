@@ -1,6 +1,6 @@
 # Bảng: thêm cột, thêm dòng, và cái nửa luật chưa ai làm
 
-PR: #66    nhánh: spine/cms-16-tables    commit: điền sau khi merge
+PR: #67    nhánh: spine/cms-16-tables    commit: điền sau khi merge
 Cắt từ: origin/main @ a61592c
 
 ## [ĐỔI HÀNH VI] Luật 153 vốn chỉ được làm một nửa
