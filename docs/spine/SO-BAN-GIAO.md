@@ -14,8 +14,8 @@ tài liệu · `BỎ` đã quyết không làm.
 
 ## A. Luật đề xuất — chờ đưa vào `frontend/src/content/logic.ts`
 
-Bộ quy tắc hiện có **3 phần · 14 nhóm · 75 luật**. Hai mươi sáu luật dưới đây phát
-sinh từ code đã merge; A1–A7 đã ghi vào, A8–A26 thì chưa.
+Bộ quy tắc hiện có **3 phần · 14 nhóm · 75 luật**. Ba mươi luật dưới đây phát
+sinh từ code đã merge; A1–A7 đã ghi vào, A8–A30 thì chưa.
 
 | # | Luật | Từ PR | Nhóm phù hợp | Trạng thái |
 |---|---|---|---|---|
@@ -44,6 +44,10 @@ sinh từ code đã merge; A1–A7 đã ghi vào, A8–A26 thì chưa.
 | A24 | Luật màu áp cho **mọi** template, không riêng report: dải đầu trang, chữ tiêu đề mục, mốc giai đoạn, dấu đầu dòng, nền khối nhấn, gờ chú thích — tất cả sinh từ màu bài. Không template nào được viết cứng màu của một module. | #69 | 12 (màu) | CHỜ |
 | A25 | Mọi danh sách trong bài đều thêm / xoá / đổi chỗ / nhân bản được, bằng cùng một bộ tay nắm: phần của article, mục của memo, thẻ của cards, khối của report. Danh sách luôn còn ít nhất một mục — bài rỗng vẽ ra là trang trắng, người viết không phân biệt được với trang lỗi. | #69 | 16 (template) | CHỜ |
 | A26 | Bản sao của một mục không được dùng chung mảng con với bản gốc. Sao chép nông thì sửa bản này đổi luôn bản kia, và không có gì trên màn hình cho biết điều đó. | #69 | 16 | CHỜ |
+| A27 | **Template chỉ là một cách dàn các element, không phải một hình dạng dữ liệu riêng.** Element khai một lần trong kho (`elements/registry.ts`); thêm element là thêm một mục vào kho, mọi template thấy ngay. Không template nào được tự đẻ hình dạng cho thứ kho đã có. | #70 | 16 (template) | CHỜ |
+| A28 | Element nào có tên trong từ vựng chuẩn của WordPress thì **giữ nguyên tên ấy** — paragraph, heading, list, quote, table, image. Element của riêng dự án (metrics, chart, callout, meta, notes) khai cùng khuôn. Khuôn là của WordPress; **cách vẽ thì không mượn** — mỗi template ở đây là một cách dàn trang có chủ ý. | #70 | 16 | CHỜ |
+| A29 | Template được phép vẽ một element theo cách của mình khi bố cục đòi hỏi — kho giữ **format**, template giữ **layout**. Memo vẽ khối kết luận và bảng nếm khác report, cùng một dữ liệu. | #70 | 16 | CHỜ |
+| A30 | Một dòng chữ là các **run**, không phải chuỗi phẳng, vì nó mang được chữ nhấn và số đo gạch chân. Ô chữ thường hiện chúng thành `chữ *được nhấn* chữ` và `_số đo_`, đi một vòng không mất gì — ép thành chuỗi phẳng để sửa là nuốt định dạng một cách lặng lẽ. | #70 | 02 (chữ) | CHỜ |
 | A16 | Bảng luôn còn ít nhất một cột và một hàng. Bảng không cột vẽ ra là một khoảng trắng — người viết không phân biệt được bảng rỗng với bảng đã bị xoá. | #67 | 16 | CHỜ |
 
 ## B. `docs/SPEC.html` đã lỗi thời

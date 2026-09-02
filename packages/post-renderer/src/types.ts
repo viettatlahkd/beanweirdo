@@ -10,6 +10,7 @@
 import type { PostNotes } from './notes'
 import type { ChartAttrs, MetricsAttrs, TableAttrs } from './elements/data'
 import type { ImageAttrs } from './elements/media'
+import type { ListAttrs } from './elements/list'
 import type { CalloutAttrs, HeadingAttrs, MetaAttrs, ParagraphAttrs, QuoteAttrs } from './elements/text'
 
 export type Template = 'article' | 'cards' | 'report'
@@ -149,6 +150,7 @@ export type ReportTable = TableAttrs['table']
 export type ReportTableRow = ReportTable['rows'][number]
 
 export type ReportBlock =
+  | ListAttrs
   | MetaAttrs
   | HeadingAttrs
   | ParagraphAttrs
@@ -259,6 +261,14 @@ export type MemoPhase = { n: string; label: string; lines: string[] }
 
 export type MemoSection = {
   h: string
+  /**
+   * What the section holds, as elements from the store.
+   *
+   * The four fields below are how a section was stored before there was a
+   * store. They are still read — see `memoElements.ts` — and a section written
+   * since carries `elements` instead.
+   */
+  elements?: unknown[]
   /**
    * A conclusion the session arrived at, set on its own tinted ground so it
    * reads before the notes that led to it.

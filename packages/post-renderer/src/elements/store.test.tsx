@@ -75,20 +75,21 @@ describe('danh sách', () => {
 
   it('đánh số thì số là của template, không ai phải gõ', () => {
     draw(getElement('list')!, { type: 'list', ordered: true, items })
-    expect(screen.getByText('1')).toBeInTheDocument()
-    expect(screen.getByText('2')).toBeInTheDocument()
+    // Đệm hai chữ số, đúng cách site đánh số ở mọi nơi khác.
+    expect(screen.getByText('01')).toBeInTheDocument()
+    expect(screen.getByText('02')).toBeInTheDocument()
   })
 
   it('không đánh số thì không có số nào', () => {
     draw(getElement('list')!, { type: 'list', items })
-    expect(screen.queryByText('1')).not.toBeInTheDocument()
+    expect(screen.queryByText('01')).not.toBeInTheDocument()
   })
 
   it('số mang màu bài, không mượn màu module khác', () => {
     const { container } = draw(getElement('list')!, { type: 'list', ordered: true, items })
     // Chỉ soi chính các con số; dòng phụ mang màu trung tính và không liên quan.
     const marks = Array.from(container.querySelectorAll<HTMLElement>('div'))
-      .filter((d) => /^\d+$/.test(d.textContent ?? ''))
+      .filter((d) => /^\d\d$/.test(d.textContent ?? ''))
       .map((d) => d.style.color.match(/\d+/g)!.map(Number))
     expect(marks).toHaveLength(2)
     for (const [r, g, b] of marks) expect(r > g && b > g, `${r},${g},${b}`).toBe(true)
@@ -150,5 +151,25 @@ describe('chữ nhấn giữa câu đi qua ô chữ thường mà không mất',
     const em = container.querySelector('em')!
     const [r, g, b] = em.style.color.match(/\d+/g)!.map(Number)
     expect(r > g && b > g).toBe(true)
+  })
+})
+
+describe('số đo có gạch chân mảnh', () => {
+  it('đi qua ô chữ thường mà không mất, và không lẫn với chữ nhấn', () => {
+    const runs = [{ t: 'Đo ' }, { t: 'Nhiệt 91°C', u: true }, { t: ' lúc drop' }]
+    expect(runsToText(runs)).toBe('Đo _Nhiệt 91°C_ lúc drop')
+    expect(textToRuns(runsToText(runs))).toEqual(runs)
+  })
+
+  it('vẽ gạch chân mà không đổi màu chữ', () => {
+    const { container } = draw(getElement('list')!, {
+      type: 'list',
+      items: [{ runs: [{ t: '91°C', u: true }] }],
+    })
+    const span = Array.from(container.querySelectorAll<HTMLElement>('span')).find(
+      (x) => x.style.borderBottomWidth === '1px',
+    )
+    expect(span?.textContent).toBe('91°C')
+    expect(span?.style.color).toBe('')
   })
 })

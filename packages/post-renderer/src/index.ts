@@ -29,6 +29,9 @@ export {
   findElements,
   getElement,
   registerElement,
+  runsToText,
+  textToRuns,
+  toElements,
 } from './elements'
 export type {
   AttributeSpec,
@@ -36,7 +39,13 @@ export type {
   ElementDefinition,
   ElementRenderOverrides,
   ElementViewProps,
+  ListAttrs,
+  ListItem,
+  Run,
+  StoredElement,
 } from './elements'
+
+export { sectionElements, withElements } from './memoElements'
 
 export { paletteFrom, shade } from './palette'
 export type { Palette } from './palette'

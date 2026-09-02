@@ -83,7 +83,7 @@ function Row({
               fontVariantNumeric: 'tabular-nums',
             }}
           >
-            {position + 1}
+            {String(position + 1).padStart(2, '0')}
           </div>
         ) : (
           <div style={{ ...bullet(depth), margin: depth === 2 ? '10px 0 0 5px' : '9px 0 0 6px' }} />
@@ -95,6 +95,12 @@ function Row({
                 <em key={i} style={{ fontWeight: 600, fontStyle: 'italic', color: accentInk }}>
                   {r.t}
                 </em>
+              ) : r.u ? (
+                // A reading worth pausing on — a hairline, and the colour left
+                // alone. Emphasis changes colour and slant; this changes neither.
+                <span key={i} style={{ borderBottom: '1px solid #CFCFC4' }}>
+                  {r.t}
+                </span>
               ) : (
                 <span key={i}>{r.t}</span>
               ),
@@ -134,7 +140,7 @@ export const list = registerElement<ListAttrs>({
   description: 'Một chuỗi mục, có đánh số hoặc không, lồng được ba tầng.',
   keywords: ['danh sách', 'gạch đầu dòng', 'list', 'bullet', 'mốc', 'các bước', 'đánh số'],
   attributes: {
-    ordered: { type: 'boolean', note: 'true thì đánh số; vắng nghĩa là gạch đầu dòng', optional: true },
+    ordered: { type: 'boolean', note: 'true thì đánh số 01, 02…; vắng nghĩa là gạch đầu dòng', optional: true },
     items: { type: 'array', note: '[{ runs[], sub?[], children?[] }] — children lồng tối đa ba tầng' },
   },
   blank: () => ({ type: 'list', ordered: false, items: [{ runs: [{ t: '' }] }] }),

@@ -44,7 +44,20 @@ import {
   type KeepChoice,
   type ReportContent,
 } from '../lib/reportNotes'
-import { EXPLORATIONS_LABEL, fieldNotesLabel, nextId, notesOn, paletteFrom, segmentsFor, type Palette } from 'post-renderer'
+import {
+  EXPLORATIONS_LABEL,
+  fieldNotesLabel,
+  nextId,
+  notesOn,
+  paletteFrom,
+  runsToText,
+  sectionElements,
+  segmentsFor,
+  textToRuns,
+  type ListAttrs,
+  type ListItem,
+  type Palette,
+} from 'post-renderer'
 import { AddRow, RowShell } from '../components/RowShell'
 import { duplicateAt, insertAt, move, removeAt } from '../lib/listOps'
 import { useRowDrag } from '../lib/useRowDrag'
@@ -359,6 +372,9 @@ function EditorStyles() {
       .awc-quote > span{ font-family: 'Playfair Display', Georgia, serif; font-size: 38px; line-height: .8; }
       .awc-quote > div{ flex: 1; min-width: 0; }
       .awc-callout{ border-left: 2px solid; padding: 14px 16px; margin: 10px 0; max-width: 620px; }
+      .awc-list-row{ position: relative; padding: 2px 0 2px 10px; border-left: 1px solid #EFEADA; margin-bottom: 6px; max-width: 620px; }
+      .awc-list-tools{ display: flex; gap: 10px; opacity: 0; transition: opacity .12s; }
+      .awc-list-row:hover .awc-list-tools, .awc-list-row:focus-within .awc-list-tools{ opacity: 1; }
     `}</style>
   )
 }
@@ -553,6 +569,7 @@ function MemoEditor({
   module?: Module
   onChange: (patch: EditPatch) => void
 }) {
+  const palette = paletteFrom(post.theme_color ?? module?.accent ?? REPORT_BLUE, post.theme_color ? undefined : module?.on_color)
   const data = toMemoData(post, module)
   const body = (post.body ?? {}) as { sections?: MemoSection[] }
   const sections = body.sections ?? []
@@ -563,6 +580,27 @@ function MemoEditor({
     if (next !== sections) onChange({ body: { ...(post.body as object), sections: next } })
   }
   const drag = useRowDrag((from, to) => setSections(move(sections, from, to)))
+  const [memoMenu, setMemoMenu] = useState<string | null>(null)
+
+  /*
+   * A section's contents, as elements. Reading converts the four old named
+   * slots — conclusion, bullets, phases, table — into store elements; writing
+   * only ever produces `elements`, and drops the old slots so a section has one
+   * representation from then on rather than two that can disagree.
+   */
+  function setElements(sectionIndex: number, next: ReportBlock[]) {
+    setSections(
+      sections.map((sec, k) => {
+        if (k !== sectionIndex) return sec
+        const { callout, items, phases, table, ...rest } = sec as MemoSection & Record<string, unknown>
+        void callout
+        void items
+        void phases
+        void table
+        return { ...rest, elements: next } as MemoSection
+      }),
+    )
+  }
 
   return (
     <PostRenderer
@@ -596,8 +634,52 @@ function MemoEditor({
           {section}
         </RowShell>
       )}
+      renderSectionBody={(section, si) => {
+        const elements = sectionElements(section) as ReportBlock[]
+        const write = (next: ReportBlock[]) => setElements(si, next)
+        return (
+          <div>
+            {elements.map((el, i) => (
+              <div key={i} className="awc-rep-block">
+                <div className="awc-block-controls">
+                  <button
+                    type="button"
+                    aria-label="chuyển lên"
+                    onClick={() => write(move(elements, i, i - 1))}
+                  >
+                    ↑
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="chuyển xuống"
+                    onClick={() => write(move(elements, i, i + 1))}
+                  >
+                    ↓
+                  </button>
+                  <button type="button" aria-label="xoá element" onClick={() => write(removeAt(elements, i))}>
+                    ×
+                  </button>
+                </div>
+                <ReportBlockFields
+                  block={el}
+                  palette={palette}
+                  onChange={(next) => write(elements.map((x, k) => (k === i ? next : x)))}
+                />
+              </div>
+            ))}
+            <InsertRow
+              open={memoMenu === `${si}`}
+              onToggle={() => setMemoMenu(memoMenu === `${si}` ? null : `${si}`)}
+              onInsert={(t) => {
+                write(insertAt(elements, elements.length, blankReportBlock(t)))
+                setMemoMenu(null)
+              }}
+            />
+          </div>
+        )
+      }}
       renderAfterSections={() => (
-        <AddRow label="mục" onAdd={() => setSections(insertAt(sections, sections.length, { h: '', items: [] }))} />
+        <AddRow label="mục" onAdd={() => setSections(insertAt(sections, sections.length, { h: '', elements: [] }))} />
       )}
     />
   )
@@ -1421,6 +1503,8 @@ function ReportBlockFields({
           </div>
         </div>
       )
+    case 'list':
+      return <ListEditor attributes={block} palette={palette} onChange={onChange} />
     case 'callout':
       return (
         <div className="awc-callout" style={{ background: palette.tint, borderColor: palette.accent }}>
@@ -1469,6 +1553,85 @@ function ReportBlockFields({
         />
       )
   }
+}
+
+/**
+ * A list, edited as lines.
+ *
+ * Emphasis and readings survive because a line is shown as
+ * `chữ *được nhấn* chữ` — see `runs.ts`. Nested items are edited where they
+ * sit, one field per line, so the shape on screen is the shape being written.
+ */
+function ListEditor({
+  attributes,
+  palette,
+  onChange,
+}: {
+  attributes: ListAttrs
+  palette: Palette
+  onChange: (next: ReportBlock) => void
+}) {
+  const items = attributes.items
+  const write = (next: ListItem[]) => onChange({ ...attributes, items: next } as unknown as ReportBlock)
+
+  return (
+    <div style={{ margin: '10px 0' }}>
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 8 }}>
+        <label style={{ fontSize: 11, color: ink.muted, display: 'flex', gap: 6, alignItems: 'center' }}>
+          <input
+            type="checkbox"
+            checked={Boolean(attributes.ordered)}
+            onChange={(e) => onChange({ ...attributes, ordered: e.target.checked } as unknown as ReportBlock)}
+          />
+          đánh số
+        </label>
+        <span style={{ fontSize: 11, color: ink.muted }}>
+          <code>*nhấn*</code> · <code>_số đo_</code>
+        </span>
+      </div>
+
+      {items.map((item, i) => (
+        <div key={i} className="awc-list-row">
+          <EditableField
+            value={runsToText(item.runs)}
+            placeholder="một dòng"
+            onCommit={(v) => write(items.map((x, k) => (k === i ? { ...x, runs: textToRuns(v) } : x)))}
+            style={{ fontSize: 15 }}
+          />
+          {item.sub?.map((line, li) => (
+            <EditableField
+              key={li}
+              value={line}
+              placeholder="dòng phụ"
+              onCommit={(v) =>
+                write(items.map((x, k) => (k === i ? { ...x, sub: x.sub?.map((y, m) => (m === li ? v : y)) } : x)))
+              }
+              style={{ fontSize: 13.5, color: ink.muted, marginLeft: 16 }}
+            />
+          ))}
+          <div className="awc-list-tools">
+            <button
+              type="button"
+              className="awc-mini-add"
+              style={{ color: palette.ink }}
+              onClick={() => write(items.map((x, k) => (k === i ? { ...x, sub: [...(x.sub ?? []), ''] } : x)))}
+            >
+              + dòng phụ
+            </button>
+            {items.length > 1 && (
+              <button type="button" className="awc-mini-remove" aria-label={`xoá dòng ${i + 1}`} onClick={() => write(removeAt(items, i, true))}>
+                xoá dòng
+              </button>
+            )}
+          </div>
+        </div>
+      ))}
+
+      <button type="button" className="awc-mini-add" onClick={() => write(insertAt(items, items.length, { runs: [{ t: '' }] }))}>
+        + dòng
+      </button>
+    </div>
+  )
 }
 
 function MetricsEditor({ items, onChange }: { items: ReportMetric[]; onChange: (items: ReportMetric[]) => void }) {

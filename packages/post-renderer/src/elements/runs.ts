@@ -17,11 +17,24 @@ export type Run = {
   t: string
   /** The design's emphasis: italic, and in the post's own colour. */
   em?: boolean
+  /**
+   * A reading worth pausing on — a hairline under it, colour untouched.
+   * Deliberately not the same signal as emphasis: one says "this matters",
+   * the other says "this is a measurement".
+   */
+  u?: boolean
 }
 
-/** Runs as one line of text, emphasis marked with asterisks. */
+/** Runs as one line: `*nhấn*` for emphasis, `_gạch chân_ for a reading. */
 export function runsToText(runs: Run[] | undefined): string {
-  return (runs ?? []).map((r) => (r.em ? `*${r.t}*` : r.t)).join('')
+  return (runs ?? [])
+    .map((r) => {
+      let t = r.t
+      if (r.u) t = `_${t}_`
+      if (r.em) t = `*${t}*`
+      return t
+    })
+    .join('')
 }
 
 /**
@@ -32,16 +45,34 @@ export function runsToText(runs: Run[] | undefined): string {
  */
 export function textToRuns(text: string): Run[] {
   const out: Run[] = []
-  const parts = text.split(/(\*[^*]+\*)/g)
-  for (const part of parts) {
-    if (!part) continue
-    if (part.length > 2 && part.startsWith('*') && part.endsWith('*')) {
-      out.push({ t: part.slice(1, -1), em: true })
-    } else if (out.length > 0 && !out[out.length - 1].em) {
-      out[out.length - 1] = { t: out[out.length - 1].t + part }
-    } else {
-      out.push({ t: part })
+  const marked = (part: string): Run | null => {
+    let t = part
+    let em = false
+    let u = false
+    if (t.length > 2 && t.startsWith('*') && t.endsWith('*')) {
+      em = true
+      t = t.slice(1, -1)
     }
+    if (t.length > 2 && t.startsWith('_') && t.endsWith('_')) {
+      u = true
+      t = t.slice(1, -1)
+    }
+    if (!em && !u) return null
+    return { t, ...(em ? { em: true } : null), ...(u ? { u: true } : null) }
+  }
+
+  for (const part of text.split(/(\*[^*]+\*|_[^_]+_)/g)) {
+    if (!part) continue
+    const run = marked(part)
+    if (run) {
+      out.push(run)
+      continue
+    }
+    // Plain text joins whatever plain text came before it, so a stray marker
+    // stays one character in a sentence rather than splitting the line.
+    const last = out[out.length - 1]
+    if (last && !last.em && !last.u) out[out.length - 1] = { t: last.t + part }
+    else out.push({ t: part })
   }
   return out.length > 0 ? out : [{ t: '' }]
 }

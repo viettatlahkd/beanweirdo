@@ -166,3 +166,68 @@ describe('cards — cấu trúc sửa được', () => {
     expect(next.map((c) => c.title)).toEqual(['Táo', 'Nhài trắng'])
   })
 })
+
+/*
+ * Trước lượt này màn soạn memo có đúng năm ô: tiêu đề, dòng dẫn, và ba tên
+ * mục. Mọi thứ *làm nên* một bài memo — gạch đầu dòng, mốc pha, bảng nếm, khối
+ * kết luận — hiện ra trên màn nhưng không gõ được, và "+ mục" tạo ra một mục
+ * không viết được gì vào.
+ */
+describe('memo — nội dung trong mục viết được', () => {
+  const body = {
+    subtitle: 'ba lần rót',
+    sections: [
+      {
+        h: 'Bean character',
+        items: [{ runs: [{ t: 'Ngọt mía, ' }, { t: 'hậu vị ngắn', em: true }], cont: ['đo lúc drop'] }],
+      },
+      { h: 'Pour test', phases: [{ n: '01', label: 'blooming', lines: ['40g'] }] },
+    ],
+  }
+
+  it('mọi dòng trong mục đều là một ô gõ được', () => {
+    draw('memo', body)
+    // Chữ nhấn hiện ra dưới dạng gõ được, không mất khi sửa dòng.
+    expect(screen.getByDisplayValue('Ngọt mía, *hậu vị ngắn*')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('đo lúc drop')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('blooming')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('40g')).toBeInTheDocument()
+  })
+
+  it('sửa một dòng thì chữ nhấn ở nguyên chỗ cũ', async () => {
+    const onChange = draw('memo', body)
+    const line = screen.getByDisplayValue('Ngọt mía, *hậu vị ngắn*')
+    await userEvent.clear(line)
+    await userEvent.type(line, 'Ngọt mía, *hậu vị dài*')
+    await userEvent.tab()
+
+    const sections = (onChange.mock.lastCall?.[0].body as { sections: { elements: { items: { runs: unknown[] }[] }[] }[] })
+      .sections
+    expect(sections[0].elements[0].items[0].runs).toEqual([{ t: 'Ngọt mía, ' }, { t: 'hậu vị dài', em: true }])
+  })
+
+  it('thêm được element vào một mục', async () => {
+    const onChange = draw('memo', body)
+    await userEvent.click(screen.getAllByText('+ thêm khối')[0])
+    await userEvent.click(screen.getAllByRole('button', { name: 'Bảng' })[0])
+
+    const sections = (onChange.mock.lastCall?.[0].body as { sections: { elements: { type: string }[] }[] }).sections
+    expect(sections[0].elements.map((e) => e.type)).toEqual(['list', 'table'])
+  })
+
+  it('viết xong thì mục chỉ còn một cách lưu, không còn hai cái cãi nhau', async () => {
+    const onChange = draw('memo', body)
+    await userEvent.click(screen.getAllByText('+ dòng')[0])
+
+    const section = (onChange.mock.lastCall?.[0].body as { sections: Record<string, unknown>[] }).sections[0]
+    expect(section.elements).toBeDefined()
+    expect(section.items).toBeUndefined()
+  })
+
+  it('mục mới tạo ra là mục trống chèn được element vào', async () => {
+    const onChange = draw('memo', body)
+    await userEvent.click(screen.getByRole('button', { name: '+ mục' }))
+    const sections = (onChange.mock.lastCall?.[0].body as { sections: { elements: unknown[] }[] }).sections
+    expect(sections[2].elements).toEqual([])
+  })
+})

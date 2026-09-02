@@ -1,9 +1,11 @@
-import { paletteFrom, shade, type Palette } from './palette'
+import { getElement } from './elements'
+import { sectionElements } from './memoElements'
+import { paletteFrom, type Palette } from './palette'
 import { Fragment } from 'react'
 import type { ReactNode } from 'react'
 import type { CSSProperties } from 'react'
 import { sans, serif } from './tokens'
-import type { MemoItem, MemoPostData, MemoRun, MemoSection } from './types'
+import type { MemoPostData, MemoSection } from './types'
 
 /**
  * What the admin canvas may swap for an editable field.
@@ -17,6 +19,12 @@ export type MemoOverrides = {
   renderTitle?: (title: string) => ReactNode
   renderSubtitle?: (subtitle: string) => ReactNode
   renderSectionHeading?: (heading: string, index: number) => ReactNode
+  /**
+   * Draws what is inside a section. The page reads it out of the store; the
+   * admin puts an editor for each element in the same place, so what is being
+   * written is where it will be read.
+   */
+  renderSectionBody?: (section: MemoSection, index: number) => ReactNode
   /**
    * Wraps one section, so the admin can hang its move / copy / delete handles
    * on it. The page passes the section straight through.
@@ -46,113 +54,83 @@ const label: CSSProperties = {
 }
 
 /**
- * Emphasis is italic and coloured — the design marks judgements this way.
- *
- * The colour used to be one fixed amber, which is roasting's colour: a memo
- * filed under sensory marked its judgements in another module's ink. It takes
- * the post's own second weight now.
- */
-const Runs = ({ runs, palette }: { runs: MemoRun[]; palette: Palette }) => (
-  <>
-    {runs.map((r, i) =>
-      r.em ? (
-        <em key={i} style={{ fontWeight: 600, fontStyle: 'italic', color: palette.mid }}>
-          {r.t}
-        </em>
-      ) : r.u ? (
-        // Một số đo đáng dừng lại — gạch chân mảnh, giữ nguyên màu chữ, khác
-        // hẳn với nhấn mạnh vốn đổi cả màu lẫn kiểu.
-        <span key={i} style={{ borderBottom: '1px solid #CFCFC4' }}>
-          {r.t}
-        </span>
-      ) : (
-        <span key={i}>{r.t}</span>
-      ),
-    )}
-  </>
-)
-
-/**
- * One bullet and everything hanging under it.
- *
- * Depth carries the argument here rather than decoration: a tasting sits under
- * the character it belongs to, a caveat under the tasting. So the bullet
- * changes shape with depth — filled, then hollow, then a square against a rule.
- */
-/**
- * Mỗi giai đoạn một sắc, xoay vòng.
- *
- * Trước đây là ba màu cố định — hồng của sensory, xanh của biochemistry, hổ
- * phách của roasting — nên một bài dưới bất cứ module nào cũng đánh dấu các
- * giai đoạn bằng màu của ba module khác. Nay là ba độ đậm của chính màu bài,
- * nên vẫn phân biệt được mà không mượn màu của ai.
- */
-const phaseShades = (accent: string) => [shade(accent, 30), shade(accent, 44), shade(accent, 58)]
-
-/**
  * Cột đầu của bảng nếm là nhãn ("Liều", "Nhiệt") nên giữ hẹp và cố định;
  * các cột số chia đều phần còn lại.
  */
 const tableGrid = (columns: number) =>
   columns > 1 ? `80px repeat(${columns - 1}, minmax(0,1fr))` : 'minmax(0,1fr)'
 
-function Item({ item, depth = 0, palette }: { item: MemoItem; depth?: number; palette: Palette }) {
-  const dot: CSSProperties =
-    depth === 0
-      ? { width: 5, height: 5, borderRadius: '50%', background: '#172124' }
-      : depth === 1
-        ? { width: 5, height: 5, borderRadius: '50%', border: '1px solid #172124' }
-        : { width: 4, height: 4, background: '#172124' }
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
-      {/* Mục lồng bên trong dùng lưới hẹp hơn — 18px cho cấp ngoài,
-          14px cho cấp trong, đúng như design. */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: depth >= 2 ? '14px minmax(0,1fr)' : '18px minmax(0,1fr)',
-          gap: 12,
-        }}
-      >
-        <div style={{ ...dot, margin: depth === 2 ? '10px 0 0 5px' : '9px 0 0 6px' }} />
-        <div style={{ fontSize: depth === 0 ? 15.5 : 15, lineHeight: 1.62 }}>
-          <Runs runs={item.runs} palette={palette} />
-          {item.cont?.map((c, i) => (
-            <div key={i} style={{ color: '#4B4A40', fontSize: 14.5, lineHeight: 1.66 }}>
-              {c}
-            </div>
+/** Elements memo lays out its own way; everything else comes from the store. */
+const MEMO_VIEWS: Record<string, ((p: { attributes: never; palette: Palette }) => ReactNode) | undefined> = {
+  callout: ({ attributes, palette }) => {
+    const a = attributes as unknown as { heading?: string; text: string }
+    return (
+      <div style={{ background: palette.tint, padding: '26px 28px', marginBottom: 26 }}>
+        {a.heading && (
+          <div style={{ fontWeight: 600, fontSize: 15.5, lineHeight: 1.5, color: palette.ink, marginBottom: 10 }}>
+            {a.heading}
+          </div>
+        )}
+        <div style={{ fontSize: 14.5, lineHeight: 1.7, color: '#3B3729' }}>
+          {a.text.split('\n').map((l, li) => (
+            <div key={li}>{l}</div>
           ))}
         </div>
       </div>
-
-      {item.children && item.children.length > 0 && (
+    )
+  },
+  table: ({ attributes, palette }) => {
+    const t = (attributes as unknown as { table: { columns: string[]; rows: { cells: string[] }[] } }).table
+    return (
+      <div style={{ marginTop: 22, maxWidth: 420 }}>
         <div
           style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 11,
-            paddingLeft: 30,
-            ...(depth >= 1 ? { borderLeft: '1px solid #E3E3DB', marginLeft: 8 } : null),
+            display: 'grid',
+            gridTemplateColumns: tableGrid(t.columns.length),
+            gap: '0 14px',
+            borderBottom: `1px solid ${palette.ink}`,
+            paddingBottom: 8,
           }}
         >
-          {item.children.map((c, i) => (
-            <Item key={i} item={c} depth={depth + 1} palette={palette} />
+          {t.columns.map((h, i) => (
+            <div key={i} style={label}>
+              {h}
+            </div>
           ))}
         </div>
-      )}
-    </div>
-  )
+        {t.rows.map((row, i) => (
+          <div
+            key={i}
+            style={{
+              display: 'grid',
+              gridTemplateColumns: tableGrid(t.columns.length),
+              gap: '0 14px',
+              borderBottom: '1px solid #E3E3DB',
+              padding: '10px 0',
+              fontSize: 15,
+              fontVariantNumeric: 'tabular-nums',
+            }}
+          >
+            {row.cells.map((cell, j) => (
+              <div key={j}>{cell}</div>
+            ))}
+          </div>
+        ))}
+      </div>
+    )
+  },
 }
 
 function Section({
   palette,
   section,
   renderHeading,
+  renderBody,
 }: {
   section: MemoSection
   palette: Palette
   renderHeading?: (heading: string) => ReactNode
+  renderBody?: () => ReactNode
 }) {
   return (
     <div>
@@ -171,101 +149,24 @@ function Section({
         {renderHeading ? renderHeading(section.h) : section.h}
       </h2>
 
-      {section.callout && (
-        <div style={{ background: palette.tint, padding: '26px 28px', marginBottom: 26 }}>
-          <div
-            style={{
-              fontWeight: 600,
-              fontSize: 15.5,
-              lineHeight: 1.5,
-              color: palette.ink,
-              marginBottom: 10,
-            }}
-          >
-            {section.callout.h}
-          </div>
-          <div style={{ fontSize: 14.5, lineHeight: 1.7, color: '#3B3729' }}>
-            {section.callout.lines.map((l, li) => (
-              <div key={li}>{l}</div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {section.items && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {section.items.map((it, i) => (
-            <Item key={i} item={it} palette={palette} />
-          ))}
-        </div>
-      )}
-
-      {section.phases && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          {section.phases.map((p, pi) => (
-            <div key={p.n} style={{ display: 'grid', gridTemplateColumns: '34px minmax(0,1fr)', gap: 14 }}>
-              <div
-                style={{
-                  fontFamily: serif,
-
-                  fontSize: 26,
-                  color: phaseShades(palette.accent)[pi % 3],
-                  fontVariantNumeric: 'tabular-nums',
-                  lineHeight: 1,
-                }}
-              >
-                {p.n}
-              </div>
-              <div>
-                <div style={{ fontSize: 15, lineHeight: 1.66 }}>{p.label}</div>
-                {p.lines.map((l, i) => (
-                  <div key={i} style={{ fontSize: 14.5, lineHeight: 1.66, color: '#4B4A40' }}>
-                    {l}
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {section.table && (
-        <div style={{ marginTop: 22, maxWidth: 420 }}>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: tableGrid(section.table.head.length),
-                gap: '0 14px',
-              borderBottom: `1px solid ${palette.ink}`,
-              paddingBottom: 8,
-            }}
-          >
-            {section.table.head.map((h) => (
-              <div key={h} style={label}>
-                {h}
-              </div>
-            ))}
-          </div>
-          {section.table.rows.map((row, i) => (
-            <div
-              key={i}
-              style={{
-                display: 'grid',
-                gridTemplateColumns: tableGrid(section.table!.head.length),
-                  gap: '0 14px',
-                borderBottom: '1px solid #E3E3DB',
-                padding: '10px 0',
-                fontSize: 15,
-                fontVariantNumeric: 'tabular-nums',
-              }}
-            >
-              {row.map((cell, j) => (
-                <div key={j}>{cell}</div>
-              ))}
-            </div>
-          ))}
-        </div>
-      )}
+      {/*
+        * The section's contents, out of the store.
+        *
+        * Two of them keep a view of memo's own: the conclusion box and the
+        * tasting table are laid out differently here than a report lays the
+        * same element out, and that difference is the template. The store owns
+        * the format; the template may own the layout.
+        */}
+      {renderBody
+        ? renderBody()
+        : sectionElements(section).map((el, i) => {
+            const own = MEMO_VIEWS[el.type]
+            if (own) return <div key={i}>{own({ attributes: el as never, palette })}</div>
+            const element = getElement(el.type)
+            return element ? (
+              <element.View key={i} attributes={el} palette={palette} index={i} />
+            ) : null
+          })}
     </div>
   )
 }
@@ -277,7 +178,7 @@ function Section({
  * pour) before any prose, because a tasting note nobody can reproduce is just
  * an opinion. Everything below is an outline where indent carries the argument.
  */
-export function Memo({ post, breadcrumb, renderTitle, renderSubtitle, renderSectionHeading, wrapSection, renderAfterSections }: MemoProps) {
+export function Memo({ post, breadcrumb, renderTitle, renderSubtitle, renderSectionHeading, renderSectionBody, wrapSection, renderAfterSections }: MemoProps) {
   // Everything this template tints comes from the one colour the post wears.
   const palette = paletteFrom(post.band?.bg ?? MEMO_BLUE, post.band?.fg)
   return (
@@ -383,6 +284,7 @@ export function Memo({ post, breadcrumb, renderTitle, renderSubtitle, renderSect
                 section={s}
                 palette={palette}
                 renderHeading={renderSectionHeading ? (h) => renderSectionHeading(h, i) : undefined}
+                renderBody={renderSectionBody ? () => renderSectionBody(s, i) : undefined}
               />
             )
             return <Fragment key={i}>{wrapSection ? wrapSection(section, i) : section}</Fragment>
