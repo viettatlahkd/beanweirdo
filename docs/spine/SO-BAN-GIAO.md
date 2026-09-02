@@ -14,8 +14,8 @@ tài liệu · `BỎ` đã quyết không làm.
 
 ## A. Luật đề xuất — chờ đưa vào `frontend/src/content/logic.ts`
 
-Bộ quy tắc hiện có **3 phần · 14 nhóm · 75 luật**. Ba mươi luật dưới đây phát
-sinh từ code đã merge; A1–A7 đã ghi vào, A8–A30 thì chưa.
+Bộ quy tắc hiện có **3 phần · 14 nhóm · 75 luật**. Ba mươi mốt luật dưới đây phát
+sinh từ code đã merge; A1–A7 đã ghi vào, A8–A31 thì chưa.
 
 | # | Luật | Từ PR | Nhóm phù hợp | Trạng thái |
 |---|---|---|---|---|
@@ -48,6 +48,7 @@ sinh từ code đã merge; A1–A7 đã ghi vào, A8–A30 thì chưa.
 | A28 | Element nào có tên trong từ vựng chuẩn của WordPress thì **giữ nguyên tên ấy** — paragraph, heading, list, quote, table, image. Element của riêng dự án (metrics, chart, callout, meta, notes) khai cùng khuôn. Khuôn là của WordPress; **cách vẽ thì không mượn** — mỗi template ở đây là một cách dàn trang có chủ ý. | #70 | 16 | CHỜ |
 | A29 | Template được phép vẽ một element theo cách của mình khi bố cục đòi hỏi — kho giữ **format**, template giữ **layout**. Memo vẽ khối kết luận và bảng nếm khác report, cùng một dữ liệu. | #70 | 16 | CHỜ |
 | A30 | Một dòng chữ là các **run**, không phải chuỗi phẳng, vì nó mang được chữ nhấn và số đo gạch chân. Ô chữ thường hiện chúng thành `chữ *được nhấn* chữ` và `_số đo_`, đi một vòng không mất gì — ép thành chuỗi phẳng để sửa là nuốt định dạng một cách lặng lẽ. | #70 | 02 (chữ) | CHỜ |
+| A31 | **Màn soạn vẽ đúng thứ trang sẽ vẽ**, rồi biến từng chỗ chữ thành ô nhập — không dựng một chồng ô của riêng nó. Một ô soạn tự vẽ sẽ giấu mất số thứ tự, dấu đầu dòng, thụt lề; nội dung chỉ có nghĩa khi đứng cạnh những thứ ấy sẽ đọc thành vô nghĩa trong lúc viết. | #70 | 16 (template) | CHỜ |
 | A16 | Bảng luôn còn ít nhất một cột và một hàng. Bảng không cột vẽ ra là một khoảng trắng — người viết không phân biệt được bảng rỗng với bảng đã bị xoá. | #67 | 16 | CHỜ |
 
 ## B. `docs/SPEC.html` đã lỗi thời

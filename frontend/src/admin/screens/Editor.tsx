@@ -50,7 +50,7 @@ import {
   nextId,
   notesOn,
   paletteFrom,
-  runsToText,
+  getElement,
   sectionElements,
   segmentsFor,
   textToRuns,
@@ -372,9 +372,12 @@ function EditorStyles() {
       .awc-quote > span{ font-family: 'Playfair Display', Georgia, serif; font-size: 38px; line-height: .8; }
       .awc-quote > div{ flex: 1; min-width: 0; }
       .awc-callout{ border-left: 2px solid; padding: 14px 16px; margin: 10px 0; max-width: 620px; }
-      .awc-list-row{ position: relative; padding: 2px 0 2px 10px; border-left: 1px solid #EFEADA; margin-bottom: 6px; max-width: 620px; }
-      .awc-list-tools{ display: flex; gap: 10px; opacity: 0; transition: opacity .12s; }
-      .awc-list-row:hover .awc-list-tools, .awc-list-row:focus-within .awc-list-tools{ opacity: 1; }
+      .awc-list-edit{ margin: 10px 0; }
+      .awc-list-flag{ display: flex; align-items: center; gap: 6px; font-size: 11px; color: #8C8674; margin-bottom: 10px; }
+      .awc-list-flag span{ margin-left: 6px; }
+      .awc-list-line{ display: block; position: relative; }
+      .awc-list-tools{ position: absolute; right: 0; top: -2px; display: flex; gap: 10px; opacity: 0; transition: opacity .12s; background: rgba(253,251,242,.92); padding-left: 8px; }
+      .awc-list-line:hover .awc-list-tools, .awc-list-line:focus-within .awc-list-tools{ opacity: 1; }
     `}</style>
   )
 }
@@ -1556,11 +1559,15 @@ function ReportBlockFields({
 }
 
 /**
- * A list, edited as lines.
+ * A list, edited where it is read.
  *
- * Emphasis and readings survive because a line is shown as
- * `chữ *được nhấn* chữ` — see `runs.ts`. Nested items are edited where they
- * sit, one field per line, so the shape on screen is the shape being written.
+ * The first version of this drew its own stack of fields, and that was wrong in
+ * a way worth naming: the numbers, the bullets and the indenting all vanished,
+ * so a phase reading `#2` on the page — which only means anything beside the
+ * `02` in front of it — read as nonsense while it was being written. The rest
+ * of this screen edits on the real canvas for exactly that reason.
+ *
+ * So the element draws itself, and the lines inside it are fields.
  */
 function ListEditor({
   attributes,
@@ -1571,65 +1578,109 @@ function ListEditor({
   palette: Palette
   onChange: (next: ReportBlock) => void
 }) {
-  const items = attributes.items
-  const write = (next: ListItem[]) => onChange({ ...attributes, items: next } as unknown as ReportBlock)
+  const element = getElement('list')!
+  const write = (items: ListItem[]) => onChange({ ...attributes, items } as unknown as ReportBlock)
+
+  /** Rewrites the one item a path points at, however deep it sits. */
+  function at(items: ListItem[], path: number[], change: (item: ListItem) => ListItem): ListItem[] {
+    const [head, ...rest] = path
+    return items.map((item, i) => {
+      if (i !== head) return item
+      return rest.length === 0 ? change(item) : { ...item, children: at(item.children ?? [], rest, change) }
+    })
+  }
+
+  /** Drops the one item a path points at; the last top-level line stays. */
+  function without(items: ListItem[], path: number[]): ListItem[] {
+    const [head, ...rest] = path
+    if (rest.length === 0) return items.length > 1 ? removeAt(items, head) : items
+    return items.map((item, i) =>
+      i === head ? { ...item, children: without(item.children ?? [], rest) } : item,
+    )
+  }
 
   return (
-    <div style={{ margin: '10px 0' }}>
-      <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 8 }}>
-        <label style={{ fontSize: 11, color: ink.muted, display: 'flex', gap: 6, alignItems: 'center' }}>
-          <input
-            type="checkbox"
-            checked={Boolean(attributes.ordered)}
-            onChange={(e) => onChange({ ...attributes, ordered: e.target.checked } as unknown as ReportBlock)}
-          />
-          đánh số
-        </label>
-        <span style={{ fontSize: 11, color: ink.muted }}>
-          <code>*nhấn*</code> · <code>_số đo_</code>
+    <div className="awc-list-edit">
+      <label className="awc-list-flag">
+        <input
+          type="checkbox"
+          checked={Boolean(attributes.ordered)}
+          onChange={(e) => onChange({ ...attributes, ordered: e.target.checked } as unknown as ReportBlock)}
+        />
+        đánh số
+        <span>
+          <code>*nhấn*</code> <code>_số đo_</code>
         </span>
-      </div>
+      </label>
 
-      {items.map((item, i) => (
-        <div key={i} className="awc-list-row">
-          <EditableField
-            value={runsToText(item.runs)}
-            placeholder="một dòng"
-            onCommit={(v) => write(items.map((x, k) => (k === i ? { ...x, runs: textToRuns(v) } : x)))}
-            style={{ fontSize: 15 }}
-          />
-          {item.sub?.map((line, li) => (
+      <element.View
+        attributes={attributes}
+        palette={palette}
+        index={0}
+        render={{
+          renderListLine: (text, path) => (
+            <span className="awc-list-line">
+              <EditableField
+                value={text}
+                placeholder="một dòng"
+                onCommit={(v) => write(at(attributes.items, path, (it) => ({ ...it, runs: textToRuns(v) })))}
+                style={{ font: 'inherit', color: 'inherit' }}
+              />
+              <span className="awc-list-tools">
+                <button
+                  type="button"
+                  className="awc-mini-add"
+                  onClick={() => write(at(attributes.items, path, (it) => ({ ...it, sub: [...(it.sub ?? []), ''] })))}
+                >
+                  + dòng phụ
+                </button>
+                <button
+                  type="button"
+                  className="awc-mini-add"
+                  onClick={() =>
+                    write(at(attributes.items, path, (it) => ({ ...it, children: [...(it.children ?? []), { runs: [{ t: '' }] }] })))
+                  }
+                >
+                  + mục con
+                </button>
+                <button
+                  type="button"
+                  className="awc-mini-remove"
+                  aria-label="xoá dòng"
+                  onClick={() => write(without(attributes.items, path))}
+                >
+                  xoá dòng
+                </button>
+              </span>
+            </span>
+          ),
+          renderListSub: (text, path, subIndex) => (
             <EditableField
-              key={li}
-              value={line}
+              value={text}
               placeholder="dòng phụ"
               onCommit={(v) =>
-                write(items.map((x, k) => (k === i ? { ...x, sub: x.sub?.map((y, m) => (m === li ? v : y)) } : x)))
+                write(
+                  at(attributes.items, path, (it) => ({
+                    ...it,
+                    sub: v === '' ? it.sub?.filter((_, k) => k !== subIndex) : it.sub?.map((y, k) => (k === subIndex ? v : y)),
+                  })),
+                )
               }
-              style={{ fontSize: 13.5, color: ink.muted, marginLeft: 16 }}
+              style={{ font: 'inherit', color: 'inherit' }}
             />
-          ))}
-          <div className="awc-list-tools">
+          ),
+          renderAfterList: () => (
             <button
               type="button"
               className="awc-mini-add"
-              style={{ color: palette.ink }}
-              onClick={() => write(items.map((x, k) => (k === i ? { ...x, sub: [...(x.sub ?? []), ''] } : x)))}
+              style={{ alignSelf: 'flex-start' }}
+              onClick={() => write(insertAt(attributes.items, attributes.items.length, { runs: [{ t: '' }] }))}
             >
-              + dòng phụ
+              + dòng
             </button>
-            {items.length > 1 && (
-              <button type="button" className="awc-mini-remove" aria-label={`xoá dòng ${i + 1}`} onClick={() => write(removeAt(items, i, true))}>
-                xoá dòng
-              </button>
-            )}
-          </div>
-        </div>
-      ))}
-
-      <button type="button" className="awc-mini-add" onClick={() => write(insertAt(items, items.length, { runs: [{ t: '' }] }))}>
-        + dòng
-      </button>
+          ),
+        }}
+      />
     </div>
   )
 }

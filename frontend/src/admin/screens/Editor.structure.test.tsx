@@ -231,3 +231,50 @@ describe('memo — nội dung trong mục viết được', () => {
     expect(sections[2].elements).toEqual([])
   })
 })
+
+describe('màn soạn vẽ đúng thứ trang sẽ vẽ', () => {
+  const body = {
+    sections: [
+      {
+        h: 'Pour test',
+        phases: [
+          { n: '01', label: 'blooming', lines: ['40g'] },
+          { n: '02', label: '#2', lines: [] },
+        ],
+      },
+    ],
+  }
+
+  it('danh sách đánh số hiện số ngay lúc đang soạn', () => {
+    // Bản đầu của ô soạn này tự vẽ một chồng ô trống: số, bullet và thụt lề
+    // đều biến mất, nên một mốc ghi "#2" — thứ chỉ có nghĩa khi đứng cạnh "02"
+    // — đọc thành vô nghĩa trong lúc viết.
+    draw('memo', body)
+    expect(screen.getByText('01')).toBeInTheDocument()
+    expect(screen.getByText('02')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('#2')).toBeInTheDocument()
+  })
+
+  it('dòng phụ vẫn là dòng phụ, không thành một mục ngang hàng', async () => {
+    const onChange = draw('memo', body)
+    const sub = screen.getByDisplayValue('40g')
+    await userEvent.clear(sub)
+    await userEvent.type(sub, '45g')
+    await userEvent.tab()
+
+    const items = (onChange.mock.lastCall?.[0].body as { sections: { elements: { items: { sub?: string[] }[] }[] }[] })
+      .sections[0].elements[0].items
+    expect(items[0].sub).toEqual(['45g'])
+    expect(items).toHaveLength(2)
+  })
+
+  it('xoá hết chữ một dòng phụ thì dòng ấy đi, không để lại dòng trống', async () => {
+    const onChange = draw('memo', body)
+    await userEvent.clear(screen.getByDisplayValue('40g'))
+    await userEvent.tab()
+
+    const items = (onChange.mock.lastCall?.[0].body as { sections: { elements: { items: { sub?: string[] }[] }[] }[] })
+      .sections[0].elements[0].items
+    expect(items[0].sub).toEqual([])
+  })
+})

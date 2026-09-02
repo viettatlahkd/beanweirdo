@@ -58,13 +58,34 @@ lưu không phải đổi.
 Hai test design của memo bắt được đúng chuyện này khi tôi làm hụt: số mốc mất
 kiểu `01` và gạch chân bị rơi. Đã sửa cả hai.
 
+## [SỬA LỖI] Ô soạn danh sách tự vẽ, không vẽ đúng trang
+
+Bản đầu của ô soạn `list` dựng một chồng ô trống của riêng nó. Số thứ tự, dấu
+đầu dòng và thụt lề đều biến mất, nên một mốc pha ghi `#2` — thứ chỉ có nghĩa
+khi đứng cạnh `02` phía trước — đọc thành vô nghĩa trong lúc đang viết. Chủ site
+bắt được ngay: *“format đoạn list không giống format ban đầu của tôi”*.
+
+Cả màn soạn này vốn theo một luật: vẽ đúng thứ trang sẽ vẽ, rồi biến từng chỗ
+chữ thành ô nhập. Ô soạn danh sách của tôi phá luật ấy.
+
+Nay element tự vẽ, và các dòng bên trong là ô nhập — số, bullet, thụt lề, dòng
+phụ hiện y như trên trang. Element nhận thêm ba móc `renderListLine`,
+`renderListSub`, `renderAfterList`; trang công khai không truyền gì vào nên vẽ
+không đổi.
+
+Có test chặn: soạn một danh sách đánh số thì `01`, `02` phải hiện ra ngay trên
+màn soạn.
+
+**Bản gốc không mất gì** — đã soi lại Admin › Templates › Memo: vẫn `01 blooming`,
+`02 #2`, `03 #3`, số serif màu module, dòng phụ bên dưới, bullet ba tầng.
+
 ## Luật mới
 
-A27–A30 trong `docs/spine/SO-BAN-GIAO.md`.
+A27–A31 trong `docs/spine/SO-BAN-GIAO.md`.
 
 ## Kiểm thử
 
-`npm test` — 80 file, 797 test, xanh. Chín khối của Report chuyển vào kho mà 102
+`npm test` — 80 file, 800 test, xanh. Chín khối của Report chuyển vào kho mà 102
 test renderer xanh suốt, không đổi một pixel.
 
 Đã soi trình duyệt thật trên bài memo `ỏ`: từ 5 ô gõ được lên 34, chữ nhấn hiện

@@ -14,8 +14,8 @@
 import type { CSSProperties } from 'react'
 import { serif } from '../tokens'
 import { shade } from '../palette'
-import { registerElement, type ElementViewProps } from './registry'
-import type { Run } from './runs'
+import { registerElement, type ElementRenderOverrides, type ElementViewProps } from './registry'
+import { runsToText, type Run } from './runs'
 
 export type ListItem = {
   /**
@@ -54,6 +54,8 @@ function Row({
   ordered,
   accent,
   accentInk,
+  path,
+  render,
 }: {
   item: ListItem
   depth: number
@@ -61,6 +63,8 @@ function Row({
   ordered: boolean
   accent: string
   accentInk: string
+  path: number[]
+  render?: ElementRenderOverrides
 }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
@@ -90,7 +94,9 @@ function Row({
         )}
         <div style={{ fontSize: depth === 0 ? 15.5 : 15, lineHeight: 1.62 }}>
           <div>
-            {item.runs.map((r, i) =>
+            {render?.renderListLine
+              ? render.renderListLine(runsToText(item.runs), path)
+              : item.runs.map((r, i) =>
               r.em ? (
                 <em key={i} style={{ fontWeight: 600, fontStyle: 'italic', color: accentInk }}>
                   {r.t}
@@ -101,14 +107,14 @@ function Row({
                 <span key={i} style={{ borderBottom: '1px solid #CFCFC4' }}>
                   {r.t}
                 </span>
-              ) : (
-                <span key={i}>{r.t}</span>
-              ),
-            )}
+                  ) : (
+                    <span key={i}>{r.t}</span>
+                  ),
+                )}
           </div>
           {item.sub?.map((line, i) => (
             <div key={i} style={{ color: '#4B4A40', fontSize: 14.5, lineHeight: 1.66 }}>
-              {line}
+              {render?.renderListSub ? render.renderListSub(line, path, i) : line}
             </div>
           ))}
         </div>
@@ -125,7 +131,17 @@ function Row({
           }}
         >
           {item.children.map((c, i) => (
-            <Row key={i} item={c} depth={depth + 1} position={i} ordered={false} accent={accent} accentInk={accentInk} />
+            <Row
+              key={i}
+              item={c}
+              depth={depth + 1}
+              position={i}
+              ordered={false}
+              accent={accent}
+              accentInk={accentInk}
+              path={[...path, i]}
+              render={render}
+            />
           ))}
         </div>
       )}
@@ -144,7 +160,7 @@ export const list = registerElement<ListAttrs>({
     items: { type: 'array', note: '[{ runs[], sub?[], children?[] }] — children lồng tối đa ba tầng' },
   },
   blank: () => ({ type: 'list', ordered: false, items: [{ runs: [{ t: '' }] }] }),
-  View: ({ attributes, palette, testId }: ElementViewProps<ListAttrs>) => (
+  View: ({ attributes, palette, testId, render }: ElementViewProps<ListAttrs>) => (
     <div data-testid={testId} style={{ display: 'flex', flexDirection: 'column', gap: 11, margin: '0 0 20px' }}>
       {attributes.items.map((item, i) => (
         <Row
@@ -155,8 +171,11 @@ export const list = registerElement<ListAttrs>({
           ordered={Boolean(attributes.ordered)}
           accent={palette.accent}
           accentInk={palette.mid}
+          path={[i]}
+          render={render}
         />
       ))}
+      {render?.renderAfterList?.()}
     </div>
   ),
 })

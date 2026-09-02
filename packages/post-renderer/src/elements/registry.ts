@@ -48,6 +48,15 @@ export type ElementRenderOverrides = {
   renderMetric?: (metric: { label: string; value: string }, index: number, metricIndex: number) => ReactNode
   renderTableCell?: (text: string, index: number, rowIndex: number, colIndex: number) => ReactNode
   renderImageCaption?: (caption: string, index: number) => ReactNode
+  /**
+   * One line of a list. `path` is the indices from the top — `[1]` is the
+   * second item, `[1, 0]` its first child — so an editor can write back to a
+   * nested line without the element flattening its own shape to say where.
+   */
+  renderListLine?: (text: string, path: number[]) => ReactNode
+  renderListSub?: (text: string, path: number[], subIndex: number) => ReactNode
+  /** Drawn under the last line — where an editor puts "add a line". */
+  renderAfterList?: () => ReactNode
 }
 
 export type ElementViewProps<A> = {
