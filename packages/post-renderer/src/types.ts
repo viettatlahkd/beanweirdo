@@ -7,6 +7,8 @@
  * holds for a post of that template.
  */
 
+import type { PostNotes } from './notes'
+
 export type Template = 'article' | 'cards' | 'report'
 
 // ---------------------------------------------------------------------------
@@ -152,14 +154,22 @@ export type ReportTable = {
   rows: ReportTableRow[]
 }
 
+/**
+ * Every block can name itself, so a field note can hold on to the block it
+ * argues with rather than to the position that block happens to sit in. Blocks
+ * written before notes existed have no id; the editor gives them one the first
+ * time a note needs somewhere to hang.
+ */
+type Identified = { id?: string }
+
 export type ReportBlock =
-  | { type: 'meta'; text: string }
-  | { type: 'heading'; text: string }
-  | { type: 'paragraph'; text: string }
-  | { type: 'metrics'; items: ReportMetric[] }
-  | { type: 'chart'; points: ReportChartPoint[] }
-  | { type: 'table'; table: ReportTable }
-  | { type: 'image'; caption: string; imageUrl?: string | null }
+  | (Identified & { type: 'meta'; text: string })
+  | (Identified & { type: 'heading'; text: string })
+  | (Identified & { type: 'paragraph'; text: string })
+  | (Identified & { type: 'metrics'; items: ReportMetric[] })
+  | (Identified & { type: 'chart'; points: ReportChartPoint[] })
+  | (Identified & { type: 'table'; table: ReportTable })
+  | (Identified & { type: 'image'; caption: string; imageUrl?: string | null })
 
 export type ReportPostData = {
   /**
@@ -171,6 +181,10 @@ export type ReportPostData = {
   title: string
   blurb?: string
   blocks: ReportBlock[]
+  /** Explorations and field notes; the column only draws when something is written. */
+  notes?: PostNotes
+  /** Names the field-note column — see `fieldNotesLabel`. */
+  template?: string
 }
 
 // ---------------------------------------------------------------------------

@@ -148,10 +148,17 @@ describe('EditorCanvas — cards', () => {
 })
 
 describe('EditorCanvas — report', () => {
+  // Blocks arrive named, because a field note anchors to a block's id and a
+  // post written before notes existed has none to anchor to.
   const blocks: ReportBlock[] = [
     { type: 'meta', text: 'ROASTING · LOG · 2026.05' },
     { type: 'heading', text: 'Mẻ rang #14' },
   ]
+  const named: ReportBlock[] = [
+    { ...blocks[0], id: 'b1' },
+    { ...blocks[1], id: 'b2' },
+  ]
+  const GRIP = 'Kéo thả để đổi thứ tự · Delete để xoá'
 
   it('edits a block field in place', async () => {
     const onChange = vi.fn()
@@ -161,7 +168,7 @@ describe('EditorCanvas — report', () => {
     const metaField = screen.getByDisplayValue('ROASTING · LOG · 2026.05')
     await userEvent.type(metaField, '!')
     await userEvent.tab()
-    expect(onChange).toHaveBeenLastCalledWith({ body: [{ type: 'meta', text: 'ROASTING · LOG · 2026.05!' }, blocks[1]] })
+    expect(onChange).toHaveBeenLastCalledWith({ body: [{ ...named[0], text: 'ROASTING · LOG · 2026.05!' }, named[1]] })
   })
 
   it('inserts a new block via the "+ thêm khối" menu', async () => {
@@ -174,7 +181,7 @@ describe('EditorCanvas — report', () => {
     await userEvent.click(insertButtons[1])
     await userEvent.click(screen.getByRole('button', { name: 'Đoạn văn' }))
 
-    expect(onChange).toHaveBeenLastCalledWith({ body: [blocks[0], { type: 'paragraph', text: '' }, blocks[1]] })
+    expect(onChange).toHaveBeenLastCalledWith({ body: [named[0], { type: 'paragraph', text: '', id: 'b3' }, named[1]] })
   })
 
   it('removes a block', async () => {
@@ -185,18 +192,74 @@ describe('EditorCanvas — report', () => {
     const removeButtons = screen.getAllByLabelText('xoá khối')
     await userEvent.click(removeButtons[0])
 
-    expect(onChange).toHaveBeenLastCalledWith({ body: [blocks[1]] })
+    expect(onChange).toHaveBeenLastCalledWith({ body: [named[1]] })
   })
 
-  it('reorders a block with the move-down control', async () => {
+  it('reorders from the keyboard, so the handle is not drag-only', async () => {
     const onChange = vi.fn()
     const post = basePost({ template: 'report', body: blocks })
     render(<EditorCanvas template="report" post={post} onChange={onChange} onHeroDrop={vi.fn()} />)
 
-    const moveDown = screen.getByLabelText('chuyển khối xuống')
-    await userEvent.click(moveDown)
+    screen.getAllByLabelText(GRIP)[0].focus()
+    await userEvent.keyboard('{ArrowDown}')
 
-    expect(onChange).toHaveBeenLastCalledWith({ body: [blocks[1], blocks[0]] })
+    expect(onChange).toHaveBeenLastCalledWith({ body: [named[1], named[0]] })
+  })
+
+  it('says what the handle does, so nobody has to guess', async () => {
+    render(<EditorCanvas template="report" post={basePost({ template: 'report', body: blocks })} onChange={vi.fn()} onHeroDrop={vi.fn()} />)
+    expect(screen.getAllByLabelText(GRIP)).toHaveLength(2)
+    expect(screen.getAllByText(GRIP)[0]).toBeInTheDocument()
+  })
+
+  it('deletes from the keyboard too', async () => {
+    const onChange = vi.fn()
+    render(<EditorCanvas template="report" post={basePost({ template: 'report', body: blocks })} onChange={onChange} onHeroDrop={vi.fn()} />)
+
+    screen.getAllByLabelText(GRIP)[0].focus()
+    await userEvent.keyboard('{Delete}')
+
+    expect(onChange).toHaveBeenLastCalledWith({ body: [named[1]] })
+  })
+
+  it('copies a block in beneath it, under a name of its own', async () => {
+    const onChange = vi.fn()
+    render(<EditorCanvas template="report" post={basePost({ template: 'report', body: blocks })} onChange={onChange} onHeroDrop={vi.fn()} />)
+
+    await userEvent.click(screen.getAllByLabelText('nhân bản khối')[0])
+
+    expect(onChange).toHaveBeenLastCalledWith({ body: [named[0], { ...named[0], id: 'b3' }, named[1]] })
+  })
+
+  it('names each empty block in grey rather than leaving a blank row', () => {
+    render(
+      <EditorCanvas
+        template="report"
+        post={basePost({ template: 'report', body: [{ type: 'heading', text: '' }, { type: 'paragraph', text: '' }] })}
+        onChange={vi.fn()}
+        onHeroDrop={vi.fn()}
+      />,
+    )
+    expect(screen.getByPlaceholderText('Tiêu đề')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Đoạn văn')).toBeInTheDocument()
+  })
+
+  it('lets an emptied paragraph go, and keeps an emptied heading in place', async () => {
+    const onChange = vi.fn()
+    const body: ReportBlock[] = [
+      { type: 'heading', text: 'Mẻ rang #14' },
+      { type: 'paragraph', text: 'Đẩy lửa cao hơn 8%.' },
+    ]
+    render(<EditorCanvas template="report" post={basePost({ template: 'report', body })} onChange={onChange} onHeroDrop={vi.fn()} />)
+
+    await userEvent.clear(screen.getByDisplayValue('Đẩy lửa cao hơn 8%.'))
+    await userEvent.tab()
+    expect(onChange).toHaveBeenLastCalledWith({ body: [{ ...body[0], id: 'b1' }] })
+
+    onChange.mockClear()
+    await userEvent.clear(screen.getByDisplayValue('Mẻ rang #14'))
+    await userEvent.tab()
+    expect(onChange).toHaveBeenLastCalledWith({ body: [{ ...body[0], id: 'b1', text: '' }, { ...body[1], id: 'b2' }] })
   })
 
   it('edits and adds items in a metrics block', async () => {
@@ -208,11 +271,11 @@ describe('EditorCanvas — report', () => {
     const valueField = screen.getByDisplayValue('198°C')
     await userEvent.type(valueField, '!')
     await userEvent.tab()
-    expect(onChange).toHaveBeenLastCalledWith({ body: [{ type: 'metrics', items: [{ label: 'Nhiệt độ nạp', value: '198°C!' }] }] })
+    expect(onChange).toHaveBeenLastCalledWith({ body: [{ type: 'metrics', id: 'b1', items: [{ label: 'Nhiệt độ nạp', value: '198°C!' }] }] })
 
     await userEvent.click(screen.getByText('+ số liệu'))
     expect(onChange).toHaveBeenLastCalledWith({
-      body: [{ type: 'metrics', items: [{ label: 'Nhiệt độ nạp', value: '198°C' }, { label: '', value: '' }] }],
+      body: [{ type: 'metrics', id: 'b1', items: [{ label: 'Nhiệt độ nạp', value: '198°C' }, { label: '', value: '' }] }],
     })
   })
 

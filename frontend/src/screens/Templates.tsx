@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
 import { PostRenderer } from 'post-renderer'
+import { toReportBlocks, toReportNotes } from '../lib/reportBlocks'
 import type {
   ArticlePostData,
   CardData,
   LongformBlock,
   MemoPostData,
-  ReportBlock,
   SectionData,
 } from 'post-renderer'
 import { getTemplate, listTemplates, type StoredTemplate, type TemplateSummary } from '../admin/lib/apiClient'
@@ -41,7 +41,7 @@ function Preview({ template }: { template: StoredTemplate }) {
     return (
       <PostRenderer
         template="report"
-        post={{ title, blurb: subtitle, blocks: (Array.isArray(body) ? body : []) as ReportBlock[] }}
+        post={{ title, blurb: subtitle, blocks: toReportBlocks(body), notes: toReportNotes(body), template: 'report' }}
       />
     )
   }
