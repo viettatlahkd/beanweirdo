@@ -322,7 +322,7 @@ export function Landing() {
                 </h3>
               </div>
 
-              <div style={{ fontSize: 14, lineHeight: 1.45 }}>{m.long_desc}</div>
+              <div style={{ fontSize: 14, lineHeight: 1.45, ...prose }}>{m.long_desc}</div>
 
               <div>
                 <div style={{ ...eyebrow, letterSpacing: '.14em', opacity: 0.65, marginBottom: 10 }}>

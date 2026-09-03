@@ -5,7 +5,7 @@ import type { ModuleRow } from '../data/useModules'
 import { useModules } from '../data/useModules'
 import type { PostRow } from '../data/usePublishedPosts'
 import { usePublishedPosts } from '../data/usePublishedPosts'
-import { ink, layout, paper, sans, serif, wrapTitle } from '../design/tokens'
+import { ink, layout, paper, prose, sans, serif, wrapTitle } from '../design/tokens'
 import { pageCaption, pageFill, pageImage } from '../lib/modulePageImages'
 import { Hover } from '../lib/Hover'
 import { useNav, useSettings } from '../lib/nav'
@@ -72,7 +72,7 @@ function Band({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
             gap: 44,
           }}
         >
-          <div style={{ fontSize: 15, lineHeight: 1.45 }}>{m.long_desc}</div>
+          <div style={{ fontSize: 15, lineHeight: 1.45, ...prose }}>{m.long_desc}</div>
         </div>
       </div>
 
@@ -190,7 +190,7 @@ function Specimen({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
           >
             {m.title}
           </h1>
-          <div style={{ fontSize: 15, lineHeight: 1.45, maxWidth: 520 }}>{m.long_desc}</div>
+          <div style={{ fontSize: 15, lineHeight: 1.45, maxWidth: 520, ...prose }}>{m.long_desc}</div>
         </div>
 
         {showPlates && (
@@ -507,7 +507,7 @@ function Sequence({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
             gap: 36,
           }}
         >
-          <div style={{ fontSize: 15, lineHeight: 1.45, gridColumn: 'span 2' }}>{m.long_desc}</div>
+          <div style={{ fontSize: 15, lineHeight: 1.45, gridColumn: 'span 2', ...prose }}>{m.long_desc}</div>
         </div>
       </div>
 
