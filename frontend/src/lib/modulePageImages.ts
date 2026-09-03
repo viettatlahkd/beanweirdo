@@ -42,7 +42,9 @@ export type PageSlot = 1 | 2 | 3 | 4
 /** How many photos this layout's page draws. */
 export function pageSlotCount(layout: string): number {
   if (layout === 'sequence') return 4
-  if (layout === 'specimen') return 3
+  // Bốn: ô thứ tư của specimen từng là mảng màu đặc chứ không phải chỗ đặt
+  // ảnh, nên khung sửa chỉ mời ba.
+  if (layout === 'specimen') return 4
   return 1
 }
 

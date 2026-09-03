@@ -127,4 +127,13 @@ export const layout = {
   band: 420,
   /** Ảnh đầu trang module, cùng lý do và cùng tỉ lệ. */
   moduleHero: 280,
+  /**
+   * Khối bốn ô ở đầu trang module dạng "specimen".
+   *
+   * 373 với hai hàng 1,7fr / 0,75fr cho hàng dưới đúng 114px trên bề ngang
+   * 200 — tỉ lệ 1,75:1, bẹt cùng một kiểu như dải 310 ngày trước, và cắt ảnh
+   * cho vừa nó thì mất hết chủ thể. 480 với hai hàng cân hơn cho 271 và 209:
+   * ô trên hơi dọc, ô dưới gần vuông, cả hai đều còn chỗ để căn.
+   */
+  moduleSpecimen: 480,
 } as const

@@ -13,7 +13,8 @@ describe('pageSlots', () => {
   it('gives each layout the number of photos its page actually draws', () => {
     // Measured on the pages themselves: one hero, three cells, a four-cell strip.
     expect(pageSlots('band')).toEqual([1])
-    expect(pageSlots('specimen')).toEqual([1, 2, 3])
+    // Bốn: ô thứ tư từng là mảng màu đặc chứ không phải chỗ đặt ảnh.
+    expect(pageSlots('specimen')).toEqual([1, 2, 3, 4])
     expect(pageSlots('sequence')).toEqual([1, 2, 3, 4])
   })
 })

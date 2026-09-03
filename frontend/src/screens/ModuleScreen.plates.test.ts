@@ -25,13 +25,22 @@ describe('module plate measurements', () => {
     expect(layout.band).toBeGreaterThan(layout.moduleHero)
   })
 
-  it('keeps the specimen grid square enough for its 0.73 and 1.66 cells', () => {
-    // Two rows, 1.7fr over 0.75fr, in a grid of two equal columns.
+  it('giữ cả bốn ô specimen ở tỉ lệ cắt được', () => {
+    /*
+     * Hai hàng, 1,3fr trên 1fr, trong lưới hai cột bằng nhau.
+     *
+     * Hàng dưới từng là 0,75fr trên chiều cao 373 — 114px trên bề ngang 200,
+     * tức 1,66:1, và chủ site gặp đúng chuyện "ảnh ngang bẹt rất khó căn".
+     * Nay ~0,91:1, gần vuông. Con số này là chỗ trang và ô xem trước trong CMS
+     * gặp nhau, nên hình mà nó suy ra mới là thứ được kiểm.
+     */
     const col = PLATE_WIDTH.specimen / 2
-    const top = (PLATE_HEIGHT.specimen * 1.7) / 2.45
-    const bottom = (PLATE_HEIGHT.specimen * 0.75) / 2.45
-    expect(col / top).toBeCloseTo(0.73, 1)
-    expect(col / bottom).toBeCloseTo(1.66, 1)
+    const top = (PLATE_HEIGHT.specimen * 1.3) / 2.3
+    const bottom = (PLATE_HEIGHT.specimen * 1) / 2.3
+    expect(col / top).toBeCloseTo(0.7, 1)
+    expect(col / bottom).toBeCloseTo(0.91, 1)
+    // Không ô nào bẹt hơn 1,2:1 — quá đó là cắt mất chủ thể.
+    expect(Math.max(col / top, col / bottom)).toBeLessThan(1.2)
   })
 
   it('keeps the roast strip on 3:4 cells', () => {
