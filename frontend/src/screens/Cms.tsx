@@ -441,13 +441,36 @@ export function Cms() {
     pending.current[key] = setTimeout(() => setCopy(key)(v), 700)
   }
 
+  /*
+   * Chữ đang gõ dở, đè lên chữ lấy từ máy chủ.
+   *
+   * Ô nhập trước đây là `defaultValue` — React chỉ đọc nó đúng một lần, lúc ô
+   * được vẽ ra. Biểu mẫu này vẽ ngay khi mở màn, còn nội dung thật thì về sau
+   * một nhịp mạng, nên mọi ô đứng nguyên ở chữ mặc định trong mã: trang công
+   * khai hiện bản mới, CMS hiện bản cũ, và không ô nào sai chính tả để mà ngờ.
+   *
+   * Nên ô đọc thẳng từ `copy`, và chỉ khi người dùng đang gõ thì bản nháp mới
+   * đè lên — đè để con trỏ không nhảy về đầu dòng mỗi lượt lưu tự động.
+   */
+  const [draft, setDraft] = useState<Partial<Record<keyof SiteCopy, string>>>({})
+  const dropDraft = (key: keyof SiteCopy) =>
+    setDraft((d) => {
+      const next = { ...d }
+      delete next[key]
+      return next
+    })
+
   /** Cả hai lối lưu cho một ô: nhịp ngắn khi đang gõ, và ngay khi rời ô. */
   const field = (key: keyof SiteCopy) => ({
-    defaultValue: copy[key] as string,
-    onChange: (e: { target: { value: string } }) => queueCopy(key, e.target.value),
+    value: draft[key] ?? (copy[key] as string),
+    onChange: (e: { target: { value: string } }) => {
+      setDraft((d) => ({ ...d, [key]: e.target.value }))
+      queueCopy(key, e.target.value)
+    },
     onBlur: (e: { target: { value: string } }) => {
       clearTimeout(pending.current[key])
       setCopy(key)(e.target.value)
+      dropDraft(key)
     },
   })
 
