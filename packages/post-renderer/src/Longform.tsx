@@ -4,6 +4,8 @@ import type { CSSProperties } from 'react'
 import { paletteFrom, type Palette } from './palette'
 import { sans, serif } from './tokens'
 import type { LongformBlock, LongformPostData, LongformRun } from './types'
+import { indentOf, normalizeBlocks } from './longformBlocks'
+import { runsToText } from './longformText'
 
 export type LongformProps = LongformEdit & {
   post: LongformPostData
@@ -41,7 +43,10 @@ type Prepared = {
 /** Only a long-form with no module behind it — the standalone sample. */
 const LONGFORM_BLUE = '#EAF1F4'
 
-function prepare(blocks: LongformBlock[]): Prepared[] {
+function prepare(input: LongformBlock[]): Prepared[] {
+  // Bài trong kho vẫn còn khối `cont` cho tới lần chủ site sửa nó; vẽ thì luôn
+  // vẽ từ dạng mới.
+  const blocks = normalizeBlocks(input)
   let h1n = 0
   let curH1 = ''
   let curH2 = ''
@@ -101,7 +106,9 @@ const EditContext = createContext<LongformEdit>({})
 
 const Runs = ({ runs, at }: { runs?: LongformRun[]; at?: number }) => {
   const edit = useContext(EditContext)
-  if (edit.renderText && at !== undefined) return <>{edit.renderText(plain(runs), at)}</>
+  // Chữ đưa cho ô nhập mang theo dấu định dạng (`*đậm*`, `_nghiêng_`), không
+  // phải chuỗi trơn: gõ lại một dòng thì 572 span đậm/nghiêng của bài phải còn.
+  if (edit.renderText && at !== undefined) return <>{edit.renderText(runsToText(runs), at)}</>
   return (
     <>
       {(runs ?? []).map((r, i) => (
@@ -131,8 +138,15 @@ function bullet(lvl = 1, accent: string) {
   }
 }
 
+/**
+ * Lề trái của một khối.
+ *
+ * Gạch đầu dòng lùi theo cấp lồng của nó; đoạn văn lùi theo bậc `ind` — một
+ * bậc là 26px, và bậc một là chỗ 159 khối `cont` cũ đứng, nên trang giữ đúng
+ * hình dạng nó vốn có.
+ */
 const padOf = (b: LongformBlock) =>
-  b.k === 'li' ? (b.lvl === 2 ? 26 : b.lvl === 3 ? 52 : 0) : b.ind ? 26 : 0
+  b.k === 'li' ? (b.lvl === 2 ? 26 : b.lvl === 3 ? 52 : 0) : indentOf(b) * 26
 
 /** A `note` block's runs, split into lines on newline runs. */
 function noteLines(runs: LongformRun[] = []): LongformRun[][] {
@@ -201,12 +215,6 @@ function AsideBlock({ items, palette }: { items: LongformBlock[]; palette: Palet
         if (a.k === 'p')
           return (
             <div key={i} style={{ fontSize: 14.5, lineHeight: 1.66, color: '#3B3729', margin: '0 0 10px', paddingLeft: pad }}>
-              <Runs runs={a.runs} />
-            </div>
-          )
-        if (a.k === 'cont')
-          return (
-            <div key={i} style={{ fontSize: 14, lineHeight: 1.62, color: '#5C5745', margin: '0 0 6px', paddingLeft: pad }}>
               <Runs runs={a.runs} />
             </div>
           )
@@ -645,12 +653,6 @@ export function Longform({ post, breadcrumb, renderText }: LongformProps) {
 
                 {b.k === 'p' && (
                   <div style={{ fontSize: 15.5, lineHeight: 1.68, color: '#2E2A20', margin: '0 0 14px', paddingLeft: pad }}>
-                    <Runs runs={b.runs} at={at} />
-                  </div>
-                )}
-
-                {b.k === 'cont' && (
-                  <div style={{ fontSize: 14.5, lineHeight: 1.66, color: '#4B4A40', margin: '0 0 8px', paddingLeft: pad }}>
                     <Runs runs={b.runs} at={at} />
                   </div>
                 )}

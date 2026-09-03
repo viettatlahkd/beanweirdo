@@ -1,8 +1,14 @@
-import { Fragment, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
-import { PostRenderer } from 'post-renderer'
+import { Fragment, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react'
+import {
+  PostRenderer,
+  normalizeBlocks,
+  stepIndent,
+  longformTextToRuns,
+} from 'post-renderer'
 import type {
   CardData,
   CardPart,
+  LongformBlock,
   ReportBlock,
   ReportChartPoint,
   ReportMetric,
@@ -386,6 +392,7 @@ function EditableField({
   placeholder,
   focus,
   onFocused,
+  onKeyDown,
   style,
 }: {
   value: string
@@ -396,6 +403,15 @@ function EditableField({
   /** Put the cursor here — used when an emptied block merges into the text above. */
   focus?: boolean
   onFocused?: () => void
+  /**
+   * Phím bấm trong ô, cho những thao tác không phải là gõ chữ — Tab lùi lề
+   * chẳng hạn.
+   *
+   * Nhận theo chữ đang có trong ô, chứ không phải một hàm "nộp đi": nộp rồi
+   * mới lùi là hai lần ghi, lần sau dựng từ dữ liệu trước lần đầu, nên nó xoá
+   * mất chữ vừa gõ. Người nhận phải gộp cả hai vào một lần ghi.
+   */
+  onKeyDown?: (e: KeyboardEvent<HTMLElement>, current: string) => void
   style?: CSSProperties
 }) {
   const [local, setLocal] = useState(value)
@@ -439,6 +455,7 @@ function EditableField({
         rows={rows}
         onChange={(e) => setLocal(e.target.value)}
         onBlur={commit}
+        onKeyDown={onKeyDown && ((e) => onKeyDown(e, local))}
         style={{ ...commonStyle, resize: 'vertical' }}
       />
     )
@@ -451,6 +468,7 @@ function EditableField({
       placeholder={placeholder}
       onChange={(e) => setLocal(e.target.value)}
       onBlur={commit}
+      onKeyDown={onKeyDown && ((e) => onKeyDown(e, local))}
       style={commonStyle}
     />
   )
@@ -590,22 +608,50 @@ function LongformEditor({
   module?: Module
   onChange: (patch: EditPatch) => void
 }) {
-  const blocks = getBody<Record<string, unknown>>(post)
+  /*
+   * Bài trong kho có thể vẫn còn khối `cont` cũ. Ghi lại thì ghi cả bài ở dạng
+   * mới — nửa cũ nửa mới trong một `body` là chỗ để lẫn về sau.
+   */
+  const blocks = normalizeBlocks(getBody<LongformBlock>(post))
+  const write = (next: LongformBlock[]) => onChange({ body: next })
+  const at = (i: number, f: (b: LongformBlock) => LongformBlock) =>
+    write(blocks.map((b, j) => (j === i ? f(b) : b)))
+
+  /**
+   * Tab lùi vào, Shift+Tab lùi ra.
+   *
+   * Đoạn văn lùi theo `ind`, gạch đầu dòng lùi theo cấp lồng `lvl` của nó —
+   * cùng một cử chỉ cho cùng một ý, dù trong kho là hai trường khác nhau.
+   * Khối không có gì để lùi thì để Tab chạy như thường: nó nhảy sang ô sau,
+   * đó là điều người dùng chờ đợi ở bàn phím.
+   */
+  const onKeyDown = (i: number) => (e: KeyboardEvent<HTMLElement>, current: string) => {
+    if (e.key !== 'Tab') return
+    const b = blocks[i]
+    if (!b || (b.k !== 'p' && b.k !== 'li')) return
+    e.preventDefault()
+    const by = e.shiftKey ? -1 : 1
+    // Chữ đang gõ và bậc lùi đi cùng một lần ghi. Nộp chữ rồi lùi thành hai
+    // lần, lần sau dựng từ `blocks` cũ, và chữ vừa gõ mất.
+    at(i, (x) => {
+      const text = { ...x, runs: longformTextToRuns(current) }
+      if (x.k === 'li') return { ...text, lvl: Math.max(1, Math.min(3, (x.lvl ?? 1) + by)) }
+      return stepIndent(text, by)
+    })
+  }
+
   return (
     <PostRenderer
       template="longform"
       post={toLongformData(post, module)}
-      renderText={(text, at) => (
+      renderText={(text, i) => (
         <EditableField
           value={text}
           multiline
           rows={2}
           placeholder="dòng chữ"
-          onCommit={(v) =>
-            onChange({
-              body: blocks.map((b, i) => (i === at ? { ...b, runs: [{ t: v }] } : b)),
-            })
-          }
+          onCommit={(v) => at(i, (b) => ({ ...b, runs: longformTextToRuns(v) }))}
+          onKeyDown={onKeyDown(i)}
           style={{ font: 'inherit', color: 'inherit', letterSpacing: 'inherit' }}
         />
       )}

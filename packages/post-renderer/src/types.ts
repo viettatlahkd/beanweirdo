@@ -197,8 +197,6 @@ export type LongformBlockKind =
   | 'h3'
   | 'h4'
   | 'p'
-  /** a continuation line — same paragraph, tighter and quieter */
-  | 'cont'
   | 'li'
   | 'fig'
   | 'note'
@@ -211,8 +209,17 @@ export type LongformBlock = {
   runs?: LongformRun[]
   /** li nesting, 1–3 */
   lvl?: number
-  /** p/cont indent flag */
-  ind?: boolean
+  /**
+   * How far a paragraph is stepped in, 0–3.
+   *
+   * Was a yes/no flag while `cont` existed beside it: a "continuation line"
+   * kind that drew a paragraph half a size smaller and a shade lighter. The
+   * published piece had 159 of them, every one opening with a `—` or `→` the
+   * writer had typed into the sentence — so it was never a second kind of
+   * paragraph, only an indented one. `cont` is gone and its blocks arrive here
+   * as `p` with a step (see normalizeBlocks); `true` still reads as step 1.
+   */
+  ind?: number | boolean
   /** fig */
   src?: string
   ar?: string
