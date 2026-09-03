@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { layout } from '../design/tokens'
 import { PLATE_HEIGHT, PLATE_WIDTH } from './ModuleScreen'
 
 /*
@@ -11,8 +12,17 @@ import { PLATE_HEIGHT, PLATE_WIDTH } from './ModuleScreen'
  * shapes they imply are checked, not just the numbers themselves.
  */
 describe('module plate measurements', () => {
-  it('keeps the band hero at the 5:1 the design calls a hero', () => {
-    expect(PLATE_WIDTH.band / PLATE_HEIGHT.band).toBeCloseTo(5.05, 1)
+  it('giữ ảnh đầu trang module ở tỉ lệ cắt được', () => {
+    // Từng là 5,05:1 — bẹt tới mức hầu như không ảnh nào cắt cho vừa mà còn ra
+    // hình, và chủ site gặp đúng chuyện đó khi tự đặt ảnh. Nay ~3,75:1.
+    expect(PLATE_WIDTH.band / PLATE_HEIGHT.band).toBeCloseTo(3.75, 1)
+  })
+
+  it('trang, trang module và ô xem trước cùng đọc một con số', () => {
+    // Ba nơi từng giữ ba bản sao của cùng một chiều cao, và hai trong ba đã
+    // lệch nhau 100px. Sửa trang mà ô xem trước đứng yên thì ô ấy nói dối.
+    expect(PLATE_HEIGHT.band).toBe(layout.moduleHero)
+    expect(layout.band).toBeGreaterThan(layout.moduleHero)
   })
 
   it('keeps the specimen grid square enough for its 0.73 and 1.66 cells', () => {

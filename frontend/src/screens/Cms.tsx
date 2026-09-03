@@ -24,6 +24,7 @@ import { ModuleImages } from '../admin/components/ModuleImages'
 import { captionColumn, formShapeOf, imageColumn } from '../admin/moduleForm'
 import { FocusPicker } from '../admin/components/FocusPicker'
 import { coverStyle } from '../lib/imageFocus'
+import { useSlotSwap, type SlotSwap } from '../admin/lib/useSlotSwap'
 import { FeatureCellsEditor } from '../admin/components/FeatureCellsEditor'
 import type { FeatureOverride } from '../content/notes'
 import { ink, paper, sans, serif } from '../design/tokens'
@@ -149,6 +150,8 @@ function Field({ label, children }: { label: ReactNode; children: ReactNode }) {
  * describes what the slot wants); the photo replaces the tinted placeholder on
  * the public screens once uploaded.
  */
+type SlotDragProps = ReturnType<SlotSwap['slotProps']> & { marked?: boolean }
+
 function ImageSlot({
   label,
   caption,
@@ -158,6 +161,7 @@ function ImageSlot({
   onClear,
   onPlace,
   ratio,
+  drag,
 }: {
   label: string
   caption: string
@@ -170,10 +174,17 @@ function ImageSlot({
   onPlace: (url: string) => void
   /** Width ÷ height of the frame this photo fills on the public page. */
   ratio: number
+  /** Kéo sang khung khác để hai ảnh đổi chỗ. */
+  drag?: SlotDragProps
 }) {
   const [placing, setPlacing] = useState<string | null>(null)
+  const [linking, setLinking] = useState(false)
+  const { marked, ...dragProps } = drag ?? { marked: false }
   return (
-    <div>
+    <div
+      {...dragProps}
+      style={{ outline: marked ? `2px solid ${ink.base}` : undefined, outlineOffset: 4, cursor: drag ? 'grab' : undefined }}
+    >
       <div style={fieldLabel}>{label}</div>
       <input
         value={caption}
@@ -236,6 +247,46 @@ function ImageSlot({
         </Hover>
         {url && (
           <Hover
+            as="button"
+            onClick={() => setPlacing(url)}
+            style={{
+              fontFamily: sans,
+              fontSize: 10,
+              letterSpacing: '.14em',
+              textTransform: 'uppercase',
+              color: ink.soft,
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              cursor: 'pointer',
+              flex: 'none',
+            }}
+            hoverStyle={{ color: ink.base }}
+          >
+            đặt vào khung
+          </Hover>
+        )}
+        <Hover
+          as="button"
+          onClick={() => setLinking(!linking)}
+          style={{
+            fontFamily: sans,
+            fontSize: 10,
+            letterSpacing: '.14em',
+            textTransform: 'uppercase',
+            color: ink.soft,
+            background: 'none',
+            border: 'none',
+            padding: 0,
+            cursor: 'pointer',
+            flex: 'none',
+          }}
+          hoverStyle={{ color: ink.base }}
+        >
+          dán link
+        </Hover>
+        {url && (
+          <Hover
             onClick={onClear}
             style={{ fontFamily: sans, fontSize: 11, color: ink.faint, cursor: 'pointer', flex: 'none' }}
             hoverStyle={{ color: '#C25C7C' }}
@@ -244,6 +295,30 @@ function ImageSlot({
           </Hover>
         )}
       </div>
+
+      {linking && (
+        /*
+         * Ảnh có thể nằm ở nơi khác. Lưu đường dẫn thay vì bản sao thì không
+         * để lại trong kho thứ không cần ở đó — đổi lại, ảnh chỉ bền bằng chỗ
+         * đang giữ nó.
+         */
+        <input
+          autoFocus
+          defaultValue={url ?? ''}
+          placeholder="dán link ảnh rồi Enter"
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') setLinking(false)
+            if (e.key !== 'Enter') return
+            const v = (e.target as HTMLInputElement).value.trim()
+            setLinking(false)
+            if (!v) return onClear()
+            onPlace(v)
+            setPlacing(v)
+          }}
+          onBlur={() => setLinking(false)}
+          style={{ ...boxed, padding: '7px 10px', marginTop: 7, fontSize: 12 }}
+        />
+      )}
 
       {placing && (
         <FocusPicker
@@ -330,6 +405,25 @@ export function Cms() {
   }
 
   const setCopy = (key: keyof SiteCopy) => (v: string) => void saveSite({ [key]: v } as SiteOverrides)
+
+  /*
+   * Kéo một ảnh sang khung khác thì hai bên đổi chỗ, và chú thích đi theo ảnh
+   * của nó. Trước đó đổi thứ tự nghĩa là xoá rồi tải lại từng cái — mỗi lần
+   * như vậy mất luôn chú thích và điểm căn khung đã chỉnh.
+   */
+  const plateSwap = useSlotSwap((a, b) => {
+    const at = (slot: number) => ({
+      caption: copy[`plate${slot as 1 | 2 | 3}` as const],
+      url: copy[`plateImg${slot as 1 | 2 | 3}` as const],
+    })
+    const [one, two] = [at(a), at(b)]
+    void saveSite({
+      [`plate${a}`]: two.caption,
+      [`plateImg${a}`]: two.url,
+      [`plate${b}`]: one.caption,
+      [`plateImg${b}`]: one.url,
+    } as SiteOverrides)
+  })
 
   async function savePlate(slot: 1 | 2 | 3 | 4, file: File): Promise<string | null> {
     try {
@@ -778,6 +872,7 @@ export function Cms() {
                 onClear={() => void saveSite({ [`plateImg${slot}`]: '' } as SiteOverrides)}
                 onPlace={(next) => void saveSite({ [`plateImg${slot}`]: next } as SiteOverrides)}
                 ratio={16 / 9}
+                drag={{ ...plateSwap.slotProps(slot), marked: plateSwap.over === slot }}
               />
             ))}
           </div>
@@ -1071,6 +1166,21 @@ export function Cms() {
                           }
                         }}
                         onClear={(slot) => void patchModule(m.id, { [imageColumn(group, slot)]: null })}
+                        onSwap={(a, b) => {
+                          // Ảnh và chú thích của nó đi cùng nhau — đổi chỗ ảnh
+                          // mà bỏ chú thích lại là gán nhầm lời cho hình.
+                          const cell = (slot: 1 | 2 | 3 | 4) => ({
+                            img: (m as Record<string, unknown>)[imageColumn(group, slot)] ?? null,
+                            cap: (m as Record<string, unknown>)[captionColumn(group, slot)] ?? null,
+                          })
+                          const [one, two] = [cell(a), cell(b)]
+                          void patchModule(m.id, {
+                            [imageColumn(group, a)]: two.img,
+                            [captionColumn(group, a)]: two.cap,
+                            [imageColumn(group, b)]: one.img,
+                            [captionColumn(group, b)]: one.cap,
+                          })
+                        }}
                         onPlace={(slot, url) =>
                           void patchModule(m.id, { [imageColumn(group, slot)]: url })
                         }

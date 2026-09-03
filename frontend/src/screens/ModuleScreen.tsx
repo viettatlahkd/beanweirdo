@@ -5,7 +5,7 @@ import type { ModuleRow } from '../data/useModules'
 import { useModules } from '../data/useModules'
 import type { PostRow } from '../data/usePublishedPosts'
 import { usePublishedPosts } from '../data/usePublishedPosts'
-import { ink, paper, sans, serif } from '../design/tokens'
+import { ink, layout, paper, sans, serif } from '../design/tokens'
 import { pageCaption, pageFill, pageImage } from '../lib/modulePageImages'
 import { Hover } from '../lib/Hover'
 import { useNav, useSettings } from '../lib/nav'
@@ -304,7 +304,10 @@ export const PLATE_WIDTH: Record<string, number> = {
  * see before you commit to it.
  */
 export const PLATE_HEIGHT: Record<string, number> = {
-  band: 208,
+  // Cùng lý do với dải trang chủ: 208 trên bề ngang 1050 là ~5:1, bẹt tới mức
+  // hầu như không ảnh nào cắt cho vừa mà còn ra hình. Lấy từ token để trang,
+  // trang module và ô xem trước trong CMS cùng đọc một con số.
+  band: layout.moduleHero,
   specimen: 373,
 }
 

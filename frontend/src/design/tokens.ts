@@ -104,6 +104,18 @@ export const layout = {
   /** article side rail */
   railMin: 200,
   railMax: 260,
-  /** module image band height */
-  band: 310,
+  /**
+   * Chiều cao dải ảnh module — một con số, dùng ở mọi nơi.
+   *
+   * Trước đây nó được viết ba lần: ở đây, ở ô xem trước trong CMS (một số
+   * literal), và một con số thứ ba cho ảnh đầu trang module. Sửa trang mà ô xem
+   * trước giữ nguyên thì ô ấy nói dối — nó hứa cho thấy trang sẽ ra sao.
+   *
+   * 420 chứ không phải 310: ở bề ngang thật của trang chủ, 310 cho tỉ lệ ~3,6:1
+   * — một dải bẹt đến mức gần như không ảnh nào cắt cho vừa mà còn đẹp. 420 đưa
+   * về ~2,7:1, vẫn là dải ngang nhưng đủ cao để một khung hình có chỗ thở.
+   */
+  band: 420,
+  /** Ảnh đầu trang module, cùng lý do và cùng tỉ lệ. */
+  moduleHero: 280,
 } as const
