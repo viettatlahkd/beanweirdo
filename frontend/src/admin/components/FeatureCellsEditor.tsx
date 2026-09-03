@@ -2,6 +2,7 @@ import { useState, type CSSProperties } from 'react'
 import { featureCells, withOverrides, type FeatureOverride } from '../../content/notes'
 import { ink, paper, sans, serif } from '../../design/tokens'
 import { Hover } from '../../lib/Hover'
+import { useSlotSwap } from '../lib/useSlotSwap'
 import { coverStyle } from '../../lib/imageFocus'
 import { FocusPicker } from './FocusPicker'
 
@@ -98,6 +99,21 @@ export function FeatureCellsEditor({
     onChange([...rest, { ...current, ...patch }].sort((a, b) => a.n - b.n))
   }
 
+  const [linking, setLinking] = useState<number | null>(null)
+  /*
+   * Kéo một ảnh sang khung khác thì hai bên đổi chỗ, chú thích đi theo ảnh của
+   * nó. Trước đó đổi thứ tự là xoá rồi tải lại từng cái — mất luôn chú thích và
+   * điểm căn khung đã chỉnh.
+   */
+  const swap = useSlotSwap((a, b) => {
+    const at = (n: number) => drawn.find((c) => c.n === n)
+    const [one, two] = [at(a), at(b)]
+    if (!one || !two) return
+    set(a, { img: two.img ?? null, t: two.t })
+    set(b, { img: one.img ?? null, t: one.t })
+  })
+
+
   return (
     <div style={{ marginTop: 22 }}>
       <div style={groupLabel}>Ảnh feature dọc trang</div>
@@ -172,7 +188,16 @@ export function FeatureCellsEditor({
           }
 
           return (
-            <div key={f.n} style={rowBox}>
+            <div
+              key={f.n}
+              {...swap.slotProps(f.n)}
+              style={{
+                ...rowBox,
+                cursor: 'grab',
+                ...(swap.over === f.n ? { outline: `2px solid ${ink.base}`, outlineOffset: 3 } : null),
+                ...(swap.from === f.n ? { opacity: 0.45 } : null),
+              }}
+            >
               <div
                 style={{
                   width: 72,
@@ -229,6 +254,14 @@ export function FeatureCellsEditor({
                       đặt vào khung
                     </Hover>
                   )}
+                  <Hover
+                    as="button"
+                    onClick={() => setLinking(linking === f.n ? null : f.n)}
+                    style={{ ...action, background: 'none', border: 'none', padding: 0 }}
+                    hoverStyle={{ color: ink.base }}
+                  >
+                    dán link
+                  </Hover>
                   {f.img && (
                     <Hover
                       as="button"
@@ -240,6 +273,29 @@ export function FeatureCellsEditor({
                     </Hover>
                   )}
                 </div>
+
+                {linking === f.n && (
+                  /*
+                   * Ảnh có thể nằm ở nơi khác. Lưu đường dẫn thay vì bản sao thì
+                   * không để lại trong kho thứ không cần ở đó — đổi lại, ảnh chỉ
+                   * bền bằng chỗ đang giữ nó.
+                   */
+                  <input
+                    autoFocus
+                    defaultValue={f.img ?? ''}
+                    placeholder="dán link ảnh rồi Enter"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Escape') setLinking(null)
+                      if (e.key !== 'Enter') return
+                      const v = (e.target as HTMLInputElement).value.trim()
+                      setLinking(null)
+                      set(f.n, { img: v || null })
+                      if (v) setPlacing({ n: f.n, url: v, ratio: ratioOf(f.col, f.h), name: `Ảnh feature · F${f.n}` })
+                    }}
+                    onBlur={() => setLinking(null)}
+                    style={{ ...textInput, marginTop: 6 }}
+                  />
+                )}
               </div>
             </div>
           )

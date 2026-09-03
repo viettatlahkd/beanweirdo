@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, type CSSProperties, type RefObject } from 'react'
 import { ImageBand } from '../../screens/Landing'
 import { ModulePlates, PLATE_HEIGHT, PLATE_WIDTH } from '../../screens/ModuleScreen'
-import { ink, paper, sans } from '../../design/tokens'
+import { ink, layout, paper, sans } from '../../design/tokens'
 import { Hover } from '../../lib/Hover'
+import { useSlotSwap } from '../lib/useSlotSwap'
 import { captionColumn, imageColumn, type ImageGroup, type ModuleImageFields, type PreviewKind } from '../moduleForm'
 import { coverStyle } from '../../lib/imageFocus'
 import { isBorrowed, pageImage } from '../../lib/modulePageImages'
@@ -116,13 +117,14 @@ function Preview({
     ) : (
       <NotesFooterPreview img1={m.img1} img2={m.img2} shot1={m.shot1} shot2={m.shot2} />
     )
-  // Each layout's own height: the band is 310, the module hero 208, the footer
-  // pair 280 at its tallest.
-  // Each layout's plates are as tall as their own shape makes them: the hero is
-  // a fixed 208, the specimen grid and the roast strip follow from their width.
+  /*
+   * Mỗi bố cục cao theo hình dạng của chính nó — và con số ấy lấy từ chỗ trang
+   * lấy, không chép lại. Ô xem trước hứa cho thấy trang sẽ ra sao; chép số là
+   * cách nó bắt đầu nói dối mà không ai biết.
+   */
   const tall =
     kind === 'homepage-band'
-      ? 310
+      ? layout.band
       : kind === 'module-page'
         ? (PLATE_HEIGHT[m.layout] ?? (PLATE_WIDTH.sequence / 4) * (4 / 3))
         : 280
@@ -215,6 +217,7 @@ export function ModuleImages({
   onUpload,
   onClear,
   onPlace,
+  onSwap,
 }: {
   m: ModuleImageFields
   group: ImageGroup
@@ -224,7 +227,10 @@ export function ModuleImages({
   onClear: (slot: 1 | 2 | 3 | 4) => void
   /** The same photo, carrying a focal point. */
   onPlace: (slot: 1 | 2 | 3 | 4, url: string) => void
+  /** Kéo một ảnh sang khung khác thì hai bên đổi chỗ, chú thích đi theo. */
+  onSwap?: (a: 1 | 2 | 3 | 4, b: 1 | 2 | 3 | 4) => void
 }) {
+  const swap = useSlotSwap((a, b) => onSwap?.(a as 1 | 2 | 3 | 4, b as 1 | 2 | 3 | 4))
   const grid = useRef<HTMLDivElement>(null)
   const [placing, setPlacing] = useState<{ slot: 1 | 2 | 3 | 4; url: string } | null>(null)
   const [linking, setLinking] = useState<1 | 2 | 3 | 4 | null>(null)
@@ -262,8 +268,18 @@ export function ModuleImages({
              */
             const borrowed = group.columns === 'module-page' && !url && isBorrowed(m, slot)
             const shown = url ?? (borrowed ? pageImage(m, slot) : null)
+            const dragging = onSwap ? swap.slotProps(slot) : {}
             return (
-              <div key={slot} style={rowBox}>
+              <div
+                key={slot}
+                {...dragging}
+                style={{
+                  ...rowBox,
+                  ...(onSwap ? { cursor: 'grab' } : null),
+                  ...(swap.over === slot ? { outline: `2px solid ${ink.base}`, outlineOffset: 3 } : null),
+                  ...(swap.from === slot ? { opacity: 0.45 } : null),
+                }}
+              >
                 <div
                   style={{
                     width: 72,
