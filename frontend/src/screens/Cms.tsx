@@ -869,6 +869,49 @@ export function Cms() {
             </Field>
           </div>
 
+          {/*
+            * Trang Ghi chép và trang Lưu trữ.
+            *
+            * Năm dòng của trang Ghi chép từng nằm cứng trong mã, còn hai dòng
+            * của trang Lưu trữ thì có trong dữ liệu nhưng chưa bao giờ có ô để
+            * sửa — khai ra rồi bỏ đó cũng là không sửa được.
+            */}
+          <div style={{ ...sectionHead, margin: '34px 0 18px' }}>Trang Ghi chép</div>
+          <div style={grid(two)}>
+            <Field label="Tiêu đề trang">
+              <input {...field('notesTitle')} style={serifInput} />
+            </Field>
+            <Field label="Dòng dưới tiêu đề">
+              <input {...field('notesSubtitle')} style={serifItalicInput} />
+            </Field>
+          </div>
+          <div style={grid(two, 18)}>
+            <Field label="Đoạn dẫn — góc phải">
+              <textarea {...field('notesIntro')} rows={3} style={{ ...area, fontSize: 14 }} />
+            </Field>
+            <Field label="Dòng hướng dẫn — dưới đoạn dẫn">
+              <textarea {...field('notesHint')} rows={3} style={{ ...area, fontSize: 14 }} />
+            </Field>
+          </div>
+          <div style={grid(two, 18)}>
+            <Field label="Lời kết — cuối trang">
+              <input {...field('notesEnd')} style={serifItalicInput} />
+            </Field>
+            <Field label="Lời kết — dòng phụ">
+              <input {...field('notesEndNote')} style={boxed} />
+            </Field>
+          </div>
+
+          <div style={{ ...sectionHead, margin: '34px 0 18px' }}>Trang Lưu trữ</div>
+          <div style={grid(two)}>
+            <Field label="Tiêu đề trang">
+              <input {...field('archiveTitle')} style={serifInput} />
+            </Field>
+            <Field label="Dòng phụ — cạnh số bài">
+              <input {...field('archiveNote')} style={boxed} />
+            </Field>
+          </div>
+
           <div style={{ ...sectionHead, margin: '34px 0 18px' }}>Mục lục</div>
           <div style={grid(two)}>
             <Field label="Tiêu đề — dòng 1">

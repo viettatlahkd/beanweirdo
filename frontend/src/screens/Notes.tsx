@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { Breadcrumbs } from '../components/Breadcrumbs'
+import { useSiteCopy } from '../data/useSiteCopy'
 import {
   featureCells,
   noteBlock,
@@ -27,7 +28,7 @@ import {
   toMemoData,
   toReportData,
 } from '../lib/postToRenderer'
-import { serif } from '../design/tokens'
+import { prose, serif } from '../design/tokens'
 import { Hover } from '../lib/Hover'
 
 const label: CSSProperties = {
@@ -476,6 +477,7 @@ function FooterImage({
  */
 export function Notes() {
   const { notes, loading, error } = useNotes()
+  const { site } = useSiteCopy()
   // Ghi 01's own colours, so an unfolded post wears them the way it would on a
   // page of its own.
   const { data: allModules } = useModules()
@@ -560,16 +562,17 @@ export function Notes() {
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 56, flexWrap: 'wrap' }}>
         <div>
           <h1 style={{ fontFamily: serif, fontSize: 118, lineHeight: 0.82, letterSpacing: '-.045em', margin: 0, fontWeight: 400 }}>
-            Notes<span style={{ fontStyle: 'italic', color: '#F2A0A5' }}>.</span>
+            {site.notesTitle}
+            <span style={{ fontStyle: 'italic', color: '#F2A0A5' }}>.</span>
           </h1>
           <div style={{ fontFamily: serif, fontStyle: 'italic', fontSize: 27, color: '#4A4A42', marginTop: 12 }}>
-            ghi chép rời — không thuộc module nào
+            {site.notesSubtitle}
           </div>
         </div>
         <div style={{ fontFamily: "'Be Vietnam Pro',sans-serif", fontWeight: 200, fontSize: 13.5, lineHeight: 1.6, color: '#5A5A50', maxWidth: 310, paddingBottom: 14 }}>
-          Một quan sát vật lý trong bếp, một đoạn video không tiếng, một ý nghĩ bắc cầu giữa hai lĩnh vực.
+          <div style={prose}>{site.notesIntro}</div>
           <div style={{ marginTop: 10, fontSize: 10, letterSpacing: '.2em', textTransform: 'uppercase', color: '#B0B0A6' }}>
-            Bấm vào bài để xổ toàn bộ nội dung · bấm ra ngoài để thu lại
+            {site.notesHint}
           </div>
         </div>
       </div>
@@ -749,10 +752,10 @@ export function Notes() {
       >
         <div style={{ gridColumn: '1 / span 5' }}>
           <div style={{ fontFamily: serif, fontStyle: 'italic', fontSize: 40, lineHeight: 1.08, letterSpacing: '-.03em' }}>
-            Hết phần đã ghi.
+            {site.notesEnd}
           </div>
           <div style={{ fontFamily: "'Be Vietnam Pro',sans-serif", fontWeight: 200, fontSize: 13.5, lineHeight: 1.6, color: '#5A5A50', marginTop: 12, maxWidth: 330 }}>
-            Ghi chép mới sẽ chèn lên đầu trang.
+            {site.notesEndNote}
           </div>
         </div>
         <FooterImage col="6 / span 3" height={150} tint="#AFC8BC" img={ghi01?.img1} caption={ghi01?.shot1} />

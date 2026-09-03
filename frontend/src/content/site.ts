@@ -46,6 +46,20 @@ export type SiteCopy = {
   archiveTitle: string
   archiveNote: string
 
+  /**
+   * Trang Ghi chép — trang riêng của module Ghi 01.
+   *
+   * Năm dòng chữ này từng nằm cứng trong mã: chủ site mở khung sửa Ghi 01 chỉ
+   * thấy tên module, màu và ảnh, còn tiêu đề trang, câu giới thiệu, dòng hướng
+   * dẫn và lời kết thì không sửa được ở đâu cả.
+   */
+  notesTitle: string
+  notesSubtitle: string
+  notesIntro: string
+  notesHint: string
+  notesEnd: string
+  notesEndNote: string
+
   /** Index screen's three opening plates — caption plus optional photo. */
   plate1: string
   plate2: string
@@ -89,6 +103,14 @@ export const SITE_DEFAULTS: SiteCopy = {
 
   archiveTitle: 'Archive',
   archiveNote: 'sắp theo thời gian',
+
+  notesTitle: 'Notes',
+  notesSubtitle: 'ghi chép rời — không thuộc module nào',
+  notesIntro:
+    'Một quan sát vật lý trong bếp, một đoạn video không tiếng, một ý nghĩ bắc cầu giữa hai lĩnh vực.',
+  notesHint: 'Bấm vào bài để xổ toàn bộ nội dung · bấm ra ngoài để thu lại',
+  notesEnd: 'Hết phần đã ghi.',
+  notesEndNote: 'Ghi chép mới sẽ chèn lên đầu trang.',
 
   plate1: 'ảnh mở đầu — vật thể đơn',
   plate2: 'mặt cắt',

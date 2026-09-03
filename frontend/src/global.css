@@ -89,11 +89,15 @@ h4 {
  * `margin-top` cũng đi theo: 38px là để chữ phụ ngang hàng với chân tiêu đề
  * khi đứng cạnh nhau; xếp chồng thì nó chỉ là một khoảng hở thừa.
  */
-.bw-modhead {
+.bw-modhead,
+.bw-intro {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 24px;
   align-items: start;
+}
+
+.bw-modhead {
   margin-bottom: 64px;
 }
 
@@ -102,7 +106,19 @@ h4 {
     grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr) minmax(0, 0.85fr);
     gap: 40px;
   }
+  /* 38px là để chữ phụ ngang hàng chân tiêu đề khi đứng cạnh nhau; xếp chồng
+     thì nó chỉ là một khoảng hở thừa. */
   .bw-modhead > * + * {
     margin-top: 38px;
+  }
+  /*
+   * Đoạn dẫn đầu trang chủ: hai cột chữ và một liên kết. Ở bề ngang 859px mỗi
+   * cột còn 240px — chưa gãy như cột 177px ở trên, nhưng vẫn là hai dải chữ
+   * hẹp đọc song song. Cùng một ngưỡng cho cùng một quyết định, để trang chỉ có
+   * một chỗ gãy chứ không phải hai.
+   */
+  .bw-intro {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 0.8fr);
+    gap: 40px;
   }
 }
