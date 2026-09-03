@@ -97,13 +97,47 @@ h4 {
   align-items: start;
 }
 
+/*
+ * Hẹp: hai đoạn dẫn xếp chồng thành một cột, còn liên kết "xem mục lục" đứng
+ * riêng ở cột nhỏ bên phải.
+ *
+ * Nó không phải phần tiếp theo của bài đọc — nó là chỗ để đi tiếp. Xếp nó nối
+ * đuôi hai đoạn chữ thì nó thành dòng thứ ba của một đoạn văn, và người đọc
+ * phải đọc hết mới thấy lối ra.
+ */
+.bw-intro {
+  grid-template-columns: minmax(0, 1fr) minmax(110px, 0.3fr);
+  column-gap: 40px;
+}
+.bw-intro > :nth-child(1) {
+  grid-area: 1 / 1;
+}
+.bw-intro > :nth-child(2) {
+  grid-area: 2 / 1;
+}
+.bw-intro > :nth-child(3) {
+  grid-area: 1 / 2;
+}
+
 .bw-modhead {
   margin-bottom: 64px;
 }
 
 @media (min-width: 1240px) {
+  /*
+   * Cột tên module có một mức trần, không phải một phần của bề ngang.
+   *
+   * Trước là 1,55fr, nên cột rộng đúng bằng cái tên dài nhất hệ thống có —
+   * "biochemistry 101" nằm gọn một dòng ở 498px. Module tên ngắn thì trả giá:
+   * "sensory" chỉ chiếm 234px, còn lại là một khoảng trống mở toang trước khi
+   * tới đoạn giới thiệu.
+   *
+   * 420px: đủ cho từ dài nhất ("biochemistry", 396px) nằm trọn một dòng, nên
+   * tên dài xuống dòng ở chỗ có dấu cách chứ không bị cắt giữa từ. Tên ngắn
+   * không còn kéo cả hàng đi theo mình.
+   */
   .bw-modhead {
-    grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr) minmax(0, 0.85fr);
+    grid-template-columns: minmax(0, 420px) minmax(0, 1fr) minmax(0, 0.85fr);
     gap: 40px;
   }
   /* 38px là để chữ phụ ngang hàng chân tiêu đề khi đứng cạnh nhau; xếp chồng
@@ -120,5 +154,11 @@ h4 {
   .bw-intro {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 0.8fr);
     gap: 40px;
+  }
+  /* Đủ rộng thì ba cột đứng cạnh nhau như cũ; trả chỗ đặt về mặc định. */
+  .bw-intro > :nth-child(1),
+  .bw-intro > :nth-child(2),
+  .bw-intro > :nth-child(3) {
+    grid-area: auto;
   }
 }
