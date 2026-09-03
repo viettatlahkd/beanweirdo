@@ -210,16 +210,24 @@ function NotesFooterPreview({
  * front. Showing the real layout is the only honest answer: upload, look, and
  * swap the photo if the crop loses what mattered.
  */
-/** Chỗ để cầm khi kéo — ô nhập trong hàng nuốt cú nhấn giữ, tay nắm thì không. */
+/**
+ * Chỗ để cầm khi kéo — ô nhập trong hàng nuốt cú nhấn giữ, tay nắm thì không.
+ *
+ * Đặt tuyệt đối, không phải một ô của lưới: hàng là lưới hai cột, và thêm một
+ * đứa con thứ ba làm mọi thứ tụt xuống hàng thứ ba của lưới. Hàng chừa chỗ cho
+ * nó bằng `padding`, nên số cột không đổi.
+ */
 const grip: CSSProperties = {
-  alignSelf: 'center',
-  width: 16,
+  position: 'absolute',
+  left: 6,
+  top: '50%',
+  transform: 'translateY(-50%)',
+  width: 14,
   fontFamily: "'JetBrains Mono', monospace",
   fontSize: 13,
   lineHeight: 1,
   color: '#8C8674',
   cursor: 'grab',
-  flex: 'none',
   userSelect: 'none',
 }
 
@@ -287,6 +295,7 @@ export function ModuleImages({
                 {...(onSwap ? swap.slotProps(slot) : {})}
                 style={{
                   ...rowBox,
+                  ...(onSwap ? { position: 'relative', paddingLeft: 26 } : null),
                   ...(swap.over === slot ? { outline: `2px solid ${ink.base}`, outlineOffset: 3 } : null),
                   ...(swap.from === slot ? { opacity: 0.45 } : null),
                 }}

@@ -6,6 +6,7 @@ export type { ArticleProps, ArticleOverrides } from './Article'
 
 export { Cards } from './Cards'
 export { Longform } from './Longform'
+export type { LongformEdit } from './Longform'
 export { Memo } from './Memo'
 export type { CardsProps, CardsOverrides } from './Cards'
 
