@@ -46,14 +46,28 @@ luôn chú thích cùng điểm căn khung đã chỉnh.
 
 Áp cho cả ba màn, dùng chung `admin/lib/useSlotSwap.ts`.
 
+## [SỬA LỖI] Không xoá trắng được một ô chữ nào của trang
+
+Chủ site báo không xoá được chú thích ảnh. Đúng, và rộng hơn thế: chỗ hoà chữ
+của trang coi **chuỗi rỗng là "chưa từng đặt"**, nên rơi về bản mặc định. Gõ xoá
+hết → lưu rỗng → lấy lại mặc định → ô nhảy về như cũ. Đúng với **mọi** ô chữ
+trên màn Sửa nội dung, không riêng chú thích.
+
+"Chưa đặt" và "đặt là rỗng" là hai chuyện khác nhau. Nay chỉ `undefined` và
+`null` mới rơi về mặc định. Có test chốt riêng luật ấy.
+
+Kèm một chỗ cùng gốc: ô chú thích lưu **theo từng phím** trong khi mọi ô khác
+trên màn lưu khi rời ô — nên vừa xoá vừa lưu và ô nhấp nháy theo nhịp bàn phím.
+Nay lưu khi rời ô.
+
 ## Luật mới
 
-A34–A36 trong `docs/spine/SO-BAN-GIAO.md`.
+A34–A37 trong `docs/spine/SO-BAN-GIAO.md`.
 
 ## Kiểm thử
 
-`npm test` — 82 file, 809 test, xanh. Mới: 4 test cho phép kéo–đổi, 1 test chặn
-ba nơi giữ chiều cao khỏi lệch nhau.
+`npm test` — 83 file, 813 test, xanh. Mới: 4 test cho phép kéo–đổi, 1 test chặn
+ba nơi giữ chiều cao khỏi lệch nhau, 4 test cho luật chữ rỗng.
 
 ## Chưa làm
 

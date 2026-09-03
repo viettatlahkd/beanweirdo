@@ -14,8 +14,8 @@ tài liệu · `BỎ` đã quyết không làm.
 
 ## A. Luật đề xuất — chờ đưa vào `frontend/src/content/logic.ts`
 
-Bộ quy tắc hiện có **3 phần · 14 nhóm · 75 luật**. Ba mươi sáu luật dưới đây phát
-sinh từ code đã merge; A1–A7 đã ghi vào, A8–A36 thì chưa.
+Bộ quy tắc hiện có **3 phần · 14 nhóm · 75 luật**. Ba mươi bảy luật dưới đây phát
+sinh từ code đã merge; A1–A7 đã ghi vào, A8–A37 thì chưa.
 
 | # | Luật | Từ PR | Nhóm phù hợp | Trạng thái |
 |---|---|---|---|---|
@@ -54,6 +54,7 @@ sinh từ code đã merge; A1–A7 đã ghi vào, A8–A36 thì chưa.
 | A34 | **Chiều cao dải ảnh là một con số duy nhất**, trang công khai và ô xem trước trong CMS cùng đọc. Ô xem trước tồn tại để hứa cho thấy trang sẽ ra sao; chép số sang là cách nó bắt đầu nói dối mà không ai biết. Dải trang chủ 420, ảnh đầu trang module 280 — đủ cao để một khung hình cắt được mà còn ra hình. | #71 | 03 (khoảng cách & lưới) | CHỜ |
 | A35 | **Mọi màn đặt ảnh có đủ bốn thao tác giống nhau**: đổi ảnh · dán link · đặt vào khung · xoá. Thiếu một cái ở một màn là chỗ chủ site phải làm vòng khác cho cùng một việc. | #71 | 16 (template) | CHỜ |
 | A36 | **Đổi thứ tự ảnh là kéo một ảnh sang khung khác**, hai bên đổi chỗ, chú thích đi theo ảnh của nó. Khung trên trang là cố định nên "chèn vào giữa" không có nghĩa; thứ cần chọn là ảnh nào nằm ở khung nào. Trước đó phải xoá rồi tải lại từng cái, và mỗi lần mất luôn chú thích cùng điểm căn khung. | #71 | 16 | CHỜ |
+| A37 | **"Chưa đặt" khác "đặt là rỗng".** Chỉ giá trị vắng mặt mới rơi về bản mặc định; chuỗi rỗng là một lựa chọn và phải giữ nguyên. Coi rỗng là chưa đặt nghĩa là không xoá trắng được ô nào — gõ xoá hết rồi ô nhảy về như cũ. | #71 | 16 (template) | CHỜ |
 | A16 | Bảng luôn còn ít nhất một cột và một hàng. Bảng không cột vẽ ra là một khoảng trắng — người viết không phân biệt được bảng rỗng với bảng đã bị xoá. | #67 | 16 | CHỜ |
 
 ## B. `docs/SPEC.html` đã lỗi thời

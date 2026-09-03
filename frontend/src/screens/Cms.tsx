@@ -186,9 +186,15 @@ function ImageSlot({
       style={{ outline: marked ? `2px solid ${ink.base}` : undefined, outlineOffset: 4, cursor: drag ? 'grab' : undefined }}
     >
       <div style={fieldLabel}>{label}</div>
+      {/*
+        * Ghi khi rời ô, không phải từng phím — như mọi ô chữ khác trên màn này.
+        * Ghi từng phím nghĩa là mỗi ký tự xoá đi là một lượt lưu, và ô nhấp
+        * nháy theo từng nhịp bàn phím.
+        */}
       <input
-        value={caption}
-        onChange={(e) => onCaption(e.target.value)}
+        defaultValue={caption}
+        key={caption}
+        onBlur={(e) => onCaption(e.target.value)}
         style={{ ...boxed, padding: '8px 11px' }}
       />
       {url ? (
@@ -382,7 +388,17 @@ export function Cms() {
     void load()
   }, [load])
 
-  /** Resolved copy — stored override, or the shipped default when blank. */
+  /**
+   * Chữ đang dùng: bản chủ site đặt, hoặc bản mặc định khi **chưa từng đặt**.
+   *
+   * Trước đây chuỗi rỗng cũng bị coi là chưa đặt, nên xoá trắng một ô là không
+   * làm được: gõ xoá hết, hệ thống lưu rỗng, rồi lấy lại ngay bản mặc định và ô
+   * nhảy về như cũ. Chủ site gặp ở chú thích ảnh, nhưng nó đúng với mọi ô chữ
+   * của trang.
+   *
+   * "Chưa đặt" và "đặt là rỗng" là hai chuyện khác nhau. Chỉ `undefined` và
+   * `null` mới rơi về mặc định.
+   */
   const copy = useMemo(() => {
     const out = { ...SITE_DEFAULTS } as SiteCopy
     for (const [k, v] of Object.entries(site)) {
@@ -390,7 +406,7 @@ export function Cms() {
         out.sections = { ...SITE_DEFAULTS.sections, ...(v as Partial<Record<NavGroup, string>>) }
         continue
       }
-      if (v !== undefined && v !== null && v !== '') (out as Record<string, unknown>)[k] = v
+      if (v !== undefined && v !== null) (out as Record<string, unknown>)[k] = v
     }
     return out
   }, [site])
