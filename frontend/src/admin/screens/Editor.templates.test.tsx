@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { EditorCanvas } from './Editor'
 import { POST_TEMPLATES } from '../../../../backend/lib/posts'
 
@@ -66,5 +67,110 @@ describe('EditorCanvas', () => {
     )
     // The article canvas offers a lead field; long-form has no such thing.
     expect(screen.queryByPlaceholderText(/sapo|lead/i)).toBeNull()
+  })
+})
+
+/*
+ * Long-form là 400 khối phẳng, và cho tới đây chúng chỉ vẽ ra để xem. Chủ site
+ * chốt `cont` chỉ là đoạn văn lùi lề, và lùi bằng Tab — nên cử chỉ đó phải có
+ * thật, cả chiều vào và chiều ra.
+ */
+describe('long-form: lùi lề bằng Tab', () => {
+  const lf = (blocks: unknown[]) => ({ ...(post('longform') as object), body: blocks }) as never
+
+  const fieldFor = (text: string) => screen.getByDisplayValue(text)
+
+  it('Tab lùi vào, Shift+Tab lùi ra', async () => {
+    const onChange = vi.fn()
+    const { rerender } = render(
+      <EditorCanvas
+        template={'longform' as never}
+        post={lf([{ k: 'p', runs: [{ t: 'một dòng' }] }])}
+        onChange={onChange}
+        onHeroDrop={vi.fn()}
+      />,
+    )
+    await userEvent.click(fieldFor('một dòng'))
+    await userEvent.tab()
+    expect(onChange).toHaveBeenLastCalledWith({
+      body: [{ k: 'p', ind: 1, runs: [{ t: 'một dòng', w: '300', s: 'normal' }] }],
+    })
+
+    rerender(
+      <EditorCanvas
+        template={'longform' as never}
+        post={lf([{ k: 'p', ind: 1, runs: [{ t: 'một dòng' }] }])}
+        onChange={onChange}
+        onHeroDrop={vi.fn()}
+      />,
+    )
+    await userEvent.click(fieldFor('một dòng'))
+    await userEvent.tab({ shift: true })
+    // Lùi ra hết thì không còn `ind` trong dữ liệu — không lùi là mặc định.
+    expect(onChange).toHaveBeenLastCalledWith({
+      body: [{ k: 'p', runs: [{ t: 'một dòng', w: '300', s: 'normal' }] }],
+    })
+  })
+
+  it('gạch đầu dòng lùi theo cấp lồng của nó, cùng một phím', async () => {
+    const onChange = vi.fn()
+    render(
+      <EditorCanvas
+        template={'longform' as never}
+        post={lf([{ k: 'li', runs: [{ t: 'mục' }] }])}
+        onChange={onChange}
+        onHeroDrop={vi.fn()}
+      />,
+    )
+    await userEvent.click(fieldFor('mục'))
+    await userEvent.tab()
+    expect(onChange).toHaveBeenLastCalledWith({
+      body: [{ k: 'li', lvl: 2, runs: [{ t: 'mục', w: '300', s: 'normal' }] }],
+    })
+  })
+
+  it('sửa một dòng thì chỗ đậm vẫn còn', async () => {
+    const onChange = vi.fn()
+    render(
+      <EditorCanvas
+        template={'longform' as never}
+        post={lf([{ k: 'p', runs: [{ t: 'phần ' }, { t: 'đậm', w: '600', s: 'normal' }] }])}
+        onChange={onChange}
+        onHeroDrop={vi.fn()}
+      />,
+    )
+    const field = fieldFor('phần *đậm*')
+    await userEvent.type(field, ' thêm')
+    // Tab nộp chữ và lùi lề trong cùng một lần ghi; ở đây chỉ cần biết chữ về
+    // đúng runs, còn bậc lùi đã có test riêng.
+    await userEvent.tab()
+    expect(onChange.mock.lastCall?.[0].body[0].runs).toEqual([
+      { t: 'phần ', w: '300', s: 'normal' },
+      { t: 'đậm', w: '600', s: 'normal' },
+      { t: ' thêm', w: '300', s: 'normal' },
+    ])
+  })
+
+  it('bài còn khối cont cũ thì lần ghi đầu tiên đổi cả bài sang dạng mới', async () => {
+    const onChange = vi.fn()
+    render(
+      <EditorCanvas
+        template={'longform' as never}
+        post={lf([
+          { k: 'p', runs: [{ t: 'dẫn' }] },
+          { k: 'cont', runs: [{ t: '— điểm phụ' }] },
+        ])}
+        onChange={onChange}
+        onHeroDrop={vi.fn()}
+      />,
+    )
+    await userEvent.click(fieldFor('dẫn'))
+    await userEvent.tab()
+    expect(onChange).toHaveBeenLastCalledWith({
+      body: [
+        { k: 'p', ind: 1, runs: [{ t: 'dẫn', w: '300', s: 'normal' }] },
+        { k: 'p', ind: 1, runs: [{ t: '— điểm phụ' }] },
+      ],
+    })
   })
 })

@@ -68,3 +68,48 @@ describe('Longform', () => {
     expect(screen.queryByText('03')).not.toBeInTheDocument()
   })
 })
+
+/*
+ * Khối `cont` cũ vẫn còn trong kho — 159 khối trong bài đã xuất bản — và chỉ
+ * được ghi lại ở dạng mới khi chủ site sửa bài. Trang phải vẽ được cả hai, ra
+ * cùng một hình.
+ */
+describe('lùi lề đoạn văn', () => {
+  const withIndent = (blocks: LongformPostData['blocks']): LongformPostData => ({ ...post, blocks })
+
+  it('cont cũ vẽ ra một đoạn văn lùi vào', () => {
+    const { container } = render(
+      <Longform post={withIndent([{ k: 'cont' as never, runs: [{ t: '— một điểm phụ' }] }])} />,
+    )
+    const line = screen.getByText('— một điểm phụ').closest('div')!
+    expect(line).toHaveStyle({ paddingLeft: '26px' })
+    // Cỡ chữ của đoạn văn, không phải cỡ nhỏ hơn của `cont` ngày trước: chủ
+    // site chốt nó *là* đoạn văn, chỉ lùi lề.
+    expect(line).toHaveStyle({ fontSize: '15.5px' })
+    expect(container).toBeTruthy()
+  })
+
+  it('mỗi bậc lùi thêm một khoảng như nhau', () => {
+    render(
+      <Longform
+        post={withIndent([
+          { k: 'p', ind: 1, runs: [{ t: 'bậc một' }] },
+          { k: 'p', ind: 3, runs: [{ t: 'bậc ba' }] },
+        ])}
+      />,
+    )
+    expect(screen.getByText('bậc một').closest('div')).toHaveStyle({ paddingLeft: '26px' })
+    expect(screen.getByText('bậc ba').closest('div')).toHaveStyle({ paddingLeft: '78px' })
+  })
+
+  it('ô nhập nhận chữ mang dấu định dạng, không phải chuỗi trơn', () => {
+    // Nếu ô nhập chỉ thấy chuỗi trơn thì lần nộp đầu tiên đã xoá chỗ đậm.
+    render(
+      <Longform
+        post={withIndent([{ k: 'p', runs: [{ t: 'phần ' }, { t: 'đậm', w: '600' }] }])}
+        renderText={(text) => <span>{text}</span>}
+      />,
+    )
+    expect(screen.getByText('phần *đậm*')).toBeInTheDocument()
+  })
+})
