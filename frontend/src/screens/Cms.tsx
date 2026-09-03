@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
+import { type CSSProperties, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Breadcrumbs } from '../components/Breadcrumbs'
 import { NAV } from '../content/navItems'
 import { displayNumber } from '../lib/postText'
@@ -426,6 +426,32 @@ export function Cms() {
   const setCopy = (key: keyof SiteCopy) => (v: string) => void saveSite({ [key]: v } as SiteOverrides)
 
   /*
+   * Mỗi ô chữ lưu cả khi đang gõ, không chỉ khi rời ô.
+   *
+   * Chỉ lưu khi rời ô là một cái bẫy im lặng: gõ xong rồi tải lại trang, hoặc
+   * đóng tab, hoặc bấm sang tab khác — ô vừa gõ chưa hề được lưu, và không có
+   * gì trên màn hình cho biết. Chủ site soạn xong cả trang rồi mất sạch đúng vì
+   * chuyện này.
+   *
+   * Chờ một nhịp ngắn sau khi ngừng gõ để không gửi một lượt lưu cho mỗi ký tự.
+   */
+  const pending = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
+  const queueCopy = (key: keyof SiteCopy, v: string) => {
+    clearTimeout(pending.current[key])
+    pending.current[key] = setTimeout(() => setCopy(key)(v), 700)
+  }
+
+  /** Cả hai lối lưu cho một ô: nhịp ngắn khi đang gõ, và ngay khi rời ô. */
+  const field = (key: keyof SiteCopy) => ({
+    defaultValue: copy[key] as string,
+    onChange: (e: { target: { value: string } }) => queueCopy(key, e.target.value),
+    onBlur: (e: { target: { value: string } }) => {
+      clearTimeout(pending.current[key])
+      setCopy(key)(e.target.value)
+    },
+  })
+
+  /*
    * Kéo một ảnh sang khung khác thì hai bên đổi chỗ, và chú thích đi theo ảnh
    * của nó. Trước đó đổi thứ tự nghĩa là xoá rồi tải lại từng cái — mỗi lần
    * như vậy mất luôn chú thích và điểm căn khung đã chỉnh.
@@ -802,13 +828,12 @@ export function Cms() {
           <div style={grid(two)}>
             <Field label="Nhãn trên cùng">
               <input
-                defaultValue={copy.lEyebrow}
-                onBlur={(e) => setCopy('lEyebrow')(e.target.value)}
+                {...field('lEyebrow')}
                 style={boxed}
               />
             </Field>
             <Field label="Nhãn xem mục lục">
-              <input defaultValue={copy.lCta} onBlur={(e) => setCopy('lCta')(e.target.value)} style={boxed} />
+              <input {...field('lCta')} style={boxed} />
             </Field>
             <Field
               label={
@@ -818,30 +843,26 @@ export function Cms() {
               }
             >
               <input
-                defaultValue={copy.lTitle1}
-                onBlur={(e) => setCopy('lTitle1')(e.target.value)}
+                {...field('lTitle1')}
                 style={serifInput}
               />
             </Field>
             <Field label="Tên lớn — dòng 2 (nghiêng, xanh)">
               <input
-                defaultValue={copy.lTitle2}
-                onBlur={(e) => setCopy('lTitle2')(e.target.value)}
+                {...field('lTitle2')}
                 style={serifItalicInput}
               />
             </Field>
             <Field label="Đoạn dẫn — cột 1">
               <textarea
-                defaultValue={copy.lIntro1}
-                onBlur={(e) => setCopy('lIntro1')(e.target.value)}
+                {...field('lIntro1')}
                 rows={4}
                 style={area}
               />
             </Field>
             <Field label="Đoạn dẫn — cột 2">
               <textarea
-                defaultValue={copy.lIntro2}
-                onBlur={(e) => setCopy('lIntro2')(e.target.value)}
+                {...field('lIntro2')}
                 rows={4}
                 style={area}
               />
@@ -851,12 +872,11 @@ export function Cms() {
           <div style={{ ...sectionHead, margin: '34px 0 18px' }}>Mục lục</div>
           <div style={grid(two)}>
             <Field label="Tiêu đề — dòng 1">
-              <input defaultValue={copy.t1} onBlur={(e) => setCopy('t1')(e.target.value)} style={serifInput} />
+              <input {...field('t1')} style={serifInput} />
             </Field>
             <Field label="Tiêu đề — dòng 2 (nghiêng, xanh)">
               <input
-                defaultValue={copy.t2}
-                onBlur={(e) => setCopy('t2')(e.target.value)}
+                {...field('t2')}
                 style={serifItalicInput}
               />
             </Field>
@@ -864,16 +884,14 @@ export function Cms() {
           <div style={grid(two, 18)}>
             <Field label="Đoạn dẫn — dạng danh sách">
               <textarea
-                defaultValue={copy.blurb}
-                onBlur={(e) => setCopy('blurb')(e.target.value)}
+                {...field('blurb')}
                 rows={3}
                 style={{ ...area, fontSize: 14 }}
               />
             </Field>
             <Field label="Đoạn dẫn — dạng cột">
               <textarea
-                defaultValue={copy.blurbShort}
-                onBlur={(e) => setCopy('blurbShort')(e.target.value)}
+                {...field('blurbShort')}
                 rows={3}
                 style={{ ...area, fontSize: 14 }}
               />
@@ -1357,23 +1375,20 @@ export function Cms() {
           <div style={grid(two, 20)}>
             <Field label="Design system — tiêu đề dòng 1">
               <input
-                defaultValue={copy.artT1}
-                onBlur={(e) => setCopy('artT1')(e.target.value)}
+                {...field('artT1')}
                 style={{ ...serifInput, fontSize: 20 }}
               />
             </Field>
             <Field label="Design system — tiêu đề dòng 2 (nghiêng, xanh)">
               <input
-                defaultValue={copy.artT2}
-                onBlur={(e) => setCopy('artT2')(e.target.value)}
+                {...field('artT2')}
                 style={{ ...serifItalicInput, fontSize: 20 }}
               />
             </Field>
             <div style={{ gridColumn: 'span 2' }}>
               <Field label="Design system — đoạn dẫn">
                 <textarea
-                  defaultValue={copy.artIntro}
-                  onBlur={(e) => setCopy('artIntro')(e.target.value)}
+                  {...field('artIntro')}
                   rows={3}
                   style={area}
                 />
@@ -1381,30 +1396,26 @@ export function Cms() {
             </div>
             <Field label="System conventions — tiêu đề">
               <input
-                defaultValue={copy.logicTitle}
-                onBlur={(e) => setCopy('logicTitle')(e.target.value)}
+                {...field('logicTitle')}
                 style={{ ...serifInput, fontSize: 20 }}
               />
             </Field>
             <Field label="System conventions — đoạn dẫn">
               <textarea
-                defaultValue={copy.logicIntro}
-                onBlur={(e) => setCopy('logicIntro')(e.target.value)}
+                {...field('logicIntro')}
                 rows={2}
                 style={area}
               />
             </Field>
             <Field label="Content — tiêu đề">
               <input
-                defaultValue={copy.cmsTitle}
-                onBlur={(e) => setCopy('cmsTitle')(e.target.value)}
+                {...field('cmsTitle')}
                 style={{ ...serifInput, fontSize: 20 }}
               />
             </Field>
             <Field label="Content — đoạn dẫn">
               <textarea
-                defaultValue={copy.cmsIntro}
-                onBlur={(e) => setCopy('cmsIntro')(e.target.value)}
+                {...field('cmsIntro')}
                 rows={2}
                 style={area}
               />
