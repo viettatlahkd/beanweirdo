@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { Article, type ArticleOverrides } from './Article'
 import { Cards, type CardsOverrides } from './Cards'
-import { Longform } from './Longform'
+import { Longform, type LongformEdit } from './Longform'
 import { Memo, type MemoOverrides } from './Memo'
 import { Report, type ReportOverrides } from './Report'
 import type {
@@ -20,9 +20,10 @@ export type PostRendererProps = Chrome &
   | ({ template: 'article'; post: ArticlePostData } & ArticleOverrides)
   | ({ template: 'cards'; post: CardsPostData } & CardsOverrides)
   | ({ template: 'report'; post: ReportPostData } & ReportOverrides)
-  // Long-form takes no overrides: its content is a parsed export, not fields
-  // an editor fills in, so there is nothing for the admin canvas to hook.
-  | { template: 'longform'; post: LongformPostData }
+  // Long-form used to take no overrides, on the grounds that its content is a
+  // parsed export rather than fields an editor fills in. The result was the
+  // longest piece on the site being the one nobody could fix a typo in.
+  | ({ template: 'longform'; post: LongformPostData } & LongformEdit)
   // Memo belongs to Ghi 01 rather than to a module, but it is a template like
   // the rest — and the admin edits it in place, so it takes overrides too.
   | ({ template: 'memo'; post: MemoPostData } & MemoOverrides)
@@ -41,7 +42,7 @@ export function PostRenderer(props: PostRendererProps) {
     return <Cards post={post} {...overrides} />
   }
   if (props.template === 'longform') {
-    return <Longform post={props.post} breadcrumb={props.breadcrumb} />
+    return <Longform post={props.post} breadcrumb={props.breadcrumb} renderText={props.renderText} />
   }
   if (props.template === 'memo') {
     const { template: _template, post, ...overrides } = props

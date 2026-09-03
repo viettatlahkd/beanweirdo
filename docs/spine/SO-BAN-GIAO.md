@@ -14,8 +14,8 @@ tài liệu · `BỎ` đã quyết không làm.
 
 ## A. Luật đề xuất — chờ đưa vào `frontend/src/content/logic.ts`
 
-Bộ quy tắc hiện có **3 phần · 14 nhóm · 75 luật**. Bốn mươi bốn luật dưới đây phát
-sinh từ code đã merge; A1–A7 đã ghi vào, A8–A44 thì chưa.
+Bộ quy tắc hiện có **3 phần · 14 nhóm · 75 luật**. Bốn mươi sáu luật dưới đây phát
+sinh từ code đã merge; A1–A7 đã ghi vào, A8–A46 thì chưa.
 
 | # | Luật | Từ PR | Nhóm phù hợp | Trạng thái |
 |---|---|---|---|---|
@@ -62,6 +62,8 @@ sinh từ code đã merge; A1–A7 đã ghi vào, A8–A44 thì chưa.
 | A42 | Chữ chủ site gõ trong ô nhiều dòng thì **giữ nguyên chỗ xuống dòng** khi vẽ ra trang. Ô soạn là `<textarea>` nên Enter tạo dòng mới thật trong dữ liệu; HTML mặc định gộp khoảng trắng, nên không giữ là gõ xuống dòng rồi không thấy nó đâu. | #73 | 02 (chữ) | CHỜ |
 | A43 | Mọi bề mặt hiện module đều vẽ ảnh của nó, không để một ô màu trống. Mục lục dạng cột vẽ cái khung ấy từ đầu mà chưa bao giờ đọc `img1` — ảnh vẫn nằm trong CMS, chỉ là bề mặt đó không lấy. | #73 | 16 | CHỜ |
 | A44 | **Ô chữ lưu cả khi đang gõ, không chỉ khi rời ô.** Chỉ lưu khi rời ô là một cái bẫy im lặng: gõ xong rồi tải lại trang, đóng tab, hay bấm sang tab khác thì ô ấy chưa hề được lưu, và không có gì trên màn hình cho biết. Chờ một nhịp ngắn sau khi ngừng gõ để không gửi một lượt lưu cho mỗi ký tự. | #73 | 16 (template) | CHỜ |
+| A45 | Thêm một nút vào một hàng là lưới thì **đặt tuyệt đối**, đừng thêm một đứa con thứ ba: lưới hai cột gặp đứa con thứ ba là đẩy mọi thứ xuống hàng thứ ba, và cả hàng vỡ dọc. Chừa chỗ bằng `padding`. | #74 | 03 (khoảng cách & lưới) | CHỜ |
+| A46 | **Long-form sửa được.** Nó từng chỉ được vẽ ra để nhìn, không một ô nhập nào, kể cả tiêu đề — nên bài dài nhất trên site là bài duy nhất không sửa nổi một lỗi chính tả. Định dạng trong dòng nằm ở các `run`; ô chữ thường sửa chữ nên dòng vừa sửa mất định dạng, và điều đó hiện ngay trên trang lúc sửa chứ không mất lặng lẽ. | #74 | 16 (template) | CHỜ |
 | A16 | Bảng luôn còn ít nhất một cột và một hàng. Bảng không cột vẽ ra là một khoảng trắng — người viết không phân biệt được bảng rỗng với bảng đã bị xoá. | #67 | 16 | CHỜ |
 
 ## B. `docs/SPEC.html` đã lỗi thời

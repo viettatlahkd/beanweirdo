@@ -1,11 +1,11 @@
 import type { ReactNode } from 'react'
-import { Fragment, useEffect, useMemo, useState } from 'react'
+import { createContext, Fragment, useContext, useEffect, useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { paletteFrom, type Palette } from './palette'
 import { sans, serif } from './tokens'
 import type { LongformBlock, LongformPostData, LongformRun } from './types'
 
-export type LongformProps = {
+export type LongformProps = LongformEdit & {
   post: LongformPostData
   /**
    * The trail back to where this post is filed. Supplied by the app, so the
@@ -17,6 +17,8 @@ export type LongformProps = {
 /** Which heading owns a block, and whether that heading is folded away. */
 type Prepared = {
   key: string
+  /** Vị trí trong `body` — chỗ ô nhập ghi ngược lại. */
+  at: number
   block: LongformBlock
   /** Fold id when this block is itself a foldable heading. */
   selfId: string
@@ -67,7 +69,7 @@ function prepare(blocks: LongformBlock[]): Prepared[] {
       ownerH2 = ''
     }
 
-    return { key: `${i}`, block, selfId, ownerH1, ownerH2, h1Index, sinceH1: since }
+    return { key: `${i}`, at: i, block, selfId, ownerH1, ownerH2, h1Index, sinceH1: since }
   })
 }
 
@@ -76,17 +78,40 @@ const runStyle = (r: LongformRun): CSSProperties => ({
   fontStyle: r.s === 'italic' ? 'italic' : 'normal',
 })
 
-const Runs = ({ runs }: { runs?: LongformRun[] }) => (
-  <>
-    {(runs ?? []).map((r, i) => (
-      <span key={i} style={runStyle(r)}>
-        {r.t}
-      </span>
-    ))}
-  </>
-)
-
 const plain = (runs?: LongformRun[]) => (runs ?? []).map((r) => r.t).join('')
+
+/**
+ * Chỗ duy nhất long-form vẽ chữ ra — nên cũng là chỗ duy nhất cần móc để sửa
+ * được nó.
+ *
+ * Bài long-form dài nhất trên site có 400 khối và **không sửa được một chữ**:
+ * màn soạn vẽ nó ra để nhìn, không có ô nhập nào, kể cả tiêu đề. Lý do cũ là
+ * chữ ấy vốn là bản xuất từ Notion nên "đừng động vào" — nhưng "không sửa được"
+ * không phải câu trả lời cho "đừng sửa sai cách".
+ *
+ * Móc đi qua context chứ không phải tham số, vì `Runs` được gọi ở tám chỗ và
+ * luồn thêm một tham số qua cả tám chỗ là tám chỗ để quên.
+ */
+export type LongformEdit = {
+  /** Trả về ô nhập cho khối thứ `at`; vắng thì trang vẽ chữ như thường. */
+  renderText?: (text: string, at: number) => ReactNode
+}
+
+const EditContext = createContext<LongformEdit>({})
+
+const Runs = ({ runs, at }: { runs?: LongformRun[]; at?: number }) => {
+  const edit = useContext(EditContext)
+  if (edit.renderText && at !== undefined) return <>{edit.renderText(plain(runs), at)}</>
+  return (
+    <>
+      {(runs ?? []).map((r, i) => (
+        <span key={i} style={runStyle(r)}>
+          {r.t}
+        </span>
+      ))}
+    </>
+  )
+}
 
 /** li indent and bullet shape both come from the nesting level. */
 /**
@@ -259,7 +284,7 @@ function AsideBlock({ items, palette }: { items: LongformBlock[]; palette: Palet
  * pre-parsed from a Notion export, so this only renders and folds; it never
  * parses.
  */
-export function Longform({ post, breadcrumb }: LongformProps) {
+export function Longform({ post, breadcrumb, renderText }: LongformProps) {
   // Everything this template tints comes from the one colour the post wears.
   const palette = paletteFrom(post.band?.bg ?? LONGFORM_BLUE, post.band?.fg)
   const prepared = useMemo(() => prepare(post.blocks), [post.blocks])
@@ -323,6 +348,7 @@ export function Longform({ post, breadcrumb }: LongformProps) {
   const anyFolded = Object.values(folded).some(Boolean)
 
   return (
+    <EditContext.Provider value={{ renderText }}>
     <div
       style={{
         background: '#FCFCFA',
@@ -494,7 +520,7 @@ export function Longform({ post, breadcrumb }: LongformProps) {
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,760px)', justifyContent: 'center', paddingRight: 56 }}>
         <div>
           {prepared.map((p) => {
-            const { block: b, selfId } = p
+            const { block: b, selfId, at } = p
             const parentFolded = Boolean(p.ownerH1 && folded[p.ownerH1])
             const hidden = b.k === 'h2' ? false : parentFolded || Boolean(p.ownerH2 && folded[p.ownerH2])
             if (hidden) return null
@@ -538,7 +564,7 @@ export function Longform({ post, breadcrumb }: LongformProps) {
                           {isFolded ? '▸' : '▾'}
                         </span>
                       )}
-                      {title ? post.title : <Runs runs={b.runs} />}
+                      {title ? post.title : <Runs runs={b.runs} at={at} />}
                     </h1>
                     {title && post.subtitle && (
                       <div style={{ fontFamily: serif, fontStyle: 'italic', fontSize: 24, lineHeight: 1.3, color: palette.mid, margin: '-4px 0 8px' }}>
@@ -575,7 +601,7 @@ export function Longform({ post, breadcrumb }: LongformProps) {
                     >
                       {isFolded ? '▸' : '▾'}
                     </span>
-                    <Runs runs={b.runs} />
+                    <Runs runs={b.runs} at={at} />
                   </h2>
                 )}
 
@@ -619,13 +645,13 @@ export function Longform({ post, breadcrumb }: LongformProps) {
 
                 {b.k === 'p' && (
                   <div style={{ fontSize: 15.5, lineHeight: 1.68, color: '#2E2A20', margin: '0 0 14px', paddingLeft: pad }}>
-                    <Runs runs={b.runs} />
+                    <Runs runs={b.runs} at={at} />
                   </div>
                 )}
 
                 {b.k === 'cont' && (
                   <div style={{ fontSize: 14.5, lineHeight: 1.66, color: '#4B4A40', margin: '0 0 8px', paddingLeft: pad }}>
-                    <Runs runs={b.runs} />
+                    <Runs runs={b.runs} at={at} />
                   </div>
                 )}
 
@@ -633,7 +659,7 @@ export function Longform({ post, breadcrumb }: LongformProps) {
                   <div style={{ display: 'grid', gridTemplateColumns: '16px minmax(0,1fr)', gap: 11, margin: '0 0 10px', paddingLeft: pad }}>
                     <div style={{ ...bullet(b.lvl, palette.accent), margin: '9px 0 0 5px' }} />
                     <div style={{ fontSize: 15, lineHeight: 1.66, color: '#2E2A20' }}>
-                      <Runs runs={b.runs} />
+                      <Runs runs={b.runs} at={at} />
                     </div>
                   </div>
                 )}
@@ -680,5 +706,6 @@ export function Longform({ post, breadcrumb }: LongformProps) {
       </div>
     </div>
     </div>
+    </EditContext.Provider>
   )
 }

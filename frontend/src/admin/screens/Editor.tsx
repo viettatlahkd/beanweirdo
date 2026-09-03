@@ -269,13 +269,7 @@ export function EditorCanvas({ template, post, module, onChange, onHeroDrop }: C
         ) : template === 'memo' ? (
           <MemoEditor post={post} module={module} onChange={onChange} />
         ) : template === 'longform' ? (
-          /*
-           * Long-form's words are a parsed export and its title is the first
-           * heading inside them, so there is no field here to hook. Shown as it
-           * will read, and left alone — editing it as an article, which is what
-           * happened before, wrote article-shaped sections over the export.
-           */
-          <PostRenderer template="longform" post={toLongformData(post, module)} />
+          <LongformEditor post={post} module={module} onChange={onChange} />
         ) : (
           <ArticleEditor post={post} module={module} onChange={onChange} />
         )}
@@ -574,6 +568,51 @@ function ArticleEditor({ post, module, onChange }: { post: PostDetail; module?: 
  * storage. Flat, a heading is an element like any other, and every element in
  * the post obeys one rule instead of two.
  */
+/**
+ * Long-form — sửa được ngay trên trang nó sẽ in ra.
+ *
+ * Bài dài nhất trên site có 400 khối và trước lượt này **không sửa được một
+ * chữ**: màn soạn vẽ nó ra để nhìn, không một ô nhập nào, kể cả tiêu đề. Lý do
+ * cũ là chữ ấy vốn là bản xuất từ Notion nên đừng động vào — nhưng "không sửa
+ * được" không phải câu trả lời cho "đừng sửa sai cách".
+ *
+ * Mỗi dòng chữ là một ô, ghi ngược lại đúng khối nó thuộc về. Định dạng trong
+ * dòng (nghiêng, nét dày) nằm ở các `run`; ô chữ thường chỉ sửa được phần chữ,
+ * nên **định dạng của dòng vừa sửa sẽ về mặc định** — và điều đó hiện rõ ngay
+ * trên trang trong lúc sửa, không phải một thứ mất lặng lẽ.
+ */
+function LongformEditor({
+  post,
+  module,
+  onChange,
+}: {
+  post: PostDetail
+  module?: Module
+  onChange: (patch: EditPatch) => void
+}) {
+  const blocks = getBody<Record<string, unknown>>(post)
+  return (
+    <PostRenderer
+      template="longform"
+      post={toLongformData(post, module)}
+      renderText={(text, at) => (
+        <EditableField
+          value={text}
+          multiline
+          rows={2}
+          placeholder="dòng chữ"
+          onCommit={(v) =>
+            onChange({
+              body: blocks.map((b, i) => (i === at ? { ...b, runs: [{ t: v }] } : b)),
+            })
+          }
+          style={{ font: 'inherit', color: 'inherit', letterSpacing: 'inherit' }}
+        />
+      )}
+    />
+  )
+}
+
 function MemoEditor({
   post,
   module,
