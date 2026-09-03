@@ -146,6 +146,15 @@ export function toMemoData(post: RenderablePost, mod: RenderableModule | undefin
     specs: body.specs,
     img: post.hero_image_url,
     imgCaption: post.hero_caption ?? undefined,
+    /*
+     * Both shapes travel. A memo written since the store exists keeps its body
+     * as one flat run of `elements`; one written before keeps `sections`, and
+     * the renderer converts it. Carrying only `sections` — which this did —
+     * left a post that had been edited once rendering as a blank page, in the
+     * editor and on the site alike: the content was all there, and nothing on
+     * either screen could reach it.
+     */
+    elements: body.elements,
     sections: body.sections ?? [],
     band: bandOf(post, mod),
   }

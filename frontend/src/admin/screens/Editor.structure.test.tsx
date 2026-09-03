@@ -74,95 +74,81 @@ describe('article — cấu trúc sửa được', () => {
   })
 })
 
-describe('memo — cấu trúc sửa được', () => {
+/*
+ * Một mục memo từng là cái bọc, với tên mục là thuộc tính của nó — nên nắm vào
+ * tiêu đề là nắm luôn mọi thứ bên dưới, không có cách nào tách. Nay thân bài là
+ * một chuỗi phẳng: tiêu đề là element như mọi element khác.
+ */
+describe('memo — chuỗi phẳng, mỗi element một tay nắm', () => {
   const body = {
     subtitle: 'ba lần rót',
     sections: [
-      { h: 'Mở', items: [{ runs: [{ t: 'một' }] }] },
-      { h: 'Giữa', items: [{ runs: [{ t: 'hai' }] }] },
+      { h: 'Bean character', items: [{ runs: [{ t: 'Ngọt mía, ' }, { t: 'hậu vị ngắn', em: true }], cont: ['đo lúc drop'] }] },
+      { h: 'Pour test', phases: [{ n: '01', label: 'blooming', lines: ['40g'] }] },
     ],
   }
+  const bodyOf = (onChange: ReturnType<typeof vi.fn>) =>
+    onChange.mock.lastCall?.[0].body as { elements: { type: string; text?: string }[]; sections?: unknown }
 
-  it('thêm được một mục', async () => {
+  it('tiêu đề là element, không phải nắp của một cái bọc', async () => {
     const onChange = draw('memo', body)
-    await userEvent.click(screen.getByRole('button', { name: '+ mục' }))
-    const next = onChange.mock.lastCall?.[0].body as typeof body
-    expect(next.sections).toHaveLength(3)
-    // Phần còn lại của body đi cùng, không bị ghi đè mất.
-    expect(next.subtitle).toBe('ba lần rót')
+    // Bốn element: hai tiêu đề, hai danh sách — không còn tầng "mục" nào. Nhân
+    // bản tiêu đề đầu ra element thứ năm, ngay dưới nó.
+    await userEvent.click(screen.getAllByLabelText('nhân bản khối')[0])
+    expect(bodyOf(onChange).elements.map((e) => e.type)).toEqual(['heading', 'heading', 'list', 'heading', 'list'])
   })
 
-  it('xoá được một mục, và giữ lại mục cuối', async () => {
-    const onChange = draw('memo', body)
-    await userEvent.click(screen.getAllByLabelText('xoá mục')[0])
-    expect((onChange.mock.lastCall?.[0].body as typeof body).sections).toHaveLength(1)
-
-    const single = draw('memo', { ...body, sections: [body.sections[0]] }, vi.fn())
-    await userEvent.click(screen.getAllByLabelText('xoá mục').at(-1)!)
-    expect(single).not.toHaveBeenCalled()
-  })
-
-  it('đổi chỗ được', async () => {
+  it('kéo tiêu đề thì chỉ tiêu đề đi, không kéo theo danh sách dưới nó', async () => {
     const onChange = draw('memo', body)
     screen.getAllByLabelText(GRIP_LABEL)[0].focus()
     await userEvent.keyboard('{ArrowDown}')
-    expect((onChange.mock.lastCall?.[0].body as typeof body).sections.map((s) => s.h)).toEqual(['Giữa', 'Mở'])
+    expect(bodyOf(onChange).elements.map((e) => e.type)).toEqual(['list', 'heading', 'heading', 'list'])
   })
 
-  it('nhân bản mà bản sao không dùng chung danh sách với bản gốc', async () => {
+  it('xoá và chèn từng element một', async () => {
     const onChange = draw('memo', body)
-    await userEvent.click(screen.getAllByLabelText('nhân bản mục')[0])
-    const next = (onChange.mock.lastCall?.[0].body as typeof body).sections
-    expect(next).toHaveLength(3)
-    expect(next[1].items).not.toBe(next[0].items)
-  })
-})
-
-describe('cards — cấu trúc sửa được', () => {
-  const cards = [
-    { n: '01', hue: '#8E1E42', groups: ['Chua'], title: 'Táo', sub: 'quả', tag: 'chua', parts: [] },
-    { n: '02', hue: '#4C3A8E', groups: ['Hoa'], title: 'Nhài', sub: 'hoa', tag: 'hương', parts: [] },
-  ]
-
-  it('thêm được một thẻ, và thẻ mới thừa hưởng nhóm để bộ lọc còn thấy nó', async () => {
-    const onChange = draw('cards', cards)
-    await userEvent.click(screen.getByRole('button', { name: '+ thẻ' }))
-    const next = onChange.mock.lastCall?.[0].body as typeof cards
-    expect(next).toHaveLength(3)
-    expect(next[2].groups).toEqual(['Hoa'])
-    expect(next[2].n).toBe('03')
+    await userEvent.click(screen.getAllByLabelText('xoá khối')[0])
+    expect(bodyOf(onChange).elements).toHaveLength(3)
   })
 
-  it('xoá và đổi chỗ được', async () => {
-    const onChange = draw('cards', cards)
-    screen.getAllByLabelText(GRIP_LABEL)[0].focus()
-    await userEvent.keyboard('{ArrowDown}')
-    expect((onChange.mock.lastCall?.[0].body as typeof cards).map((c) => c.title)).toEqual(['Nhài', 'Táo'])
-
-    await userEvent.click(screen.getAllByLabelText('xoá thẻ')[0])
-    expect((onChange.mock.lastCall?.[0].body as typeof cards)).toHaveLength(1)
+  it('viết xong thì bài chỉ còn một cách lưu, không còn hai cái cãi nhau', async () => {
+    const onChange = draw('memo', body)
+    await userEvent.click(screen.getAllByLabelText('xoá khối')[0])
+    const next = bodyOf(onChange)
+    expect(next.elements).toBeDefined()
+    expect(next.sections).toBeUndefined()
   })
 
-  it('nhân bản mà bản sao không dùng chung nhóm với bản gốc', async () => {
-    const onChange = draw('cards', cards)
-    await userEvent.click(screen.getAllByLabelText('nhân bản thẻ')[0])
-    const next = onChange.mock.lastCall?.[0].body as typeof cards
-    expect(next[1].groups).not.toBe(next[0].groups)
+  it('chèn element mới ngay dưới element đang đứng', async () => {
+    const onChange = draw('memo', body)
+    await userEvent.click(screen.getAllByText('+ thêm khối')[0])
+    await userEvent.click(screen.getAllByRole('button', { name: 'Bảng' })[0])
+    expect(bodyOf(onChange).elements.map((e) => e.type)).toEqual(['heading', 'table', 'list', 'heading', 'list'])
   })
 
-  it('sửa đúng thẻ khi đang lọc theo nhóm', async () => {
-    // Vị trí trong danh sách đã lọc từng là chỉ số duy nhất, và nó được trao
-    // cho ô sửa — nên lọc rồi đổi tên thẻ đầu màn hình là đổi tên thẻ khác.
-    const onChange = draw('cards', cards)
-    await userEvent.click(screen.getByRole('button', { name: /Hoa/ }))
-    // Bộ lọc phải thật sự lọc, không thì test này xanh mà chẳng chứng minh gì.
-    expect(screen.queryByDisplayValue('Táo')).not.toBeInTheDocument()
-    const field = screen.getByDisplayValue('Nhài')
-    await userEvent.clear(field)
-    await userEvent.type(field, 'Nhài trắng')
+  it('mọi dòng trong danh sách đều là ô gõ được, chữ nhấn hiện dạng sửa được', () => {
+    draw('memo', body)
+    expect(screen.getByDisplayValue('Ngọt mía, *hậu vị ngắn*')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('đo lúc drop')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('blooming')).toBeInTheDocument()
+  })
+
+  it('danh sách đánh số hiện số ngay lúc đang soạn', () => {
+    // Bản đầu của ô soạn này tự vẽ một chồng ô trống: số, bullet và thụt lề đều
+    // biến mất, nên một mốc ghi "#2" — thứ chỉ có nghĩa khi đứng cạnh "02" —
+    // đọc thành vô nghĩa trong lúc viết.
+    draw('memo', body)
+    expect(screen.getByText('01')).toBeInTheDocument()
+  })
+
+  it('xoá hết chữ một dòng phụ thì dòng ấy đi, không để lại dòng trống', async () => {
+    const onChange = draw('memo', body)
+    await userEvent.clear(screen.getByDisplayValue('40g'))
     await userEvent.tab()
-
-    const next = onChange.mock.lastCall?.[0].body as typeof cards
-    expect(next.map((c) => c.title)).toEqual(['Táo', 'Nhài trắng'])
+    // '40g' thuộc danh sách thứ hai — danh sách các mốc pha.
+    const lists = bodyOf(onChange).elements.filter((e) => e.type === 'list') as unknown as {
+      items: { sub?: string[] }[]
+    }[]
+    expect(lists[1].items[0].sub).toEqual([])
   })
 })

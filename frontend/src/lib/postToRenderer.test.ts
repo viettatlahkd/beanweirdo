@@ -122,3 +122,33 @@ describe('the colour a post wears', () => {
     expect(toMemoData({ ...post, theme_color: '#8A6420' } as never, undefined).band?.bg).toBe('#8A6420')
   })
 })
+
+describe('memo: cả hai hình dạng thân bài đều tới được renderer', () => {
+  const base = {
+    en: 'Nếm thử',
+    vi: '',
+    lead: null,
+    kind: 'note',
+    date_label: '2026.09',
+    hero_caption: null,
+    hero_image_url: null,
+    pull_quote: null,
+    further_reading: null,
+  }
+
+  it('bài viết theo lối cũ mang sections qua', () => {
+    const post = { ...base, body: { sections: [{ h: 'Mở', items: [{ runs: [{ t: 'x' }] }] }] } }
+    expect(toMemoData(post as never, undefined).sections).toHaveLength(1)
+  })
+
+  it('bài đã sửa một lần mang elements qua', () => {
+    // Chuyển thiếu khoá này là bài sửa rồi ra trang trắng — nội dung còn đủ mà
+    // không màn nào với tới được.
+    const post = { ...base, body: { elements: [{ type: 'paragraph', text: 'đã phẳng' }] } }
+    expect(toMemoData(post as never, undefined).elements).toEqual([{ type: 'paragraph', text: 'đã phẳng' }])
+  })
+
+  it('bài rỗng không nổ', () => {
+    expect(toMemoData({ ...base, body: null } as never, undefined).sections).toEqual([])
+  })
+})

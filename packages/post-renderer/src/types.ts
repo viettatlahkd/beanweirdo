@@ -8,6 +8,10 @@
  */
 
 import type { PostNotes } from './notes'
+import type { ChartAttrs, MetricsAttrs, TableAttrs } from './elements/data'
+import type { ImageAttrs } from './elements/media'
+import type { ListAttrs } from './elements/list'
+import type { CalloutAttrs, HeadingAttrs, MetaAttrs, ParagraphAttrs, QuoteAttrs } from './elements/text'
 
 export type Template = 'article' | 'cards' | 'report'
 
@@ -134,57 +138,28 @@ export type CardsPostData = {
 // report — block sequence, per the "isReport" section of the design source
 // ---------------------------------------------------------------------------
 
-export type ReportMetric = {
-  label: string
-  value: string
-}
-
-export type ReportChartPoint = {
-  label: string
-  /** bar height, 0–100 */
-  heightPct: number
-}
-
-export type ReportTableRow = {
-  cells: string[]
-}
-
-export type ReportTable = {
-  columns: string[]
-  rows: ReportTableRow[]
-  /**
-   * Column widths as percentages, in column order.
-   *
-   * Unlike the editor's own two-column split — a thing the writer does to see
-   * better for a minute — these belong to the table: a column of dates and a
-   * column of prose want different room, and the reader should get the
-   * proportions the writer settled on. Absent means equal columns, which is
-   * what every table written before this held.
-   */
-  widths?: number[]
-}
-
-/**
- * Every block can name itself, so a field note can hold on to the block it
- * argues with rather than to the position that block happens to sit in. Blocks
- * written before notes existed have no id; the editor gives them one the first
- * time a note needs somewhere to hang.
+/*
+ * A report's blocks are elements out of the store, not shapes of report's own.
+ * These names stay because the app is written in them; each is now an alias for
+ * the element that actually defines the format — one definition, one place to
+ * change it. See `elements/registry.ts`.
  */
-type Identified = { id?: string }
+export type ReportMetric = MetricsAttrs['items'][number]
+export type ReportChartPoint = ChartAttrs['points'][number]
+export type ReportTable = TableAttrs['table']
+export type ReportTableRow = ReportTable['rows'][number]
 
 export type ReportBlock =
-  | (Identified & { type: 'meta'; text: string })
-  /** `level` 1–3; absent means 1, which is what every heading written so far is. */
-  | (Identified & { type: 'heading'; text: string; level?: 1 | 2 | 3 })
-  | (Identified & { type: 'paragraph'; text: string })
-  | (Identified & { type: 'metrics'; items: ReportMetric[] })
-  | (Identified & { type: 'chart'; points: ReportChartPoint[] })
-  | (Identified & { type: 'table'; table: ReportTable })
-  | (Identified & { type: 'image'; caption: string; imageUrl?: string | null })
-  /** A passage set apart on its own tinted ground — the thing worth stopping at. */
-  | (Identified & { type: 'callout'; text: string; heading?: string })
-  /** Somebody else's words. The quote mark is the template's, not the writer's. */
-  | (Identified & { type: 'quote'; text: string; attribution?: string })
+  | ListAttrs
+  | MetaAttrs
+  | HeadingAttrs
+  | ParagraphAttrs
+  | QuoteAttrs
+  | CalloutAttrs
+  | MetricsAttrs
+  | ChartAttrs
+  | TableAttrs
+  | ImageAttrs
 
 export type ReportPostData = {
   /**
@@ -287,6 +262,14 @@ export type MemoPhase = { n: string; label: string; lines: string[] }
 export type MemoSection = {
   h: string
   /**
+   * What the section holds, as elements from the store.
+   *
+   * The four fields below are how a section was stored before there was a
+   * store. They are still read — see `memoElements.ts` — and a section written
+   * since carries `elements` instead.
+   */
+  elements?: unknown[]
+  /**
    * A conclusion the session arrived at, set on its own tinted ground so it
    * reads before the notes that led to it.
    */
@@ -307,8 +290,15 @@ export type MemoPostData = {
   subtitle?: string
   /** The bean / water / pour readings that open the page. */
   specs?: { k: string; v: string }[]
+  /**
+   * The body, as one flat run of elements — a heading is an element, not the
+   * lid of a container. `sections` is how a memo was stored before that, still
+   * read so an older post opens. A memo has one or the other, never neither
+   * required. See `memoElements.ts`.
+   */
+  elements?: unknown[]
   /** Hero photograph, and what it shows. */
   img?: string | null
   imgCaption?: string
-  sections: MemoSection[]
+  sections?: MemoSection[]
 }

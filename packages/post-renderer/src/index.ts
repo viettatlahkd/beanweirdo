@@ -24,6 +24,29 @@ export {
 } from './notes'
 export type { Exploration, FieldNote, NotesSegment, PostNotes } from './notes'
 
+export {
+  allElements,
+  findElements,
+  getElement,
+  registerElement,
+  runsToText,
+  textToRuns,
+  toElements,
+} from './elements'
+export type {
+  AttributeSpec,
+  ElementCategory,
+  ElementDefinition,
+  ElementRenderOverrides,
+  ElementViewProps,
+  ListAttrs,
+  ListItem,
+  Run,
+  StoredElement,
+} from './elements'
+
+export { flatElements, sectionElements } from './memoElements'
+
 export { paletteFrom, shade } from './palette'
 export type { Palette } from './palette'
 

@@ -50,7 +50,7 @@ function Preview({ template }: { template: StoredTemplate }) {
     return (
       <PostRenderer
         template="memo"
-        post={{ title, subtitle: memo.subtitle ?? subtitle, specs: memo.specs, sections: memo.sections ?? [] }}
+        post={{ title, subtitle: memo.subtitle ?? subtitle, specs: memo.specs, elements: memo.elements, sections: memo.sections ?? [] }}
       />
     )
   }
