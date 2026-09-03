@@ -258,14 +258,7 @@ export function Landing() {
           <br />
           <span style={{ fontStyle: 'italic', color: ink.green }}>{site.lTitle2}</span>
         </h1>
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr) minmax(0,.8fr)',
-            gap: 40,
-            alignItems: 'start',
-          }}
-        >
+        <div className="bw-intro">
           <div style={{ fontSize: 15, lineHeight: 1.5, color: ink.strong, ...prose }}>{site.lIntro1}</div>
           <div style={{ fontSize: 13.5, lineHeight: 1.45, color: ink.soft, ...prose }}>{site.lIntro2}</div>
           <Hover
@@ -322,7 +315,7 @@ export function Landing() {
                 </h3>
               </div>
 
-              <div style={{ fontSize: 14, lineHeight: 1.45 }}>{m.long_desc}</div>
+              <div style={{ fontSize: 14, lineHeight: 1.45, ...prose }}>{m.long_desc}</div>
 
               <div>
                 <div style={{ ...eyebrow, letterSpacing: '.14em', opacity: 0.65, marginBottom: 10 }}>

@@ -100,7 +100,7 @@ function Ledger({ modules, postsByModule }: ModulesProps) {
             <span style={{ fontStyle: 'italic', color: ink.green }}>{site.t2}</span>
           </h1>
           <div style={{ paddingBottom: 14 }}>
-            <div style={{ fontSize: 14, lineHeight: 1.45, color: ink.mid, marginBottom: 14 }}>
+            <div style={{ fontSize: 14, lineHeight: 1.45, color: ink.mid, marginBottom: 14, ...prose }}>
               {site.blurb}
             </div>
             <Hover
@@ -175,6 +175,7 @@ function Ledger({ modules, postsByModule }: ModulesProps) {
                 lineHeight: 1.35,
                 color: ink.soft,
                 maxWidth: 600,
+                ...prose,
                 margin: '0 0 18px',
               }}
             >
@@ -255,6 +256,7 @@ function Columns({ modules, postsByModule }: ModulesProps) {
           lineHeight: 1.45,
           color: ink.mid,
           marginBottom: 14,
+          ...prose,
         }}
       >
         {site.blurbShort}

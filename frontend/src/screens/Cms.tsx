@@ -441,13 +441,36 @@ export function Cms() {
     pending.current[key] = setTimeout(() => setCopy(key)(v), 700)
   }
 
+  /*
+   * Chữ đang gõ dở, đè lên chữ lấy từ máy chủ.
+   *
+   * Ô nhập trước đây là `defaultValue` — React chỉ đọc nó đúng một lần, lúc ô
+   * được vẽ ra. Biểu mẫu này vẽ ngay khi mở màn, còn nội dung thật thì về sau
+   * một nhịp mạng, nên mọi ô đứng nguyên ở chữ mặc định trong mã: trang công
+   * khai hiện bản mới, CMS hiện bản cũ, và không ô nào sai chính tả để mà ngờ.
+   *
+   * Nên ô đọc thẳng từ `copy`, và chỉ khi người dùng đang gõ thì bản nháp mới
+   * đè lên — đè để con trỏ không nhảy về đầu dòng mỗi lượt lưu tự động.
+   */
+  const [draft, setDraft] = useState<Partial<Record<keyof SiteCopy, string>>>({})
+  const dropDraft = (key: keyof SiteCopy) =>
+    setDraft((d) => {
+      const next = { ...d }
+      delete next[key]
+      return next
+    })
+
   /** Cả hai lối lưu cho một ô: nhịp ngắn khi đang gõ, và ngay khi rời ô. */
   const field = (key: keyof SiteCopy) => ({
-    defaultValue: copy[key] as string,
-    onChange: (e: { target: { value: string } }) => queueCopy(key, e.target.value),
+    value: draft[key] ?? (copy[key] as string),
+    onChange: (e: { target: { value: string } }) => {
+      setDraft((d) => ({ ...d, [key]: e.target.value }))
+      queueCopy(key, e.target.value)
+    },
     onBlur: (e: { target: { value: string } }) => {
       clearTimeout(pending.current[key])
       setCopy(key)(e.target.value)
+      dropDraft(key)
     },
   })
 
@@ -866,6 +889,49 @@ export function Cms() {
                 rows={4}
                 style={area}
               />
+            </Field>
+          </div>
+
+          {/*
+            * Trang Ghi chép và trang Lưu trữ.
+            *
+            * Năm dòng của trang Ghi chép từng nằm cứng trong mã, còn hai dòng
+            * của trang Lưu trữ thì có trong dữ liệu nhưng chưa bao giờ có ô để
+            * sửa — khai ra rồi bỏ đó cũng là không sửa được.
+            */}
+          <div style={{ ...sectionHead, margin: '34px 0 18px' }}>Trang Ghi chép</div>
+          <div style={grid(two)}>
+            <Field label="Tiêu đề trang">
+              <input {...field('notesTitle')} style={serifInput} />
+            </Field>
+            <Field label="Dòng dưới tiêu đề">
+              <input {...field('notesSubtitle')} style={serifItalicInput} />
+            </Field>
+          </div>
+          <div style={grid(two, 18)}>
+            <Field label="Đoạn dẫn — góc phải">
+              <textarea {...field('notesIntro')} rows={3} style={{ ...area, fontSize: 14 }} />
+            </Field>
+            <Field label="Dòng hướng dẫn — dưới đoạn dẫn">
+              <textarea {...field('notesHint')} rows={3} style={{ ...area, fontSize: 14 }} />
+            </Field>
+          </div>
+          <div style={grid(two, 18)}>
+            <Field label="Lời kết — cuối trang">
+              <input {...field('notesEnd')} style={serifItalicInput} />
+            </Field>
+            <Field label="Lời kết — dòng phụ">
+              <input {...field('notesEndNote')} style={boxed} />
+            </Field>
+          </div>
+
+          <div style={{ ...sectionHead, margin: '34px 0 18px' }}>Trang Lưu trữ</div>
+          <div style={grid(two)}>
+            <Field label="Tiêu đề trang">
+              <input {...field('archiveTitle')} style={serifInput} />
+            </Field>
+            <Field label="Dòng phụ — cạnh số bài">
+              <input {...field('archiveNote')} style={boxed} />
             </Field>
           </div>
 
