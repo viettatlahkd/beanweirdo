@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { createContext, Fragment, useContext, useEffect, useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { paletteFrom, type Palette } from './palette'
-import { sans, serif } from './tokens'
+import { sans, serif, wrapTitle } from './tokens'
 import type { LongformBlock, LongformPostData, LongformRun } from './types'
 import { indentOf, normalizeBlocks } from './longformBlocks'
 import { runsToText } from './longformText'
@@ -551,9 +551,11 @@ export function Longform({ post, breadcrumb, renderText }: LongformProps) {
                 {b.k === 'h1' && (
                   <>
                     <h1
+                      lang="en"
                       onClick={() => selfId && toggle(p)}
                       data-lf-h1={p.h1Index}
                       style={{
+                        ...wrapTitle,
                         cursor: selfId ? 'pointer' : 'default',
                         fontFamily: serif,
                         fontWeight: 400,

@@ -1,5 +1,6 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { layout } from '../design/tokens'
+import { layout, wrapTitle } from '../design/tokens'
 import { PLATE_HEIGHT, PLATE_WIDTH } from './ModuleScreen'
 
 /*
@@ -50,5 +51,28 @@ describe('module plate measurements', () => {
 
   it('gives the sequence strip no fixed height — its cells decide it', () => {
     expect(PLATE_HEIGHT.sequence).toBeUndefined()
+  })
+})
+
+/*
+ * Tiêu đề module ở trang module.
+ *
+ * `lang="en"` là phần dễ rơi: trang khai `lang="vi"`, mà tiếng Việt không ngắt
+ * âm tiết giữa từ — bỏ nó đi thì luật ngắt không chạy, "biochemistry 101" lại
+ * tràn ra như cũ, trong khi nhìn CSS vẫn thấy đủ. Nên kiểm cả hai nửa.
+ */
+describe('tiêu đề module dài', () => {
+  it('khai tiếng Anh và bật luật ngắt âm tiết', () => {
+    expect(wrapTitle.hyphens).toBe('auto')
+    // Chỉ cắt từ dài từ 8 chữ trở lên, mỗi bên gạch nối còn ít nhất 4 chữ —
+    // để không ra "bi-ochemistry".
+    expect(wrapTitle.hyphenateLimitChars).toBe('8 4 4')
+    // Đọc thẳng mã nguồn: dựng được ba dạng trang module trong test cần cả
+    // context điều hướng lẫn dữ liệu module, mà thứ dễ rơi ở đây chỉ là một
+    // thuộc tính trên thẻ. Đếm nó là đủ và không nợ ai cái gì.
+    const src = readFileSync('frontend/src/screens/ModuleScreen.tsx', 'utf8')
+    // Ba dạng trang module đều có tiêu đề riêng, cả ba phải khai tiếng Anh.
+    expect(src.match(/\.\.\.wrapTitle/g)?.length).toBe(3)
+    expect(src.match(/lang="en"/g)?.length).toBe(3)
   })
 })

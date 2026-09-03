@@ -10,7 +10,7 @@ import {
 } from './notes'
 import { getElement } from './elements'
 import { paletteFrom, type Palette } from './palette'
-import { ink, paper, sans, serif } from './tokens'
+import { ink, paper, sans, serif, wrapTitle } from './tokens'
 import type { ReportBlock, ReportMetric, ReportPostData } from './types'
 
 export type ReportOverrides = {
@@ -60,6 +60,7 @@ export function Report({ post, breadcrumb, ...overrides }: ReportProps) {
           }}
         >
           <h1
+          lang="en"
             style={{
               fontFamily: serif,
               fontWeight: 400,
@@ -67,6 +68,7 @@ export function Report({ post, breadcrumb, ...overrides }: ReportProps) {
               lineHeight: 0.9,
               letterSpacing: '-.04em',
               margin: 0,
+              ...wrapTitle,
             }}
           >
             {overrides.renderTitle ? overrides.renderTitle(post.title) : post.title}

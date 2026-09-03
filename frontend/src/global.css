@@ -74,3 +74,35 @@ h4 {
   color: #c4c3b8;
   opacity: 1;
 }
+
+/*
+ * Đầu mỗi khối module ở trang chủ: tên module, đoạn giới thiệu, và ba bài mới
+ * nhất.
+ *
+ * Trước đây luôn là ba cột 1,55 / 1 / 0,85. Ở bề ngang 859px, cột giữa chỉ còn
+ * 177px — đoạn giới thiệu thành một dải chữ khoảng mười lăm ký tự một dòng,
+ * chạy dài xuống bảy trăm pixel bên cạnh một cái tên ngắn. Đọc không nổi.
+ *
+ * Nên: hẹp thì chữ phụ nằm dưới tiêu đề, không nằm cạnh. Ba cột chỉ bật lên
+ * khi đủ chỗ cho cột giữa rộng ~290px — dưới mức đó, cột không còn là cột.
+ *
+ * `margin-top` cũng đi theo: 38px là để chữ phụ ngang hàng với chân tiêu đề
+ * khi đứng cạnh nhau; xếp chồng thì nó chỉ là một khoảng hở thừa.
+ */
+.bw-modhead {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+  margin-bottom: 64px;
+}
+
+@media (min-width: 1240px) {
+  .bw-modhead {
+    grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr) minmax(0, 0.85fr);
+    gap: 40px;
+  }
+  .bw-modhead > * + * {
+    margin-top: 38px;
+  }
+}

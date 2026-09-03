@@ -4,7 +4,7 @@ import { paletteFrom, type Palette } from './palette'
 import { Fragment } from 'react'
 import type { ReactNode } from 'react'
 import type { CSSProperties } from 'react'
-import { sans, serif } from './tokens'
+import { sans, serif, wrapTitle } from './tokens'
 import type { MemoPostData } from './types'
 
 /**
@@ -183,6 +183,7 @@ export function Memo({ post, breadcrumb, renderTitle, renderSubtitle, wrapElemen
         >
           <div>
             <h1
+          lang="en"
               style={{
                 fontFamily: serif,
                 fontWeight: 400,
@@ -191,6 +192,7 @@ export function Memo({ post, breadcrumb, renderTitle, renderSubtitle, wrapElemen
                 letterSpacing: '-.045em',
                 margin: 0,
                 color: palette.ink,
+                ...wrapTitle,
               }}
             >
               {renderTitle ? renderTitle(post.title) : post.title}

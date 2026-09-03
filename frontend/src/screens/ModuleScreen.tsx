@@ -5,7 +5,7 @@ import type { ModuleRow } from '../data/useModules'
 import { useModules } from '../data/useModules'
 import type { PostRow } from '../data/usePublishedPosts'
 import { usePublishedPosts } from '../data/usePublishedPosts'
-import { ink, layout, paper, sans, serif } from '../design/tokens'
+import { ink, layout, paper, sans, serif, wrapTitle } from '../design/tokens'
 import { pageCaption, pageFill, pageImage } from '../lib/modulePageImages'
 import { Hover } from '../lib/Hover'
 import { useNav, useSettings } from '../lib/nav'
@@ -53,12 +53,14 @@ function Band({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
         <Breadcrumbs style={{ opacity: 0.75 }} />
 
         <h1
+          lang="en"
           style={{
             fontFamily: serif,
             fontSize: 92,
             lineHeight: 0.94,
             letterSpacing: '-.04em',
             margin: '0 0 20px',
+            ...wrapTitle,
           }}
         >
           {m.title}
@@ -176,12 +178,14 @@ function Specimen({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
           <Breadcrumbs style={{ opacity: 0.75 }} />
 
           <h1
+          lang="en"
             style={{
               fontFamily: serif,
               fontSize: 84,
               lineHeight: 0.94,
               letterSpacing: '-.04em',
               margin: '0 0 18px',
+              ...wrapTitle,
             }}
           >
             {m.title}
@@ -484,12 +488,14 @@ function Sequence({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
         <Breadcrumbs style={{ opacity: 0.75 }} />
 
         <h1
+          lang="en"
           style={{
             fontFamily: serif,
             fontSize: 96,
             lineHeight: 0.94,
             letterSpacing: '-.04em',
             margin: '0 0 22px',
+            ...wrapTitle,
           }}
         >
           {m.title}
