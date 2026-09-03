@@ -10,7 +10,7 @@ import {
   swatches,
   typeScale,
 } from '../content/designSystem'
-import { garden, ink, sans, serif } from '../design/tokens'
+import { garden, ink, prose, sans, serif } from '../design/tokens'
 
 const columnLabel: CSSProperties = {
   fontFamily: sans,
@@ -79,7 +79,7 @@ export function DesignSystem() {
             <br />
             <span style={{ fontStyle: 'italic', color: ink.green }}>{site.artT2}</span>
           </h1>
-          <div style={{ fontSize: 14, lineHeight: 1.45, marginTop: 36, color: ink.mid }}>
+          <div style={{ fontSize: 14, lineHeight: 1.45, marginTop: 36, color: ink.mid , ...prose}}>
             {site.artIntro}
           </div>
         </div>

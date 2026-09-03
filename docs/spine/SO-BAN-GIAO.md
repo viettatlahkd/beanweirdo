@@ -14,8 +14,8 @@ tài liệu · `BỎ` đã quyết không làm.
 
 ## A. Luật đề xuất — chờ đưa vào `frontend/src/content/logic.ts`
 
-Bộ quy tắc hiện có **3 phần · 14 nhóm · 75 luật**. Bốn mươi luật dưới đây phát
-sinh từ code đã merge; A1–A7 đã ghi vào, A8–A40 thì chưa.
+Bộ quy tắc hiện có **3 phần · 14 nhóm · 75 luật**. Bốn mươi bốn luật dưới đây phát
+sinh từ code đã merge; A1–A7 đã ghi vào, A8–A44 thì chưa.
 
 | # | Luật | Từ PR | Nhóm phù hợp | Trạng thái |
 |---|---|---|---|---|
@@ -58,6 +58,10 @@ sinh từ code đã merge; A1–A7 đã ghi vào, A8–A40 thì chưa.
 | A38 | Cú kéo bắt đầu ở **tay nắm**, không phải ở cả hàng. Hàng nào có ô nhập thì ô ấy nuốt cú nhấn giữ — kéo từ giữa hàng chỉ bôi đen chữ. Và một hàng kéo được mà không có chỗ nào để cầm thì không ai biết là kéo được. | #72 | 16 (template) | CHỜ |
 | A39 | **Đặt vào khung dùng được cả với ảnh đang mượn** từ bề mặt khác — đó đúng là lúc cần nó nhất, vì khung ở đây có hình dạng khác khung nơi ảnh được đặt lần đầu. Đặt xong thì ảnh thành của riêng ô này, mang theo điểm căn. | #72 | 16 | CHỜ |
 | A40 | **Chú thích ảnh là tuỳ chọn: không có chữ thì không vẽ gì.** Cái nền mờ sau chữ chỉ tồn tại để chữ đọc được trên ảnh — bôi nó ra khi bên trong rỗng là in một vệt xám vào chỗ đáng lẽ trống. Trang chủ vốn đã đúng; trang module thì chưa. | #72 | 03 (khoảng cách & lưới) | CHỜ |
+| A41 | Luật hoà chữ của trang chỉ được nằm ở **một** hàm, và mọi bề mặt đọc qua nó. Luật ấy từng có ba bản sao — hàm chung, phép hoà riêng trong CMS, cách máy chủ gộp bản vá — nên sửa một chỗ thì hai chỗ kia vẫn nói ngược lại, và lỗi "xoá chú thích vẫn hiện" sống qua hai lần sửa. | #73 | 16 (template) | CHỜ |
+| A42 | Chữ chủ site gõ trong ô nhiều dòng thì **giữ nguyên chỗ xuống dòng** khi vẽ ra trang. Ô soạn là `<textarea>` nên Enter tạo dòng mới thật trong dữ liệu; HTML mặc định gộp khoảng trắng, nên không giữ là gõ xuống dòng rồi không thấy nó đâu. | #73 | 02 (chữ) | CHỜ |
+| A43 | Mọi bề mặt hiện module đều vẽ ảnh của nó, không để một ô màu trống. Mục lục dạng cột vẽ cái khung ấy từ đầu mà chưa bao giờ đọc `img1` — ảnh vẫn nằm trong CMS, chỉ là bề mặt đó không lấy. | #73 | 16 | CHỜ |
+| A44 | **Ô chữ lưu cả khi đang gõ, không chỉ khi rời ô.** Chỉ lưu khi rời ô là một cái bẫy im lặng: gõ xong rồi tải lại trang, đóng tab, hay bấm sang tab khác thì ô ấy chưa hề được lưu, và không có gì trên màn hình cho biết. Chờ một nhịp ngắn sau khi ngừng gõ để không gửi một lượt lưu cho mỗi ký tự. | #73 | 16 (template) | CHỜ |
 | A16 | Bảng luôn còn ít nhất một cột và một hàng. Bảng không cột vẽ ra là một khoảng trắng — người viết không phân biệt được bảng rỗng với bảng đã bị xoá. | #67 | 16 | CHỜ |
 
 ## B. `docs/SPEC.html` đã lỗi thời

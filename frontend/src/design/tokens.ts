@@ -94,6 +94,15 @@ export const space = {
   block: 96,
 } as const
 
+/**
+ * Chữ do chủ site gõ trong ô nhiều dòng.
+ *
+ * Ô soạn là `<textarea>`, nên Enter tạo ra một dòng mới thật trong dữ liệu —
+ * nhưng HTML mặc định gộp mọi khoảng trắng, nên trên trang hai dòng dán liền
+ * vào nhau. Chủ site gõ xuống dòng rồi không thấy nó đâu.
+ */
+export const prose = { whiteSpace: 'pre-line' } as const
+
 export const layout = {
   /** sidebar: 64px closed, 268px on hover */
   sidebarClosed: 64,

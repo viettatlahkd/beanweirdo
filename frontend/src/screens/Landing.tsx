@@ -7,7 +7,7 @@ import { coverStyle } from '../lib/imageFocus'
 import type { PostRow } from '../data/usePublishedPosts'
 import { usePublishedPosts } from '../data/usePublishedPosts'
 import { useSiteCopy } from '../data/useSiteCopy'
-import { garden, ink, layout, paper, sans, serif } from '../design/tokens'
+import { garden, ink, layout, paper, prose, sans, serif } from '../design/tokens'
 import { Hover } from '../lib/Hover'
 import { Rise } from '../lib/Rise'
 import { useNav } from '../lib/nav'
@@ -266,8 +266,8 @@ export function Landing() {
             alignItems: 'start',
           }}
         >
-          <div style={{ fontSize: 15, lineHeight: 1.5, color: ink.strong }}>{site.lIntro1}</div>
-          <div style={{ fontSize: 13.5, lineHeight: 1.45, color: ink.soft }}>{site.lIntro2}</div>
+          <div style={{ fontSize: 15, lineHeight: 1.5, color: ink.strong, ...prose }}>{site.lIntro1}</div>
+          <div style={{ fontSize: 13.5, lineHeight: 1.45, color: ink.soft, ...prose }}>{site.lIntro2}</div>
           <Hover
             onClick={nav.goHome}
             style={{
