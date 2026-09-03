@@ -3,7 +3,6 @@ import { PostRenderer } from 'post-renderer'
 import type {
   CardData,
   CardPart,
-  MemoSection,
   ReportBlock,
   ReportChartPoint,
   ReportMetric,
@@ -50,8 +49,9 @@ import {
   nextId,
   notesOn,
   paletteFrom,
+  allElements,
+  flatElements,
   getElement,
-  sectionElements,
   segmentsFor,
   textToRuns,
   type ListAttrs,
@@ -296,7 +296,9 @@ function EditorStyles() {
       .awc-hero-drop:hover{ border-color: rgba(0,0,0,.45); }
       .awc-plus-btn{ font-family: 'Be Vietnam Pro', system-ui, sans-serif; font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: #8C8674; background: transparent; border: 1px dashed #EBE5D3; border-radius: 4px; padding: 5px 10px; cursor: pointer; margin: 8px 0; }
       .awc-plus-btn:hover{ border-color: #8C8674; color: #3B3729; }
-      .awc-insert-menu{ display: flex; flex-wrap: wrap; gap: 6px; padding: 0 0 14px; }
+      .awc-insert-menu{ display: flex; flex-wrap: wrap; gap: 18px; padding: 4px 0 14px; }
+      .awc-insert-group{ display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+      .awc-insert-cat{ font-size: 9px; letter-spacing: .16em; text-transform: uppercase; color: #8C8674; margin-right: 2px; }
       .awc-insert-menu button{ font-family: 'Be Vietnam Pro', system-ui, sans-serif; font-size: 11px; padding: 6px 10px; border: 1px solid #EBE5D3; border-radius: 4px; background: #fff; cursor: pointer; color: #3B3729; }
       .awc-insert-menu button:hover{ background: #F6F2E2; }
       .awc-rep-grid{ display: grid; column-gap: 20px; }
@@ -563,6 +565,15 @@ function ArticleEditor({ post, module, onChange }: { post: PostDetail; module?: 
  * fields, so those are editable; the runs inside a section are the writing
  * itself and stay as they are, the same as long-form.
  */
+/**
+ * Memo — one flat run of elements, each with its own handle.
+ *
+ * A section used to be a container with the heading as a property of it, so
+ * taking hold of the heading took hold of everything filed underneath and there
+ * was no way to say otherwise. That container was a leftover of the old
+ * storage. Flat, a heading is an element like any other, and every element in
+ * the post obeys one rule instead of two.
+ */
 function MemoEditor({
   post,
   module,
@@ -574,36 +585,19 @@ function MemoEditor({
 }) {
   const palette = paletteFrom(post.theme_color ?? module?.accent ?? REPORT_BLUE, post.theme_color ? undefined : module?.on_color)
   const data = toMemoData(post, module)
-  const body = (post.body ?? {}) as { sections?: MemoSection[] }
-  const sections = body.sections ?? []
-
-  /* A memo keeps its sections under a key rather than as the body itself, so
-     every write puts the rest of the body back around them. */
-  const setSections = (next: MemoSection[]) => {
-    if (next !== sections) onChange({ body: { ...(post.body as object), sections: next } })
-  }
-  const drag = useRowDrag((from, to) => setSections(move(sections, from, to)))
-  const [memoMenu, setMemoMenu] = useState<string | null>(null)
+  const elements = flatElements(post.body as { sections?: never[]; elements?: unknown[] }) as ReportBlock[]
+  const [menuAt, setMenuAt] = useState<number | null>(null)
 
   /*
-   * A section's contents, as elements. Reading converts the four old named
-   * slots — conclusion, bullets, phases, table — into store elements; writing
-   * only ever produces `elements`, and drops the old slots so a section has one
-   * representation from then on rather than two that can disagree.
+   * Writing always produces `elements` and drops `sections`, so a post has one
+   * representation from the first edit rather than two that can disagree.
    */
-  function setElements(sectionIndex: number, next: ReportBlock[]) {
-    setSections(
-      sections.map((sec, k) => {
-        if (k !== sectionIndex) return sec
-        const { callout, items, phases, table, ...rest } = sec as MemoSection & Record<string, unknown>
-        void callout
-        void items
-        void phases
-        void table
-        return { ...rest, elements: next } as MemoSection
-      }),
-    )
+  const write = (next: ReportBlock[]) => {
+    const { sections, ...rest } = (post.body ?? {}) as Record<string, unknown>
+    void sections
+    onChange({ body: { ...rest, elements: next } })
   }
+  const drag = useRowDrag((from, to) => write(move(elements, from, to)))
 
   return (
     <PostRenderer
@@ -618,88 +612,46 @@ function MemoEditor({
           onCommit={(v) => onChange({ body: { ...(post.body as object), subtitle: v } })}
         />
       )}
-      renderSectionHeading={(heading, i) => (
-        <EditableField
-          value={heading}
-          placeholder="Tên mục"
-          onCommit={(v) => setSections(sections.map((s, k) => (k === i ? { ...s, h: v } : s)))}
-        />
-      )}
-      wrapSection={(section, i) => (
-        <RowShell
-          noun="mục"
-          index={i}
-          drag={drag}
-          onMove={(dir) => setSections(move(sections, i, i + dir))}
-          onRemove={() => setSections(removeAt(sections, i, true))}
-          onDuplicate={() => setSections(duplicateAt(sections, i, copyMemoSection))}
-        >
-          {section}
-        </RowShell>
-      )}
-      renderSectionBody={(section, si) => {
-        const elements = sectionElements(section) as ReportBlock[]
-        const write = (next: ReportBlock[]) => setElements(si, next)
-        return (
-          <div>
-            {elements.map((el, i) => (
-              <div key={i} className="awc-rep-block">
-                <div className="awc-block-controls">
-                  <button
-                    type="button"
-                    aria-label="chuyển lên"
-                    onClick={() => write(move(elements, i, i - 1))}
-                  >
-                    ↑
-                  </button>
-                  <button
-                    type="button"
-                    aria-label="chuyển xuống"
-                    onClick={() => write(move(elements, i, i + 1))}
-                  >
-                    ↓
-                  </button>
-                  <button type="button" aria-label="xoá element" onClick={() => write(removeAt(elements, i))}>
-                    ×
-                  </button>
-                </div>
-                <ReportBlockFields
-                  block={el}
-                  palette={palette}
-                  onChange={(next) => write(elements.map((x, k) => (k === i ? next : x)))}
-                />
-              </div>
-            ))}
-            <InsertRow
-              open={memoMenu === `${si}`}
-              onToggle={() => setMemoMenu(memoMenu === `${si}` ? null : `${si}`)}
-              onInsert={(t) => {
-                write(insertAt(elements, elements.length, blankReportBlock(t)))
-                setMemoMenu(null)
-              }}
+      wrapElement={(_drawn, i) => (
+        <div key={i}>
+          <RowShell
+            noun="khối"
+            index={i}
+            drag={drag}
+            onMove={(dir) => write(move(elements, i, i + dir))}
+            onRemove={() => write(removeAt(elements, i))}
+            onDuplicate={() => write(duplicateAt(elements, i))}
+          >
+            <ReportBlockFields
+              block={elements[i]}
+              palette={palette}
+              onChange={(next) => write(elements.map((x, k) => (k === i ? next : x)))}
             />
-          </div>
-        )
-      }}
-      renderAfterSections={() => (
-        <AddRow label="mục" onAdd={() => setSections(insertAt(sections, sections.length, { h: '', elements: [] }))} />
+          </RowShell>
+          <InsertRow
+            open={menuAt === i}
+            onToggle={() => setMenuAt(menuAt === i ? null : i)}
+            onInsert={(t) => {
+              write(insertAt(elements, i + 1, blankReportBlock(t)))
+              setMenuAt(null)
+            }}
+          />
+        </div>
       )}
+      renderAfterElements={() =>
+        elements.length === 0 ? (
+          <InsertRow
+            open={menuAt === -1}
+            onToggle={() => setMenuAt(menuAt === -1 ? null : -1)}
+            onInsert={(t) => {
+              write(insertAt(elements, 0, blankReportBlock(t)))
+              setMenuAt(null)
+            }}
+          />
+        ) : null
+      }
     />
   )
-}
-
-/**
- * A memo section carries lists inside it, so a shallow copy would hand the copy
- * the very same array — editing one would silently edit the other.
- */
-function copyMemoSection(s: MemoSection): MemoSection {
-  return {
-    ...s,
-    items: s.items?.map((i) => ({ ...i })),
-    phases: s.phases?.map((p) => ({ ...p, lines: [...p.lines] })),
-    table: s.table ? { head: [...s.table.head], rows: s.table.rows.map((r) => [...r]) } : undefined,
-    callout: s.callout ? { ...s.callout, lines: [...s.callout.lines] } : undefined,
-  }
 }
 
 function CardsEditor({ post, module, onChange }: { post: PostDetail; module?: Module; onChange: (patch: EditPatch) => void }) {
@@ -887,17 +839,6 @@ function CardPartBodyEditor({
 // render read-only, byte for byte, on the preview screen.
 // ---------------------------------------------------------------------------
 
-const BLOCK_TYPES: { type: ReportBlock['type']; label: string }[] = [
-  { type: 'meta', label: 'Meta' },
-  { type: 'heading', label: 'Tiêu đề' },
-  { type: 'paragraph', label: 'Đoạn văn' },
-  { type: 'quote', label: 'Trích dẫn' },
-  { type: 'callout', label: 'Khối nhấn' },
-  { type: 'metrics', label: 'Số liệu' },
-  { type: 'chart', label: 'Biểu đồ' },
-  { type: 'table', label: 'Bảng' },
-  { type: 'image', label: 'Ảnh' },
-]
 
 /** How long the writer has to take a choice back before it happens. */
 const UNDO_MS = 2000
@@ -982,7 +923,7 @@ function ReportEditor({
   function updateBlock(i: number, next: ReportBlock) {
     setBlocks(blocks.map((b, idx) => (idx === i ? next : b)))
   }
-  function insertBlock(afterIndex: number, type: ReportBlock['type']) {
+  function insertBlock(afterIndex: number, type: string) {
     const next = [...blocks]
     next.splice(afterIndex + 1, 0, { ...blankReportBlock(type), id: nextId('b', blocks.map((b) => b.id ?? '')) })
     setBlocks(next)
@@ -1390,7 +1331,7 @@ function InsertRow({
 }: {
   open: boolean
   onToggle: () => void
-  onInsert: (type: ReportBlock['type']) => void
+  onInsert: (type: string) => void
 }) {
   return (
     <div>
@@ -1399,11 +1340,27 @@ function InsertRow({
       </button>
       {open && (
         <div className="awc-insert-menu">
-          {BLOCK_TYPES.map((t) => (
-            <button key={t.type} type="button" onClick={() => onInsert(t.type)}>
-              {t.label}
-            </button>
-          ))}
+          {/*
+            * Straight out of the store, grouped the way it files them. It used
+            * to be a list written out by hand here, which is how `list` came to
+            * exist in the store and be missing from this menu, and how a block
+            * kept the name the code calls it — "Meta" — instead of the name it
+            * was given for people to read.
+            */}
+          {(['text', 'data', 'media'] as const).map((category) => {
+            const inCategory = allElements().filter((e) => e.category === category)
+            if (inCategory.length === 0) return null
+            return (
+              <div key={category} className="awc-insert-group">
+                <div className="awc-insert-cat">{CATEGORY_LABEL[category]}</div>
+                {inCategory.map((e) => (
+                  <button key={e.name} type="button" title={e.description} onClick={() => onInsert(e.name)}>
+                    {e.title}
+                  </button>
+                ))}
+              </div>
+            )
+          })}
         </div>
       )}
     </div>
@@ -1412,9 +1369,15 @@ function InsertRow({
 
 const HEADING_SIZE: Record<1 | 2 | 3, number> = { 1: 28, 2: 22, 3: 17 }
 
+const CATEGORY_LABEL: Record<'text' | 'data' | 'media', string> = {
+  text: 'Chữ',
+  data: 'Số liệu',
+  media: 'Hình',
+}
+
 /** The grey word standing in for a block with nothing written in it yet. */
-const GHOST: Partial<Record<ReportBlock['type'], string>> = Object.fromEntries(
-  BLOCK_TYPES.map((t) => [t.type, t.label]),
+const GHOST: Record<string, string | undefined> = Object.fromEntries(
+  allElements().map((e) => [e.name, e.title]),
 )
 
 function ReportBlockFields({

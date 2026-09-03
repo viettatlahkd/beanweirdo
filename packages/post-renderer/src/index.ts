@@ -45,7 +45,7 @@ export type {
   StoredElement,
 } from './elements'
 
-export { sectionElements, withElements } from './memoElements'
+export { flatElements, sectionElements } from './memoElements'
 
 export { paletteFrom, shade } from './palette'
 export type { Palette } from './palette'

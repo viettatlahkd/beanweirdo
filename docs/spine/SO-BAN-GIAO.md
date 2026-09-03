@@ -14,8 +14,8 @@ tài liệu · `BỎ` đã quyết không làm.
 
 ## A. Luật đề xuất — chờ đưa vào `frontend/src/content/logic.ts`
 
-Bộ quy tắc hiện có **3 phần · 14 nhóm · 75 luật**. Ba mươi mốt luật dưới đây phát
-sinh từ code đã merge; A1–A7 đã ghi vào, A8–A31 thì chưa.
+Bộ quy tắc hiện có **3 phần · 14 nhóm · 75 luật**. Ba mươi ba luật dưới đây phát
+sinh từ code đã merge; A1–A7 đã ghi vào, A8–A33 thì chưa.
 
 | # | Luật | Từ PR | Nhóm phù hợp | Trạng thái |
 |---|---|---|---|---|
@@ -49,6 +49,8 @@ sinh từ code đã merge; A1–A7 đã ghi vào, A8–A31 thì chưa.
 | A29 | Template được phép vẽ một element theo cách của mình khi bố cục đòi hỏi — kho giữ **format**, template giữ **layout**. Memo vẽ khối kết luận và bảng nếm khác report, cùng một dữ liệu. | #70 | 16 | CHỜ |
 | A30 | Một dòng chữ là các **run**, không phải chuỗi phẳng, vì nó mang được chữ nhấn và số đo gạch chân. Ô chữ thường hiện chúng thành `chữ *được nhấn* chữ` và `_số đo_`, đi một vòng không mất gì — ép thành chuỗi phẳng để sửa là nuốt định dạng một cách lặng lẽ. | #70 | 02 (chữ) | CHỜ |
 | A31 | **Màn soạn vẽ đúng thứ trang sẽ vẽ**, rồi biến từng chỗ chữ thành ô nhập — không dựng một chồng ô của riêng nó. Một ô soạn tự vẽ sẽ giấu mất số thứ tự, dấu đầu dòng, thụt lề; nội dung chỉ có nghĩa khi đứng cạnh những thứ ấy sẽ đọc thành vô nghĩa trong lúc viết. | #70 | 16 (template) | CHỜ |
+| A32 | **Thân bài là một chuỗi phẳng các element; tiêu đề là element ngang hàng, không phải nắp của một cái bọc.** Mỗi element một tay nắm, một luật kéo thả cho cả bài. Muốn kéo cả cụm thì đó là việc người viết nói ra bằng element bọc, không phải cái bọc vô hình hệ thống áp sẵn. | #70 | 16 (template) | CHỜ |
+| A33 | Menu chèn khối **đọc từ kho**, không phải danh sách viết cứng trong màn soạn. Viết cứng là cách một element có trong kho mà thiếu ngoài menu, và là cách một khối giữ cái tên code gọi nó thay vì tên đặt cho người đọc. | #70 | 16 | CHỜ |
 | A16 | Bảng luôn còn ít nhất một cột và một hàng. Bảng không cột vẽ ra là một khoảng trắng — người viết không phân biệt được bảng rỗng với bảng đã bị xoá. | #67 | 16 | CHỜ |
 
 ## B. `docs/SPEC.html` đã lỗi thời

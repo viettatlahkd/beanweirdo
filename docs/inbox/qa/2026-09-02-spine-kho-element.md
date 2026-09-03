@@ -79,13 +79,42 @@ màn soạn.
 **Bản gốc không mất gì** — đã soi lại Admin › Templates › Memo: vẫn `01 blooming`,
 `02 #2`, `03 #3`, số serif màu module, dòng phụ bên dưới, bullet ba tầng.
 
+## [ĐỔI HÀNH VI] Thân memo phẳng — tiêu đề là element, không phải cái bọc
+
+Bản đầu giữ lại cái bọc "mục" của memo cũ: `mục { tên mục, các element }`. Tên
+mục là **thuộc tính của cái bọc**, nên tay nắm gắn vào cả cụm — kéo tiêu đề là
+kéo theo mọi thứ bên dưới, không có cách nào tách. Đó là di sản của hình dạng
+lưu cũ, không phải một quyết định. Chủ site hỏi thẳng: nếu muốn tiêu đề một
+phần, danh sách một phần riêng thì sao.
+
+Nay thân bài là một chuỗi phẳng. Tiêu đề là element như mọi element khác, có tay
+nắm riêng, kéo một mình. Một luật kéo thả cho cả bài thay vì hai tầng. Đây cũng
+là cách report vẫn chạy và cách WordPress làm — `core/heading` là **anh em** với
+`core/list`, không phải cha nó.
+
+Muốn kéo cả cụm thì sau này là một element bọc (`group` của WordPress), tức là
+thứ người viết **nói ra**, không phải cái bọc vô hình hệ thống áp sẵn cho mọi
+mục.
+
+Kéo thả nay tách theo element: trước đó element trong một mục chỉ có ↑ ↓ ×.
+
+Memo giữ cách vẽ tiêu đề của nó — serif nghiêng 32, cách phần trước 52 — nên
+trang không đổi. Đúng luật A29: kho giữ format, template giữ layout.
+
+## [SỬA LỖI] Menu chèn khối vẫn là danh sách viết cứng
+
+`BLOCK_TYPES` viết tay trong `Editor.tsx` là lý do `list` có trong kho mà không
+có ngoài menu, và là lý do một khối hiện tên `Meta` — chữ của lập trình — thay
+vì `Dòng nhãn`, cái tên đặt cho người đọc. Nay menu đọc thẳng từ kho, xếp theo
+`category`, chữ giải thích lấy từ `description`.
+
 ## Luật mới
 
-A27–A31 trong `docs/spine/SO-BAN-GIAO.md`.
+A27–A33 trong `docs/spine/SO-BAN-GIAO.md`.
 
 ## Kiểm thử
 
-`npm test` — 80 file, 800 test, xanh. Chín khối của Report chuyển vào kho mà 102
+`npm test` — 81 file, 800 test, xanh. Chín khối của Report chuyển vào kho mà 102
 test renderer xanh suốt, không đổi một pixel.
 
 Đã soi trình duyệt thật trên bài memo `ỏ`: từ 5 ô gõ được lên 34, chữ nhấn hiện

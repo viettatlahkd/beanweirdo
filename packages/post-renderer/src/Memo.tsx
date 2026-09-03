@@ -1,11 +1,11 @@
 import { getElement } from './elements'
-import { sectionElements } from './memoElements'
+import { flatElements } from './memoElements'
 import { paletteFrom, type Palette } from './palette'
 import { Fragment } from 'react'
 import type { ReactNode } from 'react'
 import type { CSSProperties } from 'react'
 import { sans, serif } from './tokens'
-import type { MemoPostData, MemoSection } from './types'
+import type { MemoPostData } from './types'
 
 /**
  * What the admin canvas may swap for an editable field.
@@ -20,11 +20,12 @@ export type MemoOverrides = {
   renderSubtitle?: (subtitle: string) => ReactNode
   renderSectionHeading?: (heading: string, index: number) => ReactNode
   /**
-   * Draws what is inside a section. The page reads it out of the store; the
-   * admin puts an editor for each element in the same place, so what is being
-   * written is where it will be read.
+   * Wraps one element, so the admin can hang its handle on it. The page passes
+   * the element straight through.
    */
-  renderSectionBody?: (section: MemoSection, index: number) => ReactNode
+  wrapElement?: (element: ReactNode, index: number, attributes: { type: string }) => ReactNode
+  /** Shown under the last element — where the editor puts "add a block". */
+  renderAfterElements?: () => ReactNode
   /**
    * Wraps one section, so the admin can hang its move / copy / delete handles
    * on it. The page passes the section straight through.
@@ -60,8 +61,33 @@ const label: CSSProperties = {
 const tableGrid = (columns: number) =>
   columns > 1 ? `80px repeat(${columns - 1}, minmax(0,1fr))` : 'minmax(0,1fr)'
 
-/** Elements memo lays out its own way; everything else comes from the store. */
-const MEMO_VIEWS: Record<string, ((p: { attributes: never; palette: Palette }) => ReactNode) | undefined> = {
+/**
+ * Elements memo lays out its own way; everything else comes from the store.
+ *
+ * The store owns the format, the template owns the layout — so a heading here
+ * is memo's italic serif with the air a section used to get, drawn from the
+ * same `heading` element a report draws flat and upright.
+ */
+const MEMO_VIEWS: Record<string, ((p: { attributes: never; palette: Palette; first?: boolean }) => ReactNode) | undefined> = {
+  heading: ({ attributes, palette, first }) => {
+    const a = attributes as unknown as { text: string }
+    return (
+      <h2
+        style={{
+          fontFamily: serif,
+          fontStyle: 'italic',
+          fontWeight: 400,
+          fontSize: 32,
+          lineHeight: 1.1,
+          letterSpacing: '-.02em',
+          margin: first ? '0 0 22px' : '52px 0 22px',
+          color: palette.ink,
+        }}
+      >
+        {a.text}
+      </h2>
+    )
+  },
   callout: ({ attributes, palette }) => {
     const a = attributes as unknown as { heading?: string; text: string }
     return (
@@ -121,56 +147,6 @@ const MEMO_VIEWS: Record<string, ((p: { attributes: never; palette: Palette }) =
   },
 }
 
-function Section({
-  palette,
-  section,
-  renderHeading,
-  renderBody,
-}: {
-  section: MemoSection
-  palette: Palette
-  renderHeading?: (heading: string) => ReactNode
-  renderBody?: () => ReactNode
-}) {
-  return (
-    <div>
-      <h2
-        style={{
-          fontFamily: serif,
-          fontStyle: 'italic',
-          fontWeight: 400,
-          fontSize: 32,
-          lineHeight: 1.1,
-          letterSpacing: '-.02em',
-          margin: '0 0 22px',
-          color: palette.ink,
-        }}
-      >
-        {renderHeading ? renderHeading(section.h) : section.h}
-      </h2>
-
-      {/*
-        * The section's contents, out of the store.
-        *
-        * Two of them keep a view of memo's own: the conclusion box and the
-        * tasting table are laid out differently here than a report lays the
-        * same element out, and that difference is the template. The store owns
-        * the format; the template may own the layout.
-        */}
-      {renderBody
-        ? renderBody()
-        : sectionElements(section).map((el, i) => {
-            const own = MEMO_VIEWS[el.type]
-            if (own) return <div key={i}>{own({ attributes: el as never, palette })}</div>
-            const element = getElement(el.type)
-            return element ? (
-              <element.View key={i} attributes={el} palette={palette} index={i} />
-            ) : null
-          })}
-    </div>
-  )
-}
-
 /**
  * The "memo" template — one tasting, written up.
  *
@@ -178,7 +154,7 @@ function Section({
  * pour) before any prose, because a tasting note nobody can reproduce is just
  * an opinion. Everything below is an outline where indent carries the argument.
  */
-export function Memo({ post, breadcrumb, renderTitle, renderSubtitle, renderSectionHeading, renderSectionBody, wrapSection, renderAfterSections }: MemoProps) {
+export function Memo({ post, breadcrumb, renderTitle, renderSubtitle, wrapElement, renderAfterElements }: MemoProps) {
   // Everything this template tints comes from the one colour the post wears.
   const palette = paletteFrom(post.band?.bg ?? MEMO_BLUE, post.band?.fg)
   return (
@@ -277,19 +253,25 @@ export function Memo({ post, breadcrumb, renderTitle, renderSubtitle, renderSect
           padding: '56px 56px 130px',
         }}
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 52 }}>
-          {post.sections.map((s, i) => {
-            const section = (
-              <Section
-                section={s}
-                palette={palette}
-                renderHeading={renderSectionHeading ? (h) => renderSectionHeading(h, i) : undefined}
-                renderBody={renderSectionBody ? () => renderSectionBody(s, i) : undefined}
-              />
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          {/*
+            * One flat run of elements. A heading is an element among them, not
+            * the lid of a container — so it moves on its own, and every element
+            * in the post obeys one rule instead of two.
+            */}
+          {flatElements(post).map((el, i) => {
+            const own = MEMO_VIEWS[el.type]
+            const drawn = own ? (
+              own({ attributes: el as never, palette, first: i === 0 })
+            ) : (
+              (() => {
+                const element = getElement(el.type)
+                return element ? <element.View attributes={el} palette={palette} index={i} /> : null
+              })()
             )
-            return <Fragment key={i}>{wrapSection ? wrapSection(section, i) : section}</Fragment>
+            return <Fragment key={i}>{wrapElement ? wrapElement(drawn, i, el) : drawn}</Fragment>
           })}
-          {renderAfterSections?.()}
+          {renderAfterElements?.()}
         </div>
       </div>
     </div>

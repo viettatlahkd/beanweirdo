@@ -290,6 +290,12 @@ export type MemoPostData = {
   subtitle?: string
   /** The bean / water / pour readings that open the page. */
   specs?: { k: string; v: string }[]
+  /**
+   * The body, as one flat run of elements — a heading is an element, not the
+   * lid of a container. `sections` below is how a memo was stored before that,
+   * still read so an older post opens. See `memoElements.ts`.
+   */
+  elements?: unknown[]
   /** Hero photograph, and what it shows. */
   img?: string | null
   imgCaption?: string

@@ -59,11 +59,23 @@ export function sectionElements(section: MemoSection): StoredElement[] {
 }
 
 /**
- * A section holding elements, whichever way it arrived.
+ * A memo's whole body as one flat run of elements.
  *
- * Writing always produces `elements`; the old slots are left where they are
- * rather than deleted, so a post half-migrated still reads on an older deploy.
+ * A section used to be a container with the heading as one of its properties,
+ * which made the heading un-draggable on its own: taking hold of it took hold
+ * of everything filed under it, and there was no way to say otherwise. That
+ * container was a leftover of the old storage, not a decision.
+ *
+ * Flat, a heading is an element like any other — its own handle, moved on its
+ * own, and every element in the post obeys one rule instead of two. Wanting to
+ * move a heading *together with* what follows it is a real wish, but it is a
+ * thing the writer should say out loud with a `group` element, not something
+ * the system decides for them by wrapping everything.
  */
-export function withElements(section: MemoSection): MemoSection {
-  return { ...section, elements: sectionElements(section) }
+export function flatElements(post: { sections?: MemoSection[]; elements?: unknown[] }): StoredElement[] {
+  if (Array.isArray(post.elements)) return toElements(post.elements)
+  return (post.sections ?? []).flatMap((section) => [
+    ...(section.h ? [{ type: 'heading', text: section.h, level: 2 } as StoredElement] : []),
+    ...sectionElements(section),
+  ])
 }
