@@ -124,3 +124,25 @@ describe('/api/site — other methods', () => {
     expect(res.statusCode).toBe(405)
   })
 })
+
+describe('phản hồi khu admin không được cache', () => {
+  it('mọi lượt đều đặt no-store', async () => {
+    /*
+     * Vercel mặc định `public, max-age=0, must-revalidate`, và CDN coi `public`
+     * là được giữ. `/api/site` từng bị cache ở biên — `x-vercel-cache: HIT`,
+     * `age: 466` — nên CMS tải lại là nhận bản cũ trong khi trang công khai vẫn
+     * tươi. Chủ site tưởng nội dung mất.
+     */
+    fromMock.mockReturnValueOnce(queryBuilder({ data: { data: { t1: 'x' } }, error: null }))
+    const res = mockRes()
+    await handler(mockReq({ method: 'GET', headers: authHeaders(signToken()) }), res)
+    expect(res.headers['Cache-Control']).toMatch(/no-store/)
+  })
+
+  it('kể cả khi từ chối vì thiếu quyền', async () => {
+    const res = mockRes()
+    await handler(mockReq({ method: 'GET', headers: {} }), res)
+    expect(res.statusCode).toBe(401)
+    expect(res.headers['Cache-Control']).toMatch(/no-store/)
+  })
+})
