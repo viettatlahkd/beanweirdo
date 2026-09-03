@@ -73,6 +73,20 @@ export function verifyToken(token: string | undefined | null): TokenPayload | nu
  * header; otherwise writes a 401 JSON response and returns false.
  */
 export function requireAuth(req: VercelRequest, res: VercelResponse): boolean {
+  /*
+   * Không cache phản hồi của khu admin, ở đâu cả.
+   *
+   * Vercel mặc định cho `public, max-age=0, must-revalidate` và CDN của họ coi
+   * `public` là được phép giữ. Kết quả: `/api/site` bị cache ở biên — đo được
+   * `x-vercel-cache: HIT` với `age: 466` — nên CMS tải lại trang là nhận bản cũ,
+   * trong khi trang công khai đọc thẳng Supabase nên vẫn tươi. Chủ site soạn
+   * xong, thấy web đúng, mở CMS lại thì thấy bản cũ, và tưởng nội dung mất.
+   *
+   * Đây còn là dữ liệu sau đăng nhập: một phản hồi của khu admin nằm trong cache
+   * dùng chung là chuyện không nên xảy ra dù có đúng nội dung hay không.
+   */
+  res.setHeader('Cache-Control', 'no-store, max-age=0')
+
   const header = req.headers.authorization
   if (!header || Array.isArray(header) || !header.startsWith('Bearer ')) {
     res.status(401).json({ error: 'Missing or invalid Authorization header' })

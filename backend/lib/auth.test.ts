@@ -2,7 +2,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { requireAuth, signToken, verifyToken } from './auth.js'
 
 function mockRes() {
-  const res: { statusCode?: number; body?: unknown; status: (c: number) => typeof res; json: (b: unknown) => typeof res } = {
+  const res: {
+    statusCode?: number
+    body?: unknown
+    headers: Record<string, string>
+    setHeader: (k: string, v: string) => void
+    status: (c: number) => typeof res
+    json: (b: unknown) => typeof res
+  } = {
+    headers: {},
+    setHeader(key: string, value: string) {
+      res.headers[key] = value
+    },
     status(code: number) {
       res.statusCode = code
       return res
@@ -121,5 +132,35 @@ describe('requireAuth', () => {
     const res = mockRes()
     expect(requireAuth(req, res as any)).toBe(true)
     expect(res.statusCode).toBeUndefined()
+  })
+})
+
+describe('requireAuth và cache', () => {
+  beforeEach(() => {
+    process.env.ADMIN_SESSION_SECRET = 'test-secret'
+  })
+  afterEach(() => {
+    delete process.env.ADMIN_SESSION_SECRET
+  })
+
+  /*
+   * Vercel mặc định `public, max-age=0, must-revalidate` và CDN của họ coi
+   * `public` là được giữ, nên `/api/site` từng bị cache ở biên
+   * (`x-vercel-cache: HIT`, `age: 466`): CMS tải lại trang thì nhận bản cũ.
+   * requireAuth là cửa duy nhất mọi endpoint admin đi qua, nên đặt ở đây là
+   * một chỗ cho cả 22 endpoint.
+   */
+  it('đặt no-store khi cho qua', () => {
+    const res = mockRes()
+    const req = { headers: { authorization: `Bearer ${signToken()}` } } as never
+    expect(requireAuth(req, res as never)).toBe(true)
+    expect(res.headers['Cache-Control']).toBe('no-store, max-age=0')
+  })
+
+  it('đặt no-store cả khi từ chối', () => {
+    const res = mockRes()
+    requireAuth({ headers: {} } as never, res as never)
+    expect(res.statusCode).toBe(401)
+    expect(res.headers['Cache-Control']).toBe('no-store, max-age=0')
   })
 })
