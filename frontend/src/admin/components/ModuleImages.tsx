@@ -210,6 +210,19 @@ function NotesFooterPreview({
  * front. Showing the real layout is the only honest answer: upload, look, and
  * swap the photo if the crop loses what mattered.
  */
+/** Chỗ để cầm khi kéo — ô nhập trong hàng nuốt cú nhấn giữ, tay nắm thì không. */
+const grip: CSSProperties = {
+  alignSelf: 'center',
+  width: 16,
+  fontFamily: "'JetBrains Mono', monospace",
+  fontSize: 13,
+  lineHeight: 1,
+  color: '#8C8674',
+  cursor: 'grab',
+  flex: 'none',
+  userSelect: 'none',
+}
+
 export function ModuleImages({
   m,
   group,
@@ -268,18 +281,26 @@ export function ModuleImages({
              */
             const borrowed = group.columns === 'module-page' && !url && isBorrowed(m, slot)
             const shown = url ?? (borrowed ? pageImage(m, slot) : null)
-            const dragging = onSwap ? swap.slotProps(slot) : {}
             return (
               <div
                 key={slot}
-                {...dragging}
+                {...(onSwap ? swap.slotProps(slot) : {})}
                 style={{
                   ...rowBox,
-                  ...(onSwap ? { cursor: 'grab' } : null),
                   ...(swap.over === slot ? { outline: `2px solid ${ink.base}`, outlineOffset: 3 } : null),
                   ...(swap.from === slot ? { opacity: 0.45 } : null),
                 }}
               >
+                {onSwap && (
+                  <div
+                    {...swap.handleProps(slot)}
+                    title="Kéo sang khung khác để đổi chỗ hai ảnh"
+                    aria-label={`kéo ảnh ${slot} sang khung khác`}
+                    style={grip}
+                  >
+                    ⠿
+                  </div>
+                )}
                 <div
                   style={{
                     width: 72,
@@ -350,10 +371,16 @@ export function ModuleImages({
                     >
                       dán link
                     </Hover>
-                    {url && (
+                    {shown && (
+                      /*
+                       * Đặt được khung cả với ảnh đang mượn từ trang chủ — và
+                       * đó đúng là lúc cần nó nhất: khung ở trang module có
+                       * hình dạng khác, nên ảnh mượn thường cắt lệch. Đặt xong
+                       * thì ảnh thành của riêng ô này, mang theo điểm căn.
+                       */
                       <Hover
                         as="button"
-                        onClick={() => setPlacing({ slot, url })}
+                        onClick={() => setPlacing({ slot, url: shown })}
                         style={{ ...action, background: 'none', border: 'none', padding: 0 }}
                         hoverStyle={{ color: ink.base }}
                       >

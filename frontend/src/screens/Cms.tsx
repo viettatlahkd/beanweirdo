@@ -150,7 +150,11 @@ function Field({ label, children }: { label: ReactNode; children: ReactNode }) {
  * describes what the slot wants); the photo replaces the tinted placeholder on
  * the public screens once uploaded.
  */
-type SlotDragProps = ReturnType<SlotSwap['slotProps']> & { marked?: boolean }
+type SlotDragProps = ReturnType<SlotSwap['slotProps']> & {
+  marked?: boolean
+  /** Chỗ để cầm — ô nhập chú thích nuốt cú nhấn giữ, tay nắm thì không. */
+  handle?: ReturnType<SlotSwap['handleProps']>
+}
 
 function ImageSlot({
   label,
@@ -179,13 +183,29 @@ function ImageSlot({
 }) {
   const [placing, setPlacing] = useState<string | null>(null)
   const [linking, setLinking] = useState(false)
-  const { marked, ...dragProps } = drag ?? { marked: false }
+  const { marked, handle, ...dragProps } = drag ?? { marked: false, handle: undefined }
   return (
-    <div
-      {...dragProps}
-      style={{ outline: marked ? `2px solid ${ink.base}` : undefined, outlineOffset: 4, cursor: drag ? 'grab' : undefined }}
-    >
-      <div style={fieldLabel}>{label}</div>
+    <div {...dragProps} style={{ outline: marked ? `2px solid ${ink.base}` : undefined, outlineOffset: 4 }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+        {handle && (
+          <div
+            {...handle}
+            title="Kéo sang khung khác để đổi chỗ hai ảnh"
+            aria-label={`kéo ${label} sang khung khác`}
+            style={{
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: 13,
+              lineHeight: 1,
+              color: ink.faint,
+              cursor: 'grab',
+              userSelect: 'none',
+            }}
+          >
+            ⠿
+          </div>
+        )}
+        <div style={fieldLabel}>{label}</div>
+      </div>
       {/*
         * Ghi khi rời ô, không phải từng phím — như mọi ô chữ khác trên màn này.
         * Ghi từng phím nghĩa là mỗi ký tự xoá đi là một lượt lưu, và ô nhấp
@@ -888,7 +908,11 @@ export function Cms() {
                 onClear={() => void saveSite({ [`plateImg${slot}`]: '' } as SiteOverrides)}
                 onPlace={(next) => void saveSite({ [`plateImg${slot}`]: next } as SiteOverrides)}
                 ratio={16 / 9}
-                drag={{ ...plateSwap.slotProps(slot), marked: plateSwap.over === slot }}
+                drag={{
+                  ...plateSwap.slotProps(slot),
+                  handle: plateSwap.handleProps(slot),
+                  marked: plateSwap.over === slot,
+                }}
               />
             ))}
           </div>

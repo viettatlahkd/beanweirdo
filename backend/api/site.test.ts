@@ -69,14 +69,30 @@ describe('PATCH /api/site', () => {
     expect(res.body.site).toEqual({ t1: 'Kept', t2: 'New' })
   })
 
-  it("drops a field set to '' so the frontend default takes over again", async () => {
-    const upserted = queryBuilder({ data: { data: {} }, error: null })
+  it("keeps a field set to '' — the owner asked for it to be empty", async () => {
+    // '' và null từng bị gộp làm một. Gộp lại thì xoá trắng một ô là việc không
+    // làm được: máy chủ bỏ khoá đi, trả về hàng không có nó, và trang lấy lại
+    // bản mặc định ngay trước mắt người vừa xoá.
+    const upserted = queryBuilder({ data: { data: { t1: '' } }, error: null })
     fromMock
       .mockReturnValueOnce(queryBuilder({ data: { data: { t1: 'Overridden' } }, error: null }))
       .mockReturnValueOnce(upserted)
 
     const res = mockRes()
     await handler(mockReq({ method: 'PATCH', body: { t1: '' }, headers: authHeaders(signToken()) }), res)
+
+    expect(res.statusCode).toBe(200)
+    expect(upserted.upsert).toHaveBeenCalledWith(expect.objectContaining({ data: { t1: '' } }))
+  })
+
+  it('drops a field set to null — that is how a default comes back', async () => {
+    const upserted = queryBuilder({ data: { data: {} }, error: null })
+    fromMock
+      .mockReturnValueOnce(queryBuilder({ data: { data: { t1: 'Overridden' } }, error: null }))
+      .mockReturnValueOnce(upserted)
+
+    const res = mockRes()
+    await handler(mockReq({ method: 'PATCH', body: { t1: null }, headers: authHeaders(signToken()) }), res)
 
     expect(res.statusCode).toBe(200)
     expect(upserted.upsert).toHaveBeenCalledWith(expect.objectContaining({ data: {} }))

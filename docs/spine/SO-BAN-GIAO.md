@@ -14,8 +14,8 @@ tài liệu · `BỎ` đã quyết không làm.
 
 ## A. Luật đề xuất — chờ đưa vào `frontend/src/content/logic.ts`
 
-Bộ quy tắc hiện có **3 phần · 14 nhóm · 75 luật**. Ba mươi bảy luật dưới đây phát
-sinh từ code đã merge; A1–A7 đã ghi vào, A8–A37 thì chưa.
+Bộ quy tắc hiện có **3 phần · 14 nhóm · 75 luật**. Ba mươi chín luật dưới đây phát
+sinh từ code đã merge; A1–A7 đã ghi vào, A8–A39 thì chưa.
 
 | # | Luật | Từ PR | Nhóm phù hợp | Trạng thái |
 |---|---|---|---|---|
@@ -55,6 +55,8 @@ sinh từ code đã merge; A1–A7 đã ghi vào, A8–A37 thì chưa.
 | A35 | **Mọi màn đặt ảnh có đủ bốn thao tác giống nhau**: đổi ảnh · dán link · đặt vào khung · xoá. Thiếu một cái ở một màn là chỗ chủ site phải làm vòng khác cho cùng một việc. | #71 | 16 (template) | CHỜ |
 | A36 | **Đổi thứ tự ảnh là kéo một ảnh sang khung khác**, hai bên đổi chỗ, chú thích đi theo ảnh của nó. Khung trên trang là cố định nên "chèn vào giữa" không có nghĩa; thứ cần chọn là ảnh nào nằm ở khung nào. Trước đó phải xoá rồi tải lại từng cái, và mỗi lần mất luôn chú thích cùng điểm căn khung. | #71 | 16 | CHỜ |
 | A37 | **"Chưa đặt" khác "đặt là rỗng".** Chỉ giá trị vắng mặt mới rơi về bản mặc định; chuỗi rỗng là một lựa chọn và phải giữ nguyên. Coi rỗng là chưa đặt nghĩa là không xoá trắng được ô nào — gõ xoá hết rồi ô nhảy về như cũ. | #71 | 16 (template) | CHỜ |
+| A38 | Cú kéo bắt đầu ở **tay nắm**, không phải ở cả hàng. Hàng nào có ô nhập thì ô ấy nuốt cú nhấn giữ — kéo từ giữa hàng chỉ bôi đen chữ. Và một hàng kéo được mà không có chỗ nào để cầm thì không ai biết là kéo được. | #72 | 16 (template) | CHỜ |
+| A39 | **Đặt vào khung dùng được cả với ảnh đang mượn** từ bề mặt khác — đó đúng là lúc cần nó nhất, vì khung ở đây có hình dạng khác khung nơi ảnh được đặt lần đầu. Đặt xong thì ảnh thành của riêng ô này, mang theo điểm căn. | #72 | 16 | CHỜ |
 | A16 | Bảng luôn còn ít nhất một cột và một hàng. Bảng không cột vẽ ra là một khoảng trắng — người viết không phân biệt được bảng rỗng với bảng đã bị xoá. | #67 | 16 | CHỜ |
 
 ## B. `docs/SPEC.html` đã lỗi thời

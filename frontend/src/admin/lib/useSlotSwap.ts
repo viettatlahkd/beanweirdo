@@ -16,12 +16,16 @@ export type SlotSwap = {
   from: number | null
   /** Khung con trỏ đang ở trên, để đánh dấu chỗ sắp thả. */
   over: number | null
+  /** Đặt lên hàng: nhận cú thả. */
   slotProps: (index: number) => {
+    onDragOver: (e: { preventDefault: () => void }) => void
+    onDrop: () => void
+  }
+  /** Đặt lên tay nắm: bắt đầu cú kéo. */
+  handleProps: (index: number) => {
     draggable: true
     onDragStart: () => void
     onDragEnd: () => void
-    onDragOver: (e: { preventDefault: () => void }) => void
-    onDrop: () => void
   }
 }
 
@@ -38,9 +42,6 @@ export function useSlotSwap(onSwap: (a: number, b: number) => void): SlotSwap {
     from,
     over,
     slotProps: (index) => ({
-      draggable: true,
-      onDragStart: () => setFrom(index),
-      onDragEnd: done,
       onDragOver: (e) => {
         if (from === null || from === index) return
         e.preventDefault()
@@ -50,6 +51,11 @@ export function useSlotSwap(onSwap: (a: number, b: number) => void): SlotSwap {
         if (from !== null && from !== index) onSwap(from, index)
         done()
       },
+    }),
+    handleProps: (index) => ({
+      draggable: true,
+      onDragStart: () => setFrom(index),
+      onDragEnd: done,
     }),
   }
 }

@@ -193,11 +193,28 @@ export function FeatureCellsEditor({
               {...swap.slotProps(f.n)}
               style={{
                 ...rowBox,
-                cursor: 'grab',
                 ...(swap.over === f.n ? { outline: `2px solid ${ink.base}`, outlineOffset: 3 } : null),
                 ...(swap.from === f.n ? { opacity: 0.45 } : null),
               }}
             >
+              <div
+                {...swap.handleProps(f.n)}
+                title="Kéo sang khung khác để đổi chỗ hai ảnh"
+                aria-label={`kéo ảnh F${f.n} sang khung khác`}
+                style={{
+                  alignSelf: 'center',
+                  width: 16,
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontSize: 13,
+                  lineHeight: 1,
+                  color: ink.faint,
+                  cursor: 'grab',
+                  flex: 'none',
+                  userSelect: 'none',
+                }}
+              >
+                ⠿
+              </div>
               <div
                 style={{
                   width: 72,
