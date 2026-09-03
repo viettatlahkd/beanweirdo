@@ -108,13 +108,33 @@ có ngoài menu, và là lý do một khối hiện tên `Meta` — chữ của 
 vì `Dòng nhãn`, cái tên đặt cho người đọc. Nay menu đọc thẳng từ kho, xếp theo
 `category`, chữ giải thích lấy từ `description`.
 
+## [SỬA LỖI] Bài memo sửa một lần là ra trang trắng
+
+Chủ site kéo một danh sách lên đầu bài rồi báo mất sạch nội dung. Kiểm tra cơ sở
+dữ liệu: **không mất gì** — cả 22 element còn nguyên, và danh sách đã lên đầu
+đúng như thao tác. Mất là mất chỗ hiển thị.
+
+`toMemoData` chuyển `sections` sang renderer mà **quên `elements`**. Bài nào đã
+sửa một lần thì thân bài lưu ở `elements`, và không màn nào với tới được: màn
+soạn trắng, **và trang công khai cũng trắng**. Nội dung có đủ, đường đi thì đứt.
+
+Đúng loại lỗi mà chính docblock của `postToRenderer.ts` cảnh báo: cùng một bài
+đi qua hai đường thì hai đường sẽ trôi khỏi nhau.
+
+Nay cả hai khoá cùng đi. Có test ở hai mức: bộ chuyển mang đủ khoá, và cả trang
+vẽ ra được từ hình dạng phẳng — vì test ở một mức thôi thì đã không bắt được lỗi
+này.
+
+`MemoPostData.sections` nay là tuỳ chọn: một bài có hình dạng này hoặc hình dạng
+kia, không bắt buộc có cả hai.
+
 ## Luật mới
 
 A27–A33 trong `docs/spine/SO-BAN-GIAO.md`.
 
 ## Kiểm thử
 
-`npm test` — 81 file, 800 test, xanh. Chín khối của Report chuyển vào kho mà 102
+`npm test` — 81 file, 804 test, xanh. Chín khối của Report chuyển vào kho mà 102
 test renderer xanh suốt, không đổi một pixel.
 
 Đã soi trình duyệt thật trên bài memo `ỏ`: từ 5 ô gõ được lên 34, chữ nhấn hiện

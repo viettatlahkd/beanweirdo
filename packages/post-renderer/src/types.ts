@@ -292,12 +292,13 @@ export type MemoPostData = {
   specs?: { k: string; v: string }[]
   /**
    * The body, as one flat run of elements — a heading is an element, not the
-   * lid of a container. `sections` below is how a memo was stored before that,
-   * still read so an older post opens. See `memoElements.ts`.
+   * lid of a container. `sections` is how a memo was stored before that, still
+   * read so an older post opens. A memo has one or the other, never neither
+   * required. See `memoElements.ts`.
    */
   elements?: unknown[]
   /** Hero photograph, and what it shows. */
   img?: string | null
   imgCaption?: string
-  sections: MemoSection[]
+  sections?: MemoSection[]
 }

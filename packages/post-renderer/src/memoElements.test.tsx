@@ -1,4 +1,6 @@
+import { render } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { Memo } from './Memo'
 import { flatElements, sectionElements } from './memoElements'
 import type { MemoSection } from './types'
 
@@ -67,5 +69,25 @@ describe('cả bài, đọc thành một chuỗi phẳng', () => {
 
   it('bài rỗng là chuỗi rỗng, không nổ', () => {
     expect(flatElements({})).toEqual([])
+  })
+})
+
+describe('cả trang vẽ được từ hình dạng phẳng', () => {
+  it('bài đã sửa một lần vẫn vẽ đủ nội dung', () => {
+    // Kiểm ở mức trang, không chỉ ở bộ đọc: khoá `elements` phải đi hết đường
+    // từ dữ liệu tới chỗ vẽ, không rơi ở đoạn nào.
+    const { container } = render(
+      <Memo
+        post={{
+          title: 'Nếm thử',
+          elements: [
+            { type: 'heading', text: 'Mở' },
+            { type: 'list', items: [{ runs: [{ t: 'một dòng' }] }] },
+          ],
+        }}
+      />,
+    )
+    expect(container.textContent).toContain('Mở')
+    expect(container.textContent).toContain('một dòng')
   })
 })
