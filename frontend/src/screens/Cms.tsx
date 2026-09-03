@@ -3,7 +3,7 @@ import { Breadcrumbs } from '../components/Breadcrumbs'
 import { NAV } from '../content/navItems'
 import { displayNumber } from '../lib/postText'
 import { onlyLive, orderPosts } from '../lib/postOrder'
-import { SITE_DEFAULTS, type NavGroup, type SiteCopy, type SiteOverrides } from '../content/site'
+import { resolveSite, SITE_DEFAULTS, type NavGroup, type SiteCopy, type SiteOverrides } from '../content/site'
 import {
   createModule,
   deleteModule,
@@ -408,28 +408,11 @@ export function Cms() {
     void load()
   }, [load])
 
-  /**
-   * Chữ đang dùng: bản chủ site đặt, hoặc bản mặc định khi **chưa từng đặt**.
-   *
-   * Trước đây chuỗi rỗng cũng bị coi là chưa đặt, nên xoá trắng một ô là không
-   * làm được: gõ xoá hết, hệ thống lưu rỗng, rồi lấy lại ngay bản mặc định và ô
-   * nhảy về như cũ. Chủ site gặp ở chú thích ảnh, nhưng nó đúng với mọi ô chữ
-   * của trang.
-   *
-   * "Chưa đặt" và "đặt là rỗng" là hai chuyện khác nhau. Chỉ `undefined` và
-   * `null` mới rơi về mặc định.
+  /*
+   * Cùng một hàm trang công khai dùng. Màn này từng giữ phép hoà riêng của nó,
+   * và đó là lý do sửa được một chỗ mà lỗi vẫn còn: ba bản sao của một luật.
    */
-  const copy = useMemo(() => {
-    const out = { ...SITE_DEFAULTS } as SiteCopy
-    for (const [k, v] of Object.entries(site)) {
-      if (k === 'sections') {
-        out.sections = { ...SITE_DEFAULTS.sections, ...(v as Partial<Record<NavGroup, string>>) }
-        continue
-      }
-      if (v !== undefined && v !== null) (out as Record<string, unknown>)[k] = v
-    }
-    return out
-  }, [site])
+  const copy = useMemo(() => resolveSite(site), [site])
 
   async function saveSite(patch: SiteOverrides) {
     setSite((s) => ({ ...s, ...patch, sections: { ...s.sections, ...patch.sections } }))

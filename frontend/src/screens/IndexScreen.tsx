@@ -8,7 +8,7 @@ import { usePublishedPosts } from '../data/usePublishedPosts'
 import { Breadcrumbs } from '../components/Breadcrumbs'
 import { useSiteCopy } from '../data/useSiteCopy'
 import { coverStyle } from '../lib/imageFocus'
-import { garden, ink, paper, sans, serif } from '../design/tokens'
+import { garden, ink, paper, prose, sans, serif } from '../design/tokens'
 import { Hover } from '../lib/Hover'
 import { rowPad, useNav, useSettings } from '../lib/nav'
 import { openPost } from '../lib/openPost'
@@ -298,24 +298,39 @@ function Columns({ modules, postsByModule }: ModulesProps) {
               >
                 {m.title}
               </h2>
-              <div style={{ fontSize: 13.5, lineHeight: 1.35, marginBottom: 20 }}>{m.blurb}</div>
+              <div style={{ fontSize: 13.5, lineHeight: 1.35, marginBottom: 20, ...prose }}>{m.blurb}</div>
 
               {showPlates && (
+                /*
+                 * Ảnh của module, không phải một ô kem trống. Dạng cột vẽ cái
+                 * khung này từ đầu mà chưa bao giờ đọc `img1` — ảnh vẫn nằm
+                 * trong CMS, chỉ là bề mặt này không lấy. Và chú thích chỉ vẽ
+                 * khi có chữ: cái nền mờ tồn tại để chữ đọc được trên ảnh.
+                 */
                 <div
                   style={{
                     aspectRatio: '4/3',
                     marginBottom: 20,
-                    background: paper.cream,
+                    ...(m.img1 ? coverStyle(m.img1) : { background: paper.cream }),
                     display: 'flex',
                     alignItems: 'flex-end',
                     padding: 12,
                   }}
                 >
-                  <div
-                    style={{ fontFamily: sans, fontSize: 10, color: ink.strong, lineHeight: 1.3 }}
-                  >
-                    {m.shot1}
-                  </div>
+                  {m.shot1 && (
+                    <div
+                      style={{
+                        fontFamily: sans,
+                        fontSize: 10,
+                        lineHeight: 1.3,
+                        color: m.img1 ? paper.cream : ink.strong,
+                        background: m.img1 ? 'rgba(24,22,17,.55)' : undefined,
+                        padding: m.img1 ? '3px 7px' : undefined,
+                      }}
+                    >
+                      {m.shot1}
+                    </div>
+                  )}
                 </div>
               )}
 

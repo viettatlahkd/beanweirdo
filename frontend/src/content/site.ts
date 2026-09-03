@@ -106,22 +106,32 @@ export type SiteOverrides = Partial<Omit<SiteCopy, 'sections'>> & {
 }
 
 /**
- * Resolve one field. Empty string counts as unset so clearing a CMS input
- * restores the default rather than blanking the page.
+ * Chữ đang dùng cho một trường: bản chủ site đặt, hoặc bản mặc định khi **chưa
+ * từng đặt**.
+ *
+ * `''` là một lựa chọn, không phải "chưa đặt". Coi rỗng là chưa đặt nghĩa là
+ * xoá trắng một ô không làm được: xoá xong, trang lấy lại bản mặc định.
+ *
+ * Luật này từng nằm ở **ba nơi** — hàm này, phép hoà riêng trong màn CMS, và
+ * cách máy chủ gộp bản vá — nên sửa một chỗ thì hai chỗ kia vẫn nói ngược lại.
+ * Nay chỉ còn ở đây; màn CMS đọc qua hàm này, máy chủ chỉ xoá khoá khi nhận
+ * `null`. Muốn lấy lại bản mặc định thì gửi `null`, không phải chuỗi rỗng.
  */
 export function siteValue<K extends keyof SiteCopy>(
   overrides: SiteOverrides | null | undefined,
   key: K,
 ): SiteCopy[K] {
   if (key === 'sections') {
-    const merged = { ...SITE_DEFAULTS.sections, ...(overrides?.sections ?? {}) }
-    for (const k of Object.keys(merged) as NavGroup[]) {
-      if (!merged[k]) merged[k] = SITE_DEFAULTS.sections[k]
+    const stored = overrides?.sections ?? {}
+    const merged = { ...SITE_DEFAULTS.sections } as Record<NavGroup, string>
+    for (const k of Object.keys(stored) as NavGroup[]) {
+      const v = stored[k]
+      if (v !== undefined && v !== null) merged[k] = v
     }
     return merged as SiteCopy[K]
   }
   const v = (overrides as Record<string, unknown> | null | undefined)?.[key as string]
-  return (v === undefined || v === null || v === '' ? SITE_DEFAULTS[key] : v) as SiteCopy[K]
+  return (v === undefined || v === null ? SITE_DEFAULTS[key] : v) as SiteCopy[K]
 }
 
 /** Whole resolved object — what screens actually read. */

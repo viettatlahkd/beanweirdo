@@ -2,7 +2,7 @@ import { Breadcrumbs } from '../components/Breadcrumbs'
 import { LOGIC, SCOPE_COLOR, SCOPE_KEY } from '../content/logic'
 import { interpolateNav } from '../content/navItems'
 import { useSiteCopy } from '../data/useSiteCopy'
-import { ink, paper, sans, serif } from '../design/tokens'
+import { ink, paper, prose, sans, serif } from '../design/tokens'
 
 /**
  * System conventions — the rulebook, read-only.
@@ -52,6 +52,7 @@ export function Logic() {
               maxWidth: 400,
               opacity: 0.8,
               paddingBottom: 8,
+              ...prose,
             }}
           >
             {site.logicIntro}
