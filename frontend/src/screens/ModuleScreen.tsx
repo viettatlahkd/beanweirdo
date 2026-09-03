@@ -379,17 +379,27 @@ export function ModulePlates({ m }: { m: ModuleRow }) {
         padding: '16px 18px',
       }}
     >
-      <div
-        style={{
-          fontFamily: sans,
-          fontSize: 10,
-          color: pageImage(m, 1) ? paper.cream : ink.strong,
-          background: pageImage(m, 1) ? 'rgba(24,22,17,.55)' : undefined,
-          padding: pageImage(m, 1) ? '3px 7px' : undefined,
-        }}
-      >
-        {pageCaption(m, 1)}
-      </div>
+      {/*
+        * Chú thích là tuỳ chọn: không có chữ thì không vẽ gì cả. Trước đây cái
+        * nền mờ vẫn được bôi ra dù bên trong rỗng, nên mỗi ảnh chưa đặt chú
+        * thích lại có một vệt xám nhỏ ở góc — trang chủ đã làm đúng chuyện này
+        * từ lâu, trang module thì chưa.
+        */}
+      {pageCaption(m, 1) ? (
+        <div
+          style={{
+            fontFamily: sans,
+            fontSize: 10,
+            color: pageImage(m, 1) ? paper.cream : ink.strong,
+            background: pageImage(m, 1) ? 'rgba(24,22,17,.55)' : undefined,
+            padding: pageImage(m, 1) ? '3px 7px' : undefined,
+          }}
+        >
+          {pageCaption(m, 1)}
+        </div>
+      ) : (
+        <div />
+      )}
       <div style={{ fontFamily: sans, fontSize: 10, color: pageImage(m, 1) ? paper.cream : '#A4908C' }}>
         16:5 / hero
       </div>
@@ -421,18 +431,20 @@ function PlateCell({
         minHeight,
       }}
     >
-      <div
-        style={{
-          fontFamily: sans,
-          fontSize: 9.5,
-          lineHeight: 1.25,
-          color: photo ? paper.cream : (fg ?? ink.strong),
-          background: photo ? 'rgba(24,22,17,.55)' : undefined,
-          padding: photo ? '3px 7px' : undefined,
-        }}
-      >
-        {pageCaption(m, slot)}
-      </div>
+      {pageCaption(m, slot) && (
+        <div
+          style={{
+            fontFamily: sans,
+            fontSize: 9.5,
+            lineHeight: 1.25,
+            color: photo ? paper.cream : (fg ?? ink.strong),
+            background: photo ? 'rgba(24,22,17,.55)' : undefined,
+            padding: photo ? '3px 7px' : undefined,
+          }}
+        >
+          {pageCaption(m, slot)}
+        </div>
+      )}
     </div>
   )
 }
