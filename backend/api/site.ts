@@ -11,8 +11,13 @@ const ROW_ID = true
  *
  * GET returns the stored overrides (an empty object on a fresh install — the
  * frontend supplies the defaults). PATCH shallow-merges the body into them, so
- * a screen can save one field without sending the rest. Setting a key to '' or
- * null drops it, which is how the CMS restores a default.
+ * a screen can save one field without sending the rest.
+ *
+ * `''` và `null` là hai chuyện khác nhau, và chỗ này từng gộp chúng làm một:
+ * `''` là chủ site muốn ô đó **trống**, `null` là muốn **trả về bản mặc định**.
+ * Gộp lại thì xoá trắng một ô là việc không làm được — máy chủ bỏ khoá đi, trả
+ * về hàng không có nó, và trang lấy lại bản mặc định ngay trước mắt người vừa
+ * xoá.
  */
 async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
   if (!requireAuth(req, res)) return
@@ -54,7 +59,7 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
         merged[key] = { ...((merged[key] as Record<string, unknown>) ?? {}), ...(value as object) }
         continue
       }
-      if (value === '' || value === null) delete merged[key]
+      if (value === null) delete merged[key]
       else merged[key] = value
     }
 
