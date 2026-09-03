@@ -127,4 +127,38 @@ export const layout = {
   band: 420,
   /** Ảnh đầu trang module, cùng lý do và cùng tỉ lệ. */
   moduleHero: 280,
+  /**
+   * Khối bốn ô ở đầu trang module dạng "specimen".
+   *
+   * 373 với hai hàng 1,7fr / 0,75fr cho hàng dưới đúng 114px trên bề ngang
+   * 200 — tỉ lệ 1,75:1, bẹt cùng một kiểu như dải 310 ngày trước, và cắt ảnh
+   * cho vừa nó thì mất hết chủ thể. 480 với hai hàng cân hơn cho 271 và 209:
+   * ô trên hơi dọc, ô dưới gần vuông, cả hai đều còn chỗ để căn.
+   */
+  moduleSpecimen: 480,
+} as const
+
+/**
+ * Tiêu đề dài tự xuống dòng, và gãy đúng chỗ tiếng Anh cho phép gãy.
+ *
+ * "biochemistry 101" ở cỡ 92px không vừa bề ngang mảng màu, và HTML mặc định
+ * không cắt một từ dài — nên nó tràn ra và bị ô bên cạnh che mất phần đuôi.
+ *
+ * `hyphens: auto` để trình duyệt tự chèn gạch nối, dùng chính bộ luật ngắt
+ * âm tiết của từ điển — nhưng nó chỉ chạy khi biết chữ này thuộc tiếng nào,
+ * nên chỗ nào dùng cái này phải kèm `lang="en"` trên thẻ. Trang khai
+ * `lang="vi"`, mà tiếng Việt không ngắt âm tiết giữa từ.
+ *
+ * `8 4 4`: chỉ cắt từ dài từ 8 chữ cái trở lên, và mỗi bên gạch nối phải còn
+ * ít nhất 4 chữ — để không ra "bi-ochemistry".
+ *
+ * `overflowWrap` là lưới hứng: từ nào bộ luật không biết cách ngắt thì vẫn
+ * xuống dòng, còn hơn tràn ra ngoài.
+ */
+export const wrapTitle = {
+  maxWidth: '100%',
+  hyphens: 'auto',
+  WebkitHyphens: 'auto',
+  hyphenateLimitChars: '8 4 4',
+  overflowWrap: 'break-word',
 } as const

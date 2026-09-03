@@ -1,6 +1,6 @@
 import { Fragment, type ReactNode } from 'react'
 import { useMemo, useState } from 'react'
-import { ink, paper, sans, serif } from './tokens'
+import { ink, paper, sans, serif, wrapTitle } from './tokens'
 import type { CardData, CardPart, CardsPostData } from './types'
 
 export type CardsOverrides = {
@@ -161,6 +161,7 @@ export function Cards({ post, breadcrumb, ...overrides }: CardsProps) {
           }}
         >
           <h1
+          lang="en"
             style={{
               fontFamily: serif,
               fontWeight: 400,
@@ -168,6 +169,7 @@ export function Cards({ post, breadcrumb, ...overrides }: CardsProps) {
               lineHeight: 0.9,
               letterSpacing: '-.04em',
               margin: 0,
+              ...wrapTitle,
             }}
           >
             {post.title}

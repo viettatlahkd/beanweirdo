@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { createContext, Fragment, useContext, useEffect, useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { paletteFrom, type Palette } from './palette'
-import { sans, serif } from './tokens'
+import { sans, serif, wrapTitle } from './tokens'
 import type { LongformBlock, LongformPostData, LongformRun } from './types'
 import { indentOf, normalizeBlocks } from './longformBlocks'
 import { runsToText } from './longformText'
@@ -214,7 +214,16 @@ function AsideBlock({ items, palette }: { items: LongformBlock[]; palette: Palet
         const pad = padOf(a)
         if (a.k === 'p')
           return (
-            <div key={i} style={{ fontSize: 14.5, lineHeight: 1.66, color: '#3B3729', margin: '0 0 10px', paddingLeft: pad }}>
+            <div
+              key={i}
+              style={{
+                fontSize: 14.5,
+                lineHeight: 1.66,
+                color: '#3B3729',
+                margin: `0 0 ${indentOf(a) > 0 ? 6 : 10}px`,
+                paddingLeft: pad,
+              }}
+            >
               <Runs runs={a.runs} />
             </div>
           )
@@ -542,9 +551,11 @@ export function Longform({ post, breadcrumb, renderText }: LongformProps) {
                 {b.k === 'h1' && (
                   <>
                     <h1
+                      lang="en"
                       onClick={() => selfId && toggle(p)}
                       data-lf-h1={p.h1Index}
                       style={{
+                        ...wrapTitle,
                         cursor: selfId ? 'pointer' : 'default',
                         fontFamily: serif,
                         fontWeight: 400,
@@ -652,7 +663,18 @@ export function Longform({ post, breadcrumb, renderText }: LongformProps) {
                 )}
 
                 {b.k === 'p' && (
-                  <div style={{ fontSize: 15.5, lineHeight: 1.68, color: '#2E2A20', margin: '0 0 14px', paddingLeft: pad }}>
+                  <div
+                    style={{
+                      fontSize: 15.5,
+                      lineHeight: 1.68,
+                      color: '#2E2A20',
+                      // Đoạn đã lùi lề đứng khít nhau hơn: một chuỗi điểm phụ
+                      // dưới một câu dẫn phải đọc ra thành một chùm, chứ không
+                      // phải mấy đoạn văn rời rạc.
+                      margin: `0 0 ${indentOf(b) > 0 ? 8 : 14}px`,
+                      paddingLeft: pad,
+                    }}
+                  >
                     <Runs runs={b.runs} at={at} />
                   </div>
                 )}

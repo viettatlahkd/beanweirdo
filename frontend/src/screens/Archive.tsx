@@ -5,7 +5,7 @@ import { PostExcerpt } from '../components/PostExcerpt'
 import { useModules } from '../data/useModules'
 import { usePublishedPosts } from '../data/usePublishedPosts'
 import { useSiteCopy } from '../data/useSiteCopy'
-import { ink, layout, paper, sans, serif } from '../design/tokens'
+import { ink, layout, paper, sans, serif, wrapTitle } from '../design/tokens'
 import { Hover } from '../lib/Hover'
 import { useNav } from '../lib/nav'
 
@@ -54,12 +54,14 @@ export function Archive() {
         }}
       >
         <h1
+          lang="en"
           style={{
             fontFamily: serif,
             fontSize: 72,
             lineHeight: 0.94,
             letterSpacing: '-.04em',
             margin: 0,
+            ...wrapTitle,
           }}
         >
           {site.archiveTitle}

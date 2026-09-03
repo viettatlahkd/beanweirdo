@@ -7,7 +7,7 @@ import { coverStyle } from '../lib/imageFocus'
 import type { PostRow } from '../data/usePublishedPosts'
 import { usePublishedPosts } from '../data/usePublishedPosts'
 import { useSiteCopy } from '../data/useSiteCopy'
-import { garden, ink, layout, paper, prose, sans, serif } from '../design/tokens'
+import { garden, ink, layout, paper, prose, sans, serif, wrapTitle } from '../design/tokens'
 import { Hover } from '../lib/Hover'
 import { Rise } from '../lib/Rise'
 import { useNav } from '../lib/nav'
@@ -297,35 +297,24 @@ export function Landing() {
               cursor: 'pointer',
             }}
           >
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'minmax(0,1.55fr) minmax(0,1fr) minmax(0,.85fr)',
-                gap: 40,
-                alignItems: 'start',
-                marginBottom: 64,
-              }}
-            >
+            <div className="bw-modhead">
               <div style={{ minWidth: 0, maxWidth: '100%' }}>
                 <div style={{ ...eyebrow, letterSpacing: '.16em', marginBottom: 12, opacity: 0.65 }}>
                   {m.concept} — {entries.length} bài
                 </div>
-                {/* `lang="en"` + hyphenation so "biochemistry 101" breaks on a real
-                    syllable boundary instead of overflowing into the next column. */}
+                {/* `lang="en"` + luật ngắt âm tiết: xem `wrapTitle` trong tokens.
+                    Chỗ này là nơi luật ấy ra đời, giờ cả tám tầng tiêu đề đọc
+                    chung một bản. */}
                 <h3
                   lang="en"
                   style={
                     {
+                      ...wrapTitle,
                       fontFamily: serif,
                       fontSize: 72,
                       lineHeight: 0.94,
                       letterSpacing: '-.035em',
                       margin: 0,
-                      maxWidth: '100%',
-                      hyphens: 'auto',
-                      WebkitHyphens: 'auto',
-                      hyphenateLimitChars: '8 4 4',
-                      overflowWrap: 'break-word',
                     } as CSSProperties
                   }
                 >
@@ -333,9 +322,9 @@ export function Landing() {
                 </h3>
               </div>
 
-              <div style={{ fontSize: 14, lineHeight: 1.45, marginTop: 38 }}>{m.long_desc}</div>
+              <div style={{ fontSize: 14, lineHeight: 1.45 }}>{m.long_desc}</div>
 
-              <div style={{ marginTop: 38 }}>
+              <div>
                 <div style={{ ...eyebrow, letterSpacing: '.14em', opacity: 0.65, marginBottom: 10 }}>
                   Mới nhất
                 </div>

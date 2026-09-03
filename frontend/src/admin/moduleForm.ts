@@ -121,7 +121,7 @@ function modulePageImages(layout: string): ImageGroup {
 /** The design names these cells; the editor should call them the same thing. */
 const NAMES_BY_LAYOUT: Record<string, readonly string[]> = {
   band: ['Ảnh hero'],
-  specimen: ['Ảnh lớn', 'Ảnh giữa', 'Ảnh dưới'],
+  specimen: ['Ảnh lớn', 'Ảnh giữa', 'Ảnh dưới trái', 'Ảnh dưới phải'],
   sequence: ['01 — nhân xanh', '02 — vàng', '03 — first crack', '04 — phát triển'],
 }
 

@@ -417,6 +417,23 @@ function EditableField({
   const [local, setLocal] = useState(value)
   const el = useRef<HTMLInputElement & HTMLTextAreaElement>(null)
   useEffect(() => setLocal(value), [value])
+
+  /*
+   * Ô nhiều dòng cao đúng bằng chữ trong nó.
+   *
+   * Trước đây `rows` quyết định chiều cao, nên trên long-form một ô cao hai
+   * dòng cứng: câu một dòng thừa ra 32px trống, còn đoạn ba dòng chỉ được 58px
+   * cho 78px chữ — chữ bị cắt và phải cuộn trong ô. Cùng một nguyên nhân sinh
+   * ra cả khoảng trống thừa lẫn chữ bị mất, nên `rows` giờ chỉ là mức thấp
+   * nhất, còn chiều cao chạy theo nội dung.
+   */
+  useEffect(() => {
+    const node = el.current
+    if (!multiline || !node) return
+    node.style.height = 'auto'
+    const line = parseFloat(getComputedStyle(node).lineHeight) || 0
+    node.style.height = `${Math.max(node.scrollHeight, line * rows)}px`
+  }, [local, multiline, rows])
   useEffect(() => {
     if (!focus || !el.current) return
     el.current.focus()
@@ -456,7 +473,9 @@ function EditableField({
         onChange={(e) => setLocal(e.target.value)}
         onBlur={commit}
         onKeyDown={onKeyDown && ((e) => onKeyDown(e, local))}
-        style={{ ...commonStyle, resize: 'vertical' }}
+        // Ô đã tự cao bằng chữ, nên tay kéo không còn việc gì — và nó là cái
+        // dấu `//` nằm rải khắp trang lúc trước.
+        style={{ ...commonStyle, resize: 'none', overflow: 'hidden' }}
       />
     )
   }
@@ -648,7 +667,7 @@ function LongformEditor({
         <EditableField
           value={text}
           multiline
-          rows={2}
+          rows={1}
           placeholder="dòng chữ"
           onCommit={(v) => at(i, (b) => ({ ...b, runs: longformTextToRuns(v) }))}
           onKeyDown={onKeyDown(i)}

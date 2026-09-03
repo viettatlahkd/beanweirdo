@@ -8,7 +8,7 @@ import { usePublishedPosts } from '../data/usePublishedPosts'
 import { Breadcrumbs } from '../components/Breadcrumbs'
 import { useSiteCopy } from '../data/useSiteCopy'
 import { coverStyle } from '../lib/imageFocus'
-import { garden, ink, paper, prose, sans, serif } from '../design/tokens'
+import { garden, ink, paper, prose, sans, serif, wrapTitle } from '../design/tokens'
 import { Hover } from '../lib/Hover'
 import { rowPad, useNav, useSettings } from '../lib/nav'
 import { openPost } from '../lib/openPost'
@@ -145,6 +145,7 @@ function Ledger({ modules, postsByModule }: ModulesProps) {
           <div key={m.id} style={{ padding: '44px 56px 8px', maxWidth: 1240 }}>
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: 18, paddingBottom: 14 }}>
               <Hover
+          lang="en"
                 as="h2"
                 onClick={() => openModule(nav, m)}
                 style={{
@@ -155,6 +156,7 @@ function Ledger({ modules, postsByModule }: ModulesProps) {
                   margin: 0,
                   cursor: 'pointer',
                   borderBottom: `6px solid ${m.accent}`,
+                  ...wrapTitle,
                 }}
                 hoverStyle={{ color: ink.green }}
               >
@@ -286,6 +288,7 @@ function Columns({ modules, postsByModule }: ModulesProps) {
                 {m.concept}
               </div>
               <h2
+          lang="en"
                 onClick={() => openModule(nav, m)}
                 style={{
                   fontFamily: serif,
@@ -294,6 +297,7 @@ function Columns({ modules, postsByModule }: ModulesProps) {
                   letterSpacing: '-.03em',
                   margin: '0 0 14px',
                   cursor: 'pointer',
+                  ...wrapTitle,
                 }}
               >
                 {m.title}

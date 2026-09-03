@@ -102,6 +102,25 @@ describe('lùi lề đoạn văn', () => {
     expect(screen.getByText('bậc ba').closest('div')).toHaveStyle({ paddingLeft: '78px' })
   })
 
+  it('đoạn đã lùi đứng khít nhau hơn đoạn thường', () => {
+    /*
+     * `cont` ngày trước cách nhau 8px, còn đoạn văn 14px. Cho `cont` về đoạn
+     * văn mà không mang theo khoảng cách của nó thì 159 điểm phụ của bài giãn
+     * ra thêm gần một nghìn pixel, và mỗi chùm điểm phụ dưới câu dẫn đọc thành
+     * mấy đoạn rời rạc.
+     */
+    render(
+      <Longform
+        post={withIndent([
+          { k: 'p', runs: [{ t: 'câu dẫn' }] },
+          { k: 'p', ind: 1, runs: [{ t: 'điểm phụ' }] },
+        ])}
+      />,
+    )
+    expect(screen.getByText('câu dẫn').closest('div')).toHaveStyle({ marginBottom: '14px' })
+    expect(screen.getByText('điểm phụ').closest('div')).toHaveStyle({ marginBottom: '8px' })
+  })
+
   it('ô nhập nhận chữ mang dấu định dạng, không phải chuỗi trơn', () => {
     // Nếu ô nhập chỉ thấy chuỗi trơn thì lần nộp đầu tiên đã xoá chỗ đậm.
     render(

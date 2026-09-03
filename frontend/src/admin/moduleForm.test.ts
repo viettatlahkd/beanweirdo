@@ -38,7 +38,8 @@ describe('formShapeOf', () => {
     const page = (layout: string) =>
       groups('x', 'normal', layout).find((g) => g.columns === 'module-page')!
     expect(page('band').slots).toEqual([1])
-    expect(page('specimen').slots).toEqual([1, 2, 3])
+    // Bốn: ô thứ tư của specimen từng là mảng màu đặc, không phải chỗ đặt ảnh.
+    expect(page('specimen').slots).toEqual([1, 2, 3, 4])
     expect(page('sequence').slots).toEqual([1, 2, 3, 4])
   })
 

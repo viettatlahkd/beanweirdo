@@ -1,5 +1,5 @@
 import { Fragment, type CSSProperties, type ReactNode } from 'react'
-import { garden, ink, layout, paper, sans, serif } from './tokens'
+import { garden, ink, layout, paper, sans, serif, wrapTitle } from './tokens'
 import type { ArticlePlateData, ArticlePostData, FigureData } from './types'
 
 const label: CSSProperties = {
@@ -67,13 +67,17 @@ export function Article({ post, breadcrumb, ...overrides }: ArticleProps) {
         </div>
         <div style={{ ...label, opacity: 0.7, marginBottom: 12 }}>{post.eyebrow}</div>
         <h1
+          lang="en"
           data-testid="article-title"
           style={{
+            ...wrapTitle,
             fontFamily: serif,
             fontSize: 76,
             lineHeight: 0.94,
             letterSpacing: '-.04em',
             margin: '0 0 12px',
+            // Hẹp hơn `wrapTitle` cho phép: tiêu đề bài không được chạy xuống
+            // dưới cột phụ bên phải, nên bề ngang của nó thắng.
             maxWidth: 'min(660px, 100% - 300px)',
           }}
         >

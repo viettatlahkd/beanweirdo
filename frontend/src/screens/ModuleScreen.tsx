@@ -5,7 +5,7 @@ import type { ModuleRow } from '../data/useModules'
 import { useModules } from '../data/useModules'
 import type { PostRow } from '../data/usePublishedPosts'
 import { usePublishedPosts } from '../data/usePublishedPosts'
-import { ink, layout, paper, sans, serif } from '../design/tokens'
+import { ink, layout, paper, sans, serif, wrapTitle } from '../design/tokens'
 import { pageCaption, pageFill, pageImage } from '../lib/modulePageImages'
 import { Hover } from '../lib/Hover'
 import { useNav, useSettings } from '../lib/nav'
@@ -53,12 +53,14 @@ function Band({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
         <Breadcrumbs style={{ opacity: 0.75 }} />
 
         <h1
+          lang="en"
           style={{
             fontFamily: serif,
             fontSize: 92,
             lineHeight: 0.94,
             letterSpacing: '-.04em',
             margin: '0 0 20px',
+            ...wrapTitle,
           }}
         >
           {m.title}
@@ -162,19 +164,28 @@ function Specimen({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
             background: m.accent,
             color: m.on_color,
             padding: '52px 48px 48px',
-            width: 571,
-            height: 373,
+            /*
+             * Không đặt bề ngang và chiều cao ở đây.
+             *
+             * Trước là `width: 571, height: 373` — bản sao thứ ba của chiều cao
+             * khối ảnh, và một bề ngang không liên quan gì tới cột lưới đang
+             * chứa nó (cột rộng 551, khối rộng 571, nên nó tràn ra). Nâng khối
+             * ảnh lên là mảng màu đứng lại ở 373 và để lộ một dải kem bên dưới.
+             * Ô lưới đã có sẵn cả hai số ấy.
+             */
           }}
         >
           <Breadcrumbs style={{ opacity: 0.75 }} />
 
           <h1
+          lang="en"
             style={{
               fontFamily: serif,
               fontSize: 84,
               lineHeight: 0.94,
               letterSpacing: '-.04em',
               margin: '0 0 18px',
+              ...wrapTitle,
             }}
           >
             {m.title}
@@ -308,7 +319,7 @@ export const PLATE_HEIGHT: Record<string, number> = {
   // hầu như không ảnh nào cắt cho vừa mà còn ra hình. Lấy từ token để trang,
   // trang module và ô xem trước trong CMS cùng đọc một con số.
   band: layout.moduleHero,
-  specimen: 373,
+  specimen: layout.moduleSpecimen,
 }
 
 export function ModulePlates({ m }: { m: ModuleRow }) {
@@ -353,15 +364,22 @@ export function ModulePlates({ m }: { m: ModuleRow }) {
         style={{
           display: 'grid',
           gridTemplateColumns: '1fr 1fr',
-          gridTemplateRows: '1.7fr 0.75fr',
+          // Hàng dưới cũ chỉ được 0,75fr — 114px trên bề ngang 200, bẹt tới
+          // mức cắt ảnh cho vừa là mất chủ thể.
+          gridTemplateRows: '1.3fr 1fr',
           height: PLATE_HEIGHT.specimen,
         }}
       >
         <PlateCell m={m} slot={1} tint={m.tint} minHeight={180} />
         <PlateCell m={m} slot={2} tint="#2B4B33" fg="#C6D6C6" />
         <PlateCell m={m} slot={3} tint="#F3F7EC" />
-        {/* fourth cell is a solid tint, not a photo slot */}
-        <div style={{ background: '#BBD9A8' }} />
+        {/*
+          * Ô thứ tư từng là một mảng màu đặc, không phải chỗ đặt ảnh. Chủ site
+          * nhìn vào và gọi nó là lỗi — bốn ô mà chỉ ba ô nhận ảnh. Giờ nó là
+          * một khung như ba ô kia, và khi chưa có ảnh vẫn là đúng mảng màu ấy,
+          * nên trang không đổi cho tới lúc chủ site đặt ảnh vào.
+          */}
+        <PlateCell m={m} slot={4} tint="#BBD9A8" />
       </div>
     )
   }
@@ -470,12 +488,14 @@ function Sequence({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
         <Breadcrumbs style={{ opacity: 0.75 }} />
 
         <h1
+          lang="en"
           style={{
             fontFamily: serif,
             fontSize: 96,
             lineHeight: 0.94,
             letterSpacing: '-.04em',
             margin: '0 0 22px',
+            ...wrapTitle,
           }}
         >
           {m.title}
