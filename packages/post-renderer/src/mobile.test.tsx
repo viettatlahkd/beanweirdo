@@ -125,3 +125,40 @@ describe('bảng trong khuôn Report và Memo', () => {
     })
   }
 })
+
+/*
+ * Vùng chạm của chip lọc nhóm.
+ *
+ * Spec nói `padding: '9px 12px'`. Đo trên bài thật ở 390px thì chip ra **35px**
+ * — chữ chip nhỏ nên phần đệm không bù đủ. Đây là loại lỗi test không bắt được
+ * nếu chỉ kiểm con số trong spec: phải kiểm điều spec *muốn*, tức 44px.
+ */
+describe('chip lọc nhóm trong Cards', () => {
+  const deck: PostRendererProps = {
+    template: 'cards',
+    post: {
+      band: BAND,
+      title: 'Bài',
+      intro: [''],
+      cards: [
+        { n: '01', title: 'Thẻ', hue: '#7FB87E', sub: '', tag: '', groups: ['Sweet'], parts: [] },
+      ] as never,
+    },
+  }
+
+  it('đặt chiều cao tối thiểu 44 chứ không trông cậy vào phần đệm', () => {
+    const { container } = render(<PostRenderer {...deck} mobile />)
+    const chip = (Array.from(container.querySelectorAll('[role=button]')) as HTMLElement[]).find((c) =>
+      c.textContent?.includes('Sweet'),
+    )
+    expect(chip?.style.minHeight).toBe('44px')
+  })
+
+  it('desktop không bị đặt chiều cao tối thiểu', () => {
+    const { container } = render(<PostRenderer {...deck} />)
+    const chip = (Array.from(container.querySelectorAll('[role=button]')) as HTMLElement[]).find((c) =>
+      c.textContent?.includes('Sweet'),
+    )
+    expect(chip?.style.minHeight).toBe('')
+  })
+})
