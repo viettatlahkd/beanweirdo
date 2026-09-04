@@ -563,6 +563,27 @@ export function Longform({ post, breadcrumb, renderText }: LongformProps) {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,760px)', justifyContent: 'center', paddingRight: 56 }}>
         <div>
+          {/*
+            * Tên bài, khi trong thân bài không có khối tiêu đề nào.
+            *
+            * Template vẽ tên bài *thay cho* tiêu đề đầu tiên của bản export, nên
+            * bài không có khối `h1` nào thì không còn chỗ nào đặt tên — trang mở
+            * ra không mang tên bài lẫn phụ đề. Bài mới bắt đầu từ template thì
+            * có sẵn `h1` nên không lộ, nhưng chỉ cần xoá hết tiêu đề là gặp; và
+            * một bài dán từ nguồn không có tiêu đề thì gặp ngay từ đầu.
+            */}
+          {!prepared.some((p) => p.block.k === 'h1') && (
+            <>
+              <h1 lang="en" style={{ ...wrapTitle, fontFamily: serif, fontWeight: 400, fontSize: 70, lineHeight: 0.94, letterSpacing: '-.03em', color: '#172124', margin: '0 0 8px' }}>
+                {post.title}
+              </h1>
+              {post.subtitle && (
+                <div style={{ fontFamily: serif, fontStyle: 'italic', fontSize: 21, lineHeight: 1.3, color: palette.mid, margin: '0 0 30px' }}>
+                  {post.subtitle}
+                </div>
+              )}
+            </>
+          )}
           {prepared.map((p) => {
             const { block: b, selfId, at } = p
             const parentFolded = Boolean(p.ownerH1 && folded[p.ownerH1])

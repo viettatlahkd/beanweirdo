@@ -132,3 +132,33 @@ describe('lùi lề đoạn văn', () => {
     expect(screen.getByText('phần *đậm*')).toBeInTheDocument()
   })
 })
+
+/*
+ * Bài không có khối tiêu đề nào.
+ *
+ * Template vẽ tên bài *thay cho* tiêu đề đầu tiên của bản export. Bài không có
+ * `h1` nào thì trước đây mở ra không mang tên bài lẫn phụ đề — dựng 15 bài nháp
+ * để rà thì đây là ca duy nhất mất hẳn tên bài. Bài mới bắt đầu từ template có
+ * sẵn `h1` nên không lộ, nhưng chỉ cần xoá hết tiêu đề là gặp.
+ */
+describe('long-form không có tiêu đề nào', () => {
+  const noHeading: LongformPostData = {
+    title: 'Ghi nhanh trong bếp',
+    subtitle: 'chưa kịp chia phần',
+    blocks: [
+      { k: 'p', runs: [{ t: 'Một đoạn.' }] },
+      { k: 'p', ind: 1, runs: [{ t: '— một dòng đã lùi lề' }] },
+    ],
+  }
+
+  it('vẫn hiện tên bài và phụ đề', () => {
+    render(<Longform post={noHeading} />)
+    expect(screen.getByText('Ghi nhanh trong bếp')).toBeInTheDocument()
+    expect(screen.getByText('chưa kịp chia phần')).toBeInTheDocument()
+  })
+
+  it('bài có tiêu đề thì không hiện tên bài hai lần', () => {
+    render(<Longform post={post} />)
+    expect(screen.getAllByText('Lipids in Beans')).toHaveLength(1)
+  })
+})
