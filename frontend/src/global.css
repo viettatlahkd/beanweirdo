@@ -123,7 +123,19 @@ h4 {
   margin-bottom: 64px;
 }
 
-@media (min-width: 1240px) {
+/*
+ * Một ngưỡng cho cả trang: 900px, khớp với `layout.mobileMax` (899) mà
+ * `lib/useIsMobile` đọc. Trước là 1240.
+ *
+ * Đổi số chứ không đổi ý: lý do PR #78 cho hai grid này xếp chồng là cột chữ
+ * còn 240px ở bề ngang 859 — mà 859 vẫn nằm dưới 900, nên nó vẫn xếp chồng
+ * đúng như cũ. Cửa sổ duy nhất đổi hành vi là 900–1239px, ở đó cột hẹp nhất
+ * rộng 285px chứ không phải 240.
+ *
+ * Đổi để trang chỉ có MỘT chỗ gãy. Hai ngưỡng thì CSS và JS bất đồng ở khoảng
+ * giữa: lưới đã xếp chồng trong khi lề và cỡ chữ vẫn là của desktop.
+ */
+@media (min-width: 900px) {
   /*
    * Cột tên module có một mức trần, không phải một phần của bề ngang.
    *

@@ -13,6 +13,7 @@ import { Hover } from '../lib/Hover'
 import { rowPad, useNav, useSettings } from '../lib/nav'
 import { openPost } from '../lib/openPost'
 import { openModule } from '../lib/moduleTarget'
+import { useIsMobile } from '../lib/useIsMobile'
 
 const label: CSSProperties = {
   fontFamily: sans,
@@ -72,24 +73,25 @@ function Ledger({ modules, postsByModule }: ModulesProps) {
   const pad = rowPad(density)
   const { site } = useSiteCopy()
   const plates = usePlates()
+  const mob = useIsMobile()
 
   return (
     <div>
-      <div style={{ padding: '44px 56px 38px', maxWidth: 1240 }}>
+      <div style={{ padding: mob ? '28px 20px 30px' : '44px 56px 38px', maxWidth: 1240 }}>
         <Breadcrumbs color={ink.muted} />
 
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'minmax(0,1.6fr) minmax(0,1fr)',
-            gap: 44,
-            alignItems: 'end',
+            gridTemplateColumns: mob ? 'minmax(0,1fr)' : 'minmax(0,1.6fr) minmax(0,1fr)',
+            gap: mob ? 20 : 44,
+            alignItems: mob ? 'start' : 'end',
           }}
         >
           <h1
             style={{
               fontFamily: serif,
-              fontSize: 108,
+              fontSize: mob ? 50 : 108,
               lineHeight: 0.9,
               letterSpacing: '-.035em',
               margin: 0,
@@ -118,15 +120,20 @@ function Ledger({ modules, postsByModule }: ModulesProps) {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'minmax(0,2fr) minmax(0,1fr) minmax(0,1fr)',
+            gridTemplateColumns: mob
+              ? 'minmax(0,1fr) minmax(0,1fr)'
+              : 'minmax(0,2fr) minmax(0,1fr) minmax(0,1fr)',
             gap: 0,
           }}
         >
-          {plates.map((p) => (
+          {plates.map((p, pi) => (
             <div
               key={p.caption}
               style={{
                 aspectRatio: '16/9',
+                // Hẹp: tấm đầu nằm trọn một hàng, hai tấm sau chia đôi hàng dưới.
+                // Ba tấm bằng nhau ở 390px thì mỗi tấm rộng 130 — quá nhỏ để đọc.
+                ...(mob && pi === 0 ? { gridColumn: '1 / 3' } : null),
                 ...p.fill,
                 display: 'flex',
                 alignItems: 'flex-end',
@@ -142,31 +149,48 @@ function Ledger({ modules, postsByModule }: ModulesProps) {
       {modules.map((m) => {
         const entries = postsByModule.get(m.id) ?? []
         return (
-          <div key={m.id} style={{ padding: '44px 56px 8px', maxWidth: 1240 }}>
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 18, paddingBottom: 14 }}>
+          <div key={m.id} style={{ padding: mob ? '34px 20px 6px' : '44px 56px 8px', maxWidth: 1240 }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: mob ? 'stretch' : 'flex-end',
+                flexDirection: mob ? 'column' : 'row',
+                gap: mob ? 10 : 18,
+                paddingBottom: 14,
+              }}
+            >
               <Hover
           lang="en"
                 as="h2"
                 onClick={() => openModule(nav, m)}
                 style={{
                   fontFamily: serif,
-                  fontSize: 44,
+                  fontSize: mob ? 34 : 44,
                   lineHeight: 1,
                   letterSpacing: '-.028em',
                   margin: 0,
                   cursor: 'pointer',
-                  borderBottom: `6px solid ${m.accent}`,
+                  // Hẹp: gạch chân ôm đúng cái tên chứ không kéo hết hàng.
+                  alignSelf: mob ? 'flex-start' : undefined,
+                  borderBottom: `${mob ? 5 : 6}px solid ${m.accent}`,
                   ...wrapTitle,
                 }}
                 hoverStyle={{ color: ink.green }}
               >
                 {m.title}
               </Hover>
-              <div style={{ fontFamily: sans, fontSize: 11, color: ink.muted, paddingBottom: 6 }}>
-                {entries.length} bài
+              <div
+                style={{
+                  display: 'contents',
+                  ...(mob ? { display: 'flex', alignItems: 'center', gap: 12 } : null),
+                }}
+              >
+                <div style={{ fontFamily: sans, fontSize: 11, color: ink.muted, paddingBottom: mob ? 0 : 6, flex: 'none' }}>
+                  {entries.length} bài
+                </div>
+                <div style={{ flex: 1, height: 1, background: paper.rule, marginBottom: mob ? 0 : 8 }} />
+                <div style={{ ...label, paddingBottom: mob ? 0 : 6, flex: 'none' }}>{m.concept}</div>
               </div>
-              <div style={{ flex: 1, height: 1, background: paper.rule, marginBottom: 8 }} />
-              <div style={{ ...label, paddingBottom: 6 }}>{m.concept}</div>
             </div>
 
             <div
@@ -188,19 +212,22 @@ function Ledger({ modules, postsByModule }: ModulesProps) {
                 onClick={() => openPost(nav, e)}
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: '44px minmax(0,1fr) minmax(0,1.05fr) 72px 56px',
+                  // Hẹp: năm cột thành ba dòng — số + tên · mô tả · loại và ngày.
+                  gridTemplateColumns: mob
+                    ? '26px minmax(0,1fr) minmax(0,auto)'
+                    : '44px minmax(0,1fr) minmax(0,1.05fr) 72px 56px',
                   alignItems: 'baseline',
-                  gap: 18,
-                  padding: `${pad} 12px ${pad} 10px`,
+                  gap: mob ? '6px 10px' : 18,
+                  padding: mob ? `12px 8px` : `${pad} 12px ${pad} 10px`,
                   borderTop: `1px solid ${paper.rule}`,
                   cursor: 'pointer',
                   borderLeft: '3px solid transparent',
                 }}
                 hoverStyle={{ background: paper.white, borderLeft: `3px solid ${ink.green}` }}
               >
-                <div style={{ fontFamily: sans, fontSize: 11, color: ink.faint }}>{displayNumber(i)}</div>
-                <div style={{ fontFamily: serif, fontSize: 23, letterSpacing: '-.015em' }}>{e.en}</div>
-                <div style={{ fontSize: 13, color: ink.soft, lineHeight: 1.2 }}>{postDescription(e)}</div>
+                <div style={{ fontFamily: sans, fontSize: 11, color: ink.faint, gridArea: mob ? '1 / 1' : undefined }}>{displayNumber(i)}</div>
+                <div style={{ fontFamily: serif, fontSize: mob ? 21 : 23, letterSpacing: '-.015em', lineHeight: mob ? 1.15 : undefined, gridArea: mob ? '1 / 2 / 2 / 4' : undefined }}>{e.en}</div>
+                <div style={{ fontSize: 13, color: ink.soft, lineHeight: 1.2, gridArea: mob ? '2 / 2 / 3 / 4' : undefined }}>{postDescription(e)}</div>
                 <div
                   style={{
                     fontFamily: sans,
@@ -208,12 +235,13 @@ function Ledger({ modules, postsByModule }: ModulesProps) {
                     color: ink.muted,
                     letterSpacing: '.05em',
                     textTransform: 'uppercase',
+                    gridArea: mob ? '3 / 2' : undefined,
                   }}
                 >
                   {e.kind}
                 </div>
                 <div
-                  style={{ fontFamily: sans, fontSize: 10, color: ink.faint, textAlign: 'right' }}
+                  style={{ fontFamily: sans, fontSize: 10, color: ink.faint, textAlign: 'right', gridArea: mob ? '3 / 3' : undefined }}
                 >
                   {e.date_label}
                 </div>
@@ -233,15 +261,16 @@ function Columns({ modules, postsByModule }: ModulesProps) {
   const nav = useNav()
   const { showPlates } = useSettings()
   const { site } = useSiteCopy()
+  const mob = useIsMobile()
 
   return (
-    <div style={{ padding: '44px 56px 130px', maxWidth: 1340 }}>
+    <div style={{ padding: mob ? '28px 20px 40px' : '44px 56px 130px', maxWidth: 1340 }}>
       <Breadcrumbs color={ink.muted} />
 
       <h1
         style={{
           fontFamily: serif,
-          fontSize: 108,
+          fontSize: mob ? 50 : 108,
           lineHeight: 0.9,
           letterSpacing: '-.035em',
           margin: '0 0 16px',
@@ -263,19 +292,30 @@ function Columns({ modules, postsByModule }: ModulesProps) {
       </div>
       <Hover
         onClick={nav.toggleVariant}
-        style={{ ...switcher, marginBottom: 44 }}
+        style={{ ...switcher, marginBottom: mob ? 28 : 44 }}
         hoverStyle={{ color: ink.green }}
       >
         xem dạng danh sách →
       </Hover>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: 0 }}>
+      {/*
+        Ba cột xếp chồng khi hẹp. Cái giữ cho nó vẫn khác Trang chủ là tấm kem
+        4:3 nằm TRONG khối màu và không có dải ảnh tràn viền ở cuối mỗi khối —
+        bỏ tấm ấy đi thì hai màn thành một.
+      */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: mob ? 'minmax(0,1fr)' : 'repeat(3,minmax(0,1fr))',
+          gap: 0,
+        }}
+      >
         {modules.map((m) => {
           const entries = postsByModule.get(m.id) ?? []
           return (
             <div
               key={m.id}
-              style={{ background: m.accent, color: m.on_color, padding: '26px 24px 30px' }}
+              style={{ background: m.accent, color: m.on_color, padding: mob ? '24px 20px 28px' : '26px 24px 30px' }}
             >
               <div
                 style={{
@@ -294,7 +334,7 @@ function Columns({ modules, postsByModule }: ModulesProps) {
                 onClick={() => openModule(nav, m)}
                 style={{
                   fontFamily: serif,
-                  fontSize: 46,
+                  fontSize: mob ? 38 : 46,
                   lineHeight: 1,
                   letterSpacing: '-.03em',
                   margin: '0 0 14px',
