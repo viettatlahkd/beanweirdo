@@ -19,6 +19,8 @@ import { usePublishedPosts, type PostRow } from '../data/usePublishedPosts'
 import { postDescription } from '../lib/postText'
 import { postThumbnail } from '../lib/postThumb'
 import { buildNotesGrid } from '../lib/notesGrid'
+import { featureMobile, notePlacementMobile } from '../content/notes'
+import { useIsMobile } from '../lib/useIsMobile'
 import { coverStyle } from '../lib/imageFocus'
 import { useModules } from '../data/useModules'
 import { PostRenderer } from 'post-renderer'
@@ -358,16 +360,38 @@ function NoteCard({
 function FeatureCellView({
   f,
   dimmed,
+  mob,
 }: {
   f: FeatureCell & { img?: string | null }
   dimmed: boolean
+  mob: boolean
 }) {
-  const style: CSSProperties = { gridColumn: f.col, marginTop: f.mt, marginLeft: f.ml, position: 'relative', zIndex: 1, opacity: dimmed ? 0.18 : 1 }
+  const fm = featureMobile[f.n]
+  /*
+   * `zIndex: 1` ở đây và `2` ở bài — luật chủ site chốt: bài chính luôn nằm
+   * TRÊN ảnh trang trí. Chỗ chồng lớp cũng chỉ được rơi vào ảnh của bài chứ
+   * không rơi vào chữ, nên `mt` âm trong `featureMobile` tính theo chiều cao
+   * ảnh của ô liền trước.
+   */
+  const style: CSSProperties = mob
+    ? {
+        width: fm.w === 'full' ? 'calc(100% + 40px)' : fm.w,
+        alignSelf: fm.side === 'right' ? 'flex-end' : 'flex-start',
+        marginTop: fm.mt,
+        marginLeft: fm.w === 'full' || (fm.side === 'left' && fm.bleed) ? -20 : 0,
+        marginRight: fm.side === 'right' && fm.bleed ? -20 : 0,
+        position: 'relative',
+        zIndex: 1,
+        opacity: dimmed ? 0.18 : 1,
+      }
+    : { gridColumn: f.col, marginTop: f.mt, marginLeft: f.ml, position: 'relative', zIndex: 1, opacity: dimmed ? 0.18 : 1 }
   if (f.kind === 'quote') {
     return (
       <div style={style}>
-        <div style={{ borderTop: '1px solid #12120F', paddingTop: 20 }}>
-          <div style={{ fontFamily: serif, fontStyle: 'italic', fontSize: 36, lineHeight: 1.12, letterSpacing: '-.03em', color: '#12120F' }}>{f.t}</div>
+        {/* Hẹp: bỏ vạch trên. Câu trích đã đứng riêng giữa hai khoảng trắng
+            rộng rồi, thêm một vạch nữa là đóng khung một thứ vốn để mở. */}
+        <div style={mob ? undefined : { borderTop: '1px solid #12120F', paddingTop: 20 }}>
+          <div style={{ fontFamily: serif, fontStyle: 'italic', fontSize: mob ? 29 : 36, lineHeight: 1.12, letterSpacing: '-.03em', color: '#12120F' }}>{f.t}</div>
         </div>
       </div>
     )
@@ -375,8 +399,8 @@ function FeatureCellView({
   if (f.kind === 'count') {
     return (
       <div style={style}>
-        <div style={{ borderTop: '1px solid #12120F', paddingTop: 18 }}>
-          <div style={{ fontFamily: serif, fontSize: 72, lineHeight: 0.82, letterSpacing: '-.05em' }}>{f.t}</div>
+        <div style={mob ? undefined : { borderTop: '1px solid #12120F', paddingTop: 18 }}>
+          <div style={{ fontFamily: serif, fontSize: mob ? 66 : 72, lineHeight: 0.82, letterSpacing: '-.05em' }}>{f.t}</div>
           <div style={{ fontFamily: "'Be Vietnam Pro',sans-serif", fontSize: 10, letterSpacing: '.2em', textTransform: 'uppercase', color: '#9A9A90', marginTop: 12, lineHeight: 1.6 }}>
             ghi chép đang hiện
           </div>
@@ -389,11 +413,16 @@ function FeatureCellView({
       <div
         style={{
           ...(f.img ? coverStyle(f.img) : { background: f.bg }),
-          height: f.h,
+          /*
+           * Hẹp: tỉ lệ thay cho chiều cao cố định. `h` là 330/268/210px đo cho
+           * một ô rộng `span 3` của lưới 12 cột; ô hẹp chỉ còn 26–46% bề ngang
+           * mà vẫn cao 330 thì thành một cột màu dựng đứng.
+           */
+          ...(mob && fm.ar ? { aspectRatio: fm.ar } : { height: f.h }),
           display: 'flex',
           alignItems: 'flex-end',
-          padding: 14,
-          paddingLeft: f.pl,
+          padding: mob ? 12 : 14,
+          paddingLeft: mob ? 12 : f.pl,
         }}
       >
         {f.t ? (
@@ -477,6 +506,7 @@ function FooterImage({
  * aside and dims.
  */
 export function Notes() {
+  const mob = useIsMobile()
   const { notes, loading, error } = useNotes()
   const { site } = useSiteCopy()
   // Ghi 01's own colours, so an unfolded post wears them the way it would on a
@@ -553,7 +583,7 @@ export function Notes() {
         setOpenNoteState(null)
         setHoverNote(null)
       }}
-      style={{ background: '#FCFCFA', color: '#12120F', minHeight: '100vh', padding: '44px 72px 56px' }}
+      style={{ background: '#FCFCFA', color: '#12120F', minHeight: '100vh', padding: mob ? '26px 20px 40px' : '44px 72px 56px' }}
     >
       <Breadcrumbs color="#9A9A90" />
 
@@ -614,14 +644,27 @@ export function Notes() {
           setMx(null)
           setMy(null)
         }}
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(12,minmax(0,1fr))',
-          gap: '64px 40px',
-          marginTop: 44,
-          gridAutoFlow: 'row dense',
-          alignItems: 'start',
-        }}
+        style={
+          mob
+            ? {
+                // Lưới 12 cột thành một dòng chảy: mỗi ô tự mang bề rộng, bên
+                // đứng và khoảng cách dọc của mình (`notePlacementMobile`,
+                // `featureMobile`). Không có `gap` chung — nhịp nén/mở là thứ
+                // giữ cho trang không đọc ra như một cột đều tăm tắp.
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'flex-start',
+                marginTop: 30,
+              }
+            : {
+                display: 'grid',
+                gridTemplateColumns: 'repeat(12,minmax(0,1fr))',
+                gap: '64px 40px',
+                marginTop: 44,
+                gridAutoFlow: 'row dense',
+                alignItems: 'start',
+              }
+        }
       >
           {/* A post filed under Ghi 01 unfolds where it sits, the way the
               statistics panel unfolds on Ghi 02 — the reader stays on the page
@@ -630,12 +673,13 @@ export function Notes() {
             {buildNotesGrid(shownPosts, drawnCells).map((cell, gi) => {
               if (cell.kind === 'feature') {
                 return (
-                  <FeatureCellView key={`F${cell.cell.n}-${gi}`} f={cell.cell} dimmed={openNote !== null} />
+                  <FeatureCellView key={`F${cell.cell.n}-${gi}`} f={cell.cell} dimmed={openNote !== null} mob={mob} />
                 )
               }
               const p = cell.post
               const open = openNote === p.id
               const place = cell.place
+              const pm = notePlacementMobile[cell.slot % notePlacementMobile.length]
             return (
               <Hover
                 key={p.id}
@@ -644,8 +688,19 @@ export function Notes() {
                   setOpenNote((prev) => (prev === p.id ? null : p.id))
                 }}
                 style={{
-                  gridColumn: open ? '1 / -1' : place.col,
-                  marginTop: open ? '40px' : place.mt,
+                  ...(mob
+                    ? {
+                        width: open ? '100%' : pm.w,
+                        alignSelf: open || pm.side === 'left' ? 'flex-start' : 'flex-end',
+                        marginTop: open ? '40px' : pm.mt,
+                        // Bài luôn nằm trên ảnh trang trí — luật chủ site chốt.
+                        position: 'relative',
+                        zIndex: 2,
+                      }
+                    : {
+                        gridColumn: open ? '1 / -1' : place.col,
+                        marginTop: open ? '40px' : place.mt,
+                      }),
                   cursor: 'pointer',
                   opacity: openNote !== null && !open ? 0.18 : 1,
                   transition: 'opacity .45s ease',
@@ -659,8 +714,8 @@ export function Notes() {
                     {postThumbnail(p) && (
                       <div
                         style={{
-                          aspectRatio: place.ar,
-                          width: place.mw,
+                          aspectRatio: mob ? pm.ar : place.ar,
+                          width: mob ? '100%' : place.mw,
                           ...coverStyle(postThumbnail(p)!),
                           marginBottom: 18,
                         }}
@@ -739,11 +794,11 @@ export function Notes() {
 
       <div
         style={{
-          marginTop: 130,
+          marginTop: mob ? 80 : 130,
           borderTop: '1px solid #12120F',
           paddingTop: 26,
           display: 'grid',
-          gridTemplateColumns: 'repeat(12,minmax(0,1fr))',
+          gridTemplateColumns: mob ? 'minmax(0,1fr)' : 'repeat(12,minmax(0,1fr))',
           gap: 30,
           alignItems: 'end',
         }}

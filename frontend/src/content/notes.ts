@@ -97,6 +97,69 @@ export const notePlacement: Placement[] = [
  * to the page's furniture. Keeping the numbering separate is what stops the
  * next person conflating them.
  */
+/**
+ * Ghi 01 khi màn hẹp — hình học riêng, không phải bản co của lưới 12 cột.
+ *
+ * Lưới desktop mã hoá thứ bậc bằng CHỖ ĐỨNG: `span 4` hay `span 5`, lệch trên
+ * 0→150px, lệch trái tới -64px. Ép về một cột thì thứ bậc ấy bay sạch và trang
+ * thành một dãy ô đều tăm tắp — đúng thứ chủ site bác: "lệch hết về một bên,
+ * trông như tờ giấy lộn cắt ghép".
+ *
+ * Nên bản hẹp soạn lại như một bản nhạc dọc, đổi nhịp nén — mở — nén:
+ *   NÉN  ảnh nhỏ kéo ngược lên bằng `mt` âm, kê ngang tầm bài bên cạnh, có ô
+ *        đè vào từ mép phải có ô đè từ mép trái.
+ *   MỞ   một câu trích và một tấm băng tràn cả hai mép, mỗi thứ đứng riêng cả
+ *        đoạn với khoảng trắng rộng bao quanh.
+ *
+ * Bề rộng không cái nào lặp lại cái nào, và bài đổi bên liên tục — đó là thứ
+ * giữ cho trang không đọc ra như một cột.
+ *
+ * HAI LUẬT CỨNG chủ site chốt, đừng phá khi chỉnh số:
+ *   1. Bài chính LUÔN nằm trên ảnh trang trí (`zIndex` 2 so với 1).
+ *   2. Chỗ chồng lớp chỉ được rơi vào ẢNH của bài, không bao giờ rơi vào CHỮ.
+ *      Vì thế mỗi `mt` âm dưới đây được tính theo chiều cao ảnh của ô liền
+ *      trước, không phải đặt cho đẹp mắt.
+ */
+export type MobilePlacement = { w: string; side: 'left' | 'right'; mt: string; ar: string }
+
+/** Tám vị trí bài của một dải, cùng thứ tự với `notePlacement`. */
+export const notePlacementMobile: MobilePlacement[] = [
+  { w: '72%', side: 'left', mt: '0px', ar: '4/3' },
+  { w: '64%', side: 'right', mt: '58px', ar: '5/4' },
+  { w: '76%', side: 'left', mt: '52px', ar: '4/3' },
+  { w: '62%', side: 'right', mt: '66px', ar: '3/2' },
+  { w: '70%', side: 'left', mt: '46px', ar: '5/4' },
+  { w: '66%', side: 'right', mt: '58px', ar: '4/3' },
+  { w: '74%', side: 'left', mt: '30px', ar: '5/4' },
+  { w: '68%', side: 'left', mt: '72px', ar: '4/3' },
+]
+
+/**
+ * Hình học hẹp của bảy ô trang trí, tra theo `n` (F1…F7).
+ *
+ * `w`: `'full'` là tràn cả hai mép trang, `'auto'` là co theo nội dung (ô đếm).
+ * `bleed`: phá mép trang 20px ra tận cạnh màn — đúng cái mà `ml: -52/-64px`
+ * của bản desktop đang làm.
+ */
+export type MobileFeature = {
+  w: string
+  side: 'left' | 'right'
+  mt: string
+  bleed: boolean
+  /** Ô ảnh lấy tỉ lệ thay cho `h` cố định — bề rộng đã đổi thì chiều cao phải đi theo. */
+  ar?: string
+}
+
+export const featureMobile: Record<number, MobileFeature> = {
+  1: { w: '42%', side: 'left', mt: '-210px', bleed: true, ar: '3/4' },
+  2: { w: '84%', side: 'left', mt: '74px', bleed: false },
+  3: { w: '32%', side: 'right', mt: '-200px', bleed: true, ar: '1/1' },
+  4: { w: 'auto', side: 'left', mt: '-132px', bleed: false },
+  5: { w: 'full', side: 'left', mt: '54px', bleed: true, ar: '16/9' },
+  6: { w: '26%', side: 'right', mt: '-40px', bleed: true, ar: '2/3' },
+  7: { w: '46%', side: 'right', mt: '-196px', bleed: true, ar: '3/2' },
+}
+
 export type FeatureCell = {
   /** F1…F7 — this cell's own number, independent of the posts. */
   n: number
