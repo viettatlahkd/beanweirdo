@@ -52,17 +52,32 @@ export function pageSlots(layout: string): PageSlot[] {
   return ([1, 2, 3, 4] as PageSlot[]).slice(0, pageSlotCount(layout))
 }
 
-/** The photo for one slot: the page's own, or the homepage's when unset. */
+/**
+ * The photo for one slot: the page's own, or the homepage's when unset.
+ *
+ * Ba trạng thái, không phải hai:
+ * - có đường dẫn → ảnh của riêng ô này
+ * - `null` (chưa đặt gì) → mượn ảnh trang chủ cùng số
+ * - chuỗi rỗng → **cố ý để trống**: ô này không mượn nữa
+ *
+ * Trạng thái thứ ba tồn tại vì chủ site cần bỏ được ảnh mượn mà không phải xoá
+ * ảnh trang chủ — hai bề mặt dùng chung một tấm là tiện, nhưng "tiện" không
+ * được phép thành "không bỏ ra được".
+ */
 export function pageImage(m: PageImageFields, slot: PageSlot): string | null {
   const own = m[`page_img${slot}` as const]
   if (own) return own
+  if (own === '') return null
   // Slot 4 has no homepage counterpart — the band only ever drew three.
   return slot === 4 ? null : m[`img${slot}` as const]
 }
 
 /** True when this slot is showing the homepage's photo rather than its own. */
 export function isBorrowed(m: PageImageFields, slot: PageSlot): boolean {
-  return !m[`page_img${slot}` as const] && Boolean(slot !== 4 && m[`img${slot}` as const])
+  const own = m[`page_img${slot}` as const]
+  // Chuỗi rỗng là đã nói "không mượn", nên không phải đang mượn.
+  if (own === '') return false
+  return !own && Boolean(slot !== 4 && m[`img${slot}` as const])
 }
 
 /**
