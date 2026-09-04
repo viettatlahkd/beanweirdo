@@ -76,3 +76,21 @@ describe('tiêu đề module dài', () => {
     expect(src.match(/lang="en"/g)?.length).toBe(3)
   })
 })
+
+/*
+ * Chú thích ảnh: giữ hay bỏ là việc của chủ site.
+ *
+ * Dải bốn giai đoạn rang từng rơi về nhãn thiết kế khi ô chú thích trống — chủ
+ * site xoá sạch ô trong CMS mà chữ vẫn nằm trên ảnh, không có cách nào bỏ. Ba
+ * dạng trang module còn lại đã theo luật "trống thì không vẽ" từ trước; đây là
+ * chỗ cuối cùng chưa theo.
+ */
+describe('chú thích ảnh trên trang module', () => {
+  it('không chỗ nào rơi về nhãn thiết kế khi ô trống', () => {
+    const src = readFileSync('frontend/src/screens/ModuleScreen.tsx', 'utf8')
+    // `pageCaption(...) || nhãn` là đúng cái làm chú thích không xoá được.
+    expect(src).not.toMatch(/pageCaption\([^)]*\)\s*\|\|/)
+    // Và cả ba dạng đều hỏi "có chú thích không" trước khi vẽ.
+    expect(src.match(/pageCaption\(m, ?\w+\)\s*(&&|\?)/g)?.length).toBe(3)
+  })
+})
