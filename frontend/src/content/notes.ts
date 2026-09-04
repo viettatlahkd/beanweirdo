@@ -144,20 +144,23 @@ export const notePlacementMobile: MobilePlacement[] = [
 export type MobileFeature = {
   w: string
   side: 'left' | 'right'
+  /** Kéo lên ngang tầm ô trước — chỉ dùng khi hai ô khác bên và đủ chỗ một hàng. */
   mt: string
+  /** Khoảng cách khi không kê lên được. Luôn dương, nên không bao giờ đè lên chữ. */
+  mtSafe: string
   bleed: boolean
   /** Ô ảnh lấy tỉ lệ thay cho `h` cố định — bề rộng đã đổi thì chiều cao phải đi theo. */
   ar?: string
 }
 
 export const featureMobile: Record<number, MobileFeature> = {
-  1: { w: '42%', side: 'left', mt: '-210px', bleed: true, ar: '3/4' },
-  2: { w: '84%', side: 'left', mt: '74px', bleed: false },
-  3: { w: '32%', side: 'right', mt: '-200px', bleed: true, ar: '1/1' },
-  4: { w: 'auto', side: 'left', mt: '-132px', bleed: false },
-  5: { w: 'full', side: 'left', mt: '54px', bleed: true, ar: '16/9' },
-  6: { w: '26%', side: 'right', mt: '-40px', bleed: true, ar: '2/3' },
-  7: { w: '46%', side: 'right', mt: '-196px', bleed: true, ar: '3/2' },
+  1: { w: '42%', side: 'left', mt: '-210px', mtSafe: '40px', bleed: true, ar: '3/4' },
+  2: { w: '84%', side: 'left', mt: '74px', mtSafe: '74px', bleed: false },
+  3: { w: '32%', side: 'right', mt: '-200px', mtSafe: '40px', bleed: true, ar: '1/1' },
+  4: { w: 'auto', side: 'left', mt: '-132px', mtSafe: '56px', bleed: false },
+  5: { w: 'full', side: 'left', mt: '54px', mtSafe: '54px', bleed: true, ar: '16/9' },
+  6: { w: '26%', side: 'right', mt: '-40px', mtSafe: '30px', bleed: true, ar: '2/3' },
+  7: { w: '46%', side: 'right', mt: '-196px', mtSafe: '44px', bleed: true, ar: '3/2' },
 }
 
 export type FeatureCell = {

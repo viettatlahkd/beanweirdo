@@ -105,19 +105,19 @@ h4 {
  * đuôi hai đoạn chữ thì nó thành dòng thứ ba của một đoạn văn, và người đọc
  * phải đọc hết mới thấy lối ra.
  */
-.bw-intro {
-  grid-template-columns: minmax(0, 1fr) minmax(110px, 0.3fr);
-  column-gap: 40px;
-}
-.bw-intro > :nth-child(1) {
-  grid-area: 1 / 1;
-}
-.bw-intro > :nth-child(2) {
-  grid-area: 2 / 1;
-}
-.bw-intro > :nth-child(3) {
-  grid-area: 1 / 2;
-}
+/*
+ * Hẹp: cả ba xếp thẳng một cột, liên kết "xem mục lục" nằm dưới cùng.
+ *
+ * Trước đây chỗ này giữ liên kết ấy trong một cột phụ `minmax(110px, .3fr)`
+ * bên phải. Trên máy tính bảng thì hợp lý, trên điện thoại thì không: ở màn
+ * 390 cột chữ còn 350, cột phụ chiếm đúng 110 của nó, và liên kết bốn chữ
+ * gãy làm hai dòng bên cạnh một mảng trống cao bằng cả đoạn văn. Đo thật ở
+ * 390px: liên kết rộng 110px.
+ *
+ * Và từ khi cả trang chỉ còn một chỗ gãy ở 900, dải bề ngang mà cách xếp ấy
+ * phục vụ không còn tồn tại: từ 900 trở lên đã là ba cột, dưới 900 thì cột
+ * phụ quá hẹp. Nên bỏ hẳn thay vì gán cho nó một ngưỡng thứ ba.
+ */
 
 .bw-modhead {
   margin-bottom: 64px;
