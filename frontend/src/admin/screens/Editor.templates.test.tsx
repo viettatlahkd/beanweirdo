@@ -219,3 +219,51 @@ describe('long-form: mọi loại khối đều sửa được', () => {
     expect(onChange).toHaveBeenLastCalledWith({ body: [{ k: 'formula', v: 'A → B + C' }] })
   })
 })
+
+/*
+ * Article: chú thích ảnh và ghi chú bên lề.
+ *
+ * Cả hai hiện trên trang mà không có ô nào gõ được. Article đã có sẵn móc
+ * `renderFigure`, nhưng móc ấy thay *cả* cách vẽ khung ảnh — dùng nó nghĩa là
+ * khung sửa phải vẽ lại toàn bộ bố cục, và một bản vẽ lại thì lệch bản thật chỉ
+ * sau vài ngày (đúng chuyện đã xảy ra với ô xem trước của trang module). Nên
+ * thêm hai móc hẹp, bố cục vẫn nằm nguyên một chỗ.
+ */
+describe('article: khung ảnh', () => {
+  const withFig = (fig: Record<string, unknown>) =>
+    ({
+      ...(post('article') as object),
+      body: [{ h: 'Mục', p: 'Đoạn', fig: { h: '190px', w: '300px', tint: '#EEE', label: 'nhãn', ...fig } }],
+    }) as never
+
+  it('chú thích ảnh và ghi chú bên lề đều có ô nhập', () => {
+    render(
+      <EditorCanvas
+        template={'article' as never}
+        post={withFig({ caption: 'chú thích ảnh', note: 'ghi chú bên lề' })}
+        onChange={vi.fn()}
+        onHeroDrop={vi.fn()}
+      />,
+    )
+    expect(screen.getByDisplayValue('chú thích ảnh')).toBeTruthy()
+    expect(screen.getByDisplayValue('ghi chú bên lề')).toBeTruthy()
+  })
+
+  it('sửa chú thích không xoá mất phần còn lại của khung ảnh', async () => {
+    const onChange = vi.fn()
+    render(
+      <EditorCanvas
+        template={'article' as never}
+        post={withFig({ caption: 'cũ', note: 'giữ nguyên' })}
+        onChange={onChange}
+        onHeroDrop={vi.fn()}
+      />,
+    )
+    await userEvent.type(screen.getByDisplayValue('cũ'), ' mới')
+    await userEvent.tab()
+    const fig = (onChange.mock.lastCall?.[0].body[0] as { fig: Record<string, unknown> }).fig
+    expect(fig.caption).toBe('cũ mới')
+    expect(fig.note).toBe('giữ nguyên')
+    expect(fig.label).toBe('nhãn')
+  })
+})

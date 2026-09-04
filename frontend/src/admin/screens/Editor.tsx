@@ -564,6 +564,29 @@ function ArticleEditor({ post, module, onChange }: { post: PostDetail; module?: 
       renderSectionHeading={(h, i) => <EditableField value={h} onCommit={(v) => updateSection(i, { h: v })} />}
       renderSectionBody={(p, i) => <EditableField value={p} multiline rows={3} onCommit={(v) => updateSection(i, { p: v })} />}
       renderPullQuote={(pull) => <EditableField value={pull} multiline rows={3} onCommit={(v) => onChange({ pull_quote: v })} />}
+      /*
+       * Chú thích ảnh và ghi chú bên lề. Cả hai hiện trên trang mà không có ô
+       * nào gõ được — đo trên ba bài Article nháp thì đây là hai mẩu duy nhất
+       * còn hụt.
+       */
+      renderFigureNote={(note, i) => (
+        <EditableField
+          value={note}
+          multiline
+          rows={1}
+          placeholder="ghi chú bên lề"
+          onCommit={(v) => updateSection(i, { fig: { ...(sections[i].fig as object), note: v } as never })}
+        />
+      )}
+      renderFigureCaption={(caption, i) => (
+        <EditableField
+          value={caption}
+          multiline
+          rows={1}
+          placeholder="chú thích ảnh"
+          onCommit={(v) => updateSection(i, { fig: { ...(sections[i].fig as object), caption: v } as never })}
+        />
+      )}
       renderFurtherReadingItem={(item, i) => <EditableField value={item} onCommit={(v) => updateFurtherReading(i, v)} />}
       wrapSection={(section, i) => (
         <RowShell

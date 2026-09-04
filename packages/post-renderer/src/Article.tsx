@@ -26,6 +26,15 @@ export type ArticleOverrides = {
   renderAfterSections?: () => ReactNode
   renderSectionBody?: (p: string, index: number) => ReactNode
   renderFigure?: (fig: FigureData, index: number) => ReactNode
+  /*
+   * Hai mẩu chữ của khung ảnh, tách riêng khỏi `renderFigure`.
+   *
+   * `renderFigure` thay cả cách vẽ khung ảnh, nên khung sửa muốn cho gõ chú
+   * thích thì phải vẽ lại toàn bộ bố cục ấy — và một bản vẽ lại thì sai khác
+   * bản thật chỉ sau vài ngày. Hai móc hẹp này để bố cục nằm nguyên một chỗ.
+   */
+  renderFigureNote?: (note: string, index: number) => ReactNode
+  renderFigureCaption?: (caption: string, index: number) => ReactNode
   renderPullQuote?: (pull: string) => ReactNode
   renderRelatedItem?: (label: string, index: number) => ReactNode
   renderFurtherReadingItem?: (item: string, index: number) => ReactNode
@@ -222,7 +231,9 @@ export function Article({ post, breadcrumb, ...overrides }: ArticleProps) {
                         >
                           {s.fig.label}
                         </div>
-                        <div style={{ fontSize: 13.5, lineHeight: 1.45, color: ink.soft }}>{s.fig.note}</div>
+                        <div style={{ fontSize: 13.5, lineHeight: 1.45, color: ink.soft }}>
+                          {overrides.renderFigureNote ? overrides.renderFigureNote(s.fig.note ?? '', i) : s.fig.note}
+                        </div>
                       </div>
                       <div style={{ width: s.fig.w, flex: 'none' }}>
                         <div
@@ -237,7 +248,9 @@ export function Article({ post, breadcrumb, ...overrides }: ArticleProps) {
                           }}
                         >
                           <div style={{ fontFamily: sans, fontSize: 9.5, color: ink.strong, lineHeight: 1.3 }}>
-                            {s.fig.caption}
+                            {overrides.renderFigureCaption
+                              ? overrides.renderFigureCaption(s.fig.caption ?? '', i)
+                              : s.fig.caption}
                           </div>
                         </div>
                       </div>
