@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 /** Elements that hold figures: pairs, bars and rows. */
 import { ink, paper, sans, serif } from '../tokens'
 import { registerElement, type ElementViewProps } from './registry'
@@ -45,12 +46,13 @@ export const chart = registerElement<ChartAttrs>({
   keywords: ['biểu đồ', 'chart', 'cột', 'đường cong'],
   attributes: { points: { type: 'array', note: '[{ label, heightPct 0–100 }]' } },
   blank: () => ({ type: 'chart', points: [{ label: '', heightPct: 50 }] }),
-  View: ({ attributes, palette, testId }: ElementViewProps<ChartAttrs>) => (
+  View: ({ attributes, palette, testId, mobile }: ElementViewProps<ChartAttrs>) => (
     <div
       data-testid={testId}
       style={{ margin: '0 0 20px', borderLeft: '1px solid #DDD9C8', borderBottom: '1px solid #DDD9C8', padding: '0 0 0 8px' }}
     >
-      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 168 }}>
+      {/* B59 — cột co theo flex nên không vỡ; chỉ hạ chiều cao cho vừa màn. */}
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: mobile ? 140 : 168 }}>
         {attributes.points.map((p, pi) => (
           <div key={pi} style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', height: '100%' }}>
             <div style={{ height: `${p.heightPct}%`, background: palette.accent }} />
@@ -82,6 +84,71 @@ export function columnWidth(table: TableAttrs['table'], index: number): string {
   return `${w[index]}%`
 }
 
+/**
+ * Khung cuộn cho bảng, và dấu cho biết nó cuộn được.
+ *
+ * Một khung cuộn ngang không có dấu gì thì trên điện thoại trông y hệt một bảng
+ * bị cắt cụt — người đọc không biết là vuốt được. Dải mờ ở mép phải là cách hệ
+ * này đã nói "còn nữa" ở hai chỗ khác trong `Longform.tsx`; dùng lại đúng nó
+ * thay vì nghĩ ra kiểu mới, và không mũi tên: hệ này không dùng icon, mọi dấu
+ * hiệu đều là hình khối vẽ bằng viền hoặc nền.
+ *
+ * Dải mờ nằm trong khung cuộn chứ không trên `<table>` — đặt lên bảng thì nó
+ * cuộn theo bảng và biến mất ngay lần vuốt đầu. Và nó tắt khi đã tới cuối, vì
+ * một dấu "còn nữa" lúc không còn gì nữa là nói dối.
+ */
+export function TableScroll({
+  testId,
+  mobile,
+  children,
+}: {
+  testId?: string
+  mobile?: boolean
+  children: ReactNode
+}) {
+  const box = useRef<HTMLDivElement>(null)
+  const [more, setMore] = useState(false)
+
+  const measure = useCallback(() => {
+    const el = box.current
+    if (!el) return
+    setMore(el.scrollWidth - el.clientWidth - el.scrollLeft > 2)
+  }, [])
+
+  useEffect(() => {
+    measure()
+    const el = box.current
+    if (!el || typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [measure, mobile])
+
+  return (
+    <div style={{ position: 'relative', margin: '0 0 20px' }}>
+      <div ref={box} data-testid={testId} onScroll={measure} style={{ overflowX: 'auto' }}>
+        {children}
+      </div>
+      {mobile && more && (
+        <div
+          aria-hidden
+          style={{
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            bottom: 0,
+            width: 32,
+            pointerEvents: 'none',
+            // Nền kem của Report, không phải nền trắng lạnh của Longform — lấy
+            // sai màu thì dải mờ hiện thành một vệt xám.
+            background: 'linear-gradient(to right, rgba(253,251,242,0), rgba(253,251,242,.97))',
+          }}
+        />
+      )}
+    </div>
+  )
+}
+
 export const table = registerElement<TableAttrs>({
   name: 'table',
   title: 'Bảng',
@@ -92,9 +159,22 @@ export const table = registerElement<TableAttrs>({
     table: { type: 'object', note: '{ columns[], rows[{cells[]}], widths?[] } — widths tính bằng phần trăm' },
   },
   blank: () => ({ type: 'table', table: { columns: ['Cột 1'], rows: [{ cells: [''] }] } }),
-  View: ({ attributes, palette, index, testId, render }: ElementViewProps<TableAttrs>) => (
-    <div data-testid={testId} style={{ margin: '0 0 20px', overflowX: 'auto' }}>
-      <table style={{ borderCollapse: 'collapse', width: '100%', tableLayout: 'fixed', fontFamily: sans }}>
+  View: ({ attributes, palette, index, testId, render, mobile }: ElementViewProps<TableAttrs>) => (
+    <TableScroll testId={testId} mobile={mobile}>
+      <table
+        style={{
+          borderCollapse: 'collapse',
+          width: '100%',
+          /*
+           * Bảng bốn cột trên màn 390 cho mỗi cột 87px — chữ vỡ thành từng chữ
+           * cái một. Đặt bề ngang tối thiểu rồi cho nó cuộn trong khung của
+           * chính nó; để cả trang cuộn ngang thì mọi thứ khác cũng trôi theo.
+           */
+          minWidth: mobile ? 520 : undefined,
+          tableLayout: 'fixed',
+          fontFamily: sans,
+        }}
+      >
         <colgroup>
           {attributes.table.columns.map((_, ci) => (
             <col key={ci} style={{ width: columnWidth(attributes.table, ci) }} />
@@ -135,6 +215,6 @@ export const table = registerElement<TableAttrs>({
           ))}
         </tbody>
       </table>
-    </div>
+    </TableScroll>
   ),
 })

@@ -1,4 +1,5 @@
 import { getElement } from './elements'
+import { TableScroll } from './elements/data'
 import { flatElements } from './memoElements'
 import { paletteFrom, type Palette } from './palette'
 import { Fragment } from 'react'
@@ -46,6 +47,11 @@ export type MemoOverrides = {
 }
 
 export type MemoProps = MemoOverrides & {
+  /**
+   * Bố cục điện thoại. Chỗ gọi quyết định, không phải khuôn tự đo — xem
+   * `PostRenderer`.
+   */
+  mobile?: boolean
   post: MemoPostData
   /**
    * The trail back to where this post is filed. Supplied by the app, so the
@@ -78,8 +84,11 @@ const tableGrid = (columns: number) =>
  * is memo's italic serif with the air a section used to get, drawn from the
  * same `heading` element a report draws flat and upright.
  */
-const MEMO_VIEWS: Record<string, ((p: { attributes: never; palette: Palette; first?: boolean }) => ReactNode) | undefined> = {
-  heading: ({ attributes, palette, first }) => {
+const MEMO_VIEWS: Record<
+  string,
+  ((p: { attributes: never; palette: Palette; first?: boolean; mobile?: boolean }) => ReactNode) | undefined
+> = {
+  heading: ({ attributes, palette, first, mobile }) => {
     const a = attributes as unknown as { text: string }
     return (
       <h2
@@ -87,7 +96,8 @@ const MEMO_VIEWS: Record<string, ((p: { attributes: never; palette: Palette; fir
           fontFamily: serif,
           fontStyle: 'italic',
           fontWeight: 400,
-          fontSize: 32,
+          // B50 — tiêu đề mục 32→24.
+          fontSize: mobile ? 24 : 32,
           lineHeight: 1.1,
           letterSpacing: '-.02em',
           margin: first ? '0 0 22px' : '52px 0 22px',
@@ -115,10 +125,20 @@ const MEMO_VIEWS: Record<string, ((p: { attributes: never; palette: Palette; fir
       </div>
     )
   },
-  table: ({ attributes, palette }) => {
+  table: ({ attributes, palette, mobile }) => {
     const t = (attributes as unknown as { table: { columns: string[]; rows: { cells: string[] }[] } }).table
+    /*
+     * Memo vẽ bảng bằng lưới của riêng nó, không bằng `<table>` — kho element
+     * sở hữu định dạng, khuôn sở hữu bố cục. Nghĩa là bản sửa cuộn ngang ở
+     * `elements/data.tsx` **không** chạm tới chỗ này: Report và Memo trông
+     * giống nhau ở đây nhưng là hai đoạn mã khác nhau.
+     *
+     * Bốn cột trên màn 390 cho mỗi cột 78px, chữ vỡ y hệt. Dùng lại đúng khung
+     * cuộn ấy để hai khuôn có cùng một cử chỉ, chứ không đẻ ra kiểu thứ hai.
+     */
     return (
-      <div style={{ marginTop: 22, maxWidth: 420 }}>
+      <TableScroll mobile={mobile}>
+      <div style={{ marginTop: 22, maxWidth: 420, minWidth: mobile ? 520 : undefined }}>
         <div
           style={{
             display: 'grid',
@@ -153,6 +173,7 @@ const MEMO_VIEWS: Record<string, ((p: { attributes: never; palette: Palette; fir
           </div>
         ))}
       </div>
+      </TableScroll>
     )
   },
 }
@@ -167,6 +188,7 @@ const MEMO_VIEWS: Record<string, ((p: { attributes: never; palette: Palette; fir
 export function Memo({
   post,
   breadcrumb,
+  mobile = false,
   renderTitle,
   renderSubtitle,
   wrapElement,
@@ -184,7 +206,7 @@ export function Memo({
         style={{
           background: palette.accent,
           color: palette.onAccent,
-          padding: '22px 56px 20px',
+          padding: mobile ? '18px 20px 16px' : '22px 56px 20px',
         }}
       >
         {breadcrumb}
@@ -193,7 +215,9 @@ export function Memo({
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'minmax(0,1fr) 300px',
+            // B49 — tiêu đề và bảng thông số xếp dọc; 300px cạnh cột chữ trên
+            // màn 390 thì cả hai đều không còn chỗ.
+            gridTemplateColumns: mobile ? 'minmax(0,1fr)' : 'minmax(0,1fr) 300px',
             gap: 56,
             alignItems: 'end',
             borderBottom: `1px solid ${palette.ink}`,
@@ -206,7 +230,8 @@ export function Memo({
               style={{
                 fontFamily: serif,
                 fontWeight: 400,
-                fontSize: 78,
+                // B50 — tiêu đề bài 78→38.
+                fontSize: mobile ? 38 : 78,
                 lineHeight: 0.88,
                 letterSpacing: '-.045em',
                 margin: 0,
@@ -221,7 +246,7 @@ export function Memo({
                 style={{
                   fontFamily: serif,
                   fontStyle: 'italic',
-                  fontSize: 27,
+                  fontSize: mobile ? 20 : 27,
                   lineHeight: 1.3,
                   color: palette.mid,
                   marginTop: 18,
@@ -285,11 +310,11 @@ export function Memo({
           {flatElements(post).map((el, i) => {
             const own = MEMO_VIEWS[el.type]
             const drawn = own ? (
-              own({ attributes: el as never, palette, first: i === 0 })
+              own({ attributes: el as never, palette, first: i === 0, mobile })
             ) : (
               (() => {
                 const element = getElement(el.type)
-                return element ? <element.View attributes={el} palette={palette} index={i} /> : null
+                return element ? <element.View attributes={el} palette={palette} index={i} mobile={mobile} /> : null
               })()
             )
             return <Fragment key={i}>{wrapElement ? wrapElement(drawn, i, el) : drawn}</Fragment>

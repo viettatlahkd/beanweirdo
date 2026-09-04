@@ -71,6 +71,13 @@ export type ElementViewProps<A> = {
   testId?: string
   /** Lets an editor make a field editable where it sits on the page. */
   render?: ElementRenderOverrides
+  /**
+   * Bố cục điện thoại, truyền xuống từ khuôn bài.
+   *
+   * Element không tự đo bề ngang: cùng một element vẽ trong khung xem trước hẹp
+   * của CMS lẫn trên trang thật, và chỉ chỗ gọi biết khung nào rộng bao nhiêu.
+   */
+  mobile?: boolean
 }
 
 export type ElementDefinition<A = never> = {

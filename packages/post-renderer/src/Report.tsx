@@ -26,6 +26,11 @@ export type ReportOverrides = {
 
 export type ReportProps = ReportOverrides & {
   /**
+   * Bố cục điện thoại. Chỗ gọi quyết định, không phải khuôn tự đo — xem
+   * `PostRenderer`.
+   */
+  mobile?: boolean
+  /**
    * The trail back to where this post is filed. Supplied by the app, so the
    * renderer package stays independent of how routing works.
    */
@@ -44,11 +49,11 @@ const REPORT_BLUE = '#6FA8C0'
  * of a report's blocks — the admin app's insert-menu / contentEditable
  * editing chrome is not part of this shared package.
  */
-export function Report({ post, breadcrumb, ...overrides }: ReportProps) {
+export function Report({ post, breadcrumb, mobile = false, ...overrides }: ReportProps) {
   const palette = paletteFrom(post.band?.bg ?? REPORT_BLUE, post.band?.fg)
   return (
     <div style={{ background: paper.cream, color: ink.base, minHeight: '100vh' }}>
-      <div style={{ background: palette.accent, color: palette.onAccent, padding: '44px 56px 40px' }}>
+      <div style={{ background: palette.accent, color: palette.onAccent, padding: mobile ? '28px 20px 26px' : '44px 56px 40px' }}>
         {breadcrumb}
         <div
           style={{
@@ -64,7 +69,8 @@ export function Report({ post, breadcrumb, ...overrides }: ReportProps) {
             style={{
               fontFamily: serif,
               fontWeight: 400,
-              fontSize: 70,
+              // Cùng cỡ với Cards trên mobile: 70→36.
+              fontSize: mobile ? 36 : 70,
               lineHeight: 0.9,
               letterSpacing: '-.04em',
               margin: 0,
@@ -81,7 +87,7 @@ export function Report({ post, breadcrumb, ...overrides }: ReportProps) {
         </div>
       </div>
 
-      <ReportBody post={post} palette={palette} overrides={overrides} />
+      <ReportBody post={post} palette={palette} overrides={overrides} mobile={mobile} />
     </div>
   )
 }
@@ -99,7 +105,17 @@ export function Report({ post, breadcrumb, ...overrides }: ReportProps) {
  * grows to whichever side is taller, so a long note pushes its own block's
  * row open rather than sliding out of line with it.
  */
-function ReportBody({ post, palette, overrides }: { post: ReportPostData; palette: Palette; overrides: ReportOverrides }) {
+function ReportBody({
+  post,
+  palette,
+  overrides,
+  mobile,
+}: {
+  post: ReportPostData
+  palette: Palette
+  overrides: ReportOverrides
+  mobile?: boolean
+}) {
   const notes = post.notes
   const withNotes = hasNotes(notes)
   const explorations = liveExplorations(notes)
@@ -112,7 +128,7 @@ function ReportBody({ post, palette, overrides }: { post: ReportPostData; palett
   return (
     <div
       style={{
-        padding: '44px 56px 96px',
+        padding: mobile ? '28px 20px 96px' : '44px 56px 96px',
         maxWidth: 1320,
         display: 'grid',
         gridTemplateColumns: withNotes ? 'minmax(0,1fr) minmax(200px,260px)' : 'minmax(0,1fr)',
@@ -126,7 +142,14 @@ function ReportBody({ post, palette, overrides }: { post: ReportPostData; palett
           <Fragment key={seg.start}>
             <div style={{ gridColumn: 1, gridRow: si + 1, minWidth: 0 }}>
               {post.blocks.slice(seg.start, seg.end).map((block, bi) => (
-                <ReportBlockView key={seg.start + bi} block={block} index={seg.start + bi} palette={palette} overrides={overrides} />
+                <ReportBlockView
+                  key={seg.start + bi}
+                  block={block}
+                  index={seg.start + bi}
+                  palette={palette}
+                  overrides={overrides}
+                  mobile={mobile}
+                />
               ))}
             </div>
             {(hanging.length > 0 || opensTheColumn) && (
@@ -238,11 +261,13 @@ function ReportBlockView({
   index,
   palette,
   overrides,
+  mobile,
 }: {
   block: ReportBlock
   index: number
   palette: Palette
   overrides: ReportOverrides
+  mobile?: boolean
 }) {
   const element = getElement(block.type)
   // A body may name an element this build does not have — a post written on a
@@ -256,6 +281,7 @@ function ReportBlockView({
       index={index}
       testId={`report-block-${index}`}
       render={overrides}
+      mobile={mobile}
     />
   )
 }
