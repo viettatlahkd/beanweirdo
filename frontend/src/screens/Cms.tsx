@@ -18,7 +18,18 @@ import {
   type Module,
   type PostSummary,
 } from '../admin/lib/apiClient'
-import { transitionStatus, getSite, listTemplates, type TemplateSummary } from '../admin/lib/apiClient'
+import {
+  transitionStatus,
+  getSite,
+  listTemplates,
+  listTags,
+  createTag,
+  renameTag,
+  deleteTag,
+  type Tag,
+  type TemplateSummary,
+} from '../admin/lib/apiClient'
+import { tagColor } from '../lib/notesFilter'
 import { PostsPanel } from '../admin/components/PostsPanel'
 import { ModuleImages } from '../admin/components/ModuleImages'
 import { captionColumn, formShapeOf, imageColumn } from '../admin/moduleForm'
@@ -377,6 +388,121 @@ function ImageSlot({
  * Everything saves on blur — there is no page-level save button (System
  * conventions, rule 08).
  */
+/**
+ * Thêm, đổi tên, xoá tag.
+ *
+ * Cùng một khuôn với tag của Ghi 02, kể cả phần khó nhất của nó: xoá một tag
+ * thì phải nói trước những gì đang đeo nó sẽ về đâu. Xoá lặng lẽ là để lại bài
+ * trỏ vào một tag không còn tồn tại — nó biến mất khỏi mọi thanh lọc mà vẫn nằm
+ * đó, đúng cái lỗi "viết xong rồi không tìm thấy được".
+ */
+function TagsPanel() {
+  const [tags, setTags] = useState<Tag[]>([])
+  const [busy, setBusy] = useState<string | null>(null)
+  const [asking, setAsking] = useState<{ id: string; wearing: { posts: string[]; notes: string[] } } | null>(null)
+  const [adding, setAdding] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+
+  const load = () => void listTags().then(setTags)
+  useEffect(load, [])
+
+  const run = async (id: string, fn: () => Promise<unknown>) => {
+    setBusy(id)
+    try {
+      await fn()
+      setErr(null)
+      load()
+    } catch (e) {
+      setErr((e as Error).message)
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 18 }}>
+      {err && <div role="alert" style={{ fontSize: 12, color: '#8E1E42' }}>{err}</div>}
+      {tags.map((t) => (
+        <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ width: 9, height: 9, borderRadius: 999, background: tagColor(t.label), flex: 'none' }} />
+          <input
+            defaultValue={t.label}
+            key={t.label}
+            aria-label={`tên tag ${t.label}`}
+            onBlur={(e) => {
+              const v = e.target.value.trim()
+              if (v && v !== t.label) void run(t.id, () => renameTag(t.id, v))
+            }}
+            style={{ ...boxed, maxWidth: 260, padding: '5px 9px', fontSize: 13 }}
+          />
+          <button
+            type="button"
+            disabled={busy === t.id}
+            onClick={() =>
+              void run(t.id, async () => {
+                try {
+                  await deleteTag(t.id)
+                } catch (e) {
+                  // Máy chủ từ chối vì còn thứ đang đeo, và trả về danh sách ấy.
+                  const w = (e as { payload?: { wearing?: { posts: string[]; notes: string[] } } }).payload?.wearing
+                  if (!w) throw e
+                  setAsking({ id: t.id, wearing: w })
+                }
+              })
+            }
+            style={{ fontFamily: sans, fontSize: 11, color: ink.muted, background: 'none', border: 'none', cursor: 'pointer' }}
+          >
+            xoá
+          </button>
+          {asking?.id === t.id && (
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: ink.mid }}>
+              {asking.wearing.posts.length + asking.wearing.notes.length} thứ đang đeo — chuyển sang
+              <select
+                aria-label="chuyển sang tag"
+                defaultValue=""
+                onChange={(e) => {
+                  const to = e.target.value === '' ? null : e.target.value
+                  setAsking(null)
+                  void run(t.id, () => deleteTag(t.id, to))
+                }}
+                style={{ ...boxed, width: 'auto', padding: '3px 6px', fontSize: 11.5 }}
+              >
+                <option value="">(bỏ trống)</option>
+                {tags.filter((o) => o.id !== t.id).map((o) => (
+                  <option key={o.id} value={o.id}>{o.label}</option>
+                ))}
+              </select>
+            </span>
+          )}
+        </div>
+      ))}
+      {adding ? (
+        <input
+          autoFocus
+          placeholder="tên tag mới rồi Enter"
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') return setAdding(false)
+            if (e.key !== 'Enter') return
+            const v = (e.target as HTMLInputElement).value.trim()
+            setAdding(false)
+            if (v) void run('new', () => createTag(v))
+          }}
+          onBlur={() => setAdding(false)}
+          style={{ ...boxed, maxWidth: 260, padding: '5px 9px', fontSize: 13 }}
+        />
+      ) : (
+        <button
+          type="button"
+          onClick={() => setAdding(true)}
+          style={{ alignSelf: 'flex-start', fontFamily: sans, fontSize: 11, color: ink.green, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+        >
+          + tag mới
+        </button>
+      )}
+    </div>
+  )
+}
+
 export function Cms() {
   const nav = useNav()
   const [tab, setTab] = useState<'posts' | 'map' | 'content'>('posts')
@@ -899,6 +1025,14 @@ export function Cms() {
             * của trang Lưu trữ thì có trong dữ liệu nhưng chưa bao giờ có ô để
             * sửa — khai ra rồi bỏ đó cũng là không sửa được.
             */}
+          {/*
+            * Tag dùng chung cho cả ghi chép lẫn bài đăng — sửa ở đây, ăn cả hai
+            * chỗ. Trước đây bốn dạng ghi viết cứng trong code, muốn đổi một chữ
+            * là phải sửa code.
+            */}
+          <div style={{ ...sectionHead, margin: '34px 0 18px' }}>Tag</div>
+          <TagsPanel />
+
           <div style={{ ...sectionHead, margin: '34px 0 18px' }}>Trang Ghi chép</div>
           <div style={grid(two)}>
             <Field label="Tiêu đề trang">

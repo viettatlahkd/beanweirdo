@@ -343,17 +343,28 @@ export function ModulePlates({ m }: { m: ModuleRow }) {
                 padding: 12,
               }}
             >
-              <div
-                style={{
-                  fontFamily: sans,
-                  fontSize: 9.5,
-                  color: photo ? paper.cream : s.fg,
-                  background: photo ? 'rgba(24,22,17,.55)' : undefined,
-                  padding: photo ? '3px 7px' : undefined,
-                }}
-              >
-                {pageCaption(m, slot) || s.label}
-              </div>
+              {/*
+                * Chú thích để trống thì không vẽ gì.
+                *
+                * Trước đây ô trống rơi về nhãn thiết kế ("01 — nhân xanh"), nên
+                * chủ site xoá sạch ô trong CMS mà chữ vẫn nằm trên ảnh, không có
+                * cách nào bỏ. Giữ hay bỏ là việc của chủ site — cùng một luật
+                * với mọi khung ảnh khác; nhãn thiết kế chỉ còn là gợi ý trong ô
+                * nhập, không phải thứ trang tự điền vào.
+                */}
+              {pageCaption(m, slot) && (
+                <div
+                  style={{
+                    fontFamily: sans,
+                    fontSize: 9.5,
+                    color: photo ? paper.cream : s.fg,
+                    background: photo ? 'rgba(24,22,17,.55)' : undefined,
+                    padding: photo ? '3px 7px' : undefined,
+                  }}
+                >
+                  {pageCaption(m, slot)}
+                </div>
+              )}
             </div>
           )
         })}

@@ -1037,11 +1037,26 @@ function CardsEditor({ post, module, onChange }: { post: PostDetail; module?: Mo
  * Từ vựng lấy thẳng từ bộ vẽ, không chép lại: hai bản sao của một danh sách là
  * cách chắc chắn nhất để chúng lệch nhau.
  */
-function GroupPicker({ chosen, onToggle }: { chosen: readonly string[]; onToggle: (group: string) => void }) {
+function GroupPicker({
+  chosen,
+  onToggle,
+}: {
+  chosen: readonly string[]
+  onToggle: (group: string) => void
+}) {
+  const [adding, setAdding] = useState(false)
+  /*
+   * Nhóm ngoài bánh xe hương, do chủ site tự đặt.
+   *
+   * Bộ vẽ đã đỡ sẵn: nhóm nào không nằm trong mười bốn tên chuẩn thì lấy màu
+   * từ bảng dự phòng và xếp sau. Thiếu mỗi chỗ nhập — nên bộ thẻ nào cần một
+   * nhóm riêng ("hạt", "khói") thì cho tới nay không đặt được.
+   */
+  const extras = chosen.filter((g) => !FLAVOR_GROUP_NAMES.includes(g))
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, padding: '8px 0 2px' }}>
       <span style={{ ...tinyLabel, alignSelf: 'center', marginRight: 4 }}>Nhóm</span>
-      {FLAVOR_GROUP_NAMES.map((g) => {
+      {[...FLAVOR_GROUP_NAMES, ...extras].map((g) => {
         const on = chosen.includes(g)
         const meta = flavorGroupMeta(g)
         return (
@@ -1066,6 +1081,47 @@ function GroupPicker({ chosen, onToggle }: { chosen: readonly string[]; onToggle
           </button>
         )
       })}
+      {adding ? (
+        <input
+          autoFocus
+          placeholder="tên nhóm mới rồi Enter"
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') return setAdding(false)
+            if (e.key !== 'Enter') return
+            const v = (e.target as HTMLInputElement).value.trim()
+            setAdding(false)
+            if (v && !chosen.includes(v)) onToggle(v)
+          }}
+          onBlur={() => setAdding(false)}
+          style={{
+            fontFamily: sans,
+            fontSize: 9.5,
+            padding: '3px 8px',
+            borderRadius: 999,
+            border: `1px dashed ${ink.faint}`,
+            background: 'transparent',
+            minWidth: 150,
+          }}
+        />
+      ) : (
+        <button
+          type="button"
+          onClick={() => setAdding(true)}
+          style={{
+            fontFamily: sans,
+            fontSize: 9.5,
+            letterSpacing: '.06em',
+            padding: '3px 8px',
+            borderRadius: 999,
+            cursor: 'pointer',
+            border: `1px dashed ${paper.rule}`,
+            background: 'transparent',
+            color: ink.muted,
+          }}
+        >
+          + nhóm mới
+        </button>
+      )}
     </div>
   )
 }

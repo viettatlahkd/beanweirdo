@@ -23,6 +23,9 @@ vi.mock('../admin/lib/apiClient', () => ({
   listPosts: () => Promise.resolve([]),
   listTemplates: () => Promise.resolve([]),
   updateSite: (p: unknown) => Promise.resolve(p),
+  // Bảng tag nằm cùng tab "Sửa nội dung"; không giả lập thì màn không dựng nổi.
+  listTags: () => Promise.resolve([]),
+  createTag: vi.fn(), renameTag: vi.fn(), deleteTag: vi.fn(),
   createModule: vi.fn(), deleteModule: vi.fn(), reorderModules: vi.fn(),
   reorderPosts: vi.fn(), updateModule: vi.fn(), updatePost: vi.fn(),
   uploadImage: vi.fn(), transitionStatus: vi.fn(),
