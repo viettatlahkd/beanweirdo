@@ -100,9 +100,35 @@ const plain = (runs?: LongformRun[]) => (runs ?? []).map((r) => r.t).join('')
 export type LongformEdit = {
   /** Trả về ô nhập cho khối thứ `at`; vắng thì trang vẽ chữ như thường. */
   renderText?: (text: string, at: number) => ReactNode
+  /**
+   * Bọc một khối, để khung sửa treo tay nắm kéo · nhân đôi · xoá lên nó.
+   *
+   * Trang truyền khối qua thẳng; chỉ khung sửa mới bọc gì đó quanh nó. Đây là
+   * cách bốn template kia đã làm — long-form là template duy nhất chưa có, và
+   * đó là lý do bài 400 khối không thêm, không xoá, không đổi thứ tự được.
+   */
+  wrapBlock?: (drawn: ReactNode, at: number, kind: string) => ReactNode
+  /** Vẽ dưới khối cuối — chỗ khung sửa đặt nút "thêm khối". */
+  renderAfterBlocks?: () => ReactNode
 }
 
 const EditContext = createContext<LongformEdit>({})
+
+/**
+ * Một mẩu chữ vẽ trơn, nhưng nhường chỗ cho ô nhập khi đang sửa.
+ *
+ * Tiêu đề cấp ba, cấp bốn, dòng nhãn, ghi chú và công thức đều vẽ bằng chuỗi
+ * trơn chứ không qua `Runs`, nên chúng nằm ngoài chỗ nối ô nhập: đo trên 15 bài
+ * nháp thì long-form là template có nhiều chữ không sửa được nhất. Bọc lại ở
+ * đây thay vì đổi chúng sang `Runs` — `Runs` vẽ từng span theo độ đậm/nghiêng,
+ * còn mấy khối này cố tình vẽ trơn, và đổi cách vẽ không phải việc của một bản
+ * sửa "cho sửa được".
+ */
+const Editable = ({ text, at }: { text: string; at?: number }) => {
+  const edit = useContext(EditContext)
+  if (edit.renderText && at !== undefined) return <>{edit.renderText(text, at)}</>
+  return <>{text}</>
+}
 
 const Runs = ({ runs, at }: { runs?: LongformRun[]; at?: number }) => {
   const edit = useContext(EditContext)
@@ -158,7 +184,7 @@ function noteLines(runs: LongformRun[] = []): LongformRun[][] {
   return groups.filter((g) => g.length > 0)
 }
 
-function NoteBlock({ runs, palette }: { runs?: LongformRun[]; palette: Palette }) {
+function NoteBlock({ runs, palette, at }: { runs?: LongformRun[]; palette: Palette; at?: number }) {
   const [open, setOpen] = useState(true)
   return (
     <div style={{ background: palette.tint, borderLeft: `2px solid ${palette.accent}`, margin: '16px 0 20px' }}>
@@ -180,29 +206,40 @@ function NoteBlock({ runs, palette }: { runs?: LongformRun[]; palette: Palette }
       </div>
       {open && (
         <div style={{ padding: '0 18px 16px', fontSize: 14.5, lineHeight: 1.7 }}>
-          {noteLines(runs).map((line, i) => (
-            <div key={i} style={{ marginBottom: 4 }}>
-              {line.map((r, j) => (
-                <span
-                  key={j}
-                  style={{
-                    ...runStyle(r),
-                    // The export marks emphasis with weight; a note is short
-                    // enough that the emphasis reads better as a highlight.
-                    color: r.w === '600' ? '#0F3D4A' : '#2A4A55',
-                    background: r.w === '600' ? 'rgba(111,168,192,.22)' : 'transparent',
-                    padding: '1px 2px',
-                    margin: '0 -2px',
-                  }}
-                >
-                  {r.t}
-                </span>
-              ))}
-            </div>
-          ))}
+          <NoteBody runs={runs} at={at} />
         </div>
       )}
     </div>
+  )
+}
+
+/** Thân ghi chú: nhiều dòng khi đọc, một ô nhập khi sửa. */
+function NoteBody({ runs, at }: { runs?: LongformRun[]; at?: number }) {
+  const edit = useContext(EditContext)
+  if (edit.renderText && at !== undefined) return <>{edit.renderText(plain(runs), at)}</>
+  return (
+    <>
+      {noteLines(runs).map((line, i) => (
+        <div key={i} style={{ marginBottom: 4 }}>
+          {line.map((r, j) => (
+            <span
+              key={j}
+              style={{
+                ...runStyle(r),
+                // The export marks emphasis with weight; a note is short
+                // enough that the emphasis reads better as a highlight.
+                color: r.w === '600' ? '#0F3D4A' : '#2A4A55',
+                background: r.w === '600' ? 'rgba(111,168,192,.22)' : 'transparent',
+                padding: '1px 2px',
+                margin: '0 -2px',
+              }}
+            >
+              {r.t}
+            </span>
+          ))}
+        </div>
+      ))}
+    </>
   )
 }
 
@@ -301,7 +338,7 @@ function AsideBlock({ items, palette }: { items: LongformBlock[]; palette: Palet
  * pre-parsed from a Notion export, so this only renders and folds; it never
  * parses.
  */
-export function Longform({ post, breadcrumb, renderText }: LongformProps) {
+export function Longform({ post, breadcrumb, renderText, wrapBlock, renderAfterBlocks }: LongformProps) {
   // Everything this template tints comes from the one colour the post wears.
   const palette = paletteFrom(post.band?.bg ?? LONGFORM_BLUE, post.band?.fg)
   const prepared = useMemo(() => prepare(post.blocks), [post.blocks])
@@ -536,6 +573,27 @@ export function Longform({ post, breadcrumb, renderText }: LongformProps) {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,760px)', justifyContent: 'center', paddingRight: 56 }}>
         <div>
+          {/*
+            * Tên bài, khi trong thân bài không có khối tiêu đề nào.
+            *
+            * Template vẽ tên bài *thay cho* tiêu đề đầu tiên của bản export, nên
+            * bài không có khối `h1` nào thì không còn chỗ nào đặt tên — trang mở
+            * ra không mang tên bài lẫn phụ đề. Bài mới bắt đầu từ template thì
+            * có sẵn `h1` nên không lộ, nhưng chỉ cần xoá hết tiêu đề là gặp; và
+            * một bài dán từ nguồn không có tiêu đề thì gặp ngay từ đầu.
+            */}
+          {!prepared.some((p) => p.block.k === 'h1') && (
+            <>
+              <h1 lang="en" style={{ ...wrapTitle, fontFamily: serif, fontWeight: 400, fontSize: 70, lineHeight: 0.94, letterSpacing: '-.03em', color: '#172124', margin: '0 0 8px' }}>
+                {post.title}
+              </h1>
+              {post.subtitle && (
+                <div style={{ fontFamily: serif, fontStyle: 'italic', fontSize: 21, lineHeight: 1.3, color: palette.mid, margin: '0 0 30px' }}>
+                  {post.subtitle}
+                </div>
+              )}
+            </>
+          )}
           {prepared.map((p) => {
             const { block: b, selfId, at } = p
             const parentFolded = Boolean(p.ownerH1 && folded[p.ownerH1])
@@ -546,8 +604,8 @@ export function Longform({ post, breadcrumb, renderText }: LongformProps) {
             const pad = padOf(b)
             const title = p.h1Index === 0
 
-            return (
-              <Fragment key={p.key}>
+            const drawn = (
+              <>
                 {b.k === 'h1' && (
                   <>
                     <h1
@@ -636,7 +694,7 @@ export function Longform({ post, breadcrumb, renderText }: LongformProps) {
                       margin: '32px 0 10px',
                     }}
                   >
-                    {plain(b.runs)}
+                    <Editable text={plain(b.runs)} at={at} />
                   </h3>
                 )}
 
@@ -652,13 +710,13 @@ export function Longform({ post, breadcrumb, renderText }: LongformProps) {
                       margin: '32px 0 12px',
                     }}
                   >
-                    {plain(b.runs)}
+                    <Editable text={plain(b.runs)} at={at} />
                   </h4>
                 )}
 
                 {b.k === 'meta' && (
                   <div style={{ fontSize: 10, letterSpacing: '.2em', textTransform: 'uppercase', color: '#B0B0A6', margin: '0 0 26px' }}>
-                    {plain(b.runs)}
+                    <Editable text={plain(b.runs)} at={at} />
                   </div>
                 )}
 
@@ -688,7 +746,7 @@ export function Longform({ post, breadcrumb, renderText }: LongformProps) {
                   </div>
                 )}
 
-                {b.k === 'note' && <NoteBlock palette={palette} runs={b.runs} />}
+                {b.k === 'note' && <NoteBlock palette={palette} runs={b.runs} at={at} />}
 
                 {b.k === 'formula' && (
                   <div
@@ -703,7 +761,7 @@ export function Longform({ post, breadcrumb, renderText }: LongformProps) {
                       color: palette.ink,
                     }}
                   >
-                    {b.v}
+                    <Editable text={b.v ?? ''} at={at} />
                   </div>
                 )}
 
@@ -723,9 +781,12 @@ export function Longform({ post, breadcrumb, renderText }: LongformProps) {
                 )}
 
                 {b.k === 'aside' && <AsideBlock palette={palette} items={b.items ?? []} />}
-              </Fragment>
+              </>
             )
+
+            return <Fragment key={p.key}>{wrapBlock ? wrapBlock(drawn, at, b.k) : drawn}</Fragment>
           })}
+          {renderAfterBlocks?.()}
         </div>
       </div>
     </div>

@@ -62,6 +62,20 @@ const FLAVOR_GROUPS: Record<string, GroupMeta> = {
   Chemical: { hue: '#3D9AB0', ink: '#1E5A69', wash: '#E0F1F5' },
 }
 
+/**
+ * Tên mười bốn nhóm, cho khung sửa mượn.
+ *
+ * Khung sửa cần đúng bộ từ vựng này để chủ site chọn nhóm cho thẻ. Chép sang
+ * bên đó một bản thứ hai là cách chắc chắn nhất để hai bên lệch nhau — đã có
+ * bốn lần đúng kiểu ấy trong dự án.
+ */
+export const FLAVOR_GROUP_NAMES = Object.keys(FLAVOR_GROUPS)
+
+/** Màu chip của một nhóm, để khung sửa vẽ chip giống hệt trang. */
+export function flavorGroupMeta(group: string): GroupMeta | undefined {
+  return FLAVOR_GROUPS[group]
+}
+
 /** Groups outside the wheel cycle this palette, so they still read as distinct. */
 const SPARE_PALETTE: GroupMeta[] = [
   { hue: '#6FBF5C', ink: '#3B6B2E', wash: '#F1EFE6' },

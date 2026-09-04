@@ -33,6 +33,16 @@ export type MemoOverrides = {
   wrapSection?: (section: ReactNode, index: number) => ReactNode
   /** Shown under the last section — where the editor puts "add a section". */
   renderAfterSections?: () => ReactNode
+  /**
+   * Ba dòng thông số ở đầu trang — Hạt, Nước, Pour.
+   *
+   * Chúng là điều kiện của buổi pha, tức thứ đổi mỗi lần; nhưng chúng vẽ trực
+   * tiếp từ dữ liệu nên không có chỗ nào gõ được, và chủ site đã hỏi về chúng
+   * từ trước. Móc cho cả nhãn lẫn giá trị: nhãn cũng do chủ site đặt, không
+   * phải ba từ hệ thống áp xuống.
+   */
+  renderSpecKey?: (key: string, index: number) => ReactNode
+  renderSpecValue?: (value: string, index: number) => ReactNode
 }
 
 export type MemoProps = MemoOverrides & {
@@ -154,7 +164,16 @@ const MEMO_VIEWS: Record<string, ((p: { attributes: never; palette: Palette; fir
  * pour) before any prose, because a tasting note nobody can reproduce is just
  * an opinion. Everything below is an outline where indent carries the argument.
  */
-export function Memo({ post, breadcrumb, renderTitle, renderSubtitle, wrapElement, renderAfterElements }: MemoProps) {
+export function Memo({
+  post,
+  breadcrumb,
+  renderTitle,
+  renderSubtitle,
+  wrapElement,
+  renderAfterElements,
+  renderSpecKey,
+  renderSpecValue,
+}: MemoProps) {
   // Everything this template tints comes from the one colour the post wears.
   const palette = paletteFrom(post.band?.bg ?? MEMO_BLUE, post.band?.fg)
   return (
@@ -215,7 +234,7 @@ export function Memo({ post, breadcrumb, renderTitle, renderSubtitle, wrapElemen
 
           {post.specs && post.specs.length > 0 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14, paddingBottom: 6 }}>
-              {post.specs.map((s) => (
+              {post.specs.map((s, i) => (
                 <div
                   key={s.k}
                   style={{
@@ -226,8 +245,10 @@ export function Memo({ post, breadcrumb, renderTitle, renderSubtitle, wrapElemen
                     paddingTop: 9,
                   }}
                 >
-                  <div style={label}>{s.k}</div>
-                  <div style={{ fontSize: 13.5, fontVariantNumeric: 'tabular-nums' }}>{s.v}</div>
+                  <div style={label}>{renderSpecKey ? renderSpecKey(s.k, i) : s.k}</div>
+                  <div style={{ fontSize: 13.5, fontVariantNumeric: 'tabular-nums' }}>
+                    {renderSpecValue ? renderSpecValue(s.v, i) : s.v}
+                  </div>
                 </div>
               ))}
             </div>

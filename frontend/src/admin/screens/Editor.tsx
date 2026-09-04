@@ -1,6 +1,8 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react'
 import {
   PostRenderer,
+  FLAVOR_GROUP_NAMES,
+  flavorGroupMeta,
   normalizeBlocks,
   stepIndent,
   longformTextToRuns,
@@ -26,7 +28,7 @@ import {
   type PostTemplate,
 } from '../lib/apiClient'
 import { useNav } from '../../lib/nav'
-import { ink, paper, serif } from '../../design/tokens'
+import { ink, paper, sans, serif } from '../../design/tokens'
 import { ThemePicker } from '../components/ThemePicker'
 import { blankReportBlock, getBody, resolveTemplate } from '../lib/postData'
 import {
@@ -564,6 +566,29 @@ function ArticleEditor({ post, module, onChange }: { post: PostDetail; module?: 
       renderSectionHeading={(h, i) => <EditableField value={h} onCommit={(v) => updateSection(i, { h: v })} />}
       renderSectionBody={(p, i) => <EditableField value={p} multiline rows={3} onCommit={(v) => updateSection(i, { p: v })} />}
       renderPullQuote={(pull) => <EditableField value={pull} multiline rows={3} onCommit={(v) => onChange({ pull_quote: v })} />}
+      /*
+       * Chú thích ảnh và ghi chú bên lề. Cả hai hiện trên trang mà không có ô
+       * nào gõ được — đo trên ba bài Article nháp thì đây là hai mẩu duy nhất
+       * còn hụt.
+       */
+      renderFigureNote={(note, i) => (
+        <EditableField
+          value={note}
+          multiline
+          rows={1}
+          placeholder="ghi chú bên lề"
+          onCommit={(v) => updateSection(i, { fig: { ...(sections[i].fig as object), note: v } as never })}
+        />
+      )}
+      renderFigureCaption={(caption, i) => (
+        <EditableField
+          value={caption}
+          multiline
+          rows={1}
+          placeholder="chú thích ảnh"
+          onCommit={(v) => updateSection(i, { fig: { ...(sections[i].fig as object), caption: v } as never })}
+        />
+      )}
       renderFurtherReadingItem={(item, i) => <EditableField value={item} onCommit={(v) => updateFurtherReading(i, v)} />}
       wrapSection={(section, i) => (
         <RowShell
@@ -659,17 +684,69 @@ function LongformEditor({
     })
   }
 
+  const drag = useRowDrag((from, to) => write(move(blocks, from, to)))
+
+  /*
+   * Khối trắng theo loại. Tiêu đề mở ra một tầng mới, đoạn văn là thứ hay thêm
+   * nhất, còn công thức và ghi chú là hai khối long-form có mà nơi khác không.
+   */
+  const BLANK: Record<string, LongformBlock> = {
+    p: { k: 'p', runs: [{ t: '', w: '300', s: 'normal' }] },
+    h2: { k: 'h2', runs: [{ t: '', w: '300', s: 'normal' }] },
+    h3: { k: 'h3', runs: [{ t: '', w: '300', s: 'normal' }] },
+    li: { k: 'li', runs: [{ t: '', w: '300', s: 'normal' }], lvl: 1 },
+    formula: { k: 'formula', v: '' },
+    note: { k: 'note', runs: [{ t: '', w: '300', s: 'normal' }] },
+  }
+  const LABEL: Record<string, string> = {
+    p: 'đoạn văn', h2: 'tiêu đề', h3: 'tiêu đề nhỏ', li: 'gạch đầu dòng',
+    formula: 'công thức', note: 'ghi chú',
+  }
+
   return (
     <PostRenderer
       template="longform"
       post={toLongformData(post, module)}
+      wrapBlock={(drawn, i, kind) => (
+        <RowShell
+          noun={LABEL[kind] ?? 'khối'}
+          index={i}
+          drag={drag}
+          onMove={(dir) => write(move(blocks, i, i + dir))}
+          onRemove={() => write(removeAt(blocks, i, true))}
+          onDuplicate={() => write(duplicateAt(blocks, i))}
+        >
+          {drawn}
+        </RowShell>
+      )}
+      renderAfterBlocks={() => (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: '18px 0 8px' }}>
+          {Object.keys(BLANK).map((kind) => (
+            <button
+              key={kind}
+              type="button"
+              className="awc-plus-btn"
+              onClick={() => write(insertAt(blocks, blocks.length, BLANK[kind]))}
+            >
+              + {LABEL[kind]}
+            </button>
+          ))}
+        </div>
+      )}
       renderText={(text, i) => (
         <EditableField
           value={text}
           multiline
           rows={1}
           placeholder="dòng chữ"
-          onCommit={(v) => at(i, (b) => ({ ...b, runs: longformTextToRuns(v) }))}
+          /*
+           * Công thức lưu chữ ở `v` chứ không phải `runs`. Ghi nhầm chỗ thì
+           * công thức biến mất khỏi trang mà dữ liệu vẫn còn — nên phải hỏi
+           * khối là loại gì trước khi ghi.
+           */
+          onCommit={(v) =>
+            at(i, (b) => (b.k === 'formula' ? { ...b, v } : { ...b, runs: longformTextToRuns(v) }))
+          }
           onKeyDown={onKeyDown(i)}
           style={{ font: 'inherit', color: 'inherit', letterSpacing: 'inherit' }}
         />
@@ -691,6 +768,13 @@ function MemoEditor({
   const data = toMemoData(post, module)
   const elements = flatElements(post.body as { sections?: never[]; elements?: unknown[] }) as ReportBlock[]
   const [menuAt, setMenuAt] = useState<number | null>(null)
+
+  /** Một dòng thông số, sửa tại chỗ; phần còn lại của thân bài giữ nguyên. */
+  const specs = ((post.body as { specs?: { k: string; v: string }[] } | null)?.specs ?? [])
+  const setSpec = (i: number, patch: Partial<{ k: string; v: string }>) =>
+    onChange({
+      body: { ...(post.body as object), specs: specs.map((s, j) => (j === i ? { ...s, ...patch } : s)) },
+    })
 
   /*
    * Writing always produces `elements` and drops `sections`, so a post has one
@@ -715,6 +799,22 @@ function MemoEditor({
           rows={2}
           onCommit={(v) => onChange({ body: { ...(post.body as object), subtitle: v } })}
         />
+      )}
+      /*
+       * Ba dòng thông số đầu trang — Hạt, Nước, Pour. Chúng là điều kiện của
+       * buổi pha, tức thứ đổi mỗi lần, mà từ trước tới nay không gõ được ở đâu.
+       * Nhãn cũng cho sửa: ba chữ ấy là của chủ site, không phải hệ thống áp.
+       */
+      renderSpecKey={(key, i) => (
+        <EditableField
+          value={key}
+          placeholder="nhãn"
+          onCommit={(v) => setSpec(i, { k: v })}
+          style={{ font: 'inherit', letterSpacing: 'inherit', textTransform: 'inherit' }}
+        />
+      )}
+      renderSpecValue={(value, i) => (
+        <EditableField value={value} placeholder="giá trị" onCommit={(v) => setSpec(i, { v })} />
       )}
       wrapElement={(_drawn, i) => (
         <div key={i}>
@@ -813,12 +913,71 @@ function CardsEditor({ post, module, onChange }: { post: PostDetail; module?: Mo
             onDuplicate={() => setCards(duplicateAt(cards, i, copyCard))}
           >
             {card}
+            <GroupPicker
+              chosen={cards[i]?.groups ?? []}
+              onToggle={(g) => {
+                const now = cards[i]?.groups ?? []
+                updateCard(i, { groups: now.includes(g) ? now.filter((x) => x !== g) : [...now, g] })
+              }}
+            />
           </RowShell>
         )}
         renderAfterCards={() => <AddRow label="thẻ" onAdd={() => setCards(insertAt(cards, cards.length, blankCard(cards)))} />}
       />
     </div>
   )
+}
+
+/**
+ * Nhóm hương của một thẻ.
+ *
+ * Nhóm không hiện trên mặt thẻ — chúng chỉ nuôi thanh lọc ở đầu trang. Nghĩa là
+ * một thẻ không nhóm thì viết xong rồi *không tìm thấy được*, và cho tới nay
+ * không có chỗ nào đặt nhóm cho nó: `blankCard` chép nhóm của thẻ đứng trước
+ * chính vì lý do ấy, một cách vá chứ không phải một cách chọn.
+ *
+ * Từ vựng lấy thẳng từ bộ vẽ, không chép lại: hai bản sao của một danh sách là
+ * cách chắc chắn nhất để chúng lệch nhau.
+ */
+function GroupPicker({ chosen, onToggle }: { chosen: readonly string[]; onToggle: (group: string) => void }) {
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, padding: '8px 0 2px' }}>
+      <span style={{ ...tinyLabel, alignSelf: 'center', marginRight: 4 }}>Nhóm</span>
+      {FLAVOR_GROUP_NAMES.map((g) => {
+        const on = chosen.includes(g)
+        const meta = flavorGroupMeta(g)
+        return (
+          <button
+            key={g}
+            type="button"
+            aria-pressed={on}
+            onClick={() => onToggle(g)}
+            style={{
+              fontFamily: sans,
+              fontSize: 9.5,
+              letterSpacing: '.06em',
+              padding: '3px 8px',
+              borderRadius: 999,
+              cursor: 'pointer',
+              border: `1px solid ${on ? (meta?.hue ?? ink.base) : paper.rule}`,
+              background: on ? (meta?.wash ?? paper.hover) : 'transparent',
+              color: on ? (meta?.ink ?? ink.base) : ink.muted,
+            }}
+          >
+            {g}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+const tinyLabel: CSSProperties = {
+  fontFamily: sans,
+  fontSize: 9,
+  letterSpacing: '.14em',
+  textTransform: 'uppercase',
+  color: ink.faint,
 }
 
 /**
@@ -983,6 +1142,7 @@ function ReportEditor({
   const { blocks, notes } = content
 
   const [menuAt, setMenuAt] = useState<number | null>(null)
+
   const [dragFrom, setDragFrom] = useState<number | null>(null)
   const [dragOver, setDragOver] = useState<number | null>(null)
   const [asking, setAsking] = useState<number | null>(null)
