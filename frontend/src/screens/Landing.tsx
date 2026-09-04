@@ -11,6 +11,7 @@ import { garden, ink, layout, paper, prose, sans, serif, wrapTitle } from '../de
 import { Hover } from '../lib/Hover'
 import { Rise } from '../lib/Rise'
 import { useNav } from '../lib/nav'
+import { useIsMobile } from '../lib/useIsMobile'
 
 const eyebrow: CSSProperties = {
   fontFamily: sans,
@@ -48,12 +49,12 @@ function Shot({ text, small, over }: { text: string | null; small?: boolean; ove
   return <div style={over ? { ...base, ...captionOnPhoto } : base}>{text}</div>
 }
 
-const bandGrid = (columns: string, rows: string): CSSProperties => ({
+const bandGrid = (columns: string, rows: string, mob: boolean): CSSProperties => ({
   display: 'grid',
   gridTemplateColumns: columns,
   gridTemplateRows: rows,
   gap: 8,
-  height: layout.band,
+  height: mob ? layout.bandMobile : layout.band,
 })
 
 /** Groups posts by `module_id`, preserving each module's `sort_order`. */
@@ -78,16 +79,26 @@ function groupByModule(posts: PostRow[]): Map<string, PostRow[]> {
   * ratios move with the viewport and no redrawn mock could stay truthful.
   */
 export function ImageBand({ m }: { m: ModuleImageFields }) {
+  const mob = useIsMobile()
+
+  /*
+   * Mép trên dưới của dải cố tình so le — ba module xếp nối nhau mà đều tăm
+   * tắp thì thành ba hàng giống hệt. Xuống hẹp phải rút biên âm lại chứ không
+   * bỏ: dải chỉ còn cao 220 thay vì 310, giữ nguyên -34px thì ô trên trồi ra
+   * ngoài khối màu. Rút còn khoảng 55%, đủ để mép vẫn ragged.
+   */
+  const mm = (desktop: string, mobile: string) => (mob ? mobile : desktop)
+
   if (m.layout === 'band') {
     return (
-      <div style={bandGrid('minmax(0,1.9fr) minmax(0,1fr) 30px', '1.5fr 1fr')}>
+      <div style={bandGrid(mob ? 'minmax(0,1.7fr) minmax(0,1fr) 14px' : 'minmax(0,1.9fr) minmax(0,1fr) 30px', '1.5fr 1fr', mob)}>
         <Rise
           from={['-34px', '0px']}
           delay="0ms"
           style={{
             gridColumn: 1,
             gridRow: '1/3',
-            margin: '-34px 0 0',
+            margin: mm('-34px 0 0', '-18px 0 0'),
             ...tile(paper.cream, 14, m.img1),
           }}
         >
@@ -99,7 +110,7 @@ export function ImageBand({ m }: { m: ModuleImageFields }) {
           style={{
             gridColumn: 2,
             gridRow: 1,
-            margin: '38px 0 0 -46px',
+            margin: mm('38px 0 0 -46px', '22px 0 0 -24px'),
             ...tile(paper.cream, 11, m.img2),
           }}
         >
@@ -111,7 +122,7 @@ export function ImageBand({ m }: { m: ModuleImageFields }) {
           style={{
             gridColumn: 2,
             gridRow: 2,
-            margin: '0 0 -36px',
+            margin: mm('0 0 -36px', '0 0 -20px'),
             ...tile(garden.petalTint, 11, m.img3),
           }}
         >
@@ -124,7 +135,7 @@ export function ImageBand({ m }: { m: ModuleImageFields }) {
           style={{
             gridColumn: 3,
             gridRow: '1/3',
-            margin: '96px 0 22px',
+            margin: mm('96px 0 22px', '62px 0 14px'),
             background: garden.petalTint2,
           }}
         />
@@ -134,14 +145,14 @@ export function ImageBand({ m }: { m: ModuleImageFields }) {
 
   if (m.layout === 'specimen') {
     return (
-      <div style={bandGrid('minmax(0,1.7fr) minmax(0,1fr)', '1fr 1.4fr')}>
+      <div style={bandGrid('minmax(0,1.7fr) minmax(0,1fr)', '1fr 1.4fr', mob)}>
         <Rise
           from={['-34px', '0px']}
           delay="0ms"
           style={{
             gridColumn: 1,
             gridRow: '1/3',
-            margin: '-22px 0 34px',
+            margin: mm('-22px 0 34px', '-14px 0 20px'),
             ...tile(paper.cream, 14, m.img1),
           }}
         >
@@ -153,7 +164,7 @@ export function ImageBand({ m }: { m: ModuleImageFields }) {
           style={{
             gridColumn: 2,
             gridRow: 1,
-            margin: '52px -26px 0 -34px',
+            margin: mm('52px -26px 0 -34px', '30px -14px 0 -18px'),
             ...tile(garden.leafTint, 11, m.img2),
           }}
         >
@@ -165,7 +176,7 @@ export function ImageBand({ m }: { m: ModuleImageFields }) {
           style={{
             gridColumn: 2,
             gridRow: 2,
-            margin: '24px 34px -40px 22px',
+            margin: mm('24px 34px -40px 22px', '14px 18px -24px 12px'),
             ...tile(paper.cream, 11, m.img3),
           }}
         >
@@ -176,14 +187,14 @@ export function ImageBand({ m }: { m: ModuleImageFields }) {
   }
 
   return (
-    <div style={bandGrid('minmax(0,2.1fr) minmax(0,1fr)', '1.45fr 1fr')}>
+    <div style={bandGrid('minmax(0,2.1fr) minmax(0,1fr)', '1.45fr 1fr', mob)}>
       <Rise
         from={['-34px', '0px']}
         delay="0ms"
         style={{
           gridColumn: 1,
           gridRow: '1/3',
-          margin: '26px 0 -34px',
+          margin: mm('26px 0 -34px', '16px 0 -20px'),
           ...tile(paper.cream, 14, m.img1),
         }}
       >
@@ -195,7 +206,7 @@ export function ImageBand({ m }: { m: ModuleImageFields }) {
         style={{
           gridColumn: 2,
           gridRow: 1,
-          margin: '-38px 26px 0 -40px',
+          margin: mm('-38px 26px 0 -40px', '-22px 14px 0 -22px'),
           ...tile(garden.honeyTint, 11, m.img2),
         }}
       >
@@ -207,7 +218,7 @@ export function ImageBand({ m }: { m: ModuleImageFields }) {
         style={{
           gridColumn: 2,
           gridRow: 2,
-          margin: '38px -18px 0 44px',
+          margin: mm('38px -18px 0 44px', '22px -10px 0 24px'),
           ...tile(paper.cream, 11, m.img3),
         }}
       >
@@ -229,15 +240,16 @@ export function Landing() {
   const postsByModule = useMemo(() => groupByModule(posts), [posts])
   const { site } = useSiteCopy()
   const title = splitAesc(site.lTitle1)
+  const mob = useIsMobile()
 
   return (
     <div>
-      <div style={{ padding: '80px 56px 64px', maxWidth: layout.page }}>
+      <div style={{ padding: mob ? '30px 20px 44px' : '80px 56px 64px', maxWidth: layout.page }}>
         <div style={{ ...eyebrow, color: ink.muted, marginBottom: 28 }}>{site.lEyebrow}</div>
         <h1
           style={{
             fontFamily: serif,
-            fontSize: 104,
+            fontSize: mob ? 54 : 104,
             lineHeight: 0.9,
             letterSpacing: '-.035em',
             margin: '0 0 24px',
@@ -286,7 +298,7 @@ export function Landing() {
             style={{
               background: m.accent,
               color: m.on_color,
-              padding: '44px 56px 72px',
+              padding: mob ? '34px 20px 52px' : '44px 56px 72px',
               cursor: 'pointer',
             }}
           >
@@ -304,7 +316,7 @@ export function Landing() {
                     {
                       ...wrapTitle,
                       fontFamily: serif,
-                      fontSize: 72,
+                      fontSize: mob ? 40 : 72,
                       lineHeight: 0.94,
                       letterSpacing: '-.035em',
                       margin: 0,
@@ -315,12 +327,26 @@ export function Landing() {
                 </h3>
               </div>
 
-              <div style={{ fontSize: 14, lineHeight: 1.45, ...prose }}>{m.long_desc}</div>
+              {/*
+                Hẹp thì lấy bản mô tả NGẮN. Bản dài của `sensory` là ~90 chữ —
+                trên màn 390 nó đẩy dải ảnh và danh sách "Mới nhất" xuống quá
+                sâu, người đọc cuộn hết đoạn văn mới thấy có bài để bấm.
+              */}
+              <div style={{ fontSize: 14, lineHeight: 1.45, ...prose }}>
+                {mob ? m.blurb : m.long_desc}
+              </div>
 
               <div>
                 <div style={{ ...eyebrow, letterSpacing: '.14em', opacity: 0.65, marginBottom: 10 }}>
                   Mới nhất
                 </div>
+                {/* Module chưa có bài thì trước đây chỉ còn cái tiêu đề trên một
+                    khoảng trống — đọc ra như trang vỡ chứ không như "chưa viết". */}
+                {entries.length === 0 && (
+                  <div style={{ fontSize: 13, fontStyle: 'italic', opacity: 0.6, paddingTop: 2 }}>
+                    chưa có bài nào
+                  </div>
+                )}
                 {entries.slice(0, 3).map((e) => (
                   <div
                     key={e.id}
