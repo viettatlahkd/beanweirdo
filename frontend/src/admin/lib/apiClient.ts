@@ -107,10 +107,20 @@ export const TOKEN_KEY = 'admin_token'
 
 export class ApiError extends Error {
   status: number
-  constructor(message: string, status: number) {
+  /**
+   * Thân phản hồi lúc máy chủ từ chối.
+   *
+   * Có lúc lời từ chối mang theo dữ liệu người gọi cần: xoá một tag còn thứ
+   * đang đeo thì máy chủ trả về `wearing` — danh sách bài và ghi chép ấy — để
+   * khung sửa hỏi lại "chuyển sang đâu". Ném đi chỉ mỗi câu chữ thì lời hỏi ấy
+   * không hỏi được.
+   */
+  payload: unknown
+  constructor(message: string, status: number, payload?: unknown) {
     super(message)
     this.name = 'ApiError'
     this.status = status
+    this.payload = payload
   }
 }
 
@@ -141,7 +151,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 
   if (!res.ok) {
     const message = typeof data?.error === 'string' ? data.error : `Request failed (${res.status})`
-    throw new ApiError(message, res.status)
+    throw new ApiError(message, res.status, data)
   }
   return data as T
 }
@@ -190,6 +200,31 @@ export async function listTags(): Promise<Tag[]> {
 /** POST /api/tags — add one, or get back the one that already says this. */
 export async function createTag(label: string): Promise<Tag> {
   return request<Tag>('/api/tags', { method: 'POST', body: JSON.stringify({ label }) })
+}
+
+/** PATCH /api/tags?id= — đổi tên hiển thị; `id` giữ nguyên nên bài không mất chỗ dựa. */
+export async function renameTag(id: string, label: string): Promise<Tag> {
+  return request<Tag>(`/api/tags?id=${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ label }),
+  })
+}
+
+/**
+ * DELETE /api/tags?id= — xoá một tag.
+ *
+ * `to` là tag thay thế cho những gì đang đeo nó; `null` là cố ý bỏ trống.
+ * Không truyền gì thì máy chủ từ chối và trả về danh sách đang đeo — xoá lặng
+ * lẽ là để lại bài trỏ vào một tag không còn tồn tại.
+ */
+export async function deleteTag(
+  id: string,
+  to?: string | null,
+): Promise<{ deleted: string; moved: { posts: string[]; notes: string[] } }> {
+  return request(`/api/tags?id=${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    body: JSON.stringify(to === undefined ? {} : { to }),
+  })
 }
 
 /** GET /api/posts/:id — full post detail. */

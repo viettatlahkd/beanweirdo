@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { Breadcrumbs } from '../components/Breadcrumbs'
 import { useSiteCopy } from '../data/useSiteCopy'
 import { noteFilterBar } from '../lib/notesFilter'
+import { useTags } from '../data/useTags'
 import {
   featureCells,
   noteBlock,
@@ -489,7 +490,9 @@ export function Notes() {
   )
   // Posts filed under Ghi 01 — the memo lives here, as a post like any other.
   const { data: filed } = usePublishedPosts({ moduleId: 'ghi01' })
-  const [noteFilter, setNoteFilter] = useState<'tất cả' | Note['k']>('tất cả')
+  const { tags } = useTags()
+  // Tag là chữ chủ site tự đặt, nên không còn là bốn giá trị đóng nữa.
+  const [noteFilter, setNoteFilter] = useState<string>('tất cả')
   const [hoverNote, setHoverNote] = useState<number | null>(null)
   const [openNote, setOpenNoteState] = useState<string | null>(null)
   const [mx, setMx] = useState<number | null>(null)
@@ -499,10 +502,9 @@ export function Notes() {
   const elRefs = useRef<Record<number, HTMLDivElement | null>>({})
   const filteredRef = useRef<Note[]>([])
 
-  const filtered = useMemo(
-    () => notes.filter((n) => noteFilter === 'tất cả' || n.k === noteFilter),
-    [notes, noteFilter],
-  )
+  // Phép lọc và phép đếm để riêng ở `lib/notesFilter` — xem chú thích ở đó.
+  const bar = useMemo(() => noteFilterBar(notes, filed, tags, noteFilter), [notes, filed, tags, noteFilter])
+  const filtered = bar.visibleNotes as Note[]
   filteredRef.current = filtered
 
   function setOpenNote(v: string | ((prev: string | null) => string | null)) {
@@ -542,8 +544,8 @@ export function Notes() {
     })
   }
 
-  // Phép đếm và phép lọc để riêng ở `lib/notesFilter` — xem chú thích ở đó.
-  const { showFiled, chips: noteFilters } = noteFilterBar(notes, filed.length, noteFilter)
+  const noteFilters = bar.chips
+  const shownPosts = bar.visiblePosts as typeof filed
 
   return (
     <div
@@ -625,7 +627,7 @@ export function Notes() {
               statistics panel unfolds on Ghi 02 — the reader stays on the page
               they were reading. Open, it takes the full width of the grid and
               everything else steps back. */}
-            {buildNotesGrid(showFiled ? filed : [], drawnCells).map((cell, gi) => {
+            {buildNotesGrid(shownPosts, drawnCells).map((cell, gi) => {
               if (cell.kind === 'feature') {
                 return (
                   <FeatureCellView key={`F${cell.cell.n}-${gi}`} f={cell.cell} dimmed={openNote !== null} />
@@ -695,7 +697,7 @@ export function Notes() {
             )
           })}
 
-        {!loading && filtered.length === 0 && (!showFiled || filed.length === 0) && (
+        {!loading && filtered.length === 0 && shownPosts.length === 0 && (
           <div
             style={{
               gridColumn: '1 / -1',
