@@ -369,16 +369,51 @@ function NoteCard({
   )
 }
 
+/**
+ * Ô bên cạnh có được phép kê lên ngang tầm ô trước nó không.
+ *
+ * Luật chủ site: chỗ chồng lớp chỉ được rơi vào ẢNH của bài, không bao giờ
+ * rơi vào CHỮ. Margin âm cố định không giữ nổi luật ấy — chiều cao một bài
+ * thay đổi theo độ dài tiêu đề, và ô nào đứng liền trước ô nào thì phụ thuộc
+ * module có bao nhiêu bài. Ghi 01 mới có một bài: F1 lẽ ra kê cạnh P2 thì
+ * hoá ra kê cạnh P1, cả hai cùng dạt trái, 72% + 42% = 114% — ảnh chui thẳng
+ * xuống dưới tiêu đề.
+ *
+ * Nên tính lúc dựng thay vì đặt cứng: chỉ kéo lên khi hai ô đứng KHÁC BÊN và
+ * tổng bề rộng còn nằm trong một hàng. Không thoả thì rơi về khoảng cách
+ * dương. Bằng cách ấy hai ô không bao giờ chồng lên nhau theo chiều ngang,
+ * nên chữ không bao giờ có ảnh ở dưới — bất kể module có mấy bài.
+ */
+const pct = (w: string): number | null => {
+  const m = /^(\d+(?:\.\d+)?)%$/.exec(w)
+  return m ? Number(m[1]) : null
+}
+
+export function canTuck(
+  prev: { w: string; side: 'left' | 'right' } | null,
+  self: { w: string; side: 'left' | 'right' },
+): boolean {
+  if (!prev) return false
+  if (prev.side === self.side) return false
+  const a = pct(prev.w)
+  const b = pct(self.w)
+  if (a === null || b === null) return false
+  return a + b <= 100
+}
+
 function FeatureCellView({
   f,
   dimmed,
   mob,
+  prev,
 }: {
   f: FeatureCell & { img?: string | null }
   dimmed: boolean
   mob: boolean
+  prev: { w: string; side: 'left' | 'right' } | null
 }) {
   const fm = featureMobile[f.n]
+  const tuck = canTuck(prev, fm)
   /*
    * `zIndex: 1` ở đây và `2` ở bài — luật chủ site chốt: bài chính luôn nằm
    * TRÊN ảnh trang trí. Chỗ chồng lớp cũng chỉ được rơi vào ảnh của bài chứ
@@ -389,7 +424,7 @@ function FeatureCellView({
     ? {
         width: fm.w === 'full' ? 'calc(100% + 40px)' : fm.w,
         alignSelf: fm.side === 'right' ? 'flex-end' : 'flex-start',
-        marginTop: fm.mt,
+        marginTop: tuck ? fm.mt : fm.mtSafe,
         marginLeft: fm.w === 'full' || (fm.side === 'left' && fm.bleed) ? -20 : 0,
         marginRight: fm.side === 'right' && fm.bleed ? -20 : 0,
         position: 'relative',
@@ -599,17 +634,27 @@ export function Notes() {
     >
       <Breadcrumbs color="#9A9A90" />
 
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 56, flexWrap: 'wrap' }}>
+      {/* Hẹp: tiêu đề và đoạn dẫn xếp dọc thay vì đứng hai đầu một hàng. */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: mob ? 'stretch' : 'flex-end',
+          flexDirection: mob ? 'column' : 'row',
+          justifyContent: 'space-between',
+          gap: mob ? 20 : 56,
+          flexWrap: 'wrap',
+        }}
+      >
         <div>
-          <h1 style={{ fontFamily: serif, fontSize: 118, lineHeight: 0.82, letterSpacing: '-.045em', margin: 0, fontWeight: 400 }}>
+          <h1 style={{ fontFamily: serif, fontSize: mob ? 56 : 118, lineHeight: 0.82, letterSpacing: '-.045em', margin: 0, fontWeight: 400 }}>
             {site.notesTitle}
             <span style={{ fontStyle: 'italic', color: '#F2A0A5' }}>.</span>
           </h1>
-          <div style={{ fontFamily: serif, fontStyle: 'italic', fontSize: 27, color: '#4A4A42', marginTop: 12 }}>
+          <div style={{ fontFamily: serif, fontStyle: 'italic', fontSize: mob ? 20 : 27, lineHeight: mob ? 1.2 : undefined, color: '#4A4A42', marginTop: 12 }}>
             {site.notesSubtitle}
           </div>
         </div>
-        <div style={{ fontFamily: "'Be Vietnam Pro',sans-serif", fontWeight: 200, fontSize: 13.5, lineHeight: 1.6, color: '#5A5A50', maxWidth: 310, paddingBottom: 14 }}>
+        <div style={{ fontFamily: "'Be Vietnam Pro',sans-serif", fontWeight: 200, fontSize: 13.5, lineHeight: 1.6, color: '#5A5A50', maxWidth: mob ? undefined : 310, paddingBottom: mob ? 0 : 14 }}>
           <div style={prose}>{site.notesIntro}</div>
           <div style={{ marginTop: 10, fontSize: 10, letterSpacing: '.2em', textTransform: 'uppercase', color: '#B0B0A6' }}>
             {site.notesHint}
@@ -633,7 +678,8 @@ export function Notes() {
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: 26, flexWrap: 'wrap', alignItems: 'center', margin: '44px 0 14px', paddingBottom: 16, borderBottom: '1px solid #12120F' }}>
+      {/* Năm mục lọc không nằm gọn một hàng ở cột 350px. */}
+      <div style={{ display: 'flex', gap: mob ? '14px 22px' : 26, flexWrap: 'wrap', alignItems: mob ? 'baseline' : 'center', margin: mob ? '28px 0 14px' : '44px 0 14px', paddingBottom: mob ? 14 : 16, borderBottom: '1px solid #12120F' }}>
         {noteFilters.map((f) => (
           <Hover
             key={f.f}
@@ -682,10 +728,24 @@ export function Notes() {
               statistics panel unfolds on Ghi 02 — the reader stays on the page
               they were reading. Open, it takes the full width of the grid and
               everything else steps back. */}
-            {buildNotesGrid(shownPosts, drawnCells).map((cell, gi) => {
+            {buildNotesGrid(shownPosts, drawnCells).map((cell, gi, cells) => {
+              /*
+               * Hình học hẹp của ô đứng LIỀN TRƯỚC. `FeatureCellView` cần nó để
+               * biết có được kê lên ngang tầm ô ấy không — xem `canTuck`.
+               * Ô nào đứng trước ô nào phụ thuộc module có mấy bài, nên chỉ ở
+               * đây mới biết được, không đặt sẵn trong bảng được.
+               */
+              const before = gi > 0 ? cells[gi - 1] : null
+              const prevGeom = !before
+                ? null
+                : before.kind === 'feature'
+                  ? featureMobile[before.cell.n]
+                  : notePlacementMobile[before.slot % notePlacementMobile.length]
+              const prev = prevGeom ? { w: prevGeom.w, side: prevGeom.side } : null
+
               if (cell.kind === 'feature') {
                 return (
-                  <FeatureCellView key={`F${cell.cell.n}-${gi}`} f={cell.cell} dimmed={openNote !== null} mob={mob} />
+                  <FeatureCellView key={`F${cell.cell.n}-${gi}`} f={cell.cell} dimmed={openNote !== null} mob={mob} prev={prev} />
                 )
               }
               const p = cell.post
