@@ -19,8 +19,17 @@ import { prose } from '../design/tokens'
  */
 const SCREENS = ['ModuleScreen', 'Landing', 'IndexScreen', 'DesignSystem'] as const
 
-/** Chữ dài do chủ site gõ — không tính tiêu đề, tiêu đề là ô một dòng. */
-const LONG_TEXT = /\{(?:m\.long_desc|m\.blurb|site\.blurb|site\.blurbShort|site\.artIntro)\}/g
+/**
+ * Chữ dài do chủ site gõ — không tính tiêu đề, tiêu đề là ô một dòng.
+ *
+ * Bắt cả biểu thức bọc quanh chứ không chỉ `{m.long_desc}` trần. Trang chủ
+ * xuống hẹp thì lấy bản ngắn: `{mob ? m.blurb : m.long_desc}` — vẫn là một
+ * chỗ vẽ chữ dài, vẫn phải mang `prose`, nhưng dạng cũ của mẫu này không
+ * nhìn thấy nó. Một cái canh mà đổi cách viết là nó ngoảnh đi thì nó canh
+ * cách gõ, không canh cái luật.
+ */
+const LONG_TEXT =
+  /\{[^{}]*(?:m\.long_desc|m\.blurb|site\.blurb|site\.blurbShort|site\.artIntro)[^{}]*\}/g
 
 describe('chữ chủ site gõ giữ được chỗ xuống dòng', () => {
   it('prose là pre-line', () => {
