@@ -362,3 +362,41 @@ describe('long-form: thao tác cấu trúc', () => {
     expect(body[0].runs[0].t).toBe('Đoạn hai')
   })
 })
+
+/*
+ * Long-form: khối lồng trong `aside`.
+ *
+ * Rà 15 bài nháp thì đây là nhóm cuối cùng còn không sửa được — khối lồng cần
+ * *hai* chỉ số mới chỉ được vào đúng chỗ, còn móc cũ chỉ có một.
+ */
+describe('long-form: khối lồng trong aside', () => {
+  const lf = (blocks: unknown[]) => ({ ...(post('longform') as object), body: blocks }) as never
+  const withAside = [
+    { k: 'p', runs: [{ t: 'Ngoài khung' }] },
+    {
+      k: 'aside',
+      items: [
+        { k: 'p', runs: [{ t: 'Trong khung một' }] },
+        { k: 'li', runs: [{ t: 'Trong khung hai' }] },
+      ],
+    },
+  ]
+
+  it('mỗi khối con có ô nhập riêng', () => {
+    render(<EditorCanvas template={'longform' as never} post={lf(withAside)} onChange={vi.fn()} onHeroDrop={vi.fn()} />)
+    expect(screen.getByDisplayValue('Trong khung một')).toBeTruthy()
+    expect(screen.getByDisplayValue('Trong khung hai')).toBeTruthy()
+  })
+
+  it('sửa khối con thì ghi vào đúng nó, khối bên cạnh còn nguyên', async () => {
+    const onChange = vi.fn()
+    render(<EditorCanvas template={'longform' as never} post={lf(withAside)} onChange={onChange} onHeroDrop={vi.fn()} />)
+    await userEvent.type(screen.getByDisplayValue('Trong khung một'), ' đã sửa')
+    await userEvent.tab()
+    const body = onChange.mock.lastCall?.[0].body as { items?: { runs: { t: string }[] }[] }[]
+    expect(body[1].items?.[0].runs[0].t).toBe('Trong khung một đã sửa')
+    expect(body[1].items?.[1].runs[0].t).toBe('Trong khung hai')
+    // Khối ngoài khung không được đụng tới.
+    expect(JSON.stringify(body[0])).toContain('Ngoài khung')
+  })
+})

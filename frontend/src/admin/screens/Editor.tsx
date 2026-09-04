@@ -662,6 +662,19 @@ function LongformEditor({
     write(blocks.map((b, j) => (j === i ? f(b) : b)))
 
   /**
+   * Chữ mới vào đúng chỗ của nó.
+   *
+   * `sub` chỉ tới một khối con bên trong `aside`. Không có `sub` thì ghi vào
+   * chính khối ấy. Công thức lưu chữ ở `v`, mọi khối khác lưu ở `runs` — ghi
+   * nhầm chỗ thì chữ biến mất khỏi trang trong khi dữ liệu vẫn còn.
+   */
+  const setText = (b: LongformBlock, v: string, sub?: number): LongformBlock => {
+    if (sub !== undefined)
+      return { ...b, items: (b.items ?? []).map((c, j) => (j === sub ? setText(c, v) : c)) }
+    return b.k === 'formula' ? { ...b, v } : { ...b, runs: longformTextToRuns(v) }
+  }
+
+  /**
    * Tab lùi vào, Shift+Tab lùi ra.
    *
    * Đoạn văn lùi theo `ind`, gạch đầu dòng lùi theo cấp lồng `lvl` của nó —
@@ -733,7 +746,7 @@ function LongformEditor({
           ))}
         </div>
       )}
-      renderText={(text, i) => (
+      renderText={(text, i, sub) => (
         <EditableField
           value={text}
           multiline
@@ -744,10 +757,8 @@ function LongformEditor({
            * công thức biến mất khỏi trang mà dữ liệu vẫn còn — nên phải hỏi
            * khối là loại gì trước khi ghi.
            */
-          onCommit={(v) =>
-            at(i, (b) => (b.k === 'formula' ? { ...b, v } : { ...b, runs: longformTextToRuns(v) }))
-          }
-          onKeyDown={onKeyDown(i)}
+          onCommit={(v) => at(i, (b) => setText(b, v, sub))}
+          onKeyDown={sub === undefined ? onKeyDown(i) : undefined}
           style={{ font: 'inherit', color: 'inherit', letterSpacing: 'inherit' }}
         />
       )}

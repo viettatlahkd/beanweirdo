@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { Breadcrumbs } from '../components/Breadcrumbs'
 import { useSiteCopy } from '../data/useSiteCopy'
+import { noteFilterBar } from '../lib/notesFilter'
 import {
   featureCells,
   noteBlock,
   noteColor,
-  noteKinds,
   notePlacement,
   noteTitleSize,
   withOverrides,
@@ -542,12 +542,8 @@ export function Notes() {
     })
   }
 
-  const noteFilters = (['tất cả', ...noteKinds] as ('tất cả' | Note['k'])[])
-    .map((f) => ({
-      f,
-      on: f === noteFilter,
-      n: f === 'tất cả' ? notes.length : notes.filter((x) => x.k === f).length,
-    }))
+  // Phép đếm và phép lọc để riêng ở `lib/notesFilter` — xem chú thích ở đó.
+  const { showFiled, chips: noteFilters } = noteFilterBar(notes, filed.length, noteFilter)
 
   return (
     <div
@@ -629,7 +625,7 @@ export function Notes() {
               statistics panel unfolds on Ghi 02 — the reader stays on the page
               they were reading. Open, it takes the full width of the grid and
               everything else steps back. */}
-            {buildNotesGrid(filed, drawnCells).map((cell, gi) => {
+            {buildNotesGrid(showFiled ? filed : [], drawnCells).map((cell, gi) => {
               if (cell.kind === 'feature') {
                 return (
                   <FeatureCellView key={`F${cell.cell.n}-${gi}`} f={cell.cell} dimmed={openNote !== null} />
@@ -699,7 +695,7 @@ export function Notes() {
             )
           })}
 
-        {!loading && filtered.length === 0 && filed.length === 0 && (
+        {!loading && filtered.length === 0 && (!showFiled || filed.length === 0) && (
           <div
             style={{
               gridColumn: '1 / -1',
