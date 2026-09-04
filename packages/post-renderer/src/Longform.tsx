@@ -8,6 +8,11 @@ import { indentOf, normalizeBlocks } from './longformBlocks'
 import { runsToText } from './longformText'
 
 export type LongformProps = LongformEdit & {
+  /**
+   * Bố cục điện thoại. Chỗ gọi quyết định, không phải khuôn tự đo — xem
+   * `PostRenderer`.
+   */
+  mobile?: boolean
   post: LongformPostData
   /**
    * The trail back to where this post is filed. Supplied by the app, so the
@@ -344,7 +349,14 @@ function AsideBlock({ items, palette, at }: { items: LongformBlock[]; palette: P
  * pre-parsed from a Notion export, so this only renders and folds; it never
  * parses.
  */
-export function Longform({ post, breadcrumb, renderText, wrapBlock, renderAfterBlocks }: LongformProps) {
+export function Longform({
+  post,
+  breadcrumb,
+  mobile = false,
+  renderText,
+  wrapBlock,
+  renderAfterBlocks,
+}: LongformProps) {
   // Everything this template tints comes from the one colour the post wears.
   const palette = paletteFrom(post.band?.bg ?? LONGFORM_BLUE, post.band?.fg)
   const prepared = useMemo(() => prepare(post.blocks), [post.blocks])
@@ -425,21 +437,35 @@ export function Longform({ post, breadcrumb, renderText, wrapBlock, renderAfterB
         style={{
           background: palette.accent,
           color: post.band?.fg ?? '#172124',
-          padding: '22px 56px 20px',
+          padding: mobile ? '18px 20px 16px' : '22px 56px 20px',
         }}
       >
         {breadcrumb}
       </div>
-      <div style={{ padding: '40px 56px 140px' }}>
+      <div style={{ padding: mobile ? '28px 20px 130px' : '40px 56px 140px' }}>
       {/* Floating index: a rail of numbers that opens on hover. */}
+      {/*
+        * B40 — dải mục lục.
+        *
+        * Nó mở bằng `onMouseEnter`. Điện thoại không có con trỏ để rê, nên trên
+        * điện thoại nó **không mở được bằng cách nào cả** — một mục lục có mặt
+        * mà không ai vào được. Dưới ngưỡng: dải vạch hẹp 30px, chạm để mở, và
+        * một nền mờ phủ trang để chạm ra ngoài là đóng.
+        */}
+      {mobile && navOpen && (
+        <div
+          onClick={() => setNavOpen(false)}
+          style={{ position: 'fixed', inset: 0, zIndex: 39, background: 'rgba(35,33,26,.38)' }}
+        />
+      )}
       <div
-        onMouseLeave={() => setNavOpen(false)}
+        onMouseLeave={mobile ? undefined : () => setNavOpen(false)}
         style={{
           position: 'fixed',
           top: 0,
           right: 0,
-          bottom: 0,
-          width: 340,
+          bottom: mobile ? 56 : 0,
+          width: mobile ? (navOpen ? 320 : 30) : 340,
           zIndex: 40,
           display: 'flex',
           alignItems: 'center',
@@ -458,10 +484,11 @@ export function Longform({ post, breadcrumb, renderText, wrapBlock, renderAfterB
           }}
         >
           <div
-            onMouseEnter={() => setNavOpen(true)}
+            onMouseEnter={mobile ? undefined : () => setNavOpen(true)}
+            onClick={mobile ? () => setNavOpen(true) : undefined}
             style={{
               pointerEvents: 'auto',
-              width: 44,
+              width: mobile ? 30 : 44,
               flex: 'none',
               display: navOpen ? 'none' : 'flex',
               flexDirection: 'column',
@@ -493,7 +520,7 @@ export function Longform({ post, breadcrumb, renderText, wrapBlock, renderAfterB
           <div
             style={{
               pointerEvents: 'auto',
-              width: 300,
+              width: mobile ? 320 : 300,
               flex: 'none',
               maxHeight: '76vh',
               overflowY: 'auto',
@@ -545,7 +572,8 @@ export function Longform({ post, breadcrumb, renderText, wrapBlock, renderAfterB
         style={{
           position: 'fixed',
           right: 0,
-          bottom: 44,
+          // B41 — thanh điều hướng mobile cao 56px; 44 sẽ nằm dưới nó.
+          bottom: mobile ? 68 : 44,
           zIndex: 39,
           display: 'flex',
           flexDirection: 'column',
@@ -577,7 +605,18 @@ export function Longform({ post, breadcrumb, renderText, wrapBlock, renderAfterB
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,760px)', justifyContent: 'center', paddingRight: 56 }}>
+      {/*
+        * B42 — cột chữ. Trên điện thoại bỏ căn giữa và bỏ chỗ chừa cho dải mục
+        * lục bên phải: `paddingRight: 56` ở đó là để né dải ấy, mà dải trên
+        * mobile chỉ rộng 30px và nằm đè lên chứ không chiếm chỗ.
+        */}
+      <div
+        style={
+          mobile
+            ? { padding: '30px 20px 130px' }
+            : { display: 'grid', gridTemplateColumns: 'minmax(0,760px)', justifyContent: 'center', paddingRight: 56 }
+        }
+      >
         <div>
           {/*
             * Tên bài, khi trong thân bài không có khối tiêu đề nào.
@@ -623,7 +662,8 @@ export function Longform({ post, breadcrumb, renderText, wrapBlock, renderAfterB
                         cursor: selfId ? 'pointer' : 'default',
                         fontFamily: serif,
                         fontWeight: 400,
-                        fontSize: title ? 70 : 42,
+                        // B43 — tiêu đề bài 70→40, tiêu đề mục 42→30.
+                        fontSize: title ? (mobile ? 40 : 70) : mobile ? 30 : 42,
                         lineHeight: title ? 0.94 : 1.04,
                         letterSpacing: '-.03em',
                         color: title ? '#172124' : palette.ink,
@@ -664,7 +704,7 @@ export function Longform({ post, breadcrumb, renderText, wrapBlock, renderAfterB
                       cursor: 'pointer',
                       fontFamily: serif,
                       fontWeight: 400,
-                      fontSize: 27,
+                      fontSize: mobile ? 22 : 27,
                       lineHeight: 1.16,
                       letterSpacing: '-.022em',
                       color: '#172124',
@@ -694,7 +734,7 @@ export function Longform({ post, breadcrumb, renderText, wrapBlock, renderAfterB
                       fontFamily: serif,
                       fontStyle: 'italic',
                       fontWeight: 400,
-                      fontSize: 20,
+                      fontSize: mobile ? 17 : 20,
                       lineHeight: 1.22,
                       color: palette.mid,
                       margin: '32px 0 10px',

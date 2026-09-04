@@ -21,6 +21,11 @@ export type CardsOverrides = {
 
 export type CardsProps = CardsOverrides & {
   /**
+   * Bố cục điện thoại. Chỗ gọi quyết định, không phải khuôn tự đo — xem
+   * `PostRenderer`.
+   */
+  mobile?: boolean
+  /**
    * The trail back to where this post is filed. Supplied by the app, so the
    * renderer package stays independent of how routing works.
    */
@@ -123,7 +128,7 @@ function groupsOf(cards: CardData[], hues: Record<string, string> = {}): Group[]
  * filter bar and a sticky table of contents. Modeled on the "isCards"
  * section of the design source.
  */
-export function Cards({ post, breadcrumb, ...overrides }: CardsProps) {
+export function Cards({ post, breadcrumb, mobile = false, ...overrides }: CardsProps) {
   const [openIndexes, setOpenIndexes] = useState<Set<number>>(() => new Set())
   const [activeGroup, setActiveGroup] = useState<string | null>(null)
   const [hoverCard, setHoverCard] = useState<number | null>(null)
@@ -161,7 +166,7 @@ export function Cards({ post, breadcrumb, ...overrides }: CardsProps) {
         style={{
           background: post.band?.bg ?? '#E4F0DF',
           color: post.band?.fg ?? '#1F3323',
-          padding: '40px 56px 32px',
+          padding: mobile ? '28px 20px 26px' : '40px 56px 32px',
         }}
       >
         {breadcrumb}
@@ -179,7 +184,8 @@ export function Cards({ post, breadcrumb, ...overrides }: CardsProps) {
             style={{
               fontFamily: serif,
               fontWeight: 400,
-              fontSize: 70,
+              // B54 — tiêu đề bài 70→36.
+              fontSize: mobile ? 36 : 70,
               lineHeight: 0.9,
               letterSpacing: '-.04em',
               margin: 0,
@@ -202,7 +208,8 @@ export function Cards({ post, breadcrumb, ...overrides }: CardsProps) {
         style={{
           background: '#F6F4EA',
           borderBottom: `1px solid ${paper.rule}`,
-          padding: '16px 56px 17px',
+          // B54 — thanh chip đã tự xuống dòng sẵn; chỉ cần lề hẹp lại.
+          padding: mobile ? '14px 20px' : '16px 56px 17px',
           display: 'flex',
           alignItems: 'center',
           gap: 9,
@@ -226,7 +233,8 @@ export function Cards({ post, breadcrumb, ...overrides }: CardsProps) {
                 gap: 8,
                 background: on ? g.wash : '#FFFFFF',
                 border: `1px solid ${on ? g.hue : paper.rule}`,
-                padding: '6px 12px',
+                // B54 — 9px trên dưới cho chip đủ 44px vùng chạm.
+                padding: mobile ? '9px 12px' : '6px 12px',
                 cursor: 'pointer',
               }}
             >
@@ -272,7 +280,8 @@ export function Cards({ post, breadcrumb, ...overrides }: CardsProps) {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'minmax(0,1fr) minmax(220px,272px)',
+          // B55 — cột "Mục lục trong bài" rơi xuống cuối bài.
+          gridTemplateColumns: mobile ? 'minmax(0,1fr)' : 'minmax(0,1fr) minmax(220px,272px)',
           gap: 52,
           padding: '32px 56px 140px',
           maxWidth: 1320,
@@ -330,7 +339,7 @@ export function Cards({ post, breadcrumb, ...overrides }: CardsProps) {
                     {c.n}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontFamily: serif, fontSize: 32, lineHeight: 1.02, letterSpacing: '-.03em', color: ink.base }}>
+                    <div style={{ fontFamily: serif, fontSize: mobile ? 24 : 32, lineHeight: 1.02, letterSpacing: '-.03em', color: ink.base }}>
                       {overrides.renderCardTitle ? overrides.renderCardTitle(c.title, i) : c.title}
                     </div>
                     <div style={{ fontFamily: sans, fontWeight: 400, fontSize: 15, lineHeight: 1.35, color: '#6B6555', marginTop: 6 }}>

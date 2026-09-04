@@ -56,6 +56,7 @@ function Row({
   accentInk,
   path,
   render,
+  mobile,
 }: {
   item: ListItem
   depth: number
@@ -65,6 +66,7 @@ function Row({
   accentInk: string
   path: number[]
   render?: ElementRenderOverrides
+  mobile?: boolean
 }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
@@ -73,7 +75,12 @@ function Row({
           display: 'grid',
           // Numbers need a wider gutter than a dot, and a nested row needs less
           // than an outer one — the same measurements the memo has always used.
-          gridTemplateColumns: ordered ? '34px minmax(0,1fr)' : depth >= 2 ? '14px minmax(0,1fr)' : '18px minmax(0,1fr)',
+          // B52 — cột số của danh sách đánh số 34→30 trên mobile.
+          gridTemplateColumns: ordered
+            ? `${mobile ? 30 : 34}px minmax(0,1fr)`
+            : depth >= 2
+              ? '14px minmax(0,1fr)'
+              : '18px minmax(0,1fr)',
           gap: ordered ? 14 : 12,
         }}
       >
@@ -126,7 +133,12 @@ function Row({
             display: 'flex',
             flexDirection: 'column',
             gap: 11,
-            paddingLeft: 30,
+            /*
+             * B51 — thụt lề tầng con. Ba tầng thụt 30px là mất 90px trên một
+             * cột 350: chữ vỡ thành từng chữ cái. 20px vẫn đọc ra tầng bậc mà
+             * còn chỗ cho chữ.
+             */
+            paddingLeft: mobile ? 20 : 30,
             ...(depth >= 1 ? { borderLeft: '1px solid #E3E3DB', marginLeft: 8 } : null),
           }}
         >
@@ -141,6 +153,7 @@ function Row({
               accentInk={accentInk}
               path={[...path, i]}
               render={render}
+              mobile={mobile}
             />
           ))}
         </div>
@@ -160,7 +173,7 @@ export const list = registerElement<ListAttrs>({
     items: { type: 'array', note: '[{ runs[], sub?[], children?[] }] — children lồng tối đa ba tầng' },
   },
   blank: () => ({ type: 'list', ordered: false, items: [{ runs: [{ t: '' }] }] }),
-  View: ({ attributes, palette, testId, render }: ElementViewProps<ListAttrs>) => (
+  View: ({ attributes, palette, testId, render, mobile }: ElementViewProps<ListAttrs>) => (
     <div data-testid={testId} style={{ display: 'flex', flexDirection: 'column', gap: 11, margin: '0 0 20px' }}>
       {attributes.items.map((item, i) => (
         <Row
@@ -173,6 +186,7 @@ export const list = registerElement<ListAttrs>({
           accentInk={palette.mid}
           path={[i]}
           render={render}
+          mobile={mobile}
         />
       ))}
       {render?.renderAfterList?.()}

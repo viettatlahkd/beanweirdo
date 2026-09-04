@@ -12,8 +12,19 @@ import type {
   ReportPostData,
 } from './types'
 
-/** Supplied by the app and handed to whichever template renders — see below. */
-type Chrome = { breadcrumb?: ReactNode }
+/**
+ * Supplied by the app and handed to whichever template renders — see below.
+ *
+ * `mobile` là **prop**, không phải thứ package tự đo.
+ *
+ * Package đọc bề ngang màn thì `Preview.tsx` và `Editor.tsx` sẽ vẽ bố cục
+ * desktop trong một khung 800px trong khi cửa sổ vẫn rộng — ô xem trước nói dối
+ * đúng kiểu ô xem trước ảnh module đã nói dối. Chỗ gọi mới là chỗ duy nhất biết
+ * khung thật rộng bao nhiêu, nên chỗ gọi quyết định.
+ *
+ * Mặc định `false`: mọi chỗ gọi cũ giữ nguyên bố cục desktop, không phải sửa.
+ */
+type Chrome = { breadcrumb?: ReactNode; mobile?: boolean }
 
 export type PostRendererProps = Chrome &
   (

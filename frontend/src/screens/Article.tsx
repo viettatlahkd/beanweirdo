@@ -1,4 +1,5 @@
 import { PostRenderer } from 'post-renderer'
+import { useIsMobile } from '../lib/useIsMobile'
 import { usePost } from '../data/usePost'
 import { postTitle } from '../lib/postText'
 import {
@@ -37,6 +38,7 @@ const status = {
  * admin app's preview.
  */
 export function Article() {
+  const mobile = useIsMobile()
   const nav = useNav()
   const { data: modules } = useModules()
 
@@ -77,16 +79,16 @@ export function Article() {
   const moduleTitle = module_?.title ?? post.module_id
 
   if (post.template === 'memo') {
-    return <PostRenderer template="memo" post={toMemoData(post, module_)} breadcrumb={crumbs} />
+    return <PostRenderer template="memo" post={toMemoData(post, module_)} breadcrumb={crumbs} mobile={mobile} />
   }
   if (post.template === 'longform') {
-    return <PostRenderer template="longform" post={toLongformData(post, module_)} breadcrumb={crumbs} />
+    return <PostRenderer template="longform" post={toLongformData(post, module_)} breadcrumb={crumbs} mobile={mobile} />
   }
   if (post.template === 'cards') {
-    return <PostRenderer template="cards" post={toCardsData(post, module_)} breadcrumb={crumbs} />
+    return <PostRenderer template="cards" post={toCardsData(post, module_)} breadcrumb={crumbs} mobile={mobile} />
   }
   if (post.template === 'report') {
-    return <PostRenderer template="report" post={toReportData(post, module_)} breadcrumb={crumbs} />
+    return <PostRenderer template="report" post={toReportData(post, module_)} breadcrumb={crumbs} mobile={mobile} />
   }
 
   const related = siblings.data.filter((p) => p.id !== post.id)
@@ -94,6 +96,7 @@ export function Article() {
 
   return (
     <PostRenderer
+      mobile={mobile}
       template="article"
       post={toArticleData(post, moduleTitle, related, position, module_)}
       breadcrumb={crumbs}

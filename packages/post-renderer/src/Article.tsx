@@ -42,6 +42,11 @@ export type ArticleOverrides = {
 
 export type ArticleProps = ArticleOverrides & {
   /**
+   * Bố cục điện thoại. Chỗ gọi quyết định, không phải khuôn tự đo — xem
+   * `PostRenderer`.
+   */
+  mobile?: boolean
+  /**
    * The trail back to where this post is filed. Supplied by the app, so the
    * renderer package stays independent of how routing works.
    */
@@ -56,7 +61,7 @@ export type ArticleProps = ArticleOverrides & {
  * of the piece. Ported from frontend/src/screens/Article.tsx, parameterized
  * over `post` instead of the static article/articleMeta content modules.
  */
-export function Article({ post, breadcrumb, ...overrides }: ArticleProps) {
+export function Article({ post, breadcrumb, mobile = false, ...overrides }: ArticleProps) {
   return (
     <div>
       <div
@@ -66,7 +71,7 @@ export function Article({ post, breadcrumb, ...overrides }: ArticleProps) {
           // sample under Admin › Templates, which belongs to no module.
           background: post.band?.bg ?? garden.leaf,
           color: post.band?.fg ?? '#1F3323',
-          padding: '46px 56px 124px',
+          padding: mobile ? '28px 20px 26px' : '46px 56px 124px',
           position: 'relative',
         }}
       >
@@ -81,13 +86,19 @@ export function Article({ post, breadcrumb, ...overrides }: ArticleProps) {
           style={{
             ...wrapTitle,
             fontFamily: serif,
-            fontSize: 76,
+            // B46 — tiêu đề bài 76→36.
+            fontSize: mobile ? 36 : 76,
             lineHeight: 0.94,
             letterSpacing: '-.04em',
             margin: '0 0 12px',
             // Hẹp hơn `wrapTitle` cho phép: tiêu đề bài không được chạy xuống
             // dưới cột phụ bên phải, nên bề ngang của nó thắng.
-            maxWidth: 'min(660px, 100% - 300px)',
+            /*
+             * B45 — hai `maxWidth` này chỉ tồn tại để né tấm hero đứng bên
+             * phải khối màu. Trên mobile tấm ấy xuống dưới thành một dải ngang,
+             * nên không còn gì để né; giữ lại là tự bóp cột chữ.
+             */
+            maxWidth: mobile ? undefined : 'min(660px, 100% - 300px)',
           }}
         >
           {overrides.renderTitle ? (
@@ -103,9 +114,9 @@ export function Article({ post, breadcrumb, ...overrides }: ArticleProps) {
           style={{
             fontFamily: serif,
             fontStyle: 'italic',
-            fontSize: 24,
+            fontSize: mobile ? 19 : 24,
             lineHeight: 1.4,
-            maxWidth: 'min(520px, 100% - 300px)',
+            maxWidth: mobile ? undefined : 'min(520px, 100% - 300px)',
           }}
         >
           {overrides.renderLead ? overrides.renderLead(post.lead) : post.lead}
@@ -114,11 +125,15 @@ export function Article({ post, breadcrumb, ...overrides }: ArticleProps) {
         <div
           data-testid="article-hero-plate"
           style={{
-            position: 'absolute',
+            // B45 — trên mobile tấm hero rời khỏi mép phải và nằm thành một dải
+            // ngang 200px dưới khối màu: 300px cạnh chữ trên màn 390 thì cột
+            // chữ chỉ còn 90px.
+            position: mobile ? 'relative' : 'absolute',
             right: 0,
             top: 0,
             bottom: 0,
-            width: 300,
+            width: mobile ? '100%' : 300,
+            height: mobile ? 200 : undefined,
             background: post.heroPlate.imageUrl ? undefined : post.heroPlate.tint,
             backgroundImage: post.heroPlate.imageUrl ? `url(${post.heroPlate.imageUrl})` : undefined,
             backgroundSize: 'cover',
@@ -139,7 +154,13 @@ export function Article({ post, breadcrumb, ...overrides }: ArticleProps) {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: `minmax(0,1fr) minmax(${layout.railMin}px,${layout.railMax}px)`,
+            /*
+             * B47 — cột phụ tháo xuống cuối bài. Cột 200–260px cạnh một cột
+             * chữ trên màn 390 thì cả hai đều không đọc được.
+             */
+            gridTemplateColumns: mobile
+              ? 'minmax(0,1fr)'
+              : `minmax(0,1fr) minmax(${layout.railMin}px,${layout.railMax}px)`,
             gap: 48,
             alignItems: 'start',
           }}
@@ -149,7 +170,7 @@ export function Article({ post, breadcrumb, ...overrides }: ArticleProps) {
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'minmax(0,2.1fr) minmax(0,1fr)',
+                gridTemplateColumns: mobile ? 'minmax(0,1fr)' : 'minmax(0,2.1fr) minmax(0,1fr)',
                 gap: 10,
                 margin: '0 0 46px',
               }}
