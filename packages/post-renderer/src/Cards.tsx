@@ -233,8 +233,16 @@ export function Cards({ post, breadcrumb, mobile = false, ...overrides }: CardsP
                 gap: 8,
                 background: on ? g.wash : '#FFFFFF',
                 border: `1px solid ${on ? g.hue : paper.rule}`,
-                // B54 — 9px trên dưới cho chip đủ 44px vùng chạm.
+                /*
+                 * B54 — chip đủ 44px vùng chạm.
+                 *
+                 * Spec nói `padding: '9px 12px'`, nhưng đo trên bài thật ở 390
+                 * thì ra 35px: chữ chip nhỏ nên phần đệm không bù đủ. Đặt thẳng
+                 * chiều cao tối thiểu là nói đúng điều muốn nói, và không phụ
+                 * thuộc cỡ chữ sau này có đổi hay không.
+                 */
                 padding: mobile ? '9px 12px' : '6px 12px',
+                ...(mobile ? { minHeight: 44, boxSizing: 'border-box' as const } : null),
                 cursor: 'pointer',
               }}
             >
