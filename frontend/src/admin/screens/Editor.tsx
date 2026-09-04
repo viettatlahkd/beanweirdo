@@ -1,6 +1,8 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react'
 import {
   PostRenderer,
+  FLAVOR_GROUP_NAMES,
+  flavorGroupMeta,
   normalizeBlocks,
   stepIndent,
   longformTextToRuns,
@@ -26,7 +28,7 @@ import {
   type PostTemplate,
 } from '../lib/apiClient'
 import { useNav } from '../../lib/nav'
-import { ink, paper, serif } from '../../design/tokens'
+import { ink, paper, sans, serif } from '../../design/tokens'
 import { ThemePicker } from '../components/ThemePicker'
 import { blankReportBlock, getBody, resolveTemplate } from '../lib/postData'
 import {
@@ -866,12 +868,71 @@ function CardsEditor({ post, module, onChange }: { post: PostDetail; module?: Mo
             onDuplicate={() => setCards(duplicateAt(cards, i, copyCard))}
           >
             {card}
+            <GroupPicker
+              chosen={cards[i]?.groups ?? []}
+              onToggle={(g) => {
+                const now = cards[i]?.groups ?? []
+                updateCard(i, { groups: now.includes(g) ? now.filter((x) => x !== g) : [...now, g] })
+              }}
+            />
           </RowShell>
         )}
         renderAfterCards={() => <AddRow label="thẻ" onAdd={() => setCards(insertAt(cards, cards.length, blankCard(cards)))} />}
       />
     </div>
   )
+}
+
+/**
+ * Nhóm hương của một thẻ.
+ *
+ * Nhóm không hiện trên mặt thẻ — chúng chỉ nuôi thanh lọc ở đầu trang. Nghĩa là
+ * một thẻ không nhóm thì viết xong rồi *không tìm thấy được*, và cho tới nay
+ * không có chỗ nào đặt nhóm cho nó: `blankCard` chép nhóm của thẻ đứng trước
+ * chính vì lý do ấy, một cách vá chứ không phải một cách chọn.
+ *
+ * Từ vựng lấy thẳng từ bộ vẽ, không chép lại: hai bản sao của một danh sách là
+ * cách chắc chắn nhất để chúng lệch nhau.
+ */
+function GroupPicker({ chosen, onToggle }: { chosen: readonly string[]; onToggle: (group: string) => void }) {
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, padding: '8px 0 2px' }}>
+      <span style={{ ...tinyLabel, alignSelf: 'center', marginRight: 4 }}>Nhóm</span>
+      {FLAVOR_GROUP_NAMES.map((g) => {
+        const on = chosen.includes(g)
+        const meta = flavorGroupMeta(g)
+        return (
+          <button
+            key={g}
+            type="button"
+            aria-pressed={on}
+            onClick={() => onToggle(g)}
+            style={{
+              fontFamily: sans,
+              fontSize: 9.5,
+              letterSpacing: '.06em',
+              padding: '3px 8px',
+              borderRadius: 999,
+              cursor: 'pointer',
+              border: `1px solid ${on ? (meta?.hue ?? ink.base) : paper.rule}`,
+              background: on ? (meta?.wash ?? paper.hover) : 'transparent',
+              color: on ? (meta?.ink ?? ink.base) : ink.muted,
+            }}
+          >
+            {g}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+const tinyLabel: CSSProperties = {
+  fontFamily: sans,
+  fontSize: 9,
+  letterSpacing: '.14em',
+  textTransform: 'uppercase',
+  color: ink.faint,
 }
 
 /**

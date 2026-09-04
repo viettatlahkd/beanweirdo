@@ -1,7 +1,9 @@
+import '@testing-library/jest-dom/vitest'
 import { describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { EditorCanvas } from './Editor'
+import { FLAVOR_GROUP_NAMES } from 'post-renderer'
 import { POST_TEMPLATES } from '../../../../backend/lib/posts'
 
 /*
@@ -265,5 +267,47 @@ describe('article: khung ảnh', () => {
     expect(fig.caption).toBe('cũ mới')
     expect(fig.note).toBe('giữ nguyên')
     expect(fig.label).toBe('nhãn')
+  })
+})
+
+/*
+ * Info cards: nhóm hương của một thẻ.
+ *
+ * Nhóm không hiện trên mặt thẻ — chúng chỉ nuôi thanh lọc ở đầu trang. Nghĩa là
+ * một thẻ không nhóm thì viết xong rồi *không tìm thấy được*, và cho tới nay
+ * không có chỗ nào đặt nhóm cho nó. `blankCard` chép nhóm của thẻ đứng trước
+ * chính vì lý do ấy — một cách vá, không phải một cách chọn.
+ */
+describe('info cards: chọn nhóm cho thẻ', () => {
+  const deck = (groups: string[]) =>
+    ({
+      ...(post('cards') as object),
+      body: [{ n: '01', title: 'Thẻ', hue: '#7FB87E', sub: 'phụ', tag: 'tag', groups, parts: [] }],
+    }) as never
+
+  it('bày đủ mười bốn nhóm, đánh dấu nhóm thẻ đang thuộc về', () => {
+    render(
+      <EditorCanvas template={'cards' as never} post={deck(['Sweet'])} onChange={vi.fn()} onHeroDrop={vi.fn()} />,
+    )
+    expect(screen.getByRole('button', { name: 'Sweet' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'Berry' })).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('bấm một nhóm thì thêm vào, bấm lại thì bỏ ra', async () => {
+    const onChange = vi.fn()
+    render(
+      <EditorCanvas template={'cards' as never} post={deck(['Sweet'])} onChange={onChange} onHeroDrop={vi.fn()} />,
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Berry' }))
+    expect(onChange.mock.lastCall?.[0].body[0].groups).toEqual(['Sweet', 'Berry'])
+
+    await userEvent.click(screen.getByRole('button', { name: 'Sweet' }))
+    expect(onChange.mock.lastCall?.[0].body[0].groups).toEqual([])
+  })
+
+  it('dùng chung từ vựng với trang, không phải bản chép thứ hai', () => {
+    // Hai bản sao của một danh sách là cách chắc chắn nhất để chúng lệch nhau.
+    expect(FLAVOR_GROUP_NAMES).toContain('Citrus Fruit')
+    expect(FLAVOR_GROUP_NAMES).toHaveLength(14)
   })
 })

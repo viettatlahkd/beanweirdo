@@ -4,7 +4,7 @@ export type { PostRendererProps } from './PostRenderer'
 export { Article } from './Article'
 export type { ArticleProps, ArticleOverrides } from './Article'
 
-export { Cards } from './Cards'
+export { Cards, FLAVOR_GROUP_NAMES, flavorGroupMeta } from './Cards'
 export { Longform } from './Longform'
 export type { LongformEdit } from './Longform'
 export { Memo } from './Memo'
