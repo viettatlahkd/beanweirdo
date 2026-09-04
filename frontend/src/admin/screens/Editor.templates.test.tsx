@@ -311,3 +311,54 @@ describe('info cards: chọn nhóm cho thẻ', () => {
     expect(FLAVOR_GROUP_NAMES).toHaveLength(14)
   })
 })
+
+/*
+ * Long-form: thêm · xoá · đổi thứ tự khối.
+ *
+ * Rà 15 bài nháp thì long-form là template duy nhất **không có** thao tác cấu
+ * trúc nào: 0 nút thêm, 0 nút xoá, 0 tay nắm — trên cả bài 400 khối. Chủ site
+ * sửa được chữ nhưng không thêm nổi một đoạn, không xoá nổi một khối, không đổi
+ * nổi thứ tự. Bốn template kia đều đã có.
+ */
+describe('long-form: thao tác cấu trúc', () => {
+  const lf = (blocks: unknown[]) => ({ ...(post('longform') as object), body: blocks }) as never
+  const two = [
+    { k: 'p', runs: [{ t: 'Đoạn một' }] },
+    { k: 'p', runs: [{ t: 'Đoạn hai' }] },
+  ]
+
+  it('mỗi khối có tay nắm và nút xoá', () => {
+    const { container } = render(
+      <EditorCanvas template={'longform' as never} post={lf(two)} onChange={vi.fn()} onHeroDrop={vi.fn()} />,
+    )
+    expect([...container.querySelectorAll('button')].filter((b) => (b.textContent ?? '').startsWith('⠿'))).toHaveLength(2)
+    expect([...container.querySelectorAll('button')].filter((b) => (b.textContent ?? '').trim() === '×')).toHaveLength(2)
+  })
+
+  it('thêm một đoạn thì nó vào cuối bài', async () => {
+    const onChange = vi.fn()
+    render(<EditorCanvas template={'longform' as never} post={lf(two)} onChange={onChange} onHeroDrop={vi.fn()} />)
+    await userEvent.click(screen.getByRole('button', { name: '+ đoạn văn' }))
+    const body = onChange.mock.lastCall?.[0].body as { k: string }[]
+    expect(body).toHaveLength(3)
+    expect(body[2].k).toBe('p')
+  })
+
+  it('có khối công thức và ghi chú — hai thứ long-form có mà nơi khác không', async () => {
+    const onChange = vi.fn()
+    render(<EditorCanvas template={'longform' as never} post={lf(two)} onChange={onChange} onHeroDrop={vi.fn()} />)
+    await userEvent.click(screen.getByRole('button', { name: '+ công thức' }))
+    expect((onChange.mock.lastCall?.[0].body as { k: string }[])[2].k).toBe('formula')
+  })
+
+  it('xoá một khối thì khối kia còn nguyên', async () => {
+    const onChange = vi.fn()
+    const { container } = render(
+      <EditorCanvas template={'longform' as never} post={lf(two)} onChange={onChange} onHeroDrop={vi.fn()} />,
+    )
+    await userEvent.click([...container.querySelectorAll('button')].filter((b) => (b.textContent ?? '').trim() === '×')[0])
+    const body = onChange.mock.lastCall?.[0].body as { runs: { t: string }[] }[]
+    expect(body).toHaveLength(1)
+    expect(body[0].runs[0].t).toBe('Đoạn hai')
+  })
+})

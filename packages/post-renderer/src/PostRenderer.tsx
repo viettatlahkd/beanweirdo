@@ -42,7 +42,11 @@ export function PostRenderer(props: PostRendererProps) {
     return <Cards post={post} {...overrides} />
   }
   if (props.template === 'longform') {
-    return <Longform post={props.post} breadcrumb={props.breadcrumb} renderText={props.renderText} />
+    // Liệt kê từng móc một là chỗ để quên: `wrapBlock` và `renderAfterBlocks`
+    // thêm vào `LongformEdit` mà không được chuyển tiếp thì khung sửa im lặng
+    // không có gì, và không có lỗi nào để lần ra.
+    const { template: _template, post, ...rest } = props
+    return <Longform post={post} {...rest} />
   }
   if (props.template === 'memo') {
     const { template: _template, post, ...overrides } = props

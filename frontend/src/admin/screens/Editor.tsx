@@ -684,10 +684,55 @@ function LongformEditor({
     })
   }
 
+  const drag = useRowDrag((from, to) => write(move(blocks, from, to)))
+
+  /*
+   * Khối trắng theo loại. Tiêu đề mở ra một tầng mới, đoạn văn là thứ hay thêm
+   * nhất, còn công thức và ghi chú là hai khối long-form có mà nơi khác không.
+   */
+  const BLANK: Record<string, LongformBlock> = {
+    p: { k: 'p', runs: [{ t: '', w: '300', s: 'normal' }] },
+    h2: { k: 'h2', runs: [{ t: '', w: '300', s: 'normal' }] },
+    h3: { k: 'h3', runs: [{ t: '', w: '300', s: 'normal' }] },
+    li: { k: 'li', runs: [{ t: '', w: '300', s: 'normal' }], lvl: 1 },
+    formula: { k: 'formula', v: '' },
+    note: { k: 'note', runs: [{ t: '', w: '300', s: 'normal' }] },
+  }
+  const LABEL: Record<string, string> = {
+    p: 'đoạn văn', h2: 'tiêu đề', h3: 'tiêu đề nhỏ', li: 'gạch đầu dòng',
+    formula: 'công thức', note: 'ghi chú',
+  }
+
   return (
     <PostRenderer
       template="longform"
       post={toLongformData(post, module)}
+      wrapBlock={(drawn, i, kind) => (
+        <RowShell
+          noun={LABEL[kind] ?? 'khối'}
+          index={i}
+          drag={drag}
+          onMove={(dir) => write(move(blocks, i, i + dir))}
+          onRemove={() => write(removeAt(blocks, i, true))}
+          onDuplicate={() => write(duplicateAt(blocks, i))}
+        >
+          {drawn}
+        </RowShell>
+      )}
+      renderAfterBlocks={() => (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: '18px 0 8px' }}>
+          {Object.keys(BLANK).map((kind) => (
+            <button
+              key={kind}
+              type="button"
+              className="awc-plus-btn"
+              onClick={() => write(insertAt(blocks, blocks.length, BLANK[kind]))}
+            >
+              + {LABEL[kind]}
+            </button>
+          ))}
+        </div>
+      )}
       renderText={(text, i) => (
         <EditableField
           value={text}

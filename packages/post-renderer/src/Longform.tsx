@@ -100,6 +100,16 @@ const plain = (runs?: LongformRun[]) => (runs ?? []).map((r) => r.t).join('')
 export type LongformEdit = {
   /** Trả về ô nhập cho khối thứ `at`; vắng thì trang vẽ chữ như thường. */
   renderText?: (text: string, at: number) => ReactNode
+  /**
+   * Bọc một khối, để khung sửa treo tay nắm kéo · nhân đôi · xoá lên nó.
+   *
+   * Trang truyền khối qua thẳng; chỉ khung sửa mới bọc gì đó quanh nó. Đây là
+   * cách bốn template kia đã làm — long-form là template duy nhất chưa có, và
+   * đó là lý do bài 400 khối không thêm, không xoá, không đổi thứ tự được.
+   */
+  wrapBlock?: (drawn: ReactNode, at: number, kind: string) => ReactNode
+  /** Vẽ dưới khối cuối — chỗ khung sửa đặt nút "thêm khối". */
+  renderAfterBlocks?: () => ReactNode
 }
 
 const EditContext = createContext<LongformEdit>({})
@@ -328,7 +338,7 @@ function AsideBlock({ items, palette }: { items: LongformBlock[]; palette: Palet
  * pre-parsed from a Notion export, so this only renders and folds; it never
  * parses.
  */
-export function Longform({ post, breadcrumb, renderText }: LongformProps) {
+export function Longform({ post, breadcrumb, renderText, wrapBlock, renderAfterBlocks }: LongformProps) {
   // Everything this template tints comes from the one colour the post wears.
   const palette = paletteFrom(post.band?.bg ?? LONGFORM_BLUE, post.band?.fg)
   const prepared = useMemo(() => prepare(post.blocks), [post.blocks])
@@ -594,8 +604,8 @@ export function Longform({ post, breadcrumb, renderText }: LongformProps) {
             const pad = padOf(b)
             const title = p.h1Index === 0
 
-            return (
-              <Fragment key={p.key}>
+            const drawn = (
+              <>
                 {b.k === 'h1' && (
                   <>
                     <h1
@@ -771,9 +781,12 @@ export function Longform({ post, breadcrumb, renderText }: LongformProps) {
                 )}
 
                 {b.k === 'aside' && <AsideBlock palette={palette} items={b.items ?? []} />}
-              </Fragment>
+              </>
             )
+
+            return <Fragment key={p.key}>{wrapBlock ? wrapBlock(drawn, at, b.k) : drawn}</Fragment>
           })}
+          {renderAfterBlocks?.()}
         </div>
       </div>
     </div>
