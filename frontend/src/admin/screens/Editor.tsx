@@ -669,7 +669,14 @@ function LongformEditor({
           multiline
           rows={1}
           placeholder="dòng chữ"
-          onCommit={(v) => at(i, (b) => ({ ...b, runs: longformTextToRuns(v) }))}
+          /*
+           * Công thức lưu chữ ở `v` chứ không phải `runs`. Ghi nhầm chỗ thì
+           * công thức biến mất khỏi trang mà dữ liệu vẫn còn — nên phải hỏi
+           * khối là loại gì trước khi ghi.
+           */
+          onCommit={(v) =>
+            at(i, (b) => (b.k === 'formula' ? { ...b, v } : { ...b, runs: longformTextToRuns(v) }))
+          }
           onKeyDown={onKeyDown(i)}
           style={{ font: 'inherit', color: 'inherit', letterSpacing: 'inherit' }}
         />

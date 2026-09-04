@@ -174,3 +174,48 @@ describe('long-form: lùi lề bằng Tab', () => {
     })
   })
 })
+
+/*
+ * Long-form: khối nào cũng phải sửa được.
+ *
+ * Đo trên 15 bài nháp thì long-form là template có nhiều chữ không sửa được
+ * nhất: tiêu đề cấp ba, cấp bốn, dòng nhãn, ghi chú và công thức đều vẽ bằng
+ * chuỗi trơn nên nằm ngoài chỗ nối ô nhập. Chủ site nhìn thấy chữ trên trang mà
+ * không có chỗ nào sửa được nó.
+ */
+describe('long-form: mọi loại khối đều sửa được', () => {
+  const lf = (blocks: unknown[]) => ({ ...(post('longform') as object), body: blocks }) as never
+
+  const CASES: [string, Record<string, unknown>, string][] = [
+    ['tiêu đề cấp ba', { k: 'h3', runs: [{ t: 'Đo bằng cách nào' }] }, 'Đo bằng cách nào'],
+    ['tiêu đề cấp bốn', { k: 'h4', runs: [{ t: 'Giới hạn' }] }, 'Giới hạn'],
+    ['dòng nhãn', { k: 'meta', runs: [{ t: 'Cầu Đất · 2026' }] }, 'Cầu Đất · 2026'],
+    ['ghi chú', { k: 'note', runs: [{ t: 'Chưa đo lại được.' }] }, 'Chưa đo lại được.'],
+    ['công thức', { k: 'formula', v: 'RH + O₂ → R• + •OOH' }, 'RH + O₂ → R• + •OOH'],
+  ]
+
+  for (const [ten, block, chu] of CASES) {
+    it(`${ten} có ô nhập mang đúng chữ của nó`, () => {
+      render(
+        <EditorCanvas template={'longform' as never} post={lf([block])} onChange={vi.fn()} onHeroDrop={vi.fn()} />,
+      )
+      expect(screen.getByDisplayValue(chu)).toBeTruthy()
+    })
+  }
+
+  it('công thức ghi vào `v`, không phải `runs`', async () => {
+    // Ghi nhầm chỗ thì công thức biến mất khỏi trang mà dữ liệu vẫn còn.
+    const onChange = vi.fn()
+    render(
+      <EditorCanvas
+        template={'longform' as never}
+        post={lf([{ k: 'formula', v: 'A → B' }])}
+        onChange={onChange}
+        onHeroDrop={vi.fn()}
+      />,
+    )
+    await userEvent.type(screen.getByDisplayValue('A → B'), ' + C')
+    await userEvent.tab()
+    expect(onChange).toHaveBeenLastCalledWith({ body: [{ k: 'formula', v: 'A → B + C' }] })
+  })
+})
