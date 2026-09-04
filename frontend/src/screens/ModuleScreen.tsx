@@ -11,6 +11,7 @@ import { Hover } from '../lib/Hover'
 import { useNav, useSettings } from '../lib/nav'
 import { openPost } from '../lib/openPost'
 import { postThumbnail } from '../lib/postThumb'
+import { useIsMobile } from '../lib/useIsMobile'
 import { coverStyle } from '../lib/imageFocus'
 
 const kicker: CSSProperties = {
@@ -45,19 +46,20 @@ const withTints = (posts: PostRow[], m: ModuleRow): TintedPost[] =>
  */
 function Band({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
   const nav = useNav()
+  const mob = useIsMobile()
   const { showPlates } = useSettings()
   const entries = withTints(posts, m)
 
   return (
     <div>
-      <div style={{ background: m.accent, color: m.on_color, padding: '52px 56px 44px' }}>
+      <div style={{ background: m.accent, color: m.on_color, padding: mob ? '30px 20px 34px' : '52px 56px 44px' }}>
         <Breadcrumbs style={{ opacity: 0.75 }} />
 
         <h1
           lang="en"
           style={{
             fontFamily: serif,
-            fontSize: 92,
+            fontSize: mob ? 44 : 92,
             lineHeight: 0.94,
             letterSpacing: '-.04em',
             margin: '0 0 20px',
@@ -69,8 +71,8 @@ function Band({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)',
-            gap: 44,
+            gridTemplateColumns: mob ? 'minmax(0,1fr)' : 'minmax(0,1fr) minmax(0,1fr)',
+            gap: mob ? 0 : 44,
           }}
         >
           <div style={{ fontSize: 15, lineHeight: 1.45, ...prose }}>{m.long_desc}</div>
@@ -81,12 +83,12 @@ function Band({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
         <ModulePlates m={m} />
       )}
 
-      <div style={{ padding: '36px 56px 120px', maxWidth: 1240 }}>
+      <div style={{ padding: mob ? '26px 20px 40px' : '36px 56px 120px', maxWidth: 1240 }}>
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(2,minmax(0,1fr))',
-            gap: '0 44px',
+            gridTemplateColumns: mob ? 'minmax(0,1fr)' : 'repeat(2,minmax(0,1fr))',
+            gap: mob ? 0 : '0 44px',
           }}
         >
           {entries.map((e, i) => (
@@ -105,8 +107,8 @@ function Band({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
             >
               <div
                 style={{
-                  width: 172,
-                  height: 130,
+                  width: mob ? 112 : 172,
+                  height: mob ? 84 : 130,
                   flex: 'none',
                   /*
                    * Điểm căn của ảnh bìa đi theo đường dẫn (`#focus=`), và
@@ -121,7 +123,7 @@ function Band({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
                 <div
                   style={{
                     fontFamily: serif,
-                    fontSize: 24,
+                    fontSize: mob ? 22 : 24,
                     letterSpacing: '-.018em',
                     lineHeight: 1.15,
                   }}
@@ -158,17 +160,18 @@ function Band({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
  */
 function Specimen({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
   const nav = useNav()
+  const mob = useIsMobile()
   const { showPlates } = useSettings()
   const entries = withTints(posts, m)
 
   return (
     <div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.2fr) minmax(0,1fr)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: mob ? 'minmax(0,1fr)' : 'minmax(0,1.2fr) minmax(0,1fr)' }}>
         <div
           style={{
             background: m.accent,
             color: m.on_color,
-            padding: '52px 48px 48px',
+            padding: mob ? '30px 20px 32px' : '52px 48px 48px',
             /*
              * Không đặt bề ngang và chiều cao ở đây.
              *
@@ -186,7 +189,7 @@ function Specimen({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
           lang="en"
             style={{
               fontFamily: serif,
-              fontSize: 84,
+              fontSize: mob ? 44 : 84,
               lineHeight: 0.94,
               letterSpacing: '-.04em',
               margin: '0 0 18px',
@@ -207,7 +210,10 @@ function Specimen({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(3,minmax(0,1fr))',
+            // Hẹp: khay ba cột xuống HAI, không phải một. Một cột thì khay
+            // tiêu bản thành đúng layout Band, và khác biệt giữa hai module
+            // biến mất.
+            gridTemplateColumns: mob ? 'repeat(2,minmax(0,1fr))' : 'repeat(3,minmax(0,1fr))',
             gap: 1,
             background: paper.rule,
             borderBottom: `1px solid ${paper.rule}`,
@@ -219,11 +225,11 @@ function Specimen({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
               onClick={() => openPost(nav, e)}
               style={{
                 background: paper.cream,
-                padding: '18px 18px 20px',
+                padding: mob ? '14px 14px 16px' : '18px 18px 20px',
                 cursor: 'pointer',
                 display: 'flex',
                 flexDirection: 'column',
-                minHeight: 230,
+                minHeight: mob ? 200 : 230,
               }}
               hoverStyle={rowHover}
             >
@@ -260,7 +266,7 @@ function Specimen({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
               <div
                 style={{
                   fontFamily: serif,
-                  fontSize: 25,
+                  fontSize: mob ? 19 : 25,
                   letterSpacing: '-.02em',
                   lineHeight: 1.14,
                   marginBottom: 7,
@@ -348,6 +354,8 @@ export function plateRatio(layout: string, slot: 1 | 2 | 3 | 4): number {
 }
 
 export function ModulePlates({ m }: { m: ModuleRow }) {
+  const mob = useIsMobile()
+
   if (m.layout === 'sequence') {
     return (
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,minmax(0,1fr))' }}>
@@ -358,7 +366,10 @@ export function ModulePlates({ m }: { m: ModuleRow }) {
             <div
               key={s.label}
               style={{
-                aspectRatio: '3/4',
+                // Hẹp: giữ ĐỦ BỐN CỘT — đây là một chuỗi đọc từ trái sang,
+                // xếp 2x2 là mất nghĩa. Ô chỉ còn 97px nên kéo cao 3:4 → 8:15
+                // để nó vẫn đọc ra là bốn tấm chứ không phải một thanh màu.
+                aspectRatio: mob ? '8/15' : '3/4',
                 ...pageFill(m, slot, s.bg),
                 display: 'flex',
                 alignItems: 'flex-end',
@@ -403,7 +414,7 @@ export function ModulePlates({ m }: { m: ModuleRow }) {
           // Hàng dưới cũ chỉ được 0,75fr — 114px trên bề ngang 200, bẹt tới
           // mức cắt ảnh cho vừa là mất chủ thể.
           gridTemplateRows: '1.3fr 1fr',
-          height: PLATE_HEIGHT.specimen,
+          height: mob ? 240 : PLATE_HEIGHT.specimen,
         }}
       >
         <PlateCell m={m} slot={1} tint={m.tint} minHeight={180} />
@@ -423,9 +434,11 @@ export function ModulePlates({ m }: { m: ModuleRow }) {
   return (
     <div
       style={{
-        // The hero is a fixed 1050 on the page, not a share of the window.
-        width: PLATE_WIDTH.band,
-        height: 208,
+        // Trên desktop tấm hero là 1050 cố định, không phải một phần bề ngang
+        // cửa sổ. Hẹp thì ngược lại: tràn hết bề ngang và giữ đúng tỉ lệ 16:5
+        // mà chính nhãn trong ô này đang ghi — 1050px cứng thì tràn màn.
+        width: mob ? '100%' : PLATE_WIDTH.band,
+        ...(mob ? { aspectRatio: '16/5' } : { height: 208 }),
         ...pageFill(m, 1, m.tint),
         display: 'flex',
         alignItems: 'flex-end',
@@ -516,18 +529,19 @@ const roastStrip = [
  */
 function Sequence({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
   const nav = useNav()
+  const mob = useIsMobile()
   const { showPlates } = useSettings()
 
   return (
     <div>
-      <div style={{ background: m.accent, color: m.on_color, padding: '52px 56px 40px' }}>
+      <div style={{ background: m.accent, color: m.on_color, padding: mob ? '30px 20px 34px' : '52px 56px 40px' }}>
         <Breadcrumbs style={{ opacity: 0.75 }} />
 
         <h1
           lang="en"
           style={{
             fontFamily: serif,
-            fontSize: 96,
+            fontSize: mob ? 46 : 96,
             lineHeight: 0.94,
             letterSpacing: '-.04em',
             margin: '0 0 22px',
@@ -539,8 +553,10 @@ function Sequence({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)',
-            gap: 36,
+            gridTemplateColumns: mob
+              ? 'minmax(0,1fr)'
+              : 'minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)',
+            gap: mob ? 0 : 36,
           }}
         >
           <div style={{ fontSize: 15, lineHeight: 1.45, gridColumn: 'span 2', ...prose }}>{m.long_desc}</div>
@@ -551,27 +567,30 @@ function Sequence({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
         <ModulePlates m={m} />
       )}
 
-      <div style={{ padding: '34px 56px 120px', maxWidth: 1240 }}>
+      <div style={{ padding: mob ? '26px 20px 40px' : '34px 56px 120px', maxWidth: 1240 }}>
         {posts.map((e, i) => (
           <Hover
             key={e.id}
             onClick={() => openPost(nav, e)}
             style={{
               display: 'grid',
-              gridTemplateColumns: '70px minmax(0,1.1fr) minmax(0,1.3fr) 88px',
-              gap: 24,
-              alignItems: 'center',
-              padding: '20px 10px',
+              // Hẹp: bốn cột thành hai — số lớn bên trái, phần còn lại xếp
+              // dọc bên phải. Số serif là bản sắc của layout này nên nó giữ
+              // cột riêng thay vì tụt xuống thành một dòng chữ nhỏ.
+              gridTemplateColumns: mob ? '44px minmax(0,1fr)' : '70px minmax(0,1.1fr) minmax(0,1.3fr) 88px',
+              gap: mob ? '4px 14px' : 24,
+              alignItems: mob ? 'baseline' : 'center',
+              padding: mob ? '18px 8px' : '20px 10px',
               borderBottom: `1px solid ${paper.rule}`,
               cursor: 'pointer',
             }}
             hoverStyle={rowHover}
           >
-            <div style={{ fontFamily: serif, fontSize: 38, color: '#D99C55' }}>{displayNumber(i)}</div>
+            <div style={{ fontFamily: serif, fontSize: mob ? 34 : 38, color: '#D99C55', gridArea: mob ? '1 / 1 / 4 / 2' : undefined }}>{displayNumber(i)}</div>
             <div
               style={{
                 fontFamily: serif,
-                fontSize: 27,
+                fontSize: mob ? 24 : 27,
                 letterSpacing: '-.02em',
                 lineHeight: 1.15,
               }}
