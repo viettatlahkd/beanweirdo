@@ -6,9 +6,18 @@ const QUERY = `(max-width: ${layout.mobileMax}px)`
 /**
  * Ngưỡng mobile của cả site.
  *
- * Không dùng được media query trong CSS cho việc này: mọi màn công khai vẽ bằng
+ * Vì sao bằng JS chứ không phải media query: phần lớn màn công khai vẽ bằng
  * `div` với style inline, mà `@media` ở `global.css` không với tới style inline.
- * Nên tầng responsive phải chạy bằng JS.
+ * Và những thứ nặng nhất — rail đổi thành thanh dưới, lề, cỡ chữ — thì CSS
+ * không làm được dù có với tới.
+ *
+ * Không phải "mọi màn": `global.css` đã có `.bw-intro`/`.bw-modhead` cho Trang
+ * chủ, và `components/StatsPanel.tsx` có hai ngưỡng của riêng nó (560, 860).
+ * Nên trong repo hiện có nhiều hơn một ngưỡng cho cùng một câu hỏi, và ở khoảng
+ * giữa chúng thì lưới đã xếp chồng theo CSS trong khi lề và cỡ chữ vẫn là
+ * desktop theo JS. Lane design đang kéo ngưỡng của `global.css` về khớp
+ * `mobileMax`; hai con số của StatsPanel là chuyện riêng của bảng ấy, chưa
+ * đụng tới.
  *
  * jsdom không có `window.matchMedia`, nên khi thiếu thì trả `false` — test hiện
  * có giữ nguyên nhánh desktop và không phải sửa dòng nào. `lib/Rise.tsx` đã thủ
