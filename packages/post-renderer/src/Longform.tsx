@@ -98,8 +98,14 @@ const plain = (runs?: LongformRun[]) => (runs ?? []).map((r) => r.t).join('')
  * luồn thêm một tham số qua cả tám chỗ là tám chỗ để quên.
  */
 export type LongformEdit = {
-  /** Trả về ô nhập cho khối thứ `at`; vắng thì trang vẽ chữ như thường. */
-  renderText?: (text: string, at: number) => ReactNode
+  /**
+   * Trả về ô nhập cho khối thứ `at`; vắng thì trang vẽ chữ như thường.
+   *
+   * `sub` là chỉ số khối con bên trong một `aside` — khối lồng cần hai số mới
+   * chỉ được vào đúng chỗ, và đó là lý do chúng là nhóm duy nhất còn không sửa
+   * được sau đợt rà 15 bài nháp.
+   */
+  renderText?: (text: string, at: number, sub?: number) => ReactNode
   /**
    * Bọc một khối, để khung sửa treo tay nắm kéo · nhân đôi · xoá lên nó.
    *
@@ -124,17 +130,17 @@ const EditContext = createContext<LongformEdit>({})
  * còn mấy khối này cố tình vẽ trơn, và đổi cách vẽ không phải việc của một bản
  * sửa "cho sửa được".
  */
-const Editable = ({ text, at }: { text: string; at?: number }) => {
+const Editable = ({ text, at, sub }: { text: string; at?: number; sub?: number }) => {
   const edit = useContext(EditContext)
-  if (edit.renderText && at !== undefined) return <>{edit.renderText(text, at)}</>
+  if (edit.renderText && at !== undefined) return <>{edit.renderText(text, at, sub)}</>
   return <>{text}</>
 }
 
-const Runs = ({ runs, at }: { runs?: LongformRun[]; at?: number }) => {
+const Runs = ({ runs, at, sub }: { runs?: LongformRun[]; at?: number; sub?: number }) => {
   const edit = useContext(EditContext)
   // Chữ đưa cho ô nhập mang theo dấu định dạng (`*đậm*`, `_nghiêng_`), không
   // phải chuỗi trơn: gõ lại một dòng thì 572 span đậm/nghiêng của bài phải còn.
-  if (edit.renderText && at !== undefined) return <>{edit.renderText(runsToText(runs), at)}</>
+  if (edit.renderText && at !== undefined) return <>{edit.renderText(runsToText(runs), at, sub)}</>
   return (
     <>
       {(runs ?? []).map((r, i) => (
@@ -244,7 +250,7 @@ function NoteBody({ runs, at }: { runs?: LongformRun[]; at?: number }) {
 }
 
 /** Blocks nested inside an `aside` — quieter, on its own sand ground. */
-function AsideBlock({ items, palette }: { items: LongformBlock[]; palette: Palette }) {
+function AsideBlock({ items, palette, at }: { items: LongformBlock[]; palette: Palette; at?: number }) {
   return (
     <div style={{ background: '#F3EEE1', padding: '24px 26px 20px', margin: '22px 0 26px' }}>
       {items.map((a, i) => {
@@ -261,7 +267,7 @@ function AsideBlock({ items, palette }: { items: LongformBlock[]; palette: Palet
                 paddingLeft: pad,
               }}
             >
-              <Runs runs={a.runs} />
+              <Runs runs={a.runs} at={at} sub={i} />
             </div>
           )
         if (a.k === 'li')
@@ -272,7 +278,7 @@ function AsideBlock({ items, palette }: { items: LongformBlock[]; palette: Palet
             >
               <div style={{ ...bullet(a.lvl, palette.accent), margin: '9px 0 0 4px' }} />
               <div style={{ fontSize: 14.5, lineHeight: 1.62, color: '#3B3729' }}>
-                <Runs runs={a.runs} />
+                <Runs runs={a.runs} at={at} sub={i} />
               </div>
             </div>
           )
@@ -289,7 +295,7 @@ function AsideBlock({ items, palette }: { items: LongformBlock[]; palette: Palet
                 margin: '6px 0 10px',
               }}
             >
-              {plain(a.runs)}
+              <Editable text={plain(a.runs)} at={at} sub={i} />
             </div>
           )
         if (a.k === 'fig')
@@ -780,7 +786,7 @@ export function Longform({ post, breadcrumb, renderText, wrapBlock, renderAfterB
                   />
                 )}
 
-                {b.k === 'aside' && <AsideBlock palette={palette} items={b.items ?? []} />}
+                {b.k === 'aside' && <AsideBlock palette={palette} items={b.items ?? []} at={at} />}
               </>
             )
 

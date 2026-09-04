@@ -30,6 +30,7 @@ import {
 import { useNav } from '../../lib/nav'
 import { ink, paper, sans, serif } from '../../design/tokens'
 import { ThemePicker } from '../components/ThemePicker'
+import { FocusPicker } from '../components/FocusPicker'
 import { blankReportBlock, getBody, resolveTemplate } from '../lib/postData'
 import {
   addColumn,
@@ -149,6 +150,20 @@ function EditorContent({ postId }: { postId: string }) {
   /** The cover, set from the button in the header or by dropping on the page. */
   async function setHero(file: File) {
     const { url } = await uploadImage(file)
+    saveHero(url)
+    setFraming(url)
+  }
+
+  /*
+   * Đặt ảnh bìa xong thì mở luôn khung căn.
+   *
+   * Ảnh bìa của một bài không chỉ hiện một chỗ: trang module dạng dải cắt nó
+   * thành 172×130, dạng specimen cắt 3:2. Đặt xong mà không căn thì chủ site
+   * phải tự đi tìm xem nó rơi vào khung nào — nên mở khung căn ngay, bày cả hai
+   * hình cắt, và đóng lại là xong.
+   */
+  const [framing, setFraming] = useState<string | null>(null)
+  function saveHero(url: string) {
     setPost((prev) => (prev ? { ...prev, hero_image_url: url } : prev))
     updatePost(postId, { hero_image_url: url })
   }
@@ -191,7 +206,39 @@ function EditorContent({ postId }: { postId: string }) {
             ))}
           </select>
         )}
-        <HeroPicker onPick={(f) => void setHero(f)} hasHero={Boolean(post.hero_image_url)} />
+        <HeroPicker
+          onPick={(f) => void setHero(f)}
+          onLink={(url) => {
+            saveHero(url)
+            setFraming(url)
+          }}
+          hasHero={Boolean(post.hero_image_url)}
+        />
+        {post.hero_image_url && (
+          <button
+            onClick={() => setFraming(post.hero_image_url)}
+            style={{ fontFamily: 'inherit', fontSize: 12, color: ink.green, background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+          >
+            đặt vào khung
+          </button>
+        )}
+        {framing && (
+          <FocusPicker
+            url={framing}
+            name="Ảnh bìa · hiện ở danh sách bài trong module"
+            /* Khung kéo lấy hình cắt hẹp hơn — căn vừa nó thì hình kia luôn vừa. */
+            ratio={172 / 130}
+            previews={[
+              { label: 'module dạng dải · 172×130', ratio: 172 / 130 },
+              { label: 'module dạng specimen · 3:2', ratio: 3 / 2 },
+            ]}
+            onCancel={() => setFraming(null)}
+            onSave={(url) => {
+              saveHero(url)
+              setFraming(null)
+            }}
+          />
+        )}
         {/*
           * The colour a post wears stays changeable after it exists — it is
           * decided when the post is made, and the first draft is exactly when
@@ -496,24 +543,64 @@ function EditableField({
 }
 
 /** Sets the cover. The picture itself is shown by the page, not by this. */
-function HeroPicker({ onPick, hasHero }: { onPick: (file: File) => void; hasHero: boolean }) {
+/**
+ * Ảnh bìa: tải lên, hoặc dán một đường dẫn.
+ *
+ * Trước đây chỉ có tải lên, nên một tấm ảnh đã nằm sẵn ở đâu đó trên mạng vẫn
+ * phải tải về rồi tải lên lại. Ô dán link là cùng một lối mà khung ảnh của
+ * trang module đã có — hai chỗ đặt ảnh thì nên mở ra bằng cùng một cách.
+ */
+function HeroPicker({
+  onPick,
+  onLink,
+  hasHero,
+}: {
+  onPick: (file: File) => void
+  onLink: (url: string) => void
+  hasHero: boolean
+}) {
   const inputRef = useRef<HTMLInputElement>(null)
+  const [linking, setLinking] = useState(false)
+  const linkStyle: CSSProperties = {
+    fontFamily: 'inherit',
+    fontSize: 12,
+    color: ink.green,
+    background: 'none',
+    border: 'none',
+    padding: 0,
+    cursor: 'pointer',
+  }
   return (
     <>
-      <button
-        onClick={() => inputRef.current?.click()}
-        style={{
-          fontFamily: 'inherit',
-          fontSize: 12,
-          color: ink.green,
-          background: 'none',
-          border: 'none',
-          padding: 0,
-          cursor: 'pointer',
-        }}
-      >
+      <button onClick={() => inputRef.current?.click()} style={linkStyle}>
         {hasHero ? 'đổi ảnh bìa' : 'thêm ảnh bìa'}
       </button>
+      <span style={{ color: ink.faint, fontSize: 11 }}>hoặc</span>
+      <button onClick={() => setLinking((v) => !v)} style={linkStyle}>
+        đặt link
+      </button>
+      {linking && (
+        <input
+          autoFocus
+          placeholder="dán link ảnh rồi Enter"
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') return setLinking(false)
+            if (e.key !== 'Enter') return
+            const v = (e.target as HTMLInputElement).value.trim()
+            setLinking(false)
+            if (v) onLink(v)
+          }}
+          onBlur={() => setLinking(false)}
+          style={{
+            fontFamily: 'inherit',
+            fontSize: 12,
+            padding: '3px 8px',
+            border: `1px solid ${paper.rule}`,
+            background: paper.white,
+            minWidth: 260,
+          }}
+        />
+      )}
       <input
         ref={inputRef}
         type="file"
@@ -662,6 +749,19 @@ function LongformEditor({
     write(blocks.map((b, j) => (j === i ? f(b) : b)))
 
   /**
+   * Chữ mới vào đúng chỗ của nó.
+   *
+   * `sub` chỉ tới một khối con bên trong `aside`. Không có `sub` thì ghi vào
+   * chính khối ấy. Công thức lưu chữ ở `v`, mọi khối khác lưu ở `runs` — ghi
+   * nhầm chỗ thì chữ biến mất khỏi trang trong khi dữ liệu vẫn còn.
+   */
+  const setText = (b: LongformBlock, v: string, sub?: number): LongformBlock => {
+    if (sub !== undefined)
+      return { ...b, items: (b.items ?? []).map((c, j) => (j === sub ? setText(c, v) : c)) }
+    return b.k === 'formula' ? { ...b, v } : { ...b, runs: longformTextToRuns(v) }
+  }
+
+  /**
    * Tab lùi vào, Shift+Tab lùi ra.
    *
    * Đoạn văn lùi theo `ind`, gạch đầu dòng lùi theo cấp lồng `lvl` của nó —
@@ -733,7 +833,7 @@ function LongformEditor({
           ))}
         </div>
       )}
-      renderText={(text, i) => (
+      renderText={(text, i, sub) => (
         <EditableField
           value={text}
           multiline
@@ -744,10 +844,8 @@ function LongformEditor({
            * công thức biến mất khỏi trang mà dữ liệu vẫn còn — nên phải hỏi
            * khối là loại gì trước khi ghi.
            */
-          onCommit={(v) =>
-            at(i, (b) => (b.k === 'formula' ? { ...b, v } : { ...b, runs: longformTextToRuns(v) }))
-          }
-          onKeyDown={onKeyDown(i)}
+          onCommit={(v) => at(i, (b) => setText(b, v, sub))}
+          onKeyDown={sub === undefined ? onKeyDown(i) : undefined}
           style={{ font: 'inherit', color: 'inherit', letterSpacing: 'inherit' }}
         />
       )}

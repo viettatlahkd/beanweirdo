@@ -11,6 +11,7 @@ import { Hover } from '../lib/Hover'
 import { useNav, useSettings } from '../lib/nav'
 import { openPost } from '../lib/openPost'
 import { postThumbnail } from '../lib/postThumb'
+import { coverStyle } from '../lib/imageFocus'
 
 const kicker: CSSProperties = {
   fontFamily: sans,
@@ -107,9 +108,13 @@ function Band({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
                   width: 172,
                   height: 130,
                   flex: 'none',
-                  background: postThumbnail(e)
-                    ? `url(${postThumbnail(e)}) center/cover no-repeat`
-                    : e.tint,
+                  /*
+                   * Điểm căn của ảnh bìa đi theo đường dẫn (`#focus=`), và
+                   * `center/cover` viết tay thì bỏ qua nó — chủ site căn xong
+                   * mà danh sách vẫn cắt giữa. `coverStyle` là chỗ duy nhất
+                   * biết đọc nó.
+                   */
+                  ...(postThumbnail(e) ? coverStyle(postThumbnail(e)!) : { background: e.tint }),
                 }}
               />
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -248,9 +253,7 @@ function Specimen({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
                   style={{
                     aspectRatio: '3/2',
                     marginBottom: 13,
-                    background: postThumbnail(e)
-                      ? `url(${postThumbnail(e)}) center/cover no-repeat`
-                      : e.tint,
+                    ...(postThumbnail(e) ? coverStyle(postThumbnail(e)!) : { background: e.tint }),
                   }}
                 />
               )}

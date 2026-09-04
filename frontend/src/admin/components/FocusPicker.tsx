@@ -139,6 +139,7 @@ export function FocusPicker({
   url,
   ratio,
   name,
+  previews,
   onCancel,
   onSave,
 }: {
@@ -146,6 +147,15 @@ export function FocusPicker({
   /** width ÷ height of the cell this photo fills. */
   ratio: number
   name: string
+  /**
+   * Những khung khác cùng tấm ảnh này sẽ rơi vào, bày cạnh khung kéo.
+   *
+   * Ảnh bìa của một bài không chỉ hiện một chỗ: trang module dạng dải cắt nó
+   * thành 172×130, dạng specimen cắt 3:2. Căn xong ở một khung mà chỗ kia mất
+   * chủ thể thì việc căn coi như chưa xong — nên bày cả hai, cùng một điểm căn,
+   * ngay lúc đang kéo.
+   */
+  previews?: { label: string; ratio: number }[]
   onCancel: () => void
   onSave: (url: string) => void
 }) {
@@ -248,6 +258,26 @@ export function FocusPicker({
             touchAction: 'none',
           }}
         />
+
+        {previews && previews.length > 0 && (
+          <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
+            {previews.map((p) => (
+              <div key={p.label} style={{ flex: 1, minWidth: 0 }}>
+                <div
+                  style={{
+                    aspectRatio: String(p.ratio),
+                    border: `1px solid ${paper.rule}`,
+                    backgroundImage: `url(${stripFocus(url)})`,
+                    backgroundSize: 'cover',
+                    backgroundRepeat: 'no-repeat',
+                    backgroundPosition: `${focus.x}% ${focus.y}%`,
+                  }}
+                />
+                <div style={{ ...sub, marginTop: 5, fontSize: 9 }}>{p.label}</div>
+              </div>
+            ))}
+          </div>
+        )}
 
         <div
           style={{
