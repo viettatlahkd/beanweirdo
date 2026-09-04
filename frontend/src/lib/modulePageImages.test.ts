@@ -45,3 +45,30 @@ describe('pageImage', () => {
     expect(pageCaption({ ...own, page_shot2: 'riêng' }, 2)).toBe('riêng')
   })
 })
+
+/*
+ * Bỏ ảnh mượn.
+ *
+ * Ô không có ảnh riêng thì mượn ảnh trang chủ cùng số. Tiện — nhưng trước đây
+ * không bỏ ra được: nút xoá chỉ hiện khi ô có ảnh của riêng nó, nên hàng ảnh
+ * mượn là hàng duy nhất không xoá được gì, và chủ site đã báo đúng chuyện ấy.
+ */
+describe('bỏ mượn ảnh trang chủ', () => {
+  const base = { layout: 'band', img1: 'https://x/home.jpg', page_img1: null } as never
+
+  it('chưa đặt gì thì mượn ảnh trang chủ', () => {
+    expect(pageImage(base, 1)).toBe('https://x/home.jpg')
+    expect(isBorrowed(base, 1)).toBe(true)
+  })
+
+  it('chuỗi rỗng là cố ý để trống — không mượn nữa', () => {
+    const dropped = { ...(base as object), page_img1: '' } as never
+    expect(pageImage(dropped, 1)).toBeNull()
+    expect(isBorrowed(dropped, 1)).toBe(false)
+  })
+
+  it('bỏ mượn không đụng tới ảnh trang chủ', () => {
+    const dropped = { ...(base as object), page_img1: '' } as never
+    expect((dropped as { img1: string }).img1).toBe('https://x/home.jpg')
+  })
+})

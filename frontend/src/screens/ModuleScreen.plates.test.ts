@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { layout, wrapTitle } from '../design/tokens'
-import { PLATE_HEIGHT, PLATE_WIDTH } from './ModuleScreen'
+import { PLATE_HEIGHT, PLATE_WIDTH, plateRatio } from './ModuleScreen'
 
 /*
  * The CMS preview draws `ModulePlates`, the same component the page draws, at
@@ -92,5 +92,35 @@ describe('chú thích ảnh trên trang module', () => {
     expect(src).not.toMatch(/pageCaption\([^)]*\)\s*\|\|/)
     // Và cả ba dạng đều hỏi "có chú thích không" trước khi vẽ.
     expect(src.match(/pageCaption\(m, ?\w+\)\s*(&&|\?)/g)?.length).toBe(3)
+  })
+})
+
+/*
+ * Tỉ lệ khung cho "đặt ảnh vào khung".
+ *
+ * Khung ấy từng đo DOM của ô xem trước. Dạng `band` chỉ có **một** khung, nên
+ * phép đo rơi vào ô chú thích bên trong và trả về một tỉ lệ không phải của
+ * khung nào — chủ site mở ra thấy khung cắt sai, kéo cũng không khớp.
+ */
+describe('tỉ lệ khung ảnh trang module', () => {
+  it('band lấy đúng tỉ lệ dải hero', () => {
+    expect(plateRatio('band', 1)).toBeCloseTo(PLATE_WIDTH.band / PLATE_HEIGHT.band, 3)
+    expect(plateRatio('band', 1)).toBeCloseTo(3.75, 1)
+  })
+
+  it('specimen: hai ô trên và hai ô dưới khác tỉ lệ nhau', () => {
+    expect(plateRatio('specimen', 1)).toBeCloseTo(0.7, 1)
+    expect(plateRatio('specimen', 3)).toBeCloseTo(0.91, 1)
+    expect(plateRatio('specimen', 1)).not.toBeCloseTo(plateRatio('specimen', 3), 1)
+  })
+
+  it('sequence: bốn ô cùng 3:4', () => {
+    for (const slot of [1, 2, 3, 4] as const) expect(plateRatio('sequence', slot)).toBeCloseTo(0.75, 2)
+  })
+
+  it('không tỉ lệ nào là 16/9 mặc định — đó là dấu hiệu phép đo hụt', () => {
+    for (const l of ['band', 'specimen', 'sequence'])
+      for (const slot of [1, 2, 3, 4] as const)
+        expect(plateRatio(l, slot)).not.toBeCloseTo(16 / 9, 2)
   })
 })

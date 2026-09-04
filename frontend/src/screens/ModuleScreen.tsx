@@ -325,6 +325,28 @@ export const PLATE_HEIGHT: Record<string, number> = {
   specimen: layout.moduleSpecimen,
 }
 
+/**
+ * Tỉ lệ khung của một ô ảnh trên trang module.
+ *
+ * Khung "đặt ảnh vào khung" từng đo DOM của ô xem trước để lấy tỉ lệ. Dạng
+ * `band` chỉ có **một** khung, nên phép đo ấy rơi vào ô chú thích bên trong và
+ * trả về một tỉ lệ không phải của khung nào cả — chủ site mở ra thấy một khung
+ * cắt sai, kéo cũng không khớp.
+ *
+ * Lấy từ chính hai bảng số mà trang vẽ theo, thay vì đo lại: cùng một lý do đã
+ * viết ở `PLATE_HEIGHT` — chép số là cách ô xem trước bắt đầu nói dối.
+ */
+export function plateRatio(layout: string, slot: 1 | 2 | 3 | 4): number {
+  if (layout === 'sequence') return 3 / 4
+  if (layout === 'specimen') {
+    const col = PLATE_WIDTH.specimen / 2
+    // Hai hàng 1,3fr trên 1fr — xem gridTemplateRows của dạng specimen.
+    const row = slot <= 2 ? (PLATE_HEIGHT.specimen * 1.3) / 2.3 : PLATE_HEIGHT.specimen / 2.3
+    return col / row
+  }
+  return PLATE_WIDTH.band / PLATE_HEIGHT.band
+}
+
 export function ModulePlates({ m }: { m: ModuleRow }) {
   if (m.layout === 'sequence') {
     return (

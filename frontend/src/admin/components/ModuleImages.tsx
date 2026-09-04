@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties, type RefObject } from 'react'
 import { ImageBand } from '../../screens/Landing'
-import { ModulePlates, PLATE_HEIGHT, PLATE_WIDTH } from '../../screens/ModuleScreen'
+import { ModulePlates, PLATE_HEIGHT, PLATE_WIDTH, plateRatio } from '../../screens/ModuleScreen'
 import { ink, layout, paper, sans } from '../../design/tokens'
 import { Hover } from '../../lib/Hover'
 import { useSlotSwap } from '../lib/useSlotSwap'
@@ -261,12 +261,18 @@ export function ModuleImages({
    * a table — the preview draws the real layout, so measuring it is the one
    * answer that cannot drift from what the page does.
    */
-  const ratioOf = (i: number): number => {
-    const cell = grid.current?.firstElementChild?.children[i] as HTMLElement | undefined
-    if (!cell) return 16 / 9
-    const r = cell.getBoundingClientRect()
-    return r.height > 0 ? r.width / r.height : 16 / 9
-  }
+  /*
+   * Tỉ lệ khung lấy từ hai bảng số của trang, không đo DOM.
+   *
+   * Phép đo cũ lấy ô thứ `i` trong ô xem trước — đúng với dạng specimen và
+   * sequence, nhưng dạng `band` chỉ có **một** khung, nên nó rơi vào ô chú
+   * thích bên trong và trả về một tỉ lệ không phải của khung nào. Chủ site mở
+   * "đặt vào khung" thấy khung cắt sai và kéo không khớp.
+   */
+  const ratioOf = (slot: 1 | 2 | 3 | 4): number =>
+    group.columns === 'homepage'
+      ? PLATE_WIDTH.band / layout.band
+      : plateRatio(m.layout, slot)
 
   return (
     <div
@@ -396,14 +402,24 @@ export function ModuleImages({
                         đặt vào khung
                       </Hover>
                     )}
-                    {url && (
+                    {(url || borrowed) && (
+                      /*
+                       * Ảnh mượn cũng bỏ ra được.
+                       *
+                       * Ô không có ảnh riêng thì mượn ảnh trang chủ cùng số —
+                       * tiện, nhưng trước đây không có cách nào bỏ: nút xoá chỉ
+                       * hiện khi ô có ảnh của riêng nó, nên hàng ảnh mượn là
+                       * hàng duy nhất không xoá được gì. Bỏ mượn ghi một chuỗi
+                       * rỗng: "ô này cố ý để trống", khác với "chưa đặt gì".
+                       * Ảnh trang chủ không bị đụng tới.
+                       */
                       <Hover
                         as="button"
-                        onClick={() => onClear(slot)}
+                        onClick={() => (borrowed ? onPlace(slot, '') : onClear(slot))}
                         style={{ ...action, background: 'none', border: 'none', padding: 0 }}
                         hoverStyle={{ color: '#C25C7C' }}
                       >
-                        xoá
+                        {borrowed ? 'bỏ mượn' : 'xoá'}
                       </Hover>
                     )}
                   </div>
@@ -463,7 +479,7 @@ export function ModuleImages({
       {placing && (
         <FocusPicker
           url={placing.url}
-          ratio={ratioOf(group.slots.indexOf(placing.slot))}
+          ratio={ratioOf(placing.slot)}
           name={`${group.label} · ${group.names[group.slots.indexOf(placing.slot)]}`}
           onCancel={() => setPlacing(null)}
           onSave={(next) => {
