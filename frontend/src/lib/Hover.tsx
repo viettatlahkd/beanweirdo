@@ -7,6 +7,7 @@ import {
   type ElementType,
   type ReactNode,
 } from 'react'
+import { useIsMobile } from './useIsMobile'
 
 type HoverProps = {
   /** base styles, always applied */
@@ -29,6 +30,7 @@ type HoverProps = {
  */
 export function Hover({ style, hoverStyle, as, children, ...rest }: HoverProps) {
   const [on, setOn] = useState(false)
+  const mobile = useIsMobile()
 
   const enter = useCallback(() => setOn(true), [])
   const leave = useCallback(() => setOn(false), [])
@@ -51,6 +53,30 @@ export function Hover({ style, hoverStyle, as, children, ...rest }: HoverProps) 
         leave()
         rest.onMouseLeave?.(e)
       },
+      /*
+       * Điện thoại không có con trỏ để rê, nên mọi `hoverStyle` trong trang
+       * công khai — mười bảy chỗ — không bao giờ đổi trạng thái: bấm vào một
+       * hàng mà nó không sáng lên thì không biết mình đã chạm trúng chưa.
+       *
+       * Dưới ngưỡng, `hoverStyle` áp lúc **chạm giữ** thay cho lúc rê. Sửa một
+       * lần ở đây thì mười bảy chỗ kia khỏi phải đụng tới.
+       */
+      ...(mobile
+        ? {
+            onPointerDown: (e: React.PointerEvent<HTMLElement>) => {
+              enter()
+              rest.onPointerDown?.(e)
+            },
+            onPointerUp: (e: React.PointerEvent<HTMLElement>) => {
+              leave()
+              rest.onPointerUp?.(e)
+            },
+            onPointerCancel: (e: React.PointerEvent<HTMLElement>) => {
+              leave()
+              rest.onPointerCancel?.(e)
+            },
+          }
+        : null),
     },
     children,
   )
