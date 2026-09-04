@@ -659,7 +659,7 @@ export function Notes() {
                         style={{
                           aspectRatio: place.ar,
                           width: place.mw,
-                          background: `url(${postThumbnail(p)}) center/cover no-repeat`,
+                          ...coverStyle(postThumbnail(p)!),
                           marginBottom: 18,
                         }}
                       />
