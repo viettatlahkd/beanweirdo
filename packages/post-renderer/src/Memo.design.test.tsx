@@ -1,4 +1,5 @@
-import { render } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
+import '@testing-library/jest-dom/vitest'
 import { describe, expect, it } from 'vitest'
 import { Memo } from './Memo'
 import type { MemoPostData } from './types'
@@ -69,5 +70,41 @@ describe('memo khớp design', () => {
     )
     expect(underlined?.textContent).toBe('Nhiệt 91°C')
     expect(underlined?.style.color).toBe('')
+  })
+})
+
+/*
+ * Ba dòng thông số đầu trang — Hạt, Nước, Pour.
+ *
+ * Chúng là điều kiện của buổi pha, tức thứ đổi mỗi lần, nhưng vẽ thẳng từ dữ
+ * liệu nên không có chỗ nào gõ được. Chủ site đã hỏi về chúng từ trước.
+ */
+describe('thông số đầu trang', () => {
+  const withSpecs = {
+    band: { bg: 'rgb(1,2,3)', fg: 'rgb(9,9,9)' },
+    title: 'Bài',
+    specs: [
+      { k: 'Hạt', v: 'Cầu Đất · washed' },
+      { k: 'Nước', v: '92°C · 90ppm' },
+    ],
+    sections: [],
+  }
+
+  it('vẫn vẽ trơn khi không ai xin móc', () => {
+    render(<Memo post={withSpecs as never} />)
+    expect(screen.getByText('Cầu Đất · washed')).toBeInTheDocument()
+    expect(screen.getByText('Hạt')).toBeInTheDocument()
+  })
+
+  it('nhường chỗ cho ô nhập, cả nhãn lẫn giá trị', () => {
+    render(
+      <Memo
+        post={withSpecs as never}
+        renderSpecKey={(k, i) => <span data-testid={`k${i}`}>{k}</span>}
+        renderSpecValue={(v, i) => <span data-testid={`v${i}`}>{v}</span>}
+      />,
+    )
+    expect(screen.getByTestId('k0')).toHaveTextContent('Hạt')
+    expect(screen.getByTestId('v1')).toHaveTextContent('92°C · 90ppm')
   })
 })

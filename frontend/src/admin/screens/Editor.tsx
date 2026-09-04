@@ -722,6 +722,13 @@ function MemoEditor({
   const elements = flatElements(post.body as { sections?: never[]; elements?: unknown[] }) as ReportBlock[]
   const [menuAt, setMenuAt] = useState<number | null>(null)
 
+  /** Một dòng thông số, sửa tại chỗ; phần còn lại của thân bài giữ nguyên. */
+  const specs = ((post.body as { specs?: { k: string; v: string }[] } | null)?.specs ?? [])
+  const setSpec = (i: number, patch: Partial<{ k: string; v: string }>) =>
+    onChange({
+      body: { ...(post.body as object), specs: specs.map((s, j) => (j === i ? { ...s, ...patch } : s)) },
+    })
+
   /*
    * Writing always produces `elements` and drops `sections`, so a post has one
    * representation from the first edit rather than two that can disagree.
@@ -745,6 +752,22 @@ function MemoEditor({
           rows={2}
           onCommit={(v) => onChange({ body: { ...(post.body as object), subtitle: v } })}
         />
+      )}
+      /*
+       * Ba dòng thông số đầu trang — Hạt, Nước, Pour. Chúng là điều kiện của
+       * buổi pha, tức thứ đổi mỗi lần, mà từ trước tới nay không gõ được ở đâu.
+       * Nhãn cũng cho sửa: ba chữ ấy là của chủ site, không phải hệ thống áp.
+       */
+      renderSpecKey={(key, i) => (
+        <EditableField
+          value={key}
+          placeholder="nhãn"
+          onCommit={(v) => setSpec(i, { k: v })}
+          style={{ font: 'inherit', letterSpacing: 'inherit', textTransform: 'inherit' }}
+        />
+      )}
+      renderSpecValue={(value, i) => (
+        <EditableField value={value} placeholder="giá trị" onCommit={(v) => setSpec(i, { v })} />
       )}
       wrapElement={(_drawn, i) => (
         <div key={i}>
@@ -1013,6 +1036,7 @@ function ReportEditor({
   const { blocks, notes } = content
 
   const [menuAt, setMenuAt] = useState<number | null>(null)
+
   const [dragFrom, setDragFrom] = useState<number | null>(null)
   const [dragOver, setDragOver] = useState<number | null>(null)
   const [asking, setAsking] = useState<number | null>(null)
