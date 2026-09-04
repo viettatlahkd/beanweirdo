@@ -1,4 +1,5 @@
 import { render } from '@testing-library/react'
+import { layout } from '../design/tokens'
 import { describe, expect, it } from 'vitest'
 import type { ModuleRow } from '../data/useModules'
 
@@ -48,5 +49,27 @@ describe('ký tự module trong sidebar', () => {
       const { container } = render(<ModuleMark m={{ kind, accent: '#123456' }} />)
       expect((container.firstElementChild as HTMLElement).style.background).toBe('rgb(18, 52, 86)')
     }
+  })
+})
+
+/*
+ * Ngưỡng mobile: đổi dứt khoát, không có trạng thái lửng.
+ *
+ * jsdom không có `matchMedia` nên `useIsMobile` trả `false` — nhánh desktop.
+ * Đây là chỗ chốt rằng ngưỡng là **một** con số và nó nằm ở token, chứ không
+ * phải hai con số rải trong mã. Hình dạng thật của thanh dưới và ngăn kéo phải
+ * xem bằng mắt ở 390px; test không chứng minh được chỗ đó.
+ */
+describe('ngưỡng mobile', () => {
+  it('một ngưỡng duy nhất, và ba số đi kèm nó', () => {
+    expect(layout.mobileMax).toBe(899)
+    expect(layout.barMobile).toBe(56)
+    expect(layout.padMobile).toBe(20)
+    expect(layout.bandMobile).toBe(220)
+  })
+
+  it('thanh dưới cao hơn mức chạm tối thiểu 44px', () => {
+    // Ba ô rộng đều nhau trên màn 390 là 130×56 mỗi ô.
+    expect(layout.barMobile).toBeGreaterThanOrEqual(44)
   })
 })

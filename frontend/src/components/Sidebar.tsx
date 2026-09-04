@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from 'react'
+import { useState, type CSSProperties, type ReactNode } from 'react'
 import { NAV, type Glyph, type NavItem } from '../content/navItems'
 import type { NavGroup } from '../content/site'
 import { sidebarModules, useModules, type ModuleRow } from '../data/useModules'
@@ -9,6 +9,7 @@ import { areaOfGroup, goToArea, visibleGroups } from '../lib/area'
 import { useAuth } from '../lib/auth'
 import { Hover, useHover } from '../lib/Hover'
 import { useNav, type Nav } from '../lib/nav'
+import { useIsMobile } from '../lib/useIsMobile'
 import { openModule } from '../lib/moduleTarget'
 
 const row: CSSProperties = {
@@ -215,6 +216,8 @@ function go(nav: Nav, item: NavItem): () => void {
 export function Sidebar() {
   const nav = useNav()
   const { on, bind } = useHover()
+  const mobile = useIsMobile()
+  const [drawer, setDrawer] = useState(false)
   const { data: allModules } = useModules()
   const modules = sidebarModules(allModules)
   const { data: posts } = usePublishedPosts()
@@ -282,41 +285,29 @@ export function Sidebar() {
     return rows
   }
 
-  return (
-    <div
-      {...bind}
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        bottom: 0,
-        width: on ? layout.sidebarOpen : layout.sidebarClosed,
-        background: t.bg,
-        color: t.fg,
-        boxShadow: on ? '22px 0 50px -34px rgba(35,33,26,.45)' : undefined,
-        overflowX: 'hidden',
-        // The Admin section makes the list taller than the shortest laptop.
-        overflowY: 'auto',
-        scrollbarWidth: 'none',
-        zIndex: 60,
-        transition: 'width .3s cubic-bezier(.4,0,.2,1)',
-        display: 'flex',
-        flexDirection: 'column',
-        padding: '22px 0',
-      }}
-    >
+  /*
+   * Thân danh sách, chung cho cả hai vỏ.
+   *
+   * Dưới ngưỡng, sidebar **đổi hẳn vỏ** chứ không co lại: rail 64px là 16% bề
+   * ngang màn 390, và mọi màn công khai mở đầu bằng một khối màu tràn viền nên
+   * thanh trên sẽ cắt mất mép trên của khối. Thanh dưới thì ngón cái với tới dễ
+   * hơn đỉnh màn.
+   *
+   * Dữ liệu không đổi: vẫn `NAV`, `sidebarModules`, `visibleGroups`, `countFor`
+   * — chỉ khác cách vẽ.
+   */
+  const body = (
+    <>
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
           gap: 30,
-          padding: '0 22px 24px',
+          padding: mobile ? '0 20px 18px' : '0 22px 24px',
           whiteSpace: 'nowrap',
         }}
       >
-        <div
-          style={{ width: 20, height: 20, borderRadius: '50%', background: '#F2A0A5', flex: 'none' }}
-        />
+        <div style={{ width: 20, height: 20, borderRadius: '50%', background: '#F2A0A5', flex: 'none' }} />
         <div style={{ fontFamily: serif, fontSize: 23, letterSpacing: '-.01em' }}>
           be
           <span
@@ -332,8 +323,26 @@ export function Sidebar() {
           </span>
           n weirdo
         </div>
+        {mobile && (
+          <button
+            type="button"
+            aria-label="Đóng menu"
+            onClick={() => setDrawer(false)}
+            style={{
+              marginLeft: 'auto',
+              width: 44,
+              height: 44,
+              background: 'none',
+              border: 'none',
+              color: t.muted,
+              fontSize: 17,
+              cursor: 'pointer',
+            }}
+          >
+            ✕
+          </button>
+        )}
       </div>
-
       <div style={{ height: 1, background: t.rule, margin: '0 0 20px' }} />
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -375,6 +384,180 @@ export function Sidebar() {
           </div>
         </>
       )}
+    </>
+  )
+
+  if (mobile) return <MobileNav t={t} drawer={drawer} setDrawer={setDrawer} nav={nav} body={body} />
+
+  return (
+    <div
+      {...bind}
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        bottom: 0,
+        width: on ? layout.sidebarOpen : layout.sidebarClosed,
+        background: t.bg,
+        color: t.fg,
+        boxShadow: on ? '22px 0 50px -34px rgba(35,33,26,.45)' : undefined,
+        overflowX: 'hidden',
+        // The Admin section makes the list taller than the shortest laptop.
+        overflowY: 'auto',
+        scrollbarWidth: 'none',
+        zIndex: 60,
+        transition: 'width .3s cubic-bezier(.4,0,.2,1)',
+        display: 'flex',
+        flexDirection: 'column',
+        padding: '22px 0',
+      }}
+    >
+      {body}
     </div>
+  )
+}
+
+/** Màu chữ và dấu của một ô trên thanh dưới. */
+type Tone = { bg: string; fg: string; muted: string; rule: string; hover: string }
+
+/**
+ * Điều hướng trên mobile: thanh dưới cố định, ngăn kéo đẩy lên từ đáy.
+ *
+ * Ba ô rộng đều nhau, mỗi ô 56px cao — vượt mức chạm tối thiểu 44px. Ô đang mở
+ * lấy chữ đặc và một vạch trên đầu, hai ô kia nhạt: trạng thái đọc được bằng cả
+ * độ đậm lẫn hình, không chỉ bằng màu.
+ */
+function MobileNav({
+  t,
+  drawer,
+  setDrawer,
+  nav,
+  body,
+}: {
+  t: Tone
+  drawer: boolean
+  setDrawer: (v: boolean) => void
+  nav: Nav
+  body: ReactNode
+}) {
+  const cell = (
+    label: string,
+    mark: ReactNode,
+    active: boolean,
+    onClick: () => void,
+  ) => (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      style={{
+        flex: 1,
+        height: layout.barMobile,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 5,
+        background: 'none',
+        border: 'none',
+        cursor: 'pointer',
+        color: active ? t.fg : t.muted,
+        // Vạch trên đầu ô đang mở, đè lên đường viền của thanh.
+        borderTop: active ? `2px solid ${t.fg}` : '2px solid transparent',
+        marginTop: -1,
+        fontFamily: sans,
+      }}
+    >
+      {mark}
+      <span style={{ fontSize: 9, letterSpacing: '.14em', textTransform: 'uppercase' }}>{label}</span>
+    </button>
+  )
+
+  const dot = (active: boolean) => (
+    <span
+      style={{
+        width: 10,
+        height: 10,
+        borderRadius: '50%',
+        background: active ? t.fg : 'transparent',
+        border: `1px solid ${active ? t.fg : t.muted}`,
+      }}
+    />
+  )
+  const square = (active: boolean) => (
+    <span
+      style={{
+        width: 10,
+        height: 10,
+        background: active ? t.fg : 'transparent',
+        border: `1px solid ${active ? t.fg : t.muted}`,
+      }}
+    />
+  )
+  const bars = (active: boolean) => (
+    <span style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+      {[0, 1, 2].map((i) => (
+        <span key={i} style={{ width: 13, height: 1, background: active ? t.fg : t.muted }} />
+      ))}
+    </span>
+  )
+
+  return (
+    <>
+      {drawer && (
+        <>
+          {/* Nền mờ: chạm ra ngoài là đóng — cử chỉ ai cũng thử trước tiên. */}
+          <div
+            onClick={() => setDrawer(false)}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(35,33,26,.38)', zIndex: 40 }}
+          />
+          <div
+            style={{
+              position: 'fixed',
+              left: 0,
+              right: 0,
+              bottom: layout.barMobile,
+              zIndex: 45,
+              background: t.bg,
+              color: t.fg,
+              boxShadow: '0 -22px 50px -30px rgba(35,33,26,.45)',
+              padding: '20px 0 12px',
+              maxHeight: '76vh',
+              overflowY: 'auto',
+              scrollbarWidth: 'none',
+            }}
+          >
+            {body}
+          </div>
+        </>
+      )}
+
+      <div
+        style={{
+          position: 'fixed',
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: layout.barMobile,
+          zIndex: 50,
+          display: 'flex',
+          background: t.bg,
+          color: t.fg,
+          borderTop: `1px solid ${t.rule}`,
+        }}
+      >
+        {cell('Trang chủ', dot(nav.screen === 'landing'), nav.screen === 'landing', () => {
+          setDrawer(false)
+          nav.goLanding()
+        })}
+        {/* "Mục lục" là màn `home` — xem `content/navItems.ts`; tên trong mã và
+            tên trên màn khác nhau ở đúng chỗ này. */}
+        {cell('Mục lục', square(nav.screen === 'home'), nav.screen === 'home', () => {
+          setDrawer(false)
+          nav.goHome()
+        })}
+        {cell(drawer ? 'Đóng' : 'Menu', bars(drawer), drawer, () => setDrawer(!drawer))}
+      </div>
+    </>
   )
 }

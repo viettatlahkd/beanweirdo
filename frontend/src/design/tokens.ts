@@ -128,6 +128,21 @@ export const layout = {
   /** Ảnh đầu trang module, cùng lý do và cùng tỉ lệ. */
   moduleHero: 280,
   /**
+   * Dưới ngưỡng này dùng bố cục mobile. **Một** ngưỡng duy nhất.
+   *
+   * 899 chứ không phải 767: bố cục desktop cần `measure` 1140 cộng rail 64, nó
+   * bắt đầu vỡ quanh 900. Máy tính bảng 834px vì thế nhận bố cục mobile — với
+   * một trang để đọc thì đấy là kết quả đúng, và hai ngưỡng thì gấp đôi việc mà
+   * không thêm được gì.
+   */
+  mobileMax: 899,
+  /** Lề hai bên trên mobile; desktop là 56. */
+  padMobile: 20,
+  /** Thanh điều hướng dưới màn, chỉ có ở mobile. */
+  barMobile: 56,
+  /** Dải ảnh trang chủ trên mobile; desktop là `band`. */
+  bandMobile: 220,
+  /**
    * Khối bốn ô ở đầu trang module dạng "specimen".
    *
    * 373 với hai hàng 1,7fr / 0,75fr cho hàng dưới đúng 114px trên bề ngang

@@ -5,6 +5,7 @@ import { ModulesProvider } from './data/useModules'
 import { SiteCopyProvider } from './data/useSiteCopy'
 import { ink, layout, paper, sans } from './design/tokens'
 import { AuthGate, AuthProvider } from './lib/auth'
+import { useIsMobile } from './lib/useIsMobile'
 import { AREA_HOME, isPrivate, screenAllowed, type Area } from './lib/area'
 import {
   NavContext,
@@ -128,9 +129,15 @@ export function App({ area }: { area: Area }) {
   // Second line of defence: even if some path sets a screen that doesn't
   // belong here, the area refuses to draw it.
   const shown: Screen = screenAllowed(area, screen) ? screen : (AREA_HOME[area] as Screen)
+  const mobile = useIsMobile()
 
   const body = (
-    <div style={{ marginLeft: layout.sidebarClosed }}>
+    /*
+     * Trên mobile không có rail bên trái để tránh, mà có thanh dưới để tránh.
+     * `paddingBottom` là bắt buộc: thiếu nó thì đoạn cuối mỗi trang chui xuống
+     * dưới thanh và không cuộn tới được.
+     */
+    <div style={mobile ? { marginLeft: 0, paddingBottom: layout.barMobile } : { marginLeft: layout.sidebarClosed }}>
       {shown === 'hours' && <Hours />}
       {shown === 'notes' && <Notes />}
       {shown === 'art' && <DesignSystem />}
