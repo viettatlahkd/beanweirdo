@@ -3,6 +3,7 @@ import { Breadcrumbs } from '../components/Breadcrumbs'
 import { useSiteCopy } from '../data/useSiteCopy'
 import { noteFilterBar } from '../lib/notesFilter'
 import { useTags } from '../data/useTags'
+import { useIsMobile } from '../lib/useIsMobile'
 import {
   featureCells,
   noteBlock,
@@ -56,20 +57,31 @@ function OpenedPost({
   post: PostRow
   mod: { title: string; accent: string; on_color: string } | undefined
 }) {
+  /*
+   * Bài mở *bên trong* trang Ghi 01 cũng phải theo bố cục điện thoại.
+   *
+   * Năm nhánh dưới đây là chỗ gọi `PostRenderer` thứ tư của trang — dễ sót vì
+   * nhánh `article` viết nhiều dòng nên `grep '<PostRenderer'` một dòng không
+   * thấy nó. Thiếu `mobile` ở đây thì bài memo mở ra trên điện thoại vẫn vẽ
+   * tiêu đề 78px thay vì 38: đúng thứ đo được trên bài "taste modality: sơn la"
+   * ở bề ngang 390.
+   */
+  const mobile = useIsMobile()
   switch (post.template) {
     case 'memo':
-      return <PostRenderer template="memo" post={toMemoData(post, mod)} />
+      return <PostRenderer template="memo" post={toMemoData(post, mod)} mobile={mobile} />
     case 'longform':
-      return <PostRenderer template="longform" post={toLongformData(post, mod)} />
+      return <PostRenderer template="longform" post={toLongformData(post, mod)} mobile={mobile} />
     case 'cards':
-      return <PostRenderer template="cards" post={toCardsData(post, mod)} />
+      return <PostRenderer template="cards" post={toCardsData(post, mod)} mobile={mobile} />
     case 'report':
-      return <PostRenderer template="report" post={toReportData(post, mod)} />
+      return <PostRenderer template="report" post={toReportData(post, mod)} mobile={mobile} />
     default:
       return (
         <PostRenderer
           template="article"
           post={toArticleData(post, mod?.title ?? post.module_id, [], -1, mod)}
+          mobile={mobile}
         />
       )
   }
