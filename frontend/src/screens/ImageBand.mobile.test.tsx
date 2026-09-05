@@ -49,6 +49,8 @@ function band(layout: ModuleLayout, mobile: boolean) {
   return { grid, tiles: [...grid.children] as HTMLElement[] }
 }
 
+const px = (v: string) => (v === '' ? 0 : parseFloat(v))
+
 const LAYOUTS: ModuleLayout[] = ['band', 'specimen', 'sequence']
 
 describe('dải ảnh module ở khổ dọc', () => {
@@ -75,11 +77,29 @@ describe('dải ảnh module ở khổ dọc', () => {
     }
   })
 
-  it('hai ô cột phải thẳng một mép trái', () => {
-    // Ô trên thò ra còn ô dưới thụt vào là cái làm dải đọc ra rời rạc.
+  it('hai ô cột phải so le nhau, và so le cho ra tấm', () => {
+    /*
+     * Có lần tôi cho hai ô này thẳng một mép trái để dải bớt rời rạc. Chủ site
+     * xem xong: "xếp hàng thẳng xít xìn xịt, trong khi tinh thần ngay từ đầu
+     * của t đối với web này là lộn xộn có tổ chức."
+     *
+     * Nên luật là lệch, mà lệch đủ nhiều: dăm bảy pixel thì đọc ra là căn hỏng,
+     * phải bốn chục pixel mới đọc ra là cố tình.
+     */
     for (const l of LAYOUTS) {
       const tiles = band(l, true).tiles
-      expect(tiles[1].style.marginLeft).toBe(tiles[2].style.marginLeft)
+      const gap = Math.abs(px(tiles[1].style.marginLeft) - px(tiles[2].style.marginLeft))
+      expect(gap).toBeGreaterThanOrEqual(16)
+    }
+  })
+
+  it('mỗi dải có đúng một ô chạm mép phải', () => {
+    // Cả hai cùng chạm thì mép phải thành một đường thẳng; không ô nào chạm thì
+    // dải lại lệch sang trái như sensory trước đây.
+    for (const l of LAYOUTS) {
+      const right = band(l, true).tiles.slice(1).map((t) => px(t.style.marginRight))
+      expect(right.filter((v) => v === 0)).toHaveLength(1)
+      expect(Math.max(...right)).toBeGreaterThanOrEqual(14)
     }
   })
 

@@ -56,6 +56,8 @@ const bandGrid = (columns: string, rows: string, mob: boolean): CSSProperties =>
    * Khe 8px là khe của dải rộng 900+. Xuống 375 thì ô phải chỉ còn hơn trăm
    * pixel, mà khe vẫn 8 — tỉ lệ khe so với ô tăng gần gấp ba, và cả dải đọc ra
    * thành mấy mảnh rời nhau. Rút còn 5 để chúng dính lại thành một cụm.
+   *
+   * Chỉ khe thôi. Hai ô cột phải vẫn so le nhau — xem ghi chú ở từng lề dưới.
    */
   gap: mob ? 5 : 8,
   height: mob ? layout.bandMobile : layout.band,
@@ -86,6 +88,13 @@ function groupByModule(posts: PostRow[]): Map<string, PostRow[]> {
  * Each module gets its own image arrangement, and every tile breaks its grid
  * cell by a different amount — the band's top and bottom edges are deliberately
  * ragged so scrolling past three modules doesn't read as three identical rows.
+ *
+ * Ở khổ dọc cũng vậy, và phải cố ý cho đủ. Có lần tôi cho hai ô cột phải thẳng
+ * một mép trái để dải bớt rời rạc; chủ site xem xong: "xếp hàng thẳng xít xìn
+ * xịt, trong khi tinh thần ngay từ đầu của t đối với web này là lộn xộn có tổ
+ * chức". Lệch ít (dăm bảy pixel) thì đọc ra là căn hỏng; lệch nhiều (bốn chục
+ * pixel) mới đọc ra là cố tình. Nên mỗi dải có đúng một ô cột phải chạm mép
+ * phải, ô kia dừng lại trước đó, và hai ô không bao giờ chung mép trái.
  */
 /**
   * The homepage image band. Exported because the CMS preview draws this exact
@@ -136,7 +145,7 @@ export function ImageBand({ m }: { m: ModuleImageFields }) {
           style={{
             gridColumn: 2,
             gridRow: 2,
-            margin: mm('0 0 -36px', '0 14px -20px -24px'),
+            margin: mm('0 0 -36px', '0 22px -20px 16px'),
             ...tile(garden.petalTint, 11, m.img3),
           }}
         >
@@ -200,7 +209,7 @@ export function ImageBand({ m }: { m: ModuleImageFields }) {
           style={{
             gridColumn: 2,
             gridRow: 2,
-            margin: mm('24px 34px -40px 22px', '14px 18px -24px -18px'),
+            margin: mm('24px 34px -40px 22px', '14px 24px -24px 20px'),
             ...tile(paper.cream, 11, m.img3),
           }}
         >
@@ -230,7 +239,7 @@ export function ImageBand({ m }: { m: ModuleImageFields }) {
         style={{
           gridColumn: 2,
           gridRow: 1,
-          margin: mm('-38px 26px 0 -40px', '-22px 0 0 -22px'),
+          margin: mm('-38px 26px 0 -40px', '-22px 26px 0 -22px'),
           ...tile(garden.honeyTint, 11, m.img2),
         }}
       >
@@ -242,7 +251,7 @@ export function ImageBand({ m }: { m: ModuleImageFields }) {
         style={{
           gridColumn: 2,
           gridRow: 2,
-          margin: mm('38px -18px 0 44px', '22px 14px 0 -22px'),
+          margin: mm('38px -18px 0 44px', '22px 0 0 24px'),
           ...tile(paper.cream, 11, m.img3),
         }}
       >
