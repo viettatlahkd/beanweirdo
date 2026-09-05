@@ -55,6 +55,16 @@ const bandGrid = (columns: string, rows: string, mob: boolean): CSSProperties =>
   gridTemplateRows: rows,
   gap: 8,
   height: mob ? layout.bandMobile : layout.band,
+  /*
+   * Trên điện thoại dải ảnh tràn ra hai mép.
+   *
+   * Khối module có lề 20px hai bên. Dải ảnh nằm trong lề ấy thì trên màn 375
+   * mỗi tấm chỉ còn hơn trăm pixel, và cả dải đọc ra thành mấy mảnh nhỏ trôi
+   * trong một mảng màu — đúng cái chủ site gọi là "hơi rỗng". Kéo âm đúng bằng
+   * lề để dải chạm hai mép: ảnh rộng thêm 40px, và mảng màu không còn viền
+   * trống hai bên.
+   */
+  ...(mob ? { marginLeft: -layout.padMobile, marginRight: -layout.padMobile } : null),
 })
 
 /** Groups posts by `module_id`, preserving each module's `sort_order`. */
@@ -232,6 +242,24 @@ export function ImageBand({ m }: { m: ModuleImageFields }) {
  * Trang chủ — the real homepage. An introduction, then one full-bleed colour
  * block per module. The whole block is the target, not just its heading.
  */
+/**
+ * Phần tên còn lại sau chữ `ӕ`, ngắt tại khoảng trắng đầu tiên.
+ *
+ * Không có khoảng trắng thì trả nguyên — một cái tên một từ vẫn phải vẽ ra
+ * được, và trang không được vỡ vì chủ site đổi tên trong CMS.
+ */
+function PostSplit({ text }: { text: string }) {
+  const at = text.indexOf(' ')
+  if (at < 0) return <>{text}</>
+  return (
+    <>
+      {text.slice(0, at)}
+      <br />
+      {text.slice(at + 1)}
+    </>
+  )
+}
+
 export function Landing() {
   const nav = useNav()
   const { data: allModules } = useModules()
@@ -246,13 +274,26 @@ export function Landing() {
     <div>
       <div style={{ padding: mob ? '30px 20px 44px' : '80px 56px 64px', maxWidth: layout.page }}>
         <div style={{ ...eyebrow, color: ink.muted, marginBottom: 28 }}>{site.lEyebrow}</div>
+        {/*
+          * Tên trang trên điện thoại: ba dòng, không phải hai.
+          *
+          * "beӕn weirdo" một dòng ở 54px chiếm chưa tới nửa bề ngang — tên
+          * trang mà đọc như một dòng phụ. Tách làm hai dòng thì mỗi từ được
+          * 80px, gần gấp rưỡi.
+          *
+          * Dòng `#viettatlahkd` phải nhỏ hơn hai dòng trên, và đây là chỗ đo
+          * mới ra: nó dài gấp ba "weirdo", nên cùng cỡ 80px thì tràn ra ngoài
+          * 449px trên một màn 375. Đo được bề rộng của nó ≈ 5,4 lần cỡ chữ,
+          * nên `15.5vw` giữ nó vừa khung ở cả 320px lẫn 375px, và trần 58px để
+          * trên máy tính bảng nó không phình to hơn cần thiết.
+          */}
         <h1
           style={{
             fontFamily: serif,
-            fontSize: mob ? 54 : 104,
-            lineHeight: 0.9,
+            fontSize: mob ? 80 : 104,
+            lineHeight: mob ? 0.86 : 0.9,
             letterSpacing: '-.035em',
-            margin: '0 0 24px',
+            margin: mob ? '0 0 20px' : '0 0 24px',
           }}
         >
           {title.pre}
@@ -266,9 +307,23 @@ export function Landing() {
           >
             {title.ae}
           </span>
-          {title.post}
+          {/*
+            * Trên điện thoại, ngắt ngay khoảng trắng đầu tiên sau chữ `ӕ` —
+            * "beӕn" một dòng, "weirdo" một dòng. Cắt ở đây chứ không sửa
+            * `splitAesc`: hàm ấy chia theo con chữ `ӕ` cho cả trang dùng, còn
+            * chỗ xuống dòng là quyết định của riêng bố cục này.
+            */}
+          {mob ? <PostSplit text={title.post} /> : title.post}
           <br />
-          <span style={{ fontStyle: 'italic', color: ink.green }}>{site.lTitle2}</span>
+          <span
+            style={{
+              fontStyle: 'italic',
+              color: ink.green,
+              ...(mob ? { fontSize: 'min(58px, 15.5vw)', display: 'inline-block' } : null),
+            }}
+          >
+            {site.lTitle2}
+          </span>
         </h1>
         <div className="bw-intro">
           <div style={{ fontSize: 15, lineHeight: 1.5, color: ink.strong, ...prose }}>{site.lIntro1}</div>
