@@ -1,5 +1,4 @@
-import type { CSSProperties } from 'react'
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { splitAesc } from '../content/site'
 import { landingModules, useModules } from '../data/useModules'
 import type { ModuleImageFields } from '../admin/moduleForm'
@@ -53,7 +52,12 @@ const bandGrid = (columns: string, rows: string, mob: boolean): CSSProperties =>
   display: 'grid',
   gridTemplateColumns: columns,
   gridTemplateRows: rows,
-  gap: 8,
+  /*
+   * Khe 8px là khe của dải rộng 900+. Xuống 375 thì ô phải chỉ còn hơn trăm
+   * pixel, mà khe vẫn 8 — tỉ lệ khe so với ô tăng gần gấp ba, và cả dải đọc ra
+   * thành mấy mảnh rời nhau. Rút còn 5 để chúng dính lại thành một cụm.
+   */
+  gap: mob ? 5 : 8,
   height: mob ? layout.bandMobile : layout.band,
   /*
    * Trên điện thoại dải ảnh tràn ra hai mép.
@@ -101,7 +105,7 @@ export function ImageBand({ m }: { m: ModuleImageFields }) {
 
   if (m.layout === 'band') {
     return (
-      <div style={bandGrid(mob ? 'minmax(0,1.7fr) minmax(0,1fr) 14px' : 'minmax(0,1.9fr) minmax(0,1fr) 30px', '1.5fr 1fr', mob)}>
+      <div style={bandGrid(mob ? 'minmax(0,1.6fr) minmax(0,1fr)' : 'minmax(0,1.9fr) minmax(0,1fr) 30px', '1.5fr 1fr', mob)}>
         <Rise
           from={['-34px', '0px']}
           delay="0ms"
@@ -132,23 +136,33 @@ export function ImageBand({ m }: { m: ModuleImageFields }) {
           style={{
             gridColumn: 2,
             gridRow: 2,
-            margin: mm('0 0 -36px', '0 0 -20px'),
+            margin: mm('0 0 -36px', '0 14px -20px -24px'),
             ...tile(garden.petalTint, 11, m.img3),
           }}
         >
           <Shot text={m.shot3} small over={!!m.img3} />
         </Rise>
-        {/* a solid strip, not a photo — it keeps the rhythm without a fourth image */}
-        <Rise
-          from={['20px', '0px']}
-          delay="210ms"
-          style={{
-            gridColumn: 3,
-            gridRow: '1/3',
-            margin: mm('96px 0 22px', '62px 0 14px'),
-            background: garden.petalTint2,
-          }}
-        />
+        {/*
+          * a solid strip, not a photo — it keeps the rhythm without a fourth image.
+          *
+          * Chỉ ở khổ ngang. Xuống 375 nó co còn 14px: một sợi màu nhạt nằm sát
+          * mép phải, cùng tông với nền khối module nên đọc ra là nền chứ không
+          * ra là hình. Kết quả là ảnh dừng ở 353 trong khi mép trái ảnh chạm 0
+          * — dải nghiêng hẳn sang trái. Bỏ sợi ấy đi thì cột phải chạm được mép
+          * phải, hai bên cân nhau.
+          */}
+        {!mob && (
+          <Rise
+            from={['20px', '0px']}
+            delay="210ms"
+            style={{
+              gridColumn: 3,
+              gridRow: '1/3',
+              margin: '96px 0 22px',
+              background: garden.petalTint2,
+            }}
+          />
+        )}
       </div>
     )
   }
@@ -174,7 +188,7 @@ export function ImageBand({ m }: { m: ModuleImageFields }) {
           style={{
             gridColumn: 2,
             gridRow: 1,
-            margin: mm('52px -26px 0 -34px', '30px -14px 0 -18px'),
+            margin: mm('52px -26px 0 -34px', '30px 0 0 -18px'),
             ...tile(garden.leafTint, 11, m.img2),
           }}
         >
@@ -186,7 +200,7 @@ export function ImageBand({ m }: { m: ModuleImageFields }) {
           style={{
             gridColumn: 2,
             gridRow: 2,
-            margin: mm('24px 34px -40px 22px', '14px 18px -24px 12px'),
+            margin: mm('24px 34px -40px 22px', '14px 18px -24px -18px'),
             ...tile(paper.cream, 11, m.img3),
           }}
         >
@@ -216,7 +230,7 @@ export function ImageBand({ m }: { m: ModuleImageFields }) {
         style={{
           gridColumn: 2,
           gridRow: 1,
-          margin: mm('-38px 26px 0 -40px', '-22px 14px 0 -22px'),
+          margin: mm('-38px 26px 0 -40px', '-22px 0 0 -22px'),
           ...tile(garden.honeyTint, 11, m.img2),
         }}
       >
@@ -228,7 +242,7 @@ export function ImageBand({ m }: { m: ModuleImageFields }) {
         style={{
           gridColumn: 2,
           gridRow: 2,
-          margin: mm('38px -18px 0 44px', '22px -10px 0 24px'),
+          margin: mm('38px -18px 0 44px', '22px 14px 0 -22px'),
           ...tile(paper.cream, 11, m.img3),
         }}
       >
@@ -249,6 +263,87 @@ export function ImageBand({ m }: { m: ModuleImageFields }) {
  * được, và trang không được vỡ vì chủ site đổi tên trong CMS.
  */
 /** Một dòng nhãn, ngắt sau dấu gạch ngang đầu tiên nếu có. */
+/**
+ * Dẫn nhập trên điện thoại: một đoạn tại một thời điểm.
+ *
+ * Hai đoạn xếp chồng chiếm gần trọn màn đầu, nên người đọc phải cuộn qua một
+ * bức tường chữ trước khi thấy module nào — đúng chỗ người ta bỏ đi. Giữ đoạn
+ * dẫn chính, và chỉ khi người đọc còn nán lại thì mới thay bằng đoạn kia.
+ *
+ * Chỉ đổi khi khối còn nằm trong tầm mắt: đổi chữ ở một chỗ người ta đã cuộn
+ * qua là làm việc không ai thấy, và tệ hơn, chữ sẽ khác lúc họ cuộn ngược lên.
+ *
+ * `prefers-reduced-motion` thì đứng yên ở đoạn đầu — chuyển động tự phát là
+ * đúng thứ tuỳ chọn ấy nói đến. Cùng cách `lib/Rise.tsx` đã thủ.
+ */
+const INTRO_HOLD_MS = 7000
+
+function RotatingIntro({ lines }: { lines: string[] }) {
+  const [at, setAt] = useState(0)
+  const [shown, setShown] = useState(true)
+  const box = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const still =
+      typeof window === 'undefined' ||
+      typeof window.matchMedia !== 'function' ||
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (still || lines.length < 2) return
+
+    let inView = true
+    const el = box.current
+    let io: IntersectionObserver | undefined
+    if (el && typeof IntersectionObserver === 'function') {
+      io = new IntersectionObserver(([e]) => (inView = e.isIntersecting), { threshold: 0.4 })
+      io.observe(el)
+    }
+
+    const tick = setInterval(() => {
+      if (!inView) return
+      // Mờ đi, đổi chữ, rồi hiện lại — đổi thẳng thì chữ nhảy.
+      setShown(false)
+      setTimeout(() => {
+        setAt((i) => (i + 1) % lines.length)
+        setShown(true)
+      }, 420)
+    }, INTRO_HOLD_MS)
+
+    return () => {
+      clearInterval(tick)
+      io?.disconnect()
+    }
+  }, [lines.length])
+
+  /*
+   * Cả hai đoạn đều nằm trong DOM, chồng lên nhau trong một ô lưới, chỉ khác
+   * nhau ở opacity. Nếu chỉ dựng đoạn đang hiện thì khung cao theo đoạn ấy, và
+   * mỗi lần đổi chữ thì nút "xem mục lục" bên dưới nhảy lên nhảy xuống theo.
+   * Chồng lên nhau thì khung cao bằng đoạn dài nhất và đứng yên suốt.
+   */
+  return (
+    <div ref={box} style={{ display: 'grid' }}>
+      {lines.map((line, i) => (
+        <div
+          key={i}
+          aria-hidden={i === at ? undefined : true}
+          style={{
+            gridArea: '1 / 1',
+            fontSize: 15,
+            lineHeight: 1.5,
+            color: ink.strong,
+            opacity: i === at && shown ? 1 : 0,
+            pointerEvents: i === at ? undefined : 'none',
+            transition: 'opacity .42s ease',
+            ...prose,
+          }}
+        >
+          {line}
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function BreakAtDash({ text }: { text: string }) {
   const at = text.indexOf('—')
   if (at < 0) return <>{text}</>
@@ -316,7 +411,13 @@ export function Landing() {
         <h1
           style={{
             fontFamily: serif,
-            fontSize: mob ? 80 : 104,
+            /*
+             * `min(96px, 29vw)` chứ không phải 96 cứng: "weirdo" rộng ≈ 2,93
+             * lần cỡ chữ, nên 96px cần 282px chỗ — vừa trên màn 375 nhưng tràn
+             * trên màn 320. `29vw` cho ra ~93px ở 320 và chạm trần 96 từ 375
+             * trở lên.
+             */
+            fontSize: mob ? 'min(96px, 29vw)' : 104,
             lineHeight: mob ? 0.86 : 0.9,
             letterSpacing: '-.035em',
             margin: mob ? '0 0 20px' : '0 0 24px',
@@ -352,8 +453,14 @@ export function Landing() {
           </span>
         </h1>
         <div className="bw-intro">
-          <div style={{ fontSize: 15, lineHeight: 1.5, color: ink.strong, ...prose }}>{site.lIntro1}</div>
-          <div style={{ fontSize: 13.5, lineHeight: 1.45, color: ink.soft, ...prose }}>{site.lIntro2}</div>
+          {mob ? (
+            <RotatingIntro lines={[site.lIntro1, site.lIntro2]} />
+          ) : (
+            <>
+              <div style={{ fontSize: 15, lineHeight: 1.5, color: ink.strong, ...prose }}>{site.lIntro1}</div>
+              <div style={{ fontSize: 13.5, lineHeight: 1.45, color: ink.soft, ...prose }}>{site.lIntro2}</div>
+            </>
+          )}
           <Hover
             onClick={nav.goHome}
             style={{
