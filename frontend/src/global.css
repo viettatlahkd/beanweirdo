@@ -119,8 +119,15 @@ h4 {
  * phụ quá hẹp. Nên bỏ hẳn thay vì gán cho nó một ngưỡng thứ ba.
  */
 
+/*
+ * Khoảng hở giữa phần chữ đầu khối module và dải ảnh dưới nó.
+ *
+ * 64px viết một lần cho mọi bề ngang, nên trên màn 375 nó là một mảng trống
+ * bằng một phần năm chiều cao màn hình — chủ site đọc ra ngay là "spacing xa".
+ * Trên màn rộng thì 64 vẫn đúng: ở đó nó cân với cột chữ dài hơn.
+ */
 .bw-modhead {
-  margin-bottom: 64px;
+  margin-bottom: 28px;
 }
 
 /*
@@ -151,6 +158,8 @@ h4 {
   .bw-modhead {
     grid-template-columns: minmax(0, 420px) minmax(0, 1fr) minmax(0, 0.85fr);
     gap: 40px;
+    /* Màn rộng thì 64px cân với cột chữ dài hơn; màn hẹp thì không. */
+    margin-bottom: 64px;
   }
   /* 38px là để chữ phụ ngang hàng chân tiêu đề khi đứng cạnh nhau; xếp chồng
      thì nó chỉ là một khoảng hở thừa. */
