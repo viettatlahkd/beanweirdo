@@ -13,8 +13,15 @@ const src = readFileSync('frontend/src/screens/Landing.tsx', 'utf8')
 const css = readFileSync('frontend/src/global.css', 'utf8')
 
 describe('tên trang trên điện thoại', () => {
-  it('to hơn hẳn bản một dòng cũ', () => {
-    expect(src).toContain('fontSize: mob ? 80 : 104')
+  it('to hơn hẳn bản một dòng cũ, mà vẫn co theo bề ngang màn', () => {
+    // Đo trong trình duyệt: "weirdo" rộng khoảng 2,93 lần cỡ chữ, nên 96px cứng
+    // ra 281px — vừa màn 375 nhưng tràn màn 320. `vw` là cái chặn ấy.
+    expect(src).toContain("fontSize: mob ? 'min(96px, 29vw)' : 104")
+  })
+
+  it('khổ dọc chỉ hiện một đoạn dẫn nhập, tự đổi sang đoạn kia', () => {
+    // Hai đoạn xếp chồng làm dải cuộn dài ra, "scroll giảm hấp dẫn".
+    expect(src).toContain('<RotatingIntro lines={[site.lIntro1, site.lIntro2]} />')
   })
 
   it('dòng hashtag co theo bề ngang màn, không phải một số cứng', () => {
