@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { useIsMobile } from '../lib/useIsMobile'
 import { PostRenderer } from 'post-renderer'
 import { toReportBlocks, toReportNotes } from '../lib/reportBlocks'
 import type {
@@ -18,7 +17,6 @@ const status = { fontFamily: sans, fontSize: 13, color: ink.muted, padding: '60p
 
 /** Draw a stored template with its own body, whichever renderer it names. */
 function Preview({ template }: { template: StoredTemplate }) {
-  const mobile = useIsMobile()
   const body = template.body
   const title = template.name
   const subtitle = template.description
@@ -26,7 +24,6 @@ function Preview({ template }: { template: StoredTemplate }) {
   if (template.renderer === 'longform') {
     return (
       <PostRenderer
-      mobile={mobile}
         template="longform"
         post={{ title, subtitle, blocks: (Array.isArray(body) ? body : []) as LongformBlock[] }}
       />
@@ -35,7 +32,6 @@ function Preview({ template }: { template: StoredTemplate }) {
   if (template.renderer === 'cards') {
     return (
       <PostRenderer
-      mobile={mobile}
         template="cards"
         post={{ title, intro: [subtitle], cards: (Array.isArray(body) ? body : []) as CardData[] }}
       />
@@ -44,7 +40,6 @@ function Preview({ template }: { template: StoredTemplate }) {
   if (template.renderer === 'report') {
     return (
       <PostRenderer
-      mobile={mobile}
         template="report"
         post={{ title, blurb: subtitle, blocks: toReportBlocks(body), notes: toReportNotes(body), template: 'report' }}
       />
@@ -54,7 +49,6 @@ function Preview({ template }: { template: StoredTemplate }) {
     const memo = (body ?? {}) as Partial<MemoPostData>
     return (
       <PostRenderer
-      mobile={mobile}
         template="memo"
         post={{ title, subtitle: memo.subtitle ?? subtitle, specs: memo.specs, elements: memo.elements, sections: memo.sections ?? [] }}
       />
@@ -77,7 +71,7 @@ function Preview({ template }: { template: StoredTemplate }) {
     furtherReadingHeading: 'Đọc thêm',
       furtherReading: [],
   }
-  return <PostRenderer mobile={mobile} template="article" post={article} />
+  return <PostRenderer template="article" post={article} />
 }
 
 /**

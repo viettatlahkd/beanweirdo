@@ -17,12 +17,14 @@ import type {
  *
  * `mobile` là **prop**, không phải thứ package tự đo.
  *
- * Package đọc bề ngang màn thì `Preview.tsx` và `Editor.tsx` sẽ vẽ bố cục
- * desktop trong một khung 800px trong khi cửa sổ vẫn rộng — ô xem trước nói dối
- * đúng kiểu ô xem trước ảnh module đã nói dối. Chỗ gọi mới là chỗ duy nhất biết
- * khung thật rộng bao nhiêu, nên chỗ gọi quyết định.
+ * Package đọc bề ngang màn thì mọi chỗ vẽ khuôn bài đều bị kéo theo, kể cả
+ * những chỗ không muốn — ô xem trước và khung sửa trong CMS nằm trong một khung
+ * hẹp trong khi cửa sổ vẫn rộng. Chỗ gọi mới là chỗ duy nhất biết khung thật
+ * rộng bao nhiêu, nên chỗ gọi quyết định.
  *
- * Mặc định `false`: mọi chỗ gọi cũ giữ nguyên bố cục desktop, không phải sửa.
+ * Mặc định `false`, và **khu admin cố ý không truyền gì**: chủ site chốt admin
+ * không có bản điện thoại. Đúng hai chỗ truyền, cả hai đều là trang công khai —
+ * `screens/Article.tsx` và `screens/Notes.tsx`.
  */
 type Chrome = { breadcrumb?: ReactNode; mobile?: boolean }
 
