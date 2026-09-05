@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { useIsMobile } from '../../lib/useIsMobile'
 import { PostRenderer } from 'post-renderer'
 import { getPost, listModules, type Module, type PostDetail } from '../lib/apiClient'
 import { ink, paper } from '../../design/tokens'
@@ -31,7 +30,6 @@ export function Preview({ postId }: { postId: string }) {
 }
 
 function PreviewContent({ postId }: { postId: string }) {
-  const mobile = useIsMobile()
   const [post, setPost] = useState<PostDetail | null>(null)
   const [modules, setModules] = useState<Module[]>([])
 
@@ -58,16 +56,15 @@ function PreviewContent({ postId }: { postId: string }) {
             Two of the five used to fall through to `article` here, so a memo
             previewed as an essay. */}
         {template === 'cards' ? (
-          <PostRenderer mobile={mobile} template="cards" post={toCardsData(source, mod)} />
+          <PostRenderer template="cards" post={toCardsData(source, mod)} />
         ) : template === 'report' ? (
-          <PostRenderer mobile={mobile} template="report" post={toReportData(source, mod)} />
+          <PostRenderer template="report" post={toReportData(source, mod)} />
         ) : template === 'longform' ? (
-          <PostRenderer mobile={mobile} template="longform" post={toLongformData(source, mod)} />
+          <PostRenderer template="longform" post={toLongformData(source, mod)} />
         ) : template === 'memo' ? (
-          <PostRenderer mobile={mobile} template="memo" post={toMemoData(source, mod)} />
+          <PostRenderer template="memo" post={toMemoData(source, mod)} />
         ) : (
           <PostRenderer
-      mobile={mobile}
             template="article"
             post={toArticleData(source, mod?.title ?? post.module_id, [], -1, mod)}
           />

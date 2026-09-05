@@ -1,5 +1,4 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react'
-import { useIsMobile } from '../../lib/useIsMobile'
 import {
   PostRenderer,
   FLAVOR_GROUP_NAMES,
@@ -623,7 +622,6 @@ function HeroPicker({
 // ---------------------------------------------------------------------------
 
 function ArticleEditor({ post, module, onChange }: { post: PostDetail; module?: Module; onChange: (patch: EditPatch) => void }) {
-  const mobile = useIsMobile()
   // Same adapter as the public journal, so the canvas is edited against what
   // will actually ship.
   const data = toArticleData(post, module?.title ?? post.module_id, [], -1, module)
@@ -648,7 +646,6 @@ function ArticleEditor({ post, module, onChange }: { post: PostDetail; module?: 
 
   return (
     <PostRenderer
-      mobile={mobile}
       template="article"
       post={data}
       renderTitle={(title) => <EditableField value={title} onCommit={(v) => onChange({ en: v })} />}
@@ -742,7 +739,6 @@ function LongformEditor({
   module?: Module
   onChange: (patch: EditPatch) => void
 }) {
-  const mobile = useIsMobile()
   /*
    * Bài trong kho có thể vẫn còn khối `cont` cũ. Ghi lại thì ghi cả bài ở dạng
    * mới — nửa cũ nửa mới trong một `body` là chỗ để lẫn về sau.
@@ -809,7 +805,6 @@ function LongformEditor({
 
   return (
     <PostRenderer
-      mobile={mobile}
       template="longform"
       post={toLongformData(post, module)}
       wrapBlock={(drawn, i, kind) => (
@@ -867,7 +862,6 @@ function MemoEditor({
   module?: Module
   onChange: (patch: EditPatch) => void
 }) {
-  const mobile = useIsMobile()
   const palette = paletteFrom(post.theme_color ?? module?.accent ?? REPORT_BLUE, post.theme_color ? undefined : module?.on_color)
   const data = toMemoData(post, module)
   const elements = flatElements(post.body as { sections?: never[]; elements?: unknown[] }) as ReportBlock[]
@@ -893,7 +887,6 @@ function MemoEditor({
 
   return (
     <PostRenderer
-      mobile={mobile}
       template="memo"
       post={data}
       renderTitle={(title) => <EditableField value={title} onCommit={(v) => onChange({ en: v })} />}
@@ -964,7 +957,6 @@ function MemoEditor({
 }
 
 function CardsEditor({ post, module, onChange }: { post: PostDetail; module?: Module; onChange: (patch: EditPatch) => void }) {
-  const mobile = useIsMobile()
   const data = toCardsData(post, module)
   const cards = getBody<CardData>(post)
   const setCards = (next: CardData[]) => {
@@ -996,7 +988,6 @@ function CardsEditor({ post, module, onChange }: { post: PostDetail; module?: Mo
         <EditableField value={post.en} onCommit={(v) => onChange({ en: v })} style={{ fontFamily: serif, fontSize: 20 }} />
       </div>
       <PostRenderer
-      mobile={mobile}
         template="cards"
         post={data}
         renderCardTitle={(title, i) => <EditableField value={title} onCommit={(v) => updateCard(i, { title: v })} />}
