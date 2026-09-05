@@ -47,3 +47,23 @@ describe('dải ảnh module trên điện thoại', () => {
     expect(css).toMatch(/min-width: 900px[\s\S]*?margin-bottom: 64px;/)
   })
 })
+
+/*
+ * Nhãn trên cùng: ngắt sau dấu gạch ngang.
+ *
+ * Để tự xuống dòng thì ở 375px nó ngắt sau "sourdough", tách "& open quests"
+ * ra một mình — đọc như một mẩu thừa.
+ */
+describe('nhãn trên cùng trang chủ', () => {
+  it('ngắt theo dấu gạch, không theo một từ cụ thể', () => {
+    // Chủ site sửa được dòng này trong CMS, nên một chỗ ngắt buộc vào chữ
+    // "coffee" sẽ sai ngay lần sửa đầu tiên.
+    expect(src).toContain('BreakAtDash')
+    expect(src).toContain("text.indexOf('—')")
+    expect(src).not.toMatch(/indexOf\('coffee'\)/i)
+  })
+
+  it('không có gạch ngang thì để nguyên, không vỡ', () => {
+    expect(src).toMatch(/if \(at < 0\) return <>\{text\}<\/>/)
+  })
+})

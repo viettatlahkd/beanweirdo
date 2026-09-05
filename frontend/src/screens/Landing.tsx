@@ -248,6 +248,19 @@ export function ImageBand({ m }: { m: ModuleImageFields }) {
  * Không có khoảng trắng thì trả nguyên — một cái tên một từ vẫn phải vẽ ra
  * được, và trang không được vỡ vì chủ site đổi tên trong CMS.
  */
+/** Một dòng nhãn, ngắt sau dấu gạch ngang đầu tiên nếu có. */
+function BreakAtDash({ text }: { text: string }) {
+  const at = text.indexOf('—')
+  if (at < 0) return <>{text}</>
+  return (
+    <>
+      {text.slice(0, at + 1)}
+      <br />
+      {text.slice(at + 1).trimStart()}
+    </>
+  )
+}
+
 function PostSplit({ text }: { text: string }) {
   const at = text.indexOf(' ')
   if (at < 0) return <>{text}</>
@@ -273,7 +286,20 @@ export function Landing() {
   return (
     <div>
       <div style={{ padding: mob ? '30px 20px 44px' : '80px 56px 64px', maxWidth: layout.page }}>
-        <div style={{ ...eyebrow, color: ink.muted, marginBottom: 28 }}>{site.lEyebrow}</div>
+        {/*
+          * Nhãn trên cùng ngắt dòng ngay sau dấu gạch ngang.
+          *
+          * Để nó tự xuống dòng thì trên màn 375 nó ngắt sau "sourdough", tách
+          * "& open quests" ra một mình — đọc như một mẩu thừa. Ngắt ở gạch
+          * ngang là ngắt đúng chỗ câu đã tự chia làm hai.
+          *
+          * Ngắt theo dấu gạch chứ không theo chữ "coffee": chủ site sửa được
+          * dòng này trong CMS, nên một chỗ ngắt buộc vào từ cụ thể sẽ sai ngay
+          * lần sửa đầu tiên. Không có gạch ngang thì để nó tự xuống dòng.
+          */}
+        <div style={{ ...eyebrow, color: ink.muted, marginBottom: 28 }}>
+          {mob ? <BreakAtDash text={site.lEyebrow} /> : site.lEyebrow}
+        </div>
         {/*
           * Tên trang trên điện thoại: ba dòng, không phải hai.
           *
