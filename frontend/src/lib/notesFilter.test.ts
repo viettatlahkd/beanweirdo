@@ -2,35 +2,34 @@ import { describe, expect, it } from 'vitest'
 import { noteFilterBar, tagColor } from './notesFilter'
 
 /*
- * Một bộ từ vựng cho cả trang Ghi chép.
+ * Một bộ từ vựng, và giờ là một loại thứ, cho cả trang Ghi chép.
  *
- * Trước đây hai bên có hai danh sách: bốn dạng ghi viết cứng trong code cho
- * ghi chép, bốn tag khác trong bảng cho bài đăng. Cùng một trang mà hai thứ
- * tiếng — "tất cả" nói một con số trong khi màn hình bày một con số khác, và
- * bấm một chip thì ghi chép biến mất còn bài vẫn nằm nguyên đó.
+ * Trước đây hai bên có hai danh sách: bốn dạng ghi viết cứng trong code cho ghi
+ * chép, bốn tag khác trong bảng cho bài đăng. Cùng một trang mà hai thứ tiếng.
+ * Bước một là cho cả hai đọc chung bảng `tags`; bước hai là bỏ hẳn bên ghi chép
+ * — một ghi chép dưới Ghi 01 chính là một bài đăng dưới Ghi 01. Nên thanh này
+ * chỉ còn đếm và lọc bài.
  */
 const tags = [{ label: 'quan sát' }, { label: 'video' }, { label: 'essay' }, { label: 'log' }]
-const notes = [{ k: 'quan sát' }, { k: 'video' }, { k: 'video' }]
-const posts = [{ kind: 'video' }, { kind: 'essay' }]
+const posts = [{ kind: 'video' }, { kind: 'video' }, { kind: 'essay' }, { kind: 'quan sát' }]
 
 describe('thanh lọc trang Ghi chép', () => {
-  it('một chip đếm cả ghi chép lẫn bài mang tag ấy', () => {
-    const { chips } = noteFilterBar(notes, posts, tags, 'tất cả')
-    expect(chips.find((c) => c.f === 'video')?.n).toBe(3) // 2 ghi chép + 1 bài
-    expect(chips.find((c) => c.f === 'essay')?.n).toBe(1) // chỉ bài
-    expect(chips.find((c) => c.f === 'tất cả')?.n).toBe(5)
+  it('mỗi chip đếm số bài mang tag ấy', () => {
+    const { chips } = noteFilterBar(posts, tags, 'tất cả')
+    expect(chips.find((c) => c.f === 'video')?.n).toBe(2)
+    expect(chips.find((c) => c.f === 'essay')?.n).toBe(1)
+    expect(chips.find((c) => c.f === 'tất cả')?.n).toBe(4)
   })
 
-  it('lọc thì lọc cả hai phía', () => {
-    const bar = noteFilterBar(notes, posts, tags, 'video')
-    expect(bar.visibleNotes).toHaveLength(2)
-    expect(bar.visiblePosts).toEqual([{ kind: 'video' }])
+  it('bấm một chip thì chỉ còn bài mang tag ấy', () => {
+    const bar = noteFilterBar(posts, tags, 'video')
+    expect(bar.visiblePosts).toEqual([{ kind: 'video' }, { kind: 'video' }])
   })
 
-  it('chỉ bày tag đang có thứ đeo nó', () => {
+  it('chỉ bày tag đang có bài đeo nó', () => {
     // Bộ từ vựng dùng chung cho cả trang, nên nó chứa cả tag của bài không nằm
     // ở đây. Bày hết thì thanh lọc thành một hàng chip số không kéo dài.
-    const { chips } = noteFilterBar(notes, posts, tags, 'tất cả')
+    const { chips } = noteFilterBar(posts, tags, 'tất cả')
     expect(chips.map((c) => c.f)).toEqual(['tất cả', 'quan sát', 'video', 'essay'])
   })
 

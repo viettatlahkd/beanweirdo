@@ -1,10 +1,8 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const useNotes = vi.fn()
 const usePublishedPosts = vi.fn()
 const useModules = vi.fn()
-vi.mock('../data/useNotes', () => ({ useNotes: () => useNotes() }))
 vi.mock('../data/usePublishedPosts', () => ({ usePublishedPosts: () => usePublishedPosts() }))
 vi.mock('../data/useModules', () => ({ useModules: () => useModules() }))
 vi.mock('../components/Breadcrumbs', () => ({ Breadcrumbs: () => null }))
@@ -40,7 +38,6 @@ const cards = () =>
 
 describe('Ghi 01 — mở bài tại chỗ khi có nhiều bài', () => {
   beforeEach(() => {
-    useNotes.mockReturnValue({ notes: [], loading: false, error: null })
     useModules.mockReturnValue({
       data: [{ id: 'ghi01', title: 'Ghi 01', accent: '#6FA8C0', on_color: '#123' }],
     })

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { useMemo, useState, type CSSProperties } from 'react'
 import { Breadcrumbs } from '../components/Breadcrumbs'
 import { useSiteCopy } from '../data/useSiteCopy'
 import { noteFilterBar } from '../lib/notesFilter'
@@ -6,16 +6,10 @@ import { useTags } from '../data/useTags'
 import { useIsMobile } from '../lib/useIsMobile'
 import {
   featureCells,
-  noteBlock,
-  noteColor,
-  notePlacement,
-  noteTitleSize,
   withOverrides,
   type FeatureCell,
   type FeatureOverride,
-  type Note,
 } from '../content/notes'
-import { useNotes } from '../data/useNotes'
 import { usePublishedPosts, type PostRow } from '../data/usePublishedPosts'
 import { postDescription } from '../lib/postText'
 import { postThumbnail } from '../lib/postThumb'
@@ -86,286 +80,6 @@ function OpenedPost({
         />
       )
   }
-}
-
-/** How far (px) the cursor's pull reaches before a card stops responding. */
-const PROXIMITY_RADIUS = 620
-
-type CardStyle = ReturnType<typeof cardStyle>
-
-function cardStyle(
-  n: Note,
-  i: number,
-  /** Chỗ đứng trong chu kỳ 8 vị trí — khác `i`, vì bài đã xếp trước ghi chú. */
-  slot: number,
-  isHv: boolean,
-  isOpen: boolean,
-  openIdx: number,
-  openNote: string | null,
-  hoverNote: number | null,
-  mx: number | null,
-  my: number | null,
-  el: HTMLDivElement | null,
-) {
-  const p = notePlacement[slot % notePlacement.length]
-
-  let prox = 0
-  if (openNote === null && mx !== null && my !== null && el) {
-    const r = el.getBoundingClientRect()
-    const cx = r.left + r.width / 2
-    const cy = r.top + r.height / 2
-    const d = Math.hypot(mx - cx, my - cy)
-    prox = Math.max(0, 1 - d / PROXIMITY_RADIUS)
-  }
-  const scale = 1 + prox * prox * 0.05
-  const lift = -(prox * prox * 12)
-  const other =
-    (hoverNote !== null && hoverNote !== i && openNote === null) || (openNote !== null && !isOpen)
-
-  return {
-    col: isOpen ? '1 / -1' : n.portrait ? 'span 7' : p.col,
-    mt: isOpen ? '40px' : p.mt,
-    z: isOpen ? 6 : 3,
-    ar: isOpen ? (n.portrait ? '9/16' : '4/3') : n.portrait ? '3/4' : p.ar,
-    mediaW: isOpen ? (n.portrait ? '250px' : '300px') : n.portrait ? '40%' : p.mw,
-    mediaLabel:
-      n.len === 'media'
-        ? n.portrait
-          ? 'video dọc — clip quay dọc'
-          : 'video ngang — clip ngắn không tiếng'
-        : n.mediaHint || 'ảnh — cận cảnh chủ thể',
-    size: isOpen ? '52px' : n.portrait ? '23px' : noteTitleSize(n.len),
-    opacity: other
-      ? '.18'
-      : openNote === null && mx !== null
-        ? String(0.62 + prox * 0.38)
-        : '1',
-    shift: isOpen
-      ? 'none'
-      : openNote !== null
-        ? i < openIdx
-          ? 'translateX(-30px) scale(.96)'
-          : 'translateX(30px) scale(.96)'
-        : `translateY(${lift.toFixed(1)}px) scale(${scale.toFixed(3)})`,
-    ease:
-      openNote !== null
-        ? 'transform .7s cubic-bezier(.16,.84,.32,1)'
-        : 'transform .42s cubic-bezier(.22,.8,.3,1)',
-    washSize: isHv || isOpen ? '100% 100%' : '0% 100%',
-    ruleW: isHv || isOpen ? '100%' : '34px',
-    pop: isOpen ? '#FFFFFF' : 'transparent',
-    popPad: isOpen ? '36px 40px 40px' : '0',
-    popShadow: isOpen ? '0 40px 80px -50px rgba(18,18,15,.55), 0 2px 0 rgba(18,18,15,.06)' : 'none',
-    bodyOpacity: isHv || isOpen ? 1 : 0.5,
-    rowDisplay: isOpen ? 'block' : 'flex',
-    mediaFloat: isOpen ? 'left' : 'none',
-    mediaMr: isOpen ? '34px' : '0',
-    mediaMb: isOpen ? '22px' : '0',
-    dir: n.portrait ? 'row' : 'column',
-    rowGap: isOpen || n.portrait ? '30px' : '20px',
-    subSlot: n.portrait ? 'ảnh phụ — khung hình cắt ra từ clip' : 'ảnh phụ — chi tiết bổ trợ cho bài',
-  }
-}
-
-function NoteCard({
-  n,
-  i,
-  slot,
-  filtered,
-  hoverNote,
-  openNote,
-  setHoverNote,
-  setOpenNote,
-  mx,
-  my,
-  setEl,
-  el,
-  total,
-}: {
-  n: Note
-  i: number
-  /** Vị trí trong chu kỳ dàn trang — ghi chú tiếp nối sau các bài đã xếp. */
-  slot: number
-  filtered: Note[]
-  hoverNote: number | null
-  openNote: string | null
-  setHoverNote: (v: number | null) => void
-  setOpenNote: (v: string | ((prev: string | null) => string | null)) => void
-  mx: number | null
-  my: number | null
-  setEl: (el: HTMLDivElement | null) => void
-  el: HTMLDivElement | null
-  /** Signed in — the note is written straight into the page. */
-  total: number
-}) {
-  const isHv = hoverNote === i
-  // Keyed by id, not title: a note being written has no title yet, and two
-  // could share one.
-  const isOpen = openNote === n.id
-  const openIdx = filtered.findIndex((x) => x.id === openNote)
-  const num = String(total - i).padStart(2, '0')
-  const color = noteColor[n.k]
-  const block = noteBlock[n.k]
-  const s: CardStyle = cardStyle(n, i, slot, isHv, isOpen, openIdx, openNote, hoverNote, mx, my, el)
-
-  return (
-    <div
-      ref={setEl}
-      onMouseEnter={() => setHoverNote(i)}
-      onMouseLeave={() => setHoverNote(null)}
-      style={{
-        gridColumn: s.col,
-        marginTop: s.mt,
-        position: 'relative',
-        zIndex: s.z,
-        opacity: s.opacity,
-        transform: s.shift,
-        transition: `opacity .45s ease, ${s.ease}`,
-      }}
-    >
-      <div
-        onClick={(e) => {
-          e.stopPropagation()
-          setOpenNote((prev) => (prev === n.id ? null : n.id))
-        }}
-        style={{
-          display: 'flow-root',
-          cursor: 'pointer',
-          background: s.pop,
-          padding: s.popPad,
-          boxShadow: s.popShadow,
-          transition: 'padding .5s cubic-bezier(.16,.84,.32,1), box-shadow .5s ease',
-        }}
-      >
-        <div
-          style={{
-            height: 1,
-            background: '#12120F',
-            width: s.ruleW,
-            transition: 'width .7s cubic-bezier(.16,.84,.32,1)',
-            marginBottom: 14,
-          }}
-        />
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'baseline',
-            gap: 14,
-            marginBottom: 16,
-            fontFamily: "'Be Vietnam Pro',sans-serif",
-          }}
-        >
-          <div style={{ fontFamily: serif, fontStyle: 'italic', fontSize: 15, color }}>{num}</div>
-          <div style={{ fontSize: 9.5, letterSpacing: '.26em', textTransform: 'uppercase', color }}>{n.k}</div>
-          <div style={{ flex: 1 }} />
-          <div style={{ fontSize: 10, letterSpacing: '.16em', color: '#B0B0A6', fontVariantNumeric: 'tabular-nums' }}>
-            {n.d}
-          </div>
-        </div>
-
-        <div
-          style={{
-            display: s.rowDisplay as CSSProperties['display'],
-            flexDirection: s.dir as CSSProperties['flexDirection'],
-            gap: s.rowGap,
-            alignItems: 'flex-start',
-            marginBottom: 18,
-          }}
-        >
-          <div
-            style={{
-              flex: 'none',
-              float: s.mediaFloat as CSSProperties['float'],
-              marginRight: s.mediaMr,
-              marginBottom: s.mediaMb,
-              aspectRatio: s.ar,
-              width: s.mediaW,
-              // A note with a photograph shows it; the tinted block with its
-              // caption is what stands in until there is one.
-              background: n.img ? `url(${n.img}) center/cover no-repeat` : block,
-              display: 'flex',
-              alignItems: 'flex-end',
-              padding: 14,
-              fontFamily: "'Be Vietnam Pro',sans-serif",
-              fontWeight: 500,
-              fontSize: 9.5,
-              letterSpacing: '.2em',
-              textTransform: 'uppercase',
-              color: '#1F3A38',
-              transition: 'aspect-ratio .6s cubic-bezier(.16,.84,.32,1)',
-            }}
-          >
-            {n.img ? null : s.mediaLabel}
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontFamily: serif, fontSize: s.size, lineHeight: 1.14, letterSpacing: '-.035em', marginBottom: 16 }}>
-              <span
-                style={{
-                  display: 'inline',
-                  boxDecorationBreak: 'clone',
-                  WebkitBoxDecorationBreak: 'clone',
-                  padding: '.04em .14em',
-                  marginLeft: '-.14em',
-                  color: '#12120F',
-                  backgroundImage: `linear-gradient(${block}, ${block})`,
-                  backgroundRepeat: 'no-repeat',
-                  backgroundSize: s.washSize,
-                  backgroundPosition: 'left center',
-                  transition: 'background-size .6s cubic-bezier(.16,.84,.32,1)',
-                }}
-              >
-                <span>{n.t}</span>
-              </span>
-            </div>
-
-            {isOpen && (
-              <div style={{ float: 'right', clear: 'left', width: 190, margin: '6px 0 18px 30px' }}>
-                <div
-                  style={{
-                    aspectRatio: '4/5',
-                    background: block,
-                    display: 'flex',
-                    alignItems: 'flex-end',
-                    padding: 12,
-                    fontFamily: "'Be Vietnam Pro',sans-serif",
-                    fontSize: 9,
-                    letterSpacing: '.18em',
-                    textTransform: 'uppercase',
-                    color: '#1F3A38',
-                    lineHeight: 1.5,
-                  }}
-                >
-                  {s.subSlot}
-                </div>
-                <div style={{ fontFamily: "'Be Vietnam Pro',sans-serif", fontWeight: 200, fontSize: 11.5, lineHeight: 1.5, color: '#8A8A80', marginTop: 8 }}>
-                  Ảnh phụ đi kèm — chi tiết nhỏ trong bài.
-                </div>
-              </div>
-            )}
-
-            <div
-              style={{
-                fontFamily: "'Be Vietnam Pro',sans-serif",
-                fontWeight: 200,
-                fontSize: isOpen ? '15.5px' : '14px',
-                lineHeight: 1.62,
-                color: '#4A4A42',
-                opacity: s.bodyOpacity,
-                transition: 'opacity .5s ease',
-                display: isOpen ? 'block' : '-webkit-box',
-                WebkitLineClamp: isOpen ? undefined : 2,
-                WebkitBoxOrient: isOpen ? undefined : 'vertical',
-                overflow: isOpen ? undefined : 'hidden',
-              }}
-            >
-              {n.b}
-            </div>
-
-          </div>
-        </div>
-      </div>
-    </div>
-  )
 }
 
 /**
@@ -553,7 +267,6 @@ function FooterImage({
  */
 export function Notes() {
   const mob = useIsMobile()
-  const { notes, loading, error } = useNotes()
   const { site } = useSiteCopy()
   // Ghi 01's own colours, so an unfolded post wears them the way it would on a
   // page of its own.
@@ -565,60 +278,19 @@ export function Notes() {
     [ghi01?.feature_cells],
   )
   // Posts filed under Ghi 01 — the memo lives here, as a post like any other.
-  const { data: filed } = usePublishedPosts({ moduleId: 'ghi01' })
+  const { data: filed, loading, error } = usePublishedPosts({ moduleId: 'ghi01' })
   const { tags } = useTags()
   // Tag là chữ chủ site tự đặt, nên không còn là bốn giá trị đóng nữa.
   const [noteFilter, setNoteFilter] = useState<string>('tất cả')
-  const [hoverNote, setHoverNote] = useState<number | null>(null)
   const [openNote, setOpenNoteState] = useState<string | null>(null)
-  const [mx, setMx] = useState<number | null>(null)
-  const [my, setMy] = useState<number | null>(null)
-
-  const rafRef = useRef<number | null>(null)
-  const elRefs = useRef<Record<number, HTMLDivElement | null>>({})
-  const filteredRef = useRef<Note[]>([])
 
   // Phép lọc và phép đếm để riêng ở `lib/notesFilter` — xem chú thích ở đó.
-  const bar = useMemo(() => noteFilterBar(notes, filed, tags, noteFilter), [notes, filed, tags, noteFilter])
-  const filtered = bar.visibleNotes as Note[]
-  filteredRef.current = filtered
+  const bar = useMemo(() => noteFilterBar(filed, tags, noteFilter), [filed, tags, noteFilter])
 
   function setOpenNote(v: string | ((prev: string | null) => string | null)) {
     setOpenNoteState(v)
   }
 
-  useEffect(() => {
-    if (!openNote) return
-    const idx = filteredRef.current.findIndex((n) => n.id === openNote)
-    const run = () => {
-      const el = elRefs.current[idx]
-      if (!el) return
-      const top = Math.max(0, el.getBoundingClientRect().top + window.scrollY - 110)
-      const before = window.scrollY
-      if (Math.abs(top - before) < 4) return
-      try {
-        window.scrollTo({ top, behavior: 'smooth' })
-      } catch {
-        window.scrollTo(0, top)
-      }
-      setTimeout(() => {
-        if (Math.abs(window.scrollY - before) < 2) window.scrollTo(0, top)
-      }, 80)
-    }
-    const t = setTimeout(run, 30)
-    return () => clearTimeout(t)
-  }, [openNote])
-
-  function onGridMove(e: React.MouseEvent) {
-    const x = e.clientX
-    const y = e.clientY
-    if (rafRef.current) return
-    rafRef.current = requestAnimationFrame(() => {
-      rafRef.current = null
-      setMx(x)
-      setMy(y)
-    })
-  }
 
   const noteFilters = bar.chips
   const shownPosts = bar.visiblePosts as typeof filed
@@ -627,7 +299,6 @@ export function Notes() {
     <div
       onClick={() => {
         setOpenNoteState(null)
-        setHoverNote(null)
       }}
       style={{ background: '#FCFCFA', color: '#12120F', minHeight: '100vh', padding: mob ? '26px 20px 40px' : '44px 72px 56px' }}
     >
@@ -696,11 +367,6 @@ export function Notes() {
       </div>
 
       <div
-        onMouseMove={onGridMove}
-        onMouseLeave={() => {
-          setMx(null)
-          setMy(null)
-        }}
         style={
           mob
             ? {
@@ -823,7 +489,7 @@ export function Notes() {
             )
           })}
 
-        {!loading && filtered.length === 0 && shownPosts.length === 0 && (
+        {!loading && shownPosts.length === 0 && (
           <div
             style={{
               gridColumn: '1 / -1',
@@ -838,29 +504,6 @@ export function Notes() {
           </div>
         )}
 
-        {filtered.map((n, i) => {
-          const cells = [
-            <NoteCard
-              key={n.id}
-              n={n}
-              i={i}
-              slot={filed.length + i}
-              filtered={filtered}
-              hoverNote={hoverNote}
-              openNote={openNote}
-              setHoverNote={setHoverNote}
-              setOpenNote={setOpenNote}
-              mx={mx}
-              my={my}
-              el={elRefs.current[i] ?? null}
-              total={notes.length}
-              setEl={(el) => {
-                elRefs.current[i] = el
-              }}
-            />,
-          ]
-          return cells
-        })}
       </div>
 
       <div

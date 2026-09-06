@@ -1,57 +1,11 @@
-export type NoteKind = 'quan sát' | 'video' | 'cảm nhận' | 'liên ngành'
 
-/** Content length drives the title size — a long note gets a bigger headline. */
-export type NoteLength = 'dài' | 'vừa' | 'ngắn' | 'media'
 
-/**
- * A note, as it comes out of the `notes` table.
- *
- * Written and edited in place on the Ghi 01 page itself when signed in — there
- * is no separate form (System conventions, rule 08).
+/*
+ * Mực của bốn tag đầu tiên — bốn dạng ghi bên design đặt tên từ đầu. Tag chủ
+ * site tự thêm sau này không có mặt ở đây; `lib/notesFilter` chọn màu cho chúng
+ * từ vườn. Nên bảng này tra bằng chữ bất kỳ, không phải bằng một kiểu đóng.
  */
-export type Note = {
-  /** uuid */
-  id: string
-  /** date, `YYYY-MM-DD` */
-  d: string
-  k: NoteKind
-  /** title */
-  t: string
-  /** body */
-  b: string
-  len: NoteLength
-  /** custom caption for the media placeholder — falls back to a generic hint */
-  mediaHint?: string | null
-  /** vertical clip format — narrower media block, taller aspect ratio */
-  portrait?: boolean
-  /** Which template reads it — a plain note, or a tasting memo. */
-  template?: 'note' | 'memo'
-  /** Pinned notes lead Ghi 01 regardless of date (merge notes §6). */
-  pinned?: boolean
-  /** A memo's structure; null for a plain note. See migration 0011. */
-  body?: unknown | null
-  /** A memo leads with a photograph rather than a caption placeholder. */
-  img?: string | null
-}
-
-/** What a fresh note starts as before the writer types into it. */
-export const BLANK_NOTE: Omit<Note, 'id'> = {
-  d: '',
-  k: 'quan sát',
-  t: '',
-  b: '',
-  len: 'ngắn',
-  mediaHint: null,
-  portrait: false,
-}
-
-/** Length options, in the order the picker offers them. */
-export const noteLengths: NoteLength[] = ['ngắn', 'vừa', 'dài', 'media']
-
-export const noteKinds: NoteKind[] = ['quan sát', 'video', 'cảm nhận', 'liên ngành']
-
-/** One ink per kind — the only place colour is allowed to carry meaning here. */
-export const noteColor: Record<NoteKind, string> = {
+export const noteColor: Record<string, string> = {
   'quan sát': '#B65A3C',
   video: '#172124',
   'cảm nhận': '#285E5B',
@@ -59,7 +13,7 @@ export const noteColor: Record<NoteKind, string> = {
 }
 
 /** The wash that reveals behind a hovered title, and backs a media tile. */
-export const noteBlock: Record<NoteKind, string> = {
+export const noteBlock: Record<string, string> = {
   'quan sát': '#E9B79C',
   video: '#8CBAB4',
   'cảm nhận': '#AFC8BC',
@@ -218,15 +172,3 @@ export function withOverrides(
   })
 }
 
-export const noteTitleSize = (len: NoteLength) =>
-  len === 'dài' ? '62px' : len === 'vừa' ? '46px' : len === 'media' ? '40px' : '36px'
-
-/** Split the body into reading paragraphs — two sentences apiece. */
-export function paragraphs(body: string): string[] {
-  return body.split('. ').reduce<string[]>((acc, sentence, i, arr) => {
-    const t = sentence + (i < arr.length - 1 ? '.' : '')
-    if (i % 2 === 0) acc.push(t)
-    else acc[acc.length - 1] += ' ' + t
-    return acc
-  }, [])
-}
