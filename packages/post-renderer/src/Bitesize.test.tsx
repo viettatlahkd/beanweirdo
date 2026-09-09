@@ -135,7 +135,7 @@ describe('bài mở hết', () => {
 describe('hai dàn trang', () => {
   const orderOf = (c: HTMLElement) => {
     const nodes = Array.from(
-      c.querySelectorAll<HTMLElement>('h1, div[style*="aspect-ratio"], div[style*="pre-line"]'),
+      c.querySelectorAll<HTMLElement>('h1, div[style*="aspect-ratio"], p'),
     )
     return nodes.map((n) =>
       n.tagName === 'H1' ? 'tiêu đề' : n.style.aspectRatio ? `ảnh ${n.style.aspectRatio}` : 'thân bài',
@@ -173,7 +173,8 @@ describe('hai dàn trang', () => {
     const { container } = render(<Bitesize post={post({ sub: 'ảnh phụ' })} />)
     const holder = container.querySelector<HTMLElement>('div[style*="position: absolute"]')!
     expect(holder.style.bottom).toBe('33.33%')
-    expect(holder.style.right).toBe('0px')
+    // Kéo ra khỏi khối chữ đúng bằng khoảng lề đã chừa, nên nó đứng trong lề.
+    expect(holder.style.right).toBe('-200px')
     // Nằm trong khoảng lề đã chừa, nên nó không đẩy chữ.
     const flow = container.querySelector<HTMLElement>('div[style*="flow-root"][style*="position: relative"]')!
     expect(flow.style.paddingRight).toBe('200px')
@@ -259,7 +260,7 @@ describe('ô ảnh phụ', () => {
 describe('ba dàn trang của dạng mở', () => {
   const order = (c: HTMLElement) =>
     Array.from(
-      c.querySelectorAll<HTMLElement>('h1, div[style*="aspect-ratio"], div[style*="pre-line"]'),
+      c.querySelectorAll<HTMLElement>('h1, div[style*="aspect-ratio"], p'),
     ).map((n) => (n.tagName === 'H1' ? 'tiêu đề' : n.style.aspectRatio ? `ảnh ${n.style.aspectRatio}` : 'thân bài'))
 
   it('clip ngang: clip chiếm trọn bề ngang, tiêu đề nằm DƯỚI nó', () => {
@@ -285,5 +286,56 @@ describe('ba dàn trang của dạng mở', () => {
   it('ảnh tĩnh: tiêu đề dẫn đầu, chữ chảy quanh ảnh, ô phụ ở chân', () => {
     const { container } = render(<Bitesize post={post({ sub: 'phụ' })} />)
     expect(order(container)).toEqual(['tiêu đề', 'ảnh 4/3', 'thân bài', 'ảnh 4/5'])
+  })
+})
+
+describe('chữ và khối nội dung', () => {
+  it('đoạn văn theo đúng hệ chữ của kho element, và căn đều hai bên', () => {
+    // 15.5 / 1.55, weight 300, hai mươi pixel giữa hai đoạn — `elements/text.tsx`.
+    // Trước đây khối này tự đặt 200/1.62 và không chừa khoảng nào: "khá xít".
+    const { container } = render(<Bitesize post={post({ text: 'đoạn một\nđoạn hai' })} />)
+    const paras = Array.from(container.querySelectorAll('p'))
+    expect(paras).toHaveLength(2)
+    expect(paras[0].style.marginBottom).toBe('20px')
+    expect(paras[0].style.fontWeight).toBe('300')
+    expect(paras[0].style.lineHeight).toBe('1.55')
+    expect(paras[0].style.textAlign).toBe('justify')
+  })
+
+  it('dựng được khối thêm vào, qua đúng kho element chung', () => {
+    // Một cái heading ở đây và một cái heading ở memo là cùng một thứ.
+    const { container } = render(
+      <Bitesize post={post({ elements: [{ type: 'heading', text: 'Một tiêu đề nhỏ', level: 2 }] as never })} />,
+    )
+    expect(container.textContent).toContain('Một tiêu đề nhỏ')
+  })
+
+  it('màn sửa được bọc từng khối và có chỗ đặt nút thêm', () => {
+    const wrapped: number[] = []
+    render(
+      <Bitesize
+        post={post({ elements: [{ type: 'paragraph', text: 'a' }] as never })}
+        wrapElement={(el, i) => {
+          wrapped.push(i)
+          return el
+        }}
+        renderAfterElements={() => <div>THÊM KHỐI</div>}
+      />,
+    )
+    expect(wrapped).toEqual([0])
+    expect(screen.getByText('THÊM KHỐI')).toBeInTheDocument()
+  })
+
+  it('ô ảnh phụ neo vào khối chữ, không neo vào khối có ảnh trong đó', () => {
+    /*
+     * "tính chia phần 3 từ phần body text chứ đừng tính từ title nhé" — và
+     * cũng đừng tính từ ảnh: ảnh chính thả trôi bên trái, một tấm ảnh dọc cao
+     * hơn chữ sẽ kéo khối bao ngoài dài ra và cái mốc trượt theo ảnh.
+     */
+    const { container } = render(<Bitesize post={post({ sub: 'ảnh phụ' })} />)
+    const holder = container.querySelector<HTMLElement>('div[style*="position: absolute"]')!
+    const textBlock = holder.parentElement!
+    expect(textBlock.querySelector('p')).not.toBeNull()
+    expect(textBlock.querySelector('div[style*="aspect-ratio: 4/3"]')).toBeNull()
   })
 })

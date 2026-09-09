@@ -1,4 +1,6 @@
-import type { CSSProperties, ReactNode } from 'react'
+import { Fragment, type CSSProperties, type ReactNode } from 'react'
+import { getElement, type StoredElement } from './elements'
+import { paletteFrom } from './palette'
 import { paper, sans, serif, wrapTitle } from './tokens'
 
 /**
@@ -72,6 +74,15 @@ export type BitesizePostData = {
   subImage: string | null
   /** Khung hình đắp vào clip lúc chưa chạy — không có thì trình duyệt vẽ ô đen. */
   poster?: string | null
+  /**
+   * Khối nội dung thêm vào sau đoạn dẫn — tiêu đề, danh sách, bảng, ảnh…
+   *
+   * Cùng kho element với các template khác, nên một cái heading ở đây và một
+   * cái heading ở memo là CÙNG một thứ, không phải hai bản sao. Đoạn dẫn
+   * (`text`) vẫn đứng riêng ở trên: nó là cái làm nên dạng ghi ngắn, có hay
+   * không có khối nào theo sau.
+   */
+  elements?: StoredElement[]
   /** Ảnh tĩnh hay clip — quyết định cả dàn trang lẫn màu. */
   media: BitesizeMedia
   text: string
@@ -94,6 +105,10 @@ export type BitesizeOverrides = {
   /** Chữ trong ô ảnh — chủ site đặt, không phải câu hệ thống áp xuống. */
   renderMediaHint?: (hint: string) => ReactNode
   renderSub?: (sub: string) => ReactNode
+  /** Bọc một khối, để màn sửa treo tay nắm của nó lên. */
+  wrapElement?: (element: ReactNode, index: number, attributes: { type: string }) => ReactNode
+  /** Chỗ màn sửa đặt nút "thêm khối", dưới khối cuối cùng. */
+  renderAfterElements?: () => ReactNode
 }
 
 export type BitesizeProps = BitesizeOverrides & {
@@ -137,6 +152,18 @@ export function titleSize(len: BitesizeLength, portrait: boolean, open: boolean)
   if (open) return 52
   if (portrait) return 23
   return len === 'dài' ? 40 : len === 'vừa' ? 34 : 27
+}
+
+/** Đoạn văn, đúng hệ chữ của kho element — xem `elements/text.tsx`. */
+const paraStyle: CSSProperties = {
+  fontFamily: sans,
+  fontWeight: 300,
+  fontSize: 15.5,
+  lineHeight: 1.55,
+  color: '#4A4A42',
+  margin: '0 0 20px',
+  textAlign: 'justify',
+  hyphens: 'auto',
 }
 
 const label: CSSProperties = {
@@ -409,6 +436,8 @@ export function Bitesize({
   renderDate,
   renderMediaHint,
   renderSub,
+  wrapElement,
+  renderAfterElements,
 }: BitesizeProps) {
   const clip = post.media === 'vid'
   /*
@@ -489,18 +518,50 @@ export function Bitesize({
     />
   )
 
+  /*
+   * Chữ theo đúng hệ chữ của kho element: 15.5 / 1.55, weight 300, và HAI MƯƠI
+   * pixel giữa hai đoạn — xem `elements/text.tsx`. Trước đây khối này tự đặt
+   * lấy 200/1.62 và không chừa khoảng nào giữa các đoạn, nên chủ site đọc ra
+   * ngay là "khá xít".
+   */
+  const lead = post.text ? (
+    renderText ? (
+      <div style={{ ...paraStyle, whiteSpace: 'pre-line' }}>{renderText(post.text)}</div>
+    ) : (
+      <>
+        {post.text.split('\n').map((para, i) => (
+          <p key={i} style={paraStyle}>
+            {para}
+          </p>
+        ))}
+      </>
+    )
+  ) : null
+
+  const palette = paletteFrom(post.band?.bg ?? post.ink)
+  const elements = post.elements ?? []
   const body = (
-    <div
-      style={{
-        fontFamily: sans,
-        fontWeight: 200,
-        fontSize: 15.5,
-        lineHeight: 1.62,
-        color: '#4A4A42',
-        whiteSpace: 'pre-line',
-      }}
-    >
-      {renderText ? renderText(post.text) : post.text}
+    <div style={{ position: 'relative' }}>
+      {lead}
+      {elements.map((el, i) => {
+        const element = getElement(el.type)
+        const drawn = element ? (
+          <element.View attributes={el} palette={palette} index={i} mobile={mobile} />
+        ) : null
+        return <Fragment key={i}>{wrapElement ? wrapElement(drawn, i, el) : drawn}</Fragment>
+      })}
+      {renderAfterElements?.()}
+      {/*
+        * Ô ảnh phụ neo vào KHỐI CHỮ, không neo vào cả khối có ảnh trong đó.
+        *
+        * Chủ site: "tính chia phần 3 từ phần body text chứ đừng tính từ title
+        * nhé". Ảnh chính thả trôi bên trái, nên neo vào khối bao ngoài thì một
+        * tấm ảnh dọc cao hơn chữ sẽ kéo khối ấy dài ra, và cái mốc hai phần ba
+        * trượt theo ẢNH chứ không theo chữ.
+        */}
+      {subBox && !mobile ? (
+        <div style={{ position: 'absolute', right: -SUB_GUTTER, bottom: '33.33%' }}>{subBox}</div>
+      ) : null}
     </div>
   )
 
@@ -567,25 +628,6 @@ export function Bitesize({
           >
             {clipNgang ? null : media}
             {body}
-            {/*
-              * Ô ảnh phụ chạy dọc bài, không đứng ở chân.
-              *
-              * Chủ site: "không phải để footer (...) nó giống như ảnh chạy dọc
-              * bài, vị trí sẽ thay đổi tuỳ theo độ dài bài viết, nhưng vị trí sẽ
-              * responsive trong khoảng từ dưới cùng của phần 1/3 giữa bài hoặc
-              * trên cùng của phần 1/3 cuối bài."
-              *
-              * `bottom: 33.33%` đặt mép dưới ô đúng lên cái lằn ấy — nó là một
-              * lằn chứ không phải hai chỗ: dưới cùng của một phần ba giữa CHÍNH
-              * LÀ trên cùng của một phần ba cuối. Bài dài ra thì lằn ấy tụt
-              * xuống theo, nên ô đi theo mà không cần đo chữ.
-              *
-              * Nằm trong khoảng lề đã chừa sẵn, nên nó KHÔNG đẩy chữ: mép phải
-              * của thân bài vẫn là một đường thẳng từ trên xuống.
-              */}
-            {subBox && !mobile ? (
-              <div style={{ position: 'absolute', right: 0, bottom: '33.33%' }}>{subBox}</div>
-            ) : null}
           </div>
           {subBox && mobile ? <div style={{ marginTop: 22 }}>{subBox}</div> : null}
         </>

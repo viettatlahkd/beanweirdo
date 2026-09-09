@@ -243,6 +243,8 @@ export type BitesizeBody = {
   subImage?: string | null
   /** Khung hình đắp vào clip lúc chưa chạy; lấy tự động khi đính clip. */
   poster?: string | null
+  /** Khối nội dung thêm sau đoạn dẫn — cùng kho element với các template khác. */
+  elements?: BitesizePostData['elements']
   /** Ảnh tĩnh hay clip — quyết định cả dàn trang lẫn màu. */
   media?: BitesizeMedia
 }
@@ -298,6 +300,7 @@ export function toBitesizeData(
     sub: body.sub ?? '',
     subImage: body.subImage ?? null,
     poster: body.poster ?? null,
+    elements: body.elements ?? [],
     text: body.text ?? postDescription(post),
     band: bandOf(post, options.mod),
   }
