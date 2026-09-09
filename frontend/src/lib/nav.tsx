@@ -1,5 +1,6 @@
 import { createContext, useContext } from 'react'
 import type { Area } from './area'
+import type { CmsTab } from './routes'
 
 export type Screen =
   | 'art'
@@ -51,15 +52,27 @@ export type Nav = {
   /** The post currently open on the article screen — null until one is picked. */
   postId: string | null
   articleFrom: Origin
+  /** The template open under Admin › Templates — null on the list itself. */
+  templateId: string | null
+  /** Which tab of Content management is open. */
+  cmsTab: CmsTab
   goArt(): void
   goLanding(): void
   goHome(): void
   goArchive(): void
   goHours(): void
   goNotes(): void
-  goCms(): void
+  goCms(tab?: CmsTab): void
   goLogic(): void
   goTemplates(): void
+  /**
+   * Open one template, or `null` for the list.
+   *
+   * The open template is a place, not a mode: the trail names it and the back
+   * button returns from it. That only works if the address says which one is
+   * open, so the screen asks to be moved rather than moving itself.
+   */
+  openTemplate(id: string | null): void
   openModule(id: string): void
   /**
    * Optional id: some call sites (the sidebar's Templates links) don't have a

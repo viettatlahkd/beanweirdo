@@ -1,4 +1,7 @@
+import { navByKey } from '../content/navItems'
 import type { NavGroup } from '../content/site'
+import type { Screen } from './nav'
+import { toPath } from './routes'
 
 /**
  * The three areas of the site, each its own entry point.
@@ -13,7 +16,7 @@ export type Area = 'public' | 'practice' | 'admin'
 export const AREA_PATH: Record<Area, string> = {
   public: '/',
   practice: '/practice',
-  admin: '/admin',
+  admin: '/ad',
 }
 
 /** Which area a sidebar group belongs to. */
@@ -26,9 +29,19 @@ export function areaOfGroup(group: NavGroup): Area {
 /** Everything except the public journal is behind the login wall. */
 export const isPrivate = (area: Area) => area !== 'public'
 
+/**
+ * Which area an address belongs to.
+ *
+ * Read before React starts, so it works off the string alone. `/admin` is the
+ * address the back office used to live at and is still recognised; everything
+ * the site writes now begins `/ad` or `/ad-`.
+ */
 export function areaFromPath(pathname: string = window.location.pathname): Area {
-  if (pathname.startsWith('/admin')) return 'admin'
-  if (pathname.startsWith('/practice')) return 'practice'
+  const path = pathname.split('?')[0]
+  if (path.startsWith('/admin') || path === '/ad' || path.startsWith('/ad/') || path.startsWith('/ad-')) {
+    return 'admin'
+  }
+  if (path.startsWith('/practice')) return 'practice'
   return 'public'
 }
 
@@ -91,6 +104,7 @@ export function visibleGroups(area: Area, authed: boolean): NavGroup[] {
  * re-run it rather than trusting state carried over from the previous area.
  */
 export function goToArea(area: Area, screenKey?: string): void {
-  const query = screenKey && screenKey !== AREA_HOME[area] ? `?screen=${screenKey}` : ''
-  window.location.assign(AREA_PATH[area] + query)
+  const item = screenKey ? navByKey(screenKey) : undefined
+  const screen = (item?.screen ?? AREA_HOME[area]) as Screen
+  window.location.assign(toPath({ area, screen, moduleId: item?.moduleId }))
 }

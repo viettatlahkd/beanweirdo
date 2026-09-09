@@ -22,9 +22,9 @@ import {
  *
  * Port of the standalone admin app's app/posts/[id]/preview/page.tsx,
  * adapted to take `postId` as a prop instead of a next/navigation route
- * param. Reachable either via Editor's "Xem trước ↗" link (which opens
- * `/admin?preview=<id>` in a new tab — the Admin area reads that param on
- * mount, see App.tsx's `initialState`) or by direct in-app nav.
+ * param. Its own address is `/ad-post/view=<slug>`, which is what Editor's
+ * "Xem trước ↗" link opens in a second tab; `/admin?preview=<id>` still
+ * resolves here so links made before that address existed keep working.
  */
 export function Preview({ postId }: { postId: string }) {
   return (

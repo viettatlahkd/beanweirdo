@@ -1,12 +1,14 @@
 import { useCallback, useMemo, useState } from 'react'
 import { Sidebar } from './components/Sidebar'
-import { navByKey } from './content/navItems'
 import { ModulesProvider } from './data/useModules'
+import { PostAddressProvider, usePostAddresses } from './data/usePostAddresses'
 import { SiteCopyProvider } from './data/useSiteCopy'
 import { ink, layout, paper, sans } from './design/tokens'
 import { AuthGate, AuthProvider } from './lib/auth'
 import { useIsMobile } from './lib/useIsMobile'
 import { AREA_HOME, isPrivate, screenAllowed, type Area } from './lib/area'
+import { useRoute } from './lib/useRoute'
+import type { CmsTab, Where } from './lib/routes'
 import {
   NavContext,
   SettingsContext,
@@ -34,101 +36,100 @@ import { Templates } from './screens/Templates'
 const settings: Settings = { density: 'roomy', showPlates: true }
 
 /**
- * Where an area opens.
+ * The module a page shows when the address does not name one.
  *
- * `?screen=<navKey>` deep-links a specific page — that's how the sidebar
- * crosses from one area into another. `?preview=<id>` is the older deep link
- * the editor's "open in new tab" still uses.
+ * Only the module screen reads this, and it always arrives with a module in
+ * its address; this is what the value is before anyone has been anywhere.
  */
-function initialState(area: Area): { screen: Screen; postId: string | null } {
-  const params = new URLSearchParams(window.location.search)
-
-  const preview = params.get('preview')
-  if (preview && area === 'admin') return { screen: 'postPreview', postId: preview }
-
-  const requested = params.get('screen')
-  const match = requested ? navByKey(requested) : undefined
-  // Only honour a deep link into a screen this area is allowed to draw.
-  if (match && screenAllowed(area, match.screen)) return { screen: match.screen, postId: null }
-
-  return { screen: AREA_HOME[area] as Screen, postId: null }
-}
+const FIRST_MODULE = 'sensory'
 
 export function App({ area }: { area: Area }) {
-  const initial = useMemo(() => initialState(area), [area])
+  return (
+    <SettingsContext.Provider value={settings}>
+      <AuthProvider>
+        <SiteCopyProvider>
+          <ModulesProvider>
+            <PostAddressProvider area={area}>
+              <Routed area={area} />
+            </PostAddressProvider>
+          </ModulesProvider>
+        </SiteCopyProvider>
+      </AuthProvider>
+    </SettingsContext.Provider>
+  )
+}
 
-  const [screen, setScreen] = useState<Screen>(initial.screen)
+/**
+ * Which screen is open, read from and written to the address bar.
+ *
+ * Every `go…` below is a step the browser can walk back through, and every
+ * screen has an address that can be pasted into a fresh tab. The screen used
+ * to be React state alone, so the address bar never moved off `/` — which is
+ * why back left the site and a reload dropped the reader at the front door.
+ */
+function Routed({ area }: { area: Area }) {
+  const [where, go] = useRoute()
+  const posts = usePostAddresses()
   const [variant, setVariant] = useState<Variant>('A')
-  const [moduleId, setModuleId] = useState('sensory')
-  const [postId, setPostId] = useState<string | null>(initial.postId)
-  // Which door each template screen was entered through — see `Origin`.
-  const [articleFrom, setArticleFrom] = useState<Origin>('admin')
 
-  const openModule = useCallback((id: string) => {
-    setModuleId(id)
-    setScreen('module')
-  }, [])
+  const at = useCallback((next: Omit<Where, 'area'>) => go({ ...next, area }), [go, area])
 
-  const openArticle = useCallback((id?: string, from: Origin = 'admin') => {
-    setPostId(id ?? null)
-    setArticleFrom(from)
-    setScreen('article')
-  }, [])
+  const moduleId = where.moduleId ?? FIRST_MODULE
+  // The address carries the post's slug; the screens below work in ids.
+  const postId = where.slug ? posts.idOf(where.slug) : null
+  const articleFrom: Origin = where.from ?? 'admin'
 
-  const editPost = useCallback((id: string) => {
-    setPostId(id)
-    setScreen('postEdit')
-  }, [])
+  const openModule = useCallback((id: string) => at({ screen: 'module', moduleId: id }), [at])
 
-  const previewPost = useCallback((id: string) => {
-    setPostId(id)
-    setScreen('postPreview')
-  }, [])
+  const openArticle = useCallback(
+    (id?: string, from: Origin = 'admin') =>
+      at({ screen: 'article', slug: id ? posts.slugOf(id) : undefined, from }),
+    [at, posts],
+  )
+
+  const editPost = useCallback((id: string) => at({ screen: 'postEdit', slug: posts.slugOf(id) }), [at, posts])
+  const previewPost = useCallback((id: string) => at({ screen: 'postPreview', slug: posts.slugOf(id) }), [at, posts])
+  const openTemplate = useCallback(
+    (id: string | null) => at({ screen: 'templates', templateId: id ?? undefined }),
+    [at],
+  )
 
   const nav = useMemo<Nav>(
     () => ({
-      screen,
+      screen: where.screen,
       area,
       variant,
       moduleId,
       postId,
       articleFrom,
-      goArt: () => setScreen('art'),
-      goLanding: () => setScreen('landing'),
-      goHome: () => setScreen('home'),
-      goArchive: () => setScreen('archive'),
-      goHours: () => setScreen('hours'),
-      goNotes: () => setScreen('notes'),
-      goCms: () => setScreen('cms'),
-      goLogic: () => setScreen('logic'),
+      templateId: where.templateId ?? null,
+      cmsTab: where.tab ?? 'posts',
+      goArt: () => at({ screen: 'art' }),
+      goLanding: () => at({ screen: 'landing' }),
+      goHome: () => at({ screen: 'home' }),
+      goArchive: () => at({ screen: 'archive' }),
+      goHours: () => at({ screen: 'hours' }),
+      goNotes: () => at({ screen: 'notes' }),
+      goCms: (tab?: CmsTab) => at({ screen: 'cms', tab }),
+      goLogic: () => at({ screen: 'logic' }),
       openModule,
       openArticle,
-      newPost: () => setScreen('postNew'),
+      newPost: () => at({ screen: 'postNew' }),
       editPost,
       previewPost,
-      goTemplates: () => setScreen('templates'),
+      goTemplates: () => at({ screen: 'templates' }),
+      openTemplate,
       toggleVariant: () => {
-        setScreen('home')
+        at({ screen: 'home' })
         setVariant((v) => (v === 'A' ? 'B' : 'A'))
       },
     }),
-    [
-      screen,
-      area,
-      variant,
-      moduleId,
-      postId,
-      articleFrom,
-      openModule,
-      openArticle,
-      editPost,
-      previewPost,
-    ],
+    [where, area, variant, moduleId, postId, articleFrom, at, openModule, openArticle, editPost, previewPost, openTemplate],
   )
 
   // Second line of defence: even if some path sets a screen that doesn't
   // belong here, the area refuses to draw it.
-  const shown: Screen = screenAllowed(area, screen) ? screen : (AREA_HOME[area] as Screen)
+  const shown: Screen = screenAllowed(area, where.screen) ? where.screen : (AREA_HOME[area] as Screen)
   const mobile = useIsMobile()
 
   const body = (
@@ -156,37 +157,29 @@ export function App({ area }: { area: Area }) {
   )
 
   return (
-    <SettingsContext.Provider value={settings}>
-      <AuthProvider>
-        <SiteCopyProvider>
-          <ModulesProvider>
-            <NavContext.Provider value={nav}>
-              <div
-                style={{
-                  minHeight: '100vh',
-                  background: paper.cream,
-                  color: ink.base,
-                  fontFamily: sans,
-                  fontWeight: 200,
-                  WebkitFontSmoothing: 'antialiased',
-                }}
-              >
-                {isPrivate(area) ? (
-                  <AuthGate>
-                    <Sidebar />
-                    {body}
-                  </AuthGate>
-                ) : (
-                  <>
-                    <Sidebar />
-                    {body}
-                  </>
-                )}
-              </div>
-            </NavContext.Provider>
-          </ModulesProvider>
-        </SiteCopyProvider>
-      </AuthProvider>
-    </SettingsContext.Provider>
+    <NavContext.Provider value={nav}>
+      <div
+        style={{
+          minHeight: '100vh',
+          background: paper.cream,
+          color: ink.base,
+          fontFamily: sans,
+          fontWeight: 200,
+          WebkitFontSmoothing: 'antialiased',
+        }}
+      >
+        {isPrivate(area) ? (
+          <AuthGate>
+            <Sidebar />
+            {body}
+          </AuthGate>
+        ) : (
+          <>
+            <Sidebar />
+            {body}
+          </>
+        )}
+      </div>
+    </NavContext.Provider>
   )
 }

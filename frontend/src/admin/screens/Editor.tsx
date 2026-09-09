@@ -28,6 +28,8 @@ import {
   type PostTemplate,
 } from '../lib/apiClient'
 import { useNav } from '../../lib/nav'
+import { toPath } from '../../lib/routes'
+import { usePostAddresses } from '../../data/usePostAddresses'
 import { ink, paper, sans, serif } from '../../design/tokens'
 import { ThemePicker } from '../components/ThemePicker'
 import { FocusPicker } from '../components/FocusPicker'
@@ -132,6 +134,7 @@ export function Editor({ postId }: { postId: string }) {
 
 function EditorContent({ postId }: { postId: string }) {
   const nav = useNav()
+  const addresses = usePostAddresses()
   const [post, setPost] = useState<PostDetail | null>(null)
   const [modules, setModules] = useState<Module[]>([])
   /*
@@ -399,11 +402,10 @@ function EditorContent({ postId }: { postId: string }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 20, maxWidth: 1320 }}>
         <span style={{ fontSize: 11, color: ink.muted }}>Tự lưu khi rời khỏi ô soạn · trạng thái hiện tại: {post.status}</span>
         <div>
-          {/* Opens the preview screen in a new tab via the ?preview= deep
-              link the Admin area reads on mount (App.tsx's `initialState`) —
-              screens have no URL of their own otherwise, so this query param
-              is the one place a real link is used instead of a nav() call. */}
-          <a href={`/admin?preview=${postId}`} target="_blank" rel="noreferrer" className="admin-btn-ghost" style={{ textDecoration: 'none', display: 'inline-block' }}>
+          {/* A real link because it opens a second tab, where a nav() call
+              cannot reach. Every screen has an address of its own now, so this
+              is the address of the preview screen and nothing special. */}
+          <a href={toPath({ area: 'admin', screen: 'postPreview', slug: addresses.slugOf(postId) })} target="_blank" rel="noreferrer" className="admin-btn-ghost" style={{ textDecoration: 'none', display: 'inline-block' }}>
             Xem trước ↗
           </a>
           <button onClick={() => nav.goCms()} className="admin-btn-ghost" style={{ marginLeft: 8 }}>
