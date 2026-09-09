@@ -1,21 +1,20 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { App } from './App'
-import { areaFromPath } from './lib/area'
 import './global.css'
 import './admin/admin.css'
 
 /**
- * No router: the area is picked from the pathname once, and every screen
- * inside it is chosen by local state (see `lib/nav.tsx`).
+ * Ba khu: `/` là nhật ký công khai, nhật ký hằng ngày và khu quản trị nằm sau
+ * một lần đăng nhập chung. Chúng là ba đường dẫn riêng chứ không phải mấy dòng
+ * bị giấu trong sidebar, nên người chưa đăng nhập không có lối nào vào.
  *
- * Three entry points — `/` is the public journal, `/practice` and `/admin` are
- * behind one shared login. They are separate URLs rather than hidden rows in a
- * sidebar so that an unauthenticated visitor has no route into them at all;
- * crossing between areas is a real page load, which re-runs the auth check.
+ * Khu vực đọc ra từ chính đường dẫn, cùng một chỗ đọc ra màn hình — xem
+ * `lib/routes.ts`. Hai chỗ cùng trả lời "đây là khu nào" thì sớm muộn chúng
+ * trả lời khác nhau, và khi ấy địa chỉ đúng nhưng trang vẽ ra sai.
  */
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App area={areaFromPath()} />
+    <App />
   </StrictMode>,
 )

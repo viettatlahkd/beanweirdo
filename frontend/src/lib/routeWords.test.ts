@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { areaFromPath } from './area'
 import { buildSlug } from './postSlug'
 import { parsePath, toPath } from './routes'
 import {
@@ -47,6 +46,14 @@ describe('checkWords — chủ site chỉ được đổi từ', () => {
     expect(slots).not.toContain('pattern')
   })
 
+  it('takes only the slots it knows, not the whole stored blob', () => {
+    // Bản lưu còn mang `past`. Bê cả nó vào thì bộ từ dựng từ kho không bao giờ
+    // bằng bộ từ trên biểu mẫu, và nút Lưu không tắt được dù vừa lưu xong.
+    const stored = { ...DEFAULT_WORDS, past: [{ admin: 'ad' }] }
+    expect(resolveWords(stored)).toEqual(DEFAULT_WORDS)
+    expect(Object.keys(resolveWords(stored))).not.toContain('past')
+  })
+
   it('falls back to the defaults rather than breaking the site', () => {
     // Một bản lưu hỏng chỉ bị bỏ qua; trang chạy như trước khi ai đó đổi tên.
     expect(resolveWords({ admin: 'ad min' })).toEqual(DEFAULT_WORDS)
@@ -67,7 +74,7 @@ describe('đổi từ rồi thì cả trang đọc theo từ mới', () => {
 
     expect(parsePath('/admin-post/edit=ghi-p260824', '', words))
       .toMatchObject({ area: 'admin', screen: 'postEdit', slug: 'ghi-p260824' })
-    expect(areaFromPath('/admin-archive', words)).toBe('admin')
+    expect(parsePath('/admin-archive', '', words).area).toBe('admin')
   })
 
   it('spells a slug with the words in force', () => {
@@ -80,7 +87,7 @@ describe('đổi từ rồi thì cả trang đọc theo từ mới', () => {
   it('keeps reading the old back-office address after a rename', () => {
     // Dấu trang cũ không được gãy chỉ vì chủ site đổi tên một trang.
     const words = w({ admin: 'quan-tri' })
-    expect(areaFromPath('/admin', words)).toBe('admin')
+    expect(parsePath('/admin', '', words).area).toBe('admin')
     expect(parsePath('/admin', '', words)).toMatchObject({ area: 'admin', screen: 'cms' })
   })
 

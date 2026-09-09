@@ -2,7 +2,6 @@ import { navByKey } from '../content/navItems'
 import type { NavGroup } from '../content/site'
 import type { Screen } from './nav'
 import { toPath } from './routes'
-import { activeWords, type RouteWords } from './routeWords'
 
 /**
  * The three areas of the site, each its own entry point.
@@ -25,26 +24,7 @@ export function areaOfGroup(group: NavGroup): Area {
 /** Everything except the public journal is behind the login wall. */
 export const isPrivate = (area: Area) => area !== 'public'
 
-/**
- * Which area an address belongs to.
- *
- * Read before React starts, so it works off the string alone. `/admin` is the
- * address the back office used to live at and is still recognised; everything
- * the site writes now begins `/ad` or `/ad-`.
- */
-export function areaFromPath(
-  pathname: string = window.location.pathname,
-  w: RouteWords = activeWords(),
-): Area {
-  const path = pathname.split('?')[0]
-  const head = path.split('/').filter(Boolean)[0] ?? ''
-  // `/admin` là địa chỉ cũ, luôn nhận, kể cả khi chủ site đã đổi từ.
-  if (head === w.admin || head.startsWith(`${w.admin}-`) || path.startsWith('/admin')) return 'admin'
-  if (head === w.practice) return 'practice'
-  return 'public'
-}
-
-/** The screen an area opens on when no `?screen=` is given. */
+/** The screen an area opens on when the address names none. */
 export const AREA_HOME: Record<Area, string> = {
   public: 'landing',
   practice: 'hours',

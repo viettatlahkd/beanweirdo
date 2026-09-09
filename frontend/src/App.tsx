@@ -6,7 +6,7 @@ import { SiteCopyProvider, useSiteCopy } from './data/useSiteCopy'
 import { ink, layout, paper, sans } from './design/tokens'
 import { AuthGate, AuthProvider } from './lib/auth'
 import { useIsMobile } from './lib/useIsMobile'
-import { AREA_HOME, areaFromPath, isPrivate, screenAllowed, type Area } from './lib/area'
+import { AREA_HOME, isPrivate, screenAllowed } from './lib/area'
 import { useRoute } from './lib/useRoute'
 import { adoptWords } from './lib/routeWords'
 import type { CmsTab, Where } from './lib/routes'
@@ -44,20 +44,21 @@ const settings: Settings = { density: 'roomy', showPlates: true }
  */
 const FIRST_MODULE = 'sensory'
 
-export function App({ area: opened }: { area: Area }) {
+export function App() {
+  const [where, go] = useRoute()
   /*
-   * Khu vực được chọn từ đường dẫn trước khi React chạy (`main.tsx`), bằng bộ
-   * từ nhớ trong máy. Nếu chủ site vừa đổi tên mà máy này chưa biết, bộ từ thật
-   * về sau một nhịp mạng và câu trả lời có thể khác — nên nó là state, sửa được
-   * tại chỗ. Nạp lại trang thì gọn hơn, nhưng một trình duyệt chặn lưu sẽ nạp
-   * lại mãi không thôi.
+   * Khu vực là điều chính địa chỉ nói, không phải một câu trả lời thứ hai.
+   *
+   * Trước đây `main.tsx` tự đoán khu vực từ đường dẫn còn `parsePath` đoán màn
+   * hình, và hai bên lệch nhau ngay lần đầu có chuyện lạ: một địa chỉ viết bằng
+   * bộ từ cũ đọc ra đúng màn Archive trong khu quản trị, nhưng khu vực vẫn là
+   * công khai, nên thanh địa chỉ đúng mà trang vẽ ra là trang chủ.
    */
-  const [area, setArea] = useState(opened)
+  const area = where.area
 
   const onWords = useCallback(() => {
-    setArea(areaFromPath())
-    // `useRoute` đọc địa chỉ khi nghe `popstate`; địa chỉ không đổi nhưng nghĩa
-    // của nó vừa đổi, nên đọc lại đúng bằng đường ấy.
+    // `useRoute` đọc lại địa chỉ khi nghe `popstate`; địa chỉ không đổi nhưng
+    // nghĩa của nó vừa đổi, nên đọc lại đúng bằng đường ấy.
     window.dispatchEvent(new PopStateEvent('popstate'))
   }, [])
 
@@ -68,7 +69,7 @@ export function App({ area: opened }: { area: Area }) {
           <RouteWordsSync onAdopt={onWords} />
           <ModulesProvider>
             <PostAddressProvider area={area}>
-              <Routed area={area} />
+              <Routed where={where} go={go} />
             </PostAddressProvider>
           </ModulesProvider>
         </SiteCopyProvider>
@@ -98,8 +99,8 @@ function RouteWordsSync({ onAdopt }: { onAdopt: () => void }) {
  * to be React state alone, so the address bar never moved off `/` — which is
  * why back left the site and a reload dropped the reader at the front door.
  */
-function Routed({ area }: { area: Area }) {
-  const [where, go] = useRoute()
+function Routed({ where, go }: { where: Where; go: (next: Where) => void }) {
+  const area = where.area
   const posts = usePostAddresses()
   const [variant, setVariant] = useState<Variant>('A')
 
