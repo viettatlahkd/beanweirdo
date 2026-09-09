@@ -30,10 +30,17 @@ const post = (id: string, en: string) => ({
   further_reading: null,
 })
 
+/*
+ * Bài mở ra chiếm chín trên mười hai cột và thụt vào một cột, chứ không trọn bề
+ * ngang: chủ site muốn nó đọc ra là một khối nổi lên TRONG trang ghi, không
+ * phải một trang khác đè lên.
+ */
+const OPEN_COL = '2 / span 9'
+
 const cards = () =>
   Array.from(document.querySelectorAll<HTMLElement>('div')).filter(
     // Thẻ bài: hoặc một ô trong chu kỳ dàn trang, hoặc mở hết chiều ngang.
-    (d) => /^span [45]$/.test(d.style.gridColumn) || d.style.gridColumn === '1 / -1',
+    (d) => /^span [45]$/.test(d.style.gridColumn) || d.style.gridColumn === OPEN_COL,
   )
 
 describe('Ghi 01 — mở bài tại chỗ khi có nhiều bài', () => {
@@ -58,11 +65,11 @@ describe('Ghi 01 — mở bài tại chỗ khi có nhiều bài', () => {
     expect(c.every((x) => x.style.opacity === '1')).toBe(true)
   })
 
-  it('mở một bài thì nó rộng hết lưới, hai bài kia mờ đi', () => {
+  it('mở một bài thì nó nở ra ba phần tư lưới, hai bài kia mờ đi', () => {
     render(<Notes />)
     fireEvent.click(screen.getByText('Bài B'))
 
-    const open = cards().filter((x) => x.style.gridColumn === '1 / -1')
+    const open = cards().filter((x) => x.style.gridColumn === OPEN_COL)
     const rest = cards().filter((x) => /^span [45]$/.test(x.style.gridColumn))
     expect(open).toHaveLength(1)
     expect(open[0].textContent).toContain('Bài B')
@@ -74,7 +81,7 @@ describe('Ghi 01 — mở bài tại chỗ khi có nhiều bài', () => {
     render(<Notes />)
     fireEvent.click(screen.getByText('Bài B'))
     fireEvent.click(screen.getByText('Bài C'))
-    const open = cards().filter((x) => x.style.gridColumn === '1 / -1')
+    const open = cards().filter((x) => x.style.gridColumn === OPEN_COL)
     expect(open).toHaveLength(1)
     expect(open[0].textContent).toContain('Bài C')
   })
@@ -83,7 +90,7 @@ describe('Ghi 01 — mở bài tại chỗ khi có nhiều bài', () => {
     render(<Notes />)
     fireEvent.click(screen.getByText('Bài B'))
     fireEvent.click(screen.getByText('Bài B'))
-    expect(cards().filter((x) => x.style.gridColumn === '1 / -1')).toHaveLength(0)
+    expect(cards().filter((x) => x.style.gridColumn === OPEN_COL)).toHaveLength(0)
     expect(cards().every((x) => x.style.opacity === '1')).toBe(true)
   })
 })

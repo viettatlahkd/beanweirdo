@@ -70,6 +70,8 @@ export type BitesizePostData = {
   sub: string
   /** Ảnh của ô phụ. Chưa có thì ô là mảng màu mang chú thích. */
   subImage: string | null
+  /** Khung hình đắp vào clip lúc chưa chạy — không có thì trình duyệt vẽ ô đen. */
+  poster?: string | null
   /** Ảnh tĩnh hay clip — quyết định cả dàn trang lẫn màu. */
   media: BitesizeMedia
   text: string
@@ -200,6 +202,7 @@ function Media({
           muted
           loop
           playsInline
+          poster={post.poster ?? undefined}
           autoPlay={!stillPreferred()}
           controls={stillPreferred()}
           style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}

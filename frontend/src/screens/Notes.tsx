@@ -1,9 +1,10 @@
-import { useMemo, useState, type CSSProperties } from 'react'
+import { useMemo, useRef, useState, type CSSProperties } from 'react'
 import { Breadcrumbs } from '../components/Breadcrumbs'
 import { useSiteCopy } from '../data/useSiteCopy'
 import { noteFilterBar } from '../lib/notesFilter'
 import { useTags } from '../data/useTags'
 import { useIsMobile } from '../lib/useIsMobile'
+import { useNarrow } from '../lib/useNarrow'
 import {
   featureCells,
   withOverrides,
@@ -63,6 +64,23 @@ function OpenedPost({
    * ở bề ngang 390.
    */
   const mobile = useIsMobile()
+  /*
+   * Bài mở ra chỉ chiếm ba phần tư lưới, nên trên màn 905 nó còn 561 — hẹp hơn
+   * ngưỡng 899 trong khi cửa sổ thì không. Hỏi cửa sổ ở đây là hỏi sai chỗ:
+   * memo có cột thông số rộng cứng 300px, và ở 561 thì cột tiêu đề bên cạnh còn
+   * 93px, tiêu đề xuống dòng từng chữ cái một. Nên đo chính khối này.
+   */
+  const box = useRef<HTMLDivElement>(null)
+  const narrow = useNarrow(box)
+  const tight = mobile || narrow
+  return <div ref={box}>{draw(post, mod, tight)}</div>
+}
+
+function draw(
+  post: PostRow,
+  mod: { title: string; accent: string; on_color: string } | undefined,
+  mobile: boolean,
+) {
   switch (post.template) {
     case 'bitesize':
       return <PostRenderer template="bitesize" post={toBitesizeData(post, { mod })} mobile={mobile} />
@@ -507,7 +525,20 @@ export function Notes() {
                         zIndex: 2,
                       }
                     : {
-                        gridColumn: open ? '1 / -1' : place.col,
+                        /*
+                         * Bài mở ra KHÔNG chiếm trọn bề ngang.
+                         *
+                         * Chủ site: "bề ngang của bài nó chiếm trọn bề ngang
+                         * trang > trông rất lớn và cộc cằn (...) mục tiêu là
+                         * tạo cảm giác là bài này pop up và là 1 phần của trang
+                         * ghi, thay vì cảm giác như mở hẳn ra trang khác."
+                         *
+                         * Chín trên mười hai cột — ba phần tư — và thụt vào một
+                         * cột ở mép trái. Lưới của trang vẫn nhìn thấy được hai
+                         * bên, nên bài đọc ra là một khối nổi lên TRONG trang
+                         * chứ không phải một trang mới đè lên.
+                         */
+                        gridColumn: open ? '2 / span 9' : place.col,
                         marginTop: open ? '40px' : place.mt,
                       }),
                   cursor: 'pointer',

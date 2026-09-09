@@ -79,7 +79,7 @@ import {
   type BitesizeBody,
 } from '../../lib/postToRenderer'
 import type { BitesizeLength } from 'post-renderer'
-import { looksLikeVideo, probeMedia } from '../../lib/mediaShape'
+import { captureFrame, looksLikeVideo, probeMedia } from '../../lib/mediaShape'
 import { toReportBlocks, toReportNotes } from '../../lib/reportBlocks'
 
 /**
@@ -188,6 +188,7 @@ function EditorContent({ postId }: { postId: string }) {
     setPost((prev) => (prev ? { ...prev, hero_image_url: url } : prev))
     updatePost(postId, { hero_image_url: url })
     void reshapeForMedia(url)
+    if (looksLikeVideo(url)) void autoPoster(url)
   }
 
   /*
@@ -224,9 +225,30 @@ function EditorContent({ postId }: { postId: string }) {
   }
 
   function saveSub(url: string) {
+    writeBody({ subImage: url })
+  }
+
+  /**
+   * Ảnh đại diện cho clip.
+   *
+   * Lấy tự động một khung ở giây thứ nhất ngay khi đính clip vào; đổi tay được
+   * bằng chính dòng "thumbnail" trong thanh đặt ảnh. Lấy không được — máy chủ
+   * không cho đọc pixel — thì im lặng bỏ qua, bài vẫn lưu bình thường.
+   */
+  async function autoPoster(url: string) {
+    const frame = await captureFrame(url)
+    if (!frame) return
+    const { url: posterUrl } = await uploadImage(
+      new File([frame], 'poster.jpg', { type: 'image/jpeg' }),
+    )
+    writeBody({ poster: posterUrl })
+  }
+
+  /** Ghi thêm vào `body` jsonb mà không đụng phần đã có. */
+  function writeBody(patch: Record<string, unknown>) {
     setPost((prev) => {
       if (!prev) return prev
-      const body = { ...((prev.body ?? {}) as object), subImage: url }
+      const body = { ...((prev.body ?? {}) as object), ...patch }
       void updatePost(postId, { body } as unknown as Parameters<typeof updatePost>[1])
       return { ...prev, body: body as unknown as PostDetail['body'] }
     })
@@ -237,9 +259,64 @@ function EditorContent({ postId }: { postId: string }) {
     updatePost(postId, patch as Parameters<typeof updatePost>[1])
   }
 
+  const body = (getBody(post) ?? {}) as { subImage?: string; poster?: string }
+  const heroIsClip = Boolean(post.hero_image_url && looksLikeVideo(post.hero_image_url))
+
+  /*
+   * Bài này có những chỗ đặt ảnh nào.
+   *
+   * Mọi template đều có ảnh bìa. Clip thì có thêm một dòng ảnh đại diện. Riêng
+   * bitesize có một ô ảnh trong thân bài. Template khác cất ảnh thân bài trong
+   * từng khối nội dung nên chúng đặt ngay tại chỗ, không qua thanh này.
+   */
+  const mediaSlots: MediaSlotSpec[] = [
+    {
+      key: 'hero',
+      label: 'ảnh bìa',
+      url: post.hero_image_url,
+      accept: 'image/*,video/*',
+      onPick: (f) => void setHero(f),
+      onLink: (url) => {
+        saveHero(url)
+        if (!looksLikeVideo(url)) setFraming(url)
+      },
+      extra:
+        post.hero_image_url && !heroIsClip
+          ? { label: 'đặt vào khung', onClick: () => setFraming(post.hero_image_url) }
+          : undefined,
+    },
+    ...(heroIsClip
+      ? [
+          {
+            key: 'poster',
+            label: 'thumbnail',
+            url: body.poster ?? null,
+            accept: 'image/*',
+            onPick: async (f: File) => {
+              const { url } = await uploadImage(f)
+              writeBody({ poster: url })
+            },
+            onLink: (url: string) => writeBody({ poster: url }),
+          } satisfies MediaSlotSpec,
+        ]
+      : []),
+    ...(template === 'bitesize'
+      ? [
+          {
+            key: 'sub',
+            label: 'ảnh body 1',
+            url: body.subImage ?? null,
+            accept: 'image/*',
+            onPick: (f: File) => void setSub(f),
+            onLink: (url: string) => saveSub(url),
+          } satisfies MediaSlotSpec,
+        ]
+      : []),
+  ]
+
   return (
     <div style={{ padding: '32px 40px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12, color: ink.muted, marginBottom: 14 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12, color: ink.muted, marginBottom: 12 }}>
         Template:
         {/*
           Changing it here rather than by going back: the post already exists,
@@ -269,37 +346,6 @@ function EditorContent({ postId }: { postId: string }) {
               </option>
             ))}
           </select>
-        )}
-        <HeroPicker
-          onPick={(f) => void setHero(f)}
-          onLink={(url) => {
-            saveHero(url)
-            if (!looksLikeVideo(url)) setFraming(url)
-          }}
-          hasHero={Boolean(post.hero_image_url)}
-        />
-        {/*
-          * Ô ảnh phụ của bitesize trước đây chỉ có chú thích, không có đường
-          * nào đẩy ảnh vào. Dùng lại đúng ô đặt ảnh bìa — hai chỗ đặt ảnh thì
-          * nên mở ra bằng cùng một cách. Chỉ nhận ảnh: ô phụ là một tấm hình
-          * đứng cạnh, không phải chỗ cho clip thứ hai.
-          */}
-        {template === 'bitesize' && (
-          <HeroPicker
-            what="ảnh phụ"
-            accept="image/*"
-            onPick={(f) => void setSub(f)}
-            onLink={(url) => saveSub(url)}
-            hasHero={Boolean((getBody(post) as { subImage?: string } | null)?.subImage)}
-          />
-        )}
-        {post.hero_image_url && !looksLikeVideo(post.hero_image_url) && (
-          <button
-            onClick={() => setFraming(post.hero_image_url)}
-            style={{ fontFamily: 'inherit', fontSize: 12, color: ink.green, background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
-          >
-            đặt vào khung
-          </button>
         )}
         {framing && (
           <FocusPicker
@@ -333,6 +379,16 @@ function EditorContent({ postId }: { postId: string }) {
           />
         </span>
       </div>
+
+      {/*
+        * Thanh đặt ảnh: mỗi chỗ đặt một dòng.
+        *
+        * Trước đây tất cả nằm chung một hàng với ô chọn template, nên thêm một
+        * chỗ đặt ảnh là hàng ấy dài thêm và chữ trôi đi đâu không rõ. Xuống
+        * dòng thì đọc ra ngay bài này có mấy chỗ đặt ảnh và chỗ nào đã có gì.
+        */}
+      <MediaBar slots={mediaSlots} />
+
       <EditorCanvas
         template={template}
         post={post}
@@ -623,58 +679,64 @@ function EditableField({
   )
 }
 
-/** Sets the cover. The picture itself is shown by the page, not by this. */
 /**
- * Ảnh bìa: tải lên, hoặc dán một đường dẫn.
+ * Một chỗ đặt ảnh trong thanh: tên, rồi hai lối đưa ảnh vào.
  *
- * Trước đây chỉ có tải lên, nên một tấm ảnh đã nằm sẵn ở đâu đó trên mạng vẫn
- * phải tải về rồi tải lên lại. Ô dán link là cùng một lối mà khung ảnh của
- * trang module đã có — hai chỗ đặt ảnh thì nên mở ra bằng cùng một cách.
+ * Tải lên và dán link là hai lối cho cùng một việc — một tấm ảnh đã nằm sẵn ở
+ * đâu đó trên mạng thì không phải tải về rồi tải lên lại.
  */
-function HeroPicker({
-  onPick,
-  onLink,
-  hasHero,
-  what = 'ảnh bìa',
-  accept = 'image/*,video/*',
-}: {
+export type MediaSlotSpec = {
+  key: string
+  label: string
+  url: string | null
+  accept: string
   onPick: (file: File) => void
   onLink: (url: string) => void
-  hasHero: boolean
-  /** Tên chỗ đặt ảnh, để cùng một ô dùng được cho ảnh bìa lẫn ảnh phụ. */
-  what?: string
-  accept?: string
-}) {
+  /** Việc thêm chỉ chỗ này mới có — ví dụ căn khung cho ảnh bìa. */
+  extra?: { label: string; onClick: () => void }
+}
+
+const slotLinkStyle: CSSProperties = {
+  fontFamily: 'inherit',
+  fontSize: 12,
+  color: ink.green,
+  background: 'none',
+  border: 'none',
+  padding: 0,
+  cursor: 'pointer',
+}
+
+function MediaSlot({ slot }: { slot: MediaSlotSpec }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [linking, setLinking] = useState(false)
-  const linkStyle: CSSProperties = {
-    fontFamily: 'inherit',
-    fontSize: 12,
-    color: ink.green,
-    background: 'none',
-    border: 'none',
-    padding: 0,
-    cursor: 'pointer',
-  }
   return (
-    <>
-      <button onClick={() => inputRef.current?.click()} style={linkStyle}>
-        {hasHero ? `đổi ${what}` : `thêm ${what}`}
+    <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, fontSize: 12, color: ink.muted, flexWrap: 'wrap' }}>
+      <span style={{ minWidth: 84, color: slot.url ? ink.strong : ink.muted }}>{slot.label}:</span>
+      <button onClick={() => inputRef.current?.click()} style={slotLinkStyle}>
+        tải ảnh lên
       </button>
-      <span style={{ color: ink.faint, fontSize: 11 }}>hoặc</span>
-      <button onClick={() => setLinking((v) => !v)} style={linkStyle}>
+      <span style={{ color: ink.faint }}>–</span>
+      <button onClick={() => setLinking((v) => !v)} style={slotLinkStyle}>
         đặt link
       </button>
+      {slot.extra && (
+        <>
+          <span style={{ color: ink.faint }}>–</span>
+          <button onClick={slot.extra.onClick} style={slotLinkStyle}>
+            {slot.extra.label}
+          </button>
+        </>
+      )}
       {linking && (
         <input
           autoFocus
-          placeholder={`dán link ${what} rồi Enter`}
+          placeholder={`dán link ${slot.label} rồi Enter`}
           onKeyDown={(e) => {
             if (e.key === 'Escape') return setLinking(false)
             if (e.key !== 'Enter') return
             const v = (e.target as HTMLInputElement).value.trim()
             setLinking(false)
-            if (v) onLink(v)
+            if (v) slot.onLink(v)
           }}
           onBlur={() => setLinking(false)}
           style={{
@@ -690,16 +752,25 @@ function HeroPicker({
       <input
         ref={inputRef}
         type="file"
-        // Clip cũng đính vào đây; hệ tự nhận ra và tự đổi dàn trang.
-        accept={accept}
+        accept={slot.accept}
         style={{ display: 'none' }}
         onChange={(e) => {
           const file = e.target.files?.[0]
           e.target.value = ''
-          if (file) onPick(file)
+          if (file) slot.onPick(file)
         }}
       />
-    </>
+    </div>
+  )
+}
+
+function MediaBar({ slots }: { slots: MediaSlotSpec[] }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
+      {slots.map((slot) => (
+        <MediaSlot key={slot.key} slot={slot} />
+      ))}
+    </div>
   )
 }
 

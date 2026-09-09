@@ -241,6 +241,8 @@ export type BitesizeBody = {
   sub?: string
   /** Ảnh của ô phụ — đẩy lên qua chính `/api/upload` như ảnh bìa. */
   subImage?: string | null
+  /** Khung hình đắp vào clip lúc chưa chạy; lấy tự động khi đính clip. */
+  poster?: string | null
   /** Ảnh tĩnh hay clip — quyết định cả dàn trang lẫn màu. */
   media?: BitesizeMedia
 }
@@ -295,6 +297,7 @@ export function toBitesizeData(
       (media === 'vid' ? (portrait ? BITESIZE_CLIP['dọc'] : BITESIZE_CLIP.ngang) : BITESIZE_HINT),
     sub: body.sub ?? '',
     subImage: body.subImage ?? null,
+    poster: body.poster ?? null,
     text: body.text ?? postDescription(post),
     band: bandOf(post, options.mod),
   }

@@ -90,3 +90,56 @@ export function probeMedia(url: string, timeoutMs = 8000): Promise<MediaShape | 
     probe.el.src = url
   })
 }
+
+/**
+ * Một khung hình lấy ra từ clip, để làm ảnh đại diện.
+ *
+ * Clip chưa chạy thì trình duyệt vẽ ra một ô đen; `poster` là tấm đắp vào chỗ
+ * đó. Lấy tự động ở giây thứ nhất — chủ site đổi tay được, nhưng không phải
+ * làm gì thì mới đúng ý "tinh gọn thôi, k phải thứ quan trọng".
+ *
+ * Trả `null` khi không lấy được: clip nằm ở máy chủ không cho đọc pixel thì
+ * canvas bị "nhiễm" và `toBlob` ném. Không lấy được thì bài vẫn lưu bình
+ * thường, chỉ là chưa có ảnh đại diện.
+ */
+export function captureFrame(url: string, at = 1, timeoutMs = 10000): Promise<Blob | null> {
+  return new Promise((resolve) => {
+    let done = false
+    const finish = (blob: Blob | null) => {
+      if (done) return
+      done = true
+      clearTimeout(timer)
+      resolve(blob)
+    }
+    const timer = setTimeout(() => finish(null), timeoutMs)
+    let video: HTMLVideoElement
+    try {
+      video = document.createElement('video')
+    } catch {
+      finish(null)
+      return
+    }
+    video.crossOrigin = 'anonymous'
+    video.muted = true
+    video.preload = 'auto'
+    video.addEventListener('error', () => finish(null))
+    video.addEventListener('loadeddata', () => {
+      // Clip ngắn hơn mốc đã chọn thì lấy ngay giữa nó.
+      video.currentTime = video.duration && video.duration < at ? video.duration / 2 : at
+    })
+    video.addEventListener('seeked', () => {
+      try {
+        const canvas = document.createElement('canvas')
+        canvas.width = video.videoWidth
+        canvas.height = video.videoHeight
+        const ctx = canvas.getContext('2d')
+        if (!ctx || !canvas.width || !canvas.height) return finish(null)
+        ctx.drawImage(video, 0, 0)
+        canvas.toBlob((blob) => finish(blob), 'image/jpeg', 0.82)
+      } catch {
+        finish(null)
+      }
+    })
+    video.src = url
+  })
+}
