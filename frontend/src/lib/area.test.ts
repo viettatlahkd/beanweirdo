@@ -21,6 +21,20 @@ describe('areaFromPath', () => {
     expect(areaFromPath('/practice/anything')).toBe('practice')
   })
 
+  it('reads every back-office address as admin', () => {
+    // Đọc trước khi React chạy, nên chỉ có chuỗi địa chỉ để dựa vào — sai một
+    // cái là cả khu riêng bị vẽ ra như trang công khai.
+    for (const p of ['/ad', '/ad-post', '/ad-post/edit=ghi-p260824', '/ad-sitemap', '/ad-template/81ea', '/ad-archive']) {
+      expect(areaFromPath(p), p).toBe('admin')
+    }
+  })
+
+  it('does not mistake a public address for the back office', () => {
+    for (const p of ['/', '/muc-luc', '/ghi', '/module/biochemistry', '/post/ghi-p260824']) {
+      expect(areaFromPath(p), p).toBe('public')
+    }
+  })
+
   it('treats every unknown path as public', () => {
     expect(areaFromPath('/khong-ton-tai')).toBe('public')
     expect(areaFromPath('/administrator')).toBe('admin')

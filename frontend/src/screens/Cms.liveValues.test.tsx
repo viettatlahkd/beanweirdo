@@ -30,7 +30,20 @@ vi.mock('../admin/lib/apiClient', () => ({
   reorderPosts: vi.fn(), updateModule: vi.fn(), updatePost: vi.fn(),
   uploadImage: vi.fn(), transitionStatus: vi.fn(),
 }))
-vi.mock('../lib/nav', () => ({ useNav: () => ({ openArticle: vi.fn(), goHome: vi.fn() }) }))
+/*
+ * Tab nằm trong địa chỉ, nên `nav` phải nhớ được tab vừa bấm — một object đứng
+ * yên thì bấm sang "Sửa nội dung" không đi tới đâu. `useNav` là hook, nên nó
+ * giữ state ngay trong màn đang gọi nó.
+ */
+vi.mock('../lib/nav', async () => {
+  const { useState } = await import('react')
+  return {
+    useNav: () => {
+      const [cmsTab, goCms] = useState('posts')
+      return { cmsTab, goCms, openArticle: vi.fn(), goHome: vi.fn() }
+    },
+  }
+})
 
 const { Cms } = await import('./Cms')
 

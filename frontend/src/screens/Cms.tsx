@@ -505,7 +505,9 @@ function TagsPanel() {
 
 export function Cms() {
   const nav = useNav()
-  const [tab, setTab] = useState<'posts' | 'map' | 'content'>('posts')
+  // Tab nằm trong địa chỉ, không nằm trong state: ba tab là ba chỗ khác nhau
+  // để đứng, nên một đường link tới sơ đồ trang không được mở ra danh sách bài.
+  const tab = nav.cmsTab
   const [site, setSite] = useState<SiteOverrides>({})
   const [modules, setModules] = useState<Module[]>([])
   // The site map names what Templates holds, so it has to know.
@@ -849,7 +851,7 @@ export function Cms() {
           {TABS.map((x) => (
             <div
               key={x.k}
-              onClick={() => setTab(x.k)}
+              onClick={() => nav.goCms(x.k)}
               style={{
                 fontFamily: sans,
                 fontSize: 11,

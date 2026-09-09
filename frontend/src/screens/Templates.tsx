@@ -13,6 +13,7 @@ import { getTemplate, listTemplates, type StoredTemplate, type TemplateSummary }
 import { Breadcrumbs } from '../components/Breadcrumbs'
 import { ink, paper, sans, serif } from '../design/tokens'
 import { Hover } from '../lib/Hover'
+import { useNav } from '../lib/nav'
 
 const status = { fontFamily: sans, fontSize: 13, color: ink.muted, padding: '60px 56px' }
 
@@ -109,27 +110,8 @@ function Preview({ template }: { template: StoredTemplate }) {
  * of templates being their own data: the number of them is not a fact about
  * the code.
  */
-/** The template named by `?template=`, or null. */
-const idInUrl = () => new URLSearchParams(window.location.search).get('template')
-
-/**
- * Move between the list and one template by writing the address bar.
- *
- * The open template used to be state and nothing else, so the trail could not
- * name it and could not return from it — which is why the screen carried its
- * own "← mọi template" link. Putting it in the URL makes it a place: the trail
- * reads `Admin › Templates › Field report`, the browser's own back button
- * works, and the link is a duplicate that can go.
- */
-function goToTemplate(id: string | null) {
-  const params = new URLSearchParams(window.location.search)
-  params.set('screen', 'templates')
-  if (id) params.set('template', id)
-  else params.delete('template')
-  window.history.pushState({}, '', `${window.location.pathname}?${params}`)
-}
-
 export function Templates() {
+  const nav = useNav()
   const [list, setList] = useState<TemplateSummary[]>([])
   const [open, setOpen] = useState<StoredTemplate | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -143,49 +125,34 @@ export function Templates() {
   }, [])
 
   /**
-   * The URL is what decides which template is open — on first paint, and on
-   * every step of the browser's history. Fetching from here rather than from
-   * the click means a link pasted into a fresh tab opens the same thing.
+   * The address is what decides which template is open — on first paint, on
+   * every step of the browser's history, and on a click. Fetching from the
+   * address rather than from the click means a link pasted into a fresh tab
+   * opens the same thing, and one back press closes the template.
    */
+  const openId = nav.templateId
   useEffect(() => {
     let live = true
-    const sync = () => {
-      const id = idInUrl()
-      if (!id) {
-        setOpen(null)
-        return
-      }
-      getTemplate(id)
-        .then((t) => live && setOpen(t))
-        // A template named in the URL that no longer exists shows the list
-        // rather than an error: the address is stale, nothing is broken.
-        .catch(() => live && (setOpen(null), goToTemplate(null)))
+    if (!openId) {
+      setOpen(null)
+      return
     }
-    sync()
-    window.addEventListener('popstate', sync)
+    getTemplate(openId)
+      .then((t) => live && setOpen(t))
+      // A template named in the address that no longer exists shows the list
+      // rather than an error: the address is stale, nothing is broken.
+      .catch(() => live && (setOpen(null), nav.openTemplate(null)))
     return () => {
       live = false
-      window.removeEventListener('popstate', sync)
     }
-  }, [])
-
-  function show(id: string) {
-    goToTemplate(id)
-    getTemplate(id)
-      .then(setOpen)
-      .catch((e) => setError((e as Error).message))
-  }
-
-  function close() {
-    goToTemplate(null)
-    setOpen(null)
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openId])
 
   if (open) {
     return (
       <div>
         <div style={{ padding: '40px 56px 0' }}>
-          <Breadcrumbs color="#7C7C70" trailing={open.name} onParent={close} />
+          <Breadcrumbs color="#7C7C70" trailing={open.name} onParent={() => nav.openTemplate(null)} />
         </div>
         <Preview template={open} />
       </div>
@@ -210,7 +177,7 @@ export function Templates() {
         {list.map((t) => (
           <Hover
             key={t.id}
-            onClick={() => show(t.id)}
+            onClick={() => nav.openTemplate(t.id)}
             style={{
               display: 'grid',
               gridTemplateColumns: 'minmax(0,240px) minmax(0,1fr) 90px',
