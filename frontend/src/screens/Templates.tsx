@@ -3,6 +3,7 @@ import { PostRenderer } from 'post-renderer'
 import { toReportBlocks, toReportNotes } from '../lib/reportBlocks'
 import type {
   ArticlePostData,
+  BitesizePostData,
   CardData,
   LongformBlock,
   MemoPostData,
@@ -42,6 +43,29 @@ function Preview({ template }: { template: StoredTemplate }) {
       <PostRenderer
         template="report"
         post={{ title, blurb: subtitle, blocks: toReportBlocks(body), notes: toReportNotes(body), template: 'report' }}
+      />
+    )
+  }
+  if (template.renderer === 'bitesize') {
+    const note = (body ?? {}) as Partial<BitesizePostData>
+    return (
+      <PostRenderer
+        template="bitesize"
+        post={{
+          title,
+          tag: note.tag ?? 'quan sát',
+          date: note.date ?? '',
+          num: '',
+          pinned: false,
+          image: null,
+          ink: '#B65A3C',
+          wash: '#E9B79C',
+          len: note.len ?? 'ngắn',
+          portrait: note.portrait ?? false,
+          mediaHint: note.mediaHint ?? 'ảnh — cận cảnh chủ thể',
+          sub: note.sub ?? '',
+          text: note.text ?? subtitle,
+        }}
       />
     )
   }

@@ -11,7 +11,7 @@ import type { SiteOverrides } from '../../content/site'
 import type { LogEntry } from '../../content/hours'
 
 /** The 3 real post templates (the old `templates` table is gone). */
-export const TEMPLATES = ['article', 'cards', 'report', 'longform', 'memo'] as const
+export const TEMPLATES = ['article', 'cards', 'report', 'longform', 'memo', 'bitesize'] as const
 export type PostTemplate = (typeof TEMPLATES)[number]
 
 export type PostKind = 'note' | 'essay' | 'ref' | 'log'

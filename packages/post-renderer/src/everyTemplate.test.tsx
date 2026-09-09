@@ -42,6 +42,14 @@ const CASES: Record<string, PostRendererProps> = {
     post: { band: BAND, title: 'Bài', blocks: [{ k: 'h1', runs: [{ t: 'Tiêu đề gốc' }] }] },
   },
   memo: { template: 'memo', post: { band: BAND, title: 'Bài', specs: [], sections: [] } },
+  bitesize: {
+    template: 'bitesize',
+    post: {
+      band: BAND, title: 'Bài', tag: 'quan sát', date: '2026.02', num: '', pinned: false,
+      image: null, ink: '#B65A3C', wash: '#E9B79C', len: 'ngắn', portrait: false,
+      mediaHint: 'ảnh — cận cảnh chủ thể', sub: '', text: 'thân bài',
+    },
+  },
 }
 
 describe('rules every template obeys', () => {

@@ -2,6 +2,8 @@ import { paletteFrom } from 'post-renderer'
 import { toReportBlocks, toReportNotes } from './reportBlocks'
 import type {
   ArticlePostData,
+  BitesizeLength,
+  BitesizePostData,
   CardsPostData,
   CardData,
   LongformBlock,
@@ -12,6 +14,7 @@ import type {
   SectionData,
 } from 'post-renderer'
 import { garden } from '../design/tokens'
+import { tagColor, tagWash } from './notesFilter'
 import { displayNumber, postDescription, postTitle } from './postText'
 
 /**
@@ -218,5 +221,59 @@ export function toReportData(post: RenderablePost, mod: RenderableModule | undef
     template: 'report',
     notes: toReportNotes(post.body),
     band: bandOf(post, mod),
+  }
+}
+
+/** Chữ trong ô ảnh khi bài chưa có ảnh — đúng câu của bản design gốc. */
+const BITESIZE_HINT = 'ảnh — cận cảnh chủ thể'
+const BITESIZE_CLIP = {
+  dọc: 'video dọc — clip quay dọc',
+  ngang: 'video ngang — clip ngắn không tiếng',
+}
+
+/** Phần riêng của bitesize nằm trong `body` jsonb, như bốn template kia. */
+export type BitesizeBody = {
+  text?: string
+  len?: BitesizeLength
+  portrait?: boolean
+  mediaHint?: string
+  sub?: string
+}
+
+/**
+ * Một bài viết trên template bitesize note.
+ *
+ * Màu lấy theo tag chứ không theo module: cả trang Ghi 01 phân biệt bài bằng
+ * mực của tag, và `lib/notesFilter` đã là nơi duy nhất quyết định tag nào ra
+ * màu nào — bốn tag đầu mang mực bên design đặt, tag chủ site tự thêm lấy màu
+ * từ vườn theo tên.
+ *
+ * `num` là số đếm trong danh sách nên chỉ danh sách biết; trang riêng của bài
+ * truyền chuỗi rỗng và hàng đầu bỏ số đi.
+ */
+export function toBitesizeData(
+  post: RenderablePost & { pinned?: boolean },
+  options: { num?: string; mod?: RenderableModule } = {},
+): BitesizePostData {
+  const body = (post.body ?? {}) as BitesizeBody
+  const len = body.len ?? 'ngắn'
+  const portrait = body.portrait ?? false
+  return {
+    title: postTitle(post),
+    tag: post.kind,
+    date: post.date_label,
+    num: options.num ?? '',
+    pinned: post.pinned ?? false,
+    image: post.hero_image_url,
+    ink: tagColor(post.kind),
+    wash: tagWash(post.kind),
+    len,
+    portrait,
+    mediaHint:
+      body.mediaHint ||
+      (len === 'media' ? (portrait ? BITESIZE_CLIP['dọc'] : BITESIZE_CLIP.ngang) : BITESIZE_HINT),
+    sub: body.sub ?? '',
+    text: body.text ?? postDescription(post),
+    band: bandOf(post, options.mod),
   }
 }

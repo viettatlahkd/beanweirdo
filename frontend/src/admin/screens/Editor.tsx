@@ -70,7 +70,15 @@ import {
 import { AddRow, RowShell } from '../components/RowShell'
 import { duplicateAt, insertAt, move, removeAt } from '../lib/listOps'
 import { useRowDrag } from '../lib/useRowDrag'
-import { toArticleData, toCardsData, toLongformData, toMemoData } from '../../lib/postToRenderer'
+import {
+  toArticleData,
+  toBitesizeData,
+  toCardsData,
+  toLongformData,
+  toMemoData,
+  type BitesizeBody,
+} from '../../lib/postToRenderer'
+import type { BitesizeLength } from 'post-renderer'
 import { toReportBlocks, toReportNotes } from '../../lib/reportBlocks'
 
 /**
@@ -105,6 +113,7 @@ const TEMPLATE_LABEL: Record<string, string> = {
   report: 'Report',
   longform: 'Long-form',
   memo: 'Memo',
+  bitesize: 'Bitesize note',
 }
 
 /**
@@ -327,6 +336,8 @@ export function EditorCanvas({ template, post, module, onChange, onHeroDrop }: C
           <CardsEditor post={post} module={module} onChange={onChange} />
         ) : template === 'report' ? (
           <ReportEditor post={post} module={module} onChange={onChange} />
+        ) : template === 'bitesize' ? (
+          <BitesizeEditor post={post} module={module} onChange={onChange} />
         ) : template === 'memo' ? (
           <MemoEditor post={post} module={module} onChange={onChange} />
         ) : template === 'longform' ? (
@@ -856,6 +867,75 @@ function LongformEditor({
         />
       )}
     />
+  )
+}
+
+/**
+ * Bitesize note — sửa ngay trên bản vẽ, như mọi template khác.
+ *
+ * Hai ô chọn ở đầu không phải nội dung mà là dàn trang: độ dài quyết định cỡ
+ * tiêu đề trong lưới Ghi 01, khung dọc quyết định ảnh đứng cạnh chữ hay nằm
+ * trên. Chúng nằm trong `body` jsonb chứ không thành cột mới — đúng cách bốn
+ * template kia mang phần riêng của chúng.
+ */
+function BitesizeEditor({
+  post,
+  module,
+  onChange,
+}: {
+  post: PostDetail
+  module?: Module
+  onChange: (patch: EditPatch) => void
+}) {
+  const body = (post.body ?? {}) as BitesizeBody
+  const write = (patch: Partial<BitesizeBody>) =>
+    onChange({ body: { ...(post.body as object), ...patch } })
+  const control: CSSProperties = {
+    fontFamily: sans,
+    fontSize: 12.5,
+    padding: '6px 9px',
+    border: `1px solid ${paper.rule}`,
+    background: paper.white,
+    color: ink.base,
+  }
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: 12, padding: '14px 16px', borderBottom: `1px solid ${paper.rule}` }}>
+        <select
+          aria-label="Độ dài"
+          value={body.len ?? 'ngắn'}
+          onChange={(e) => write({ len: e.target.value as BitesizeLength })}
+          style={control}
+        >
+          {(['ngắn', 'vừa', 'dài', 'media'] as BitesizeLength[]).map((l) => (
+            <option key={l} value={l}>
+              {l}
+            </option>
+          ))}
+        </select>
+        <select
+          aria-label="Khung ảnh"
+          value={body.portrait ? 'dọc' : 'ngang'}
+          onChange={(e) => write({ portrait: e.target.value === 'dọc' })}
+          style={control}
+        >
+          <option value="ngang">ngang</option>
+          <option value="dọc">dọc</option>
+        </select>
+      </div>
+      <PostRenderer
+        template="bitesize"
+        post={toBitesizeData(post, { mod: module })}
+        renderTitle={(title) => <EditableField value={title} onCommit={(v) => onChange({ en: v })} />}
+        renderText={(text) => (
+          <EditableField value={text} multiline rows={5} onCommit={(v) => write({ text: v })} />
+        )}
+        renderMediaHint={(hint) => (
+          <EditableField value={hint} onCommit={(v) => write({ mediaHint: v })} />
+        )}
+        renderSub={(sub) => <EditableField value={sub} onCommit={(v) => write({ sub: v })} />}
+      />
+    </div>
   )
 }
 

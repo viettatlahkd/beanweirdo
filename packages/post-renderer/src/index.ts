@@ -8,6 +8,14 @@ export { Cards, FLAVOR_GROUP_NAMES, flavorGroupMeta } from './Cards'
 export { Longform } from './Longform'
 export type { LongformEdit } from './Longform'
 export { Memo } from './Memo'
+export { Bitesize, BitesizeCard, titleSize as bitesizeTitleSize } from './Bitesize'
+export type {
+  BitesizeCardProps,
+  BitesizeLength,
+  BitesizeOverrides,
+  BitesizePostData,
+  BitesizeProps,
+} from './Bitesize'
 export type { CardsProps, CardsOverrides } from './Cards'
 
 export {

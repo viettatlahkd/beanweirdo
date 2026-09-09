@@ -17,9 +17,10 @@ import { buildNotesGrid } from '../lib/notesGrid'
 import { featureMobile, notePlacementMobile } from '../content/notes'
 import { coverStyle } from '../lib/imageFocus'
 import { useModules } from '../data/useModules'
-import { PostRenderer } from 'post-renderer'
+import { BitesizeCard, PostRenderer } from 'post-renderer'
 import {
   toArticleData,
+  toBitesizeData,
   toCardsData,
   toLongformData,
   toMemoData,
@@ -63,6 +64,8 @@ function OpenedPost({
    */
   const mobile = useIsMobile()
   switch (post.template) {
+    case 'bitesize':
+      return <PostRenderer template="bitesize" post={toBitesizeData(post, { mod })} mobile={mobile} />
     case 'memo':
       return <PostRenderer template="memo" post={toMemoData(post, mod)} mobile={mobile} />
     case 'longform':
@@ -80,6 +83,75 @@ function OpenedPost({
         />
       )
   }
+}
+
+/**
+ * Thẻ một bài trong lưới Ghi 01, lúc chưa mở.
+ *
+ * Bài viết trên template bitesize note vẽ bằng đúng thẻ của template ấy — vệt
+ * sáng sau tiêu đề, gạch đầu thẻ nở ra, thân bài cắt hai dòng. Đó là dàn trang
+ * chủ site chỉ đích danh là muốn giữ. Bài trên template khác vẫn là thẻ chung:
+ * ảnh, một dòng nhãn, tiêu đề, mô tả.
+ *
+ * Trạng thái rê chuột nằm ở đây chứ không ở trang, vì nó chỉ nói về một thẻ.
+ */
+function Collapsed({
+  post,
+  num,
+  aspect,
+  mediaWidth,
+  mob,
+}: {
+  post: PostRow
+  num: string
+  aspect: string
+  mediaWidth: string
+  mob: boolean
+}) {
+  const [hovered, setHovered] = useState(false)
+  if (post.template === 'bitesize') {
+    return (
+      <div onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
+        <BitesizeCard
+          post={toBitesizeData(post, { num })}
+          hovered={hovered}
+          aspect={aspect}
+          mediaWidth={mediaWidth}
+          mobile={mob}
+        />
+      </div>
+    )
+  }
+  return (
+    <>
+      {postThumbnail(post) && (
+        <div
+          style={{
+            aspectRatio: aspect,
+            width: mediaWidth,
+            ...coverStyle(postThumbnail(post)!),
+            marginBottom: 18,
+          }}
+        />
+      )}
+      <div style={{ ...label, marginBottom: 10 }}>
+        {post.template} · {post.date_label}
+      </div>
+      <div style={{ fontFamily: serif, fontSize: 40, lineHeight: 1.06, letterSpacing: '-.035em' }}>{post.en}</div>
+      <div
+        style={{
+          fontFamily: "'Be Vietnam Pro',sans-serif",
+          fontWeight: 200,
+          fontSize: 15,
+          lineHeight: 1.62,
+          color: '#4A4A42',
+          marginTop: 12,
+        }}
+      >
+        {postDescription(post)}
+      </div>
+    </>
+  )
 }
 
 /**
@@ -447,43 +519,13 @@ export function Notes() {
                 {open ? (
                   <OpenedPost post={p} mod={ghi01} />
                 ) : (
-                  <>
-                    {postThumbnail(p) && (
-                      <div
-                        style={{
-                          aspectRatio: mob ? pm.ar : place.ar,
-                          width: mob ? '100%' : place.mw,
-                          ...coverStyle(postThumbnail(p)!),
-                          marginBottom: 18,
-                        }}
-                      />
-                    )}
-                    <div style={{ ...label, marginBottom: 10 }}>
-                      {p.template} · {p.date_label}
-                    </div>
-                    <div
-                      style={{
-                        fontFamily: serif,
-                        fontSize: 40,
-                        lineHeight: 1.06,
-                        letterSpacing: '-.035em',
-                      }}
-                    >
-                      {p.en}
-                    </div>
-                    <div
-                      style={{
-                        fontFamily: "'Be Vietnam Pro',sans-serif",
-                        fontWeight: 200,
-                        fontSize: 15,
-                        lineHeight: 1.62,
-                        color: '#4A4A42',
-                        marginTop: 12,
-                      }}
-                    >
-                      {postDescription(p)}
-                    </div>
-                  </>
+                  <Collapsed
+                    post={p}
+                    num={String(shownPosts.length - shownPosts.indexOf(p)).padStart(2, '0')}
+                    aspect={mob ? pm.ar : place.ar}
+                    mediaWidth={mob ? '100%' : place.mw}
+                    mob={mob}
+                  />
                 )}
               </Hover>
             )

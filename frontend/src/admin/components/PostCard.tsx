@@ -11,6 +11,7 @@ const TEMPLATE_LABEL: Record<PostTemplate, string> = {
   report: 'Report',
   longform: 'Long-form',
   memo: 'Memo',
+  bitesize: 'Bitesize note',
 }
 
 const ACTIONS_BY_STATUS: Record<PostStatus, { label: string; action: StatusAction }[]> = {

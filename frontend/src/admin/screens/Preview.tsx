@@ -9,6 +9,7 @@ import {
   toLongformData,
   toMemoData,
   toReportData,
+  toBitesizeData,
 } from '../../lib/postToRenderer'
 
 /**
@@ -61,6 +62,8 @@ function PreviewContent({ postId }: { postId: string }) {
           <PostRenderer template="report" post={toReportData(source, mod)} />
         ) : template === 'longform' ? (
           <PostRenderer template="longform" post={toLongformData(source, mod)} />
+        ) : template === 'bitesize' ? (
+          <PostRenderer template="bitesize" post={toBitesizeData(source, { mod })} />
         ) : template === 'memo' ? (
           <PostRenderer template="memo" post={toMemoData(source, mod)} />
         ) : (
