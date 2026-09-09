@@ -9,7 +9,6 @@
 import type { SectionData } from 'post-renderer'
 import type { SiteOverrides } from '../../content/site'
 import type { LogEntry } from '../../content/hours'
-import type { Note } from '../../content/notes'
 
 /** The 3 real post templates (the old `templates` table is gone). */
 export const TEMPLATES = ['article', 'cards', 'report', 'longform', 'memo'] as const
@@ -437,28 +436,6 @@ export async function assignTags(
 
 // ── Ghi 01 — loose notes ────────────────────────────────────────────────────
 
-/** POST /api/notes — a blank note, dated today, ready to be typed into. */
-export async function createNote(partial: Partial<Omit<Note, 'id'>> = {}): Promise<Note> {
-  const result = await request<{ note: Note }>('/api/notes', {
-    method: 'POST',
-    body: JSON.stringify(partial),
-  })
-  return result.note
-}
-
-/** PATCH /api/notes?id= */
-export async function patchNote(id: string, patch: Partial<Omit<Note, 'id'>>): Promise<Note> {
-  const result = await request<{ note: Note }>(`/api/notes?id=${id}`, {
-    method: 'PATCH',
-    body: JSON.stringify(patch),
-  })
-  return result.note
-}
-
-/** DELETE /api/notes?id= */
-export async function deleteNote(id: string): Promise<void> {
-  await request<Record<string, never>>(`/api/notes?id=${id}`, { method: 'DELETE' })
-}
 
 /** A stored blueprint a post can start from — see migration 0014. */
 export type TemplateSummary = {
