@@ -142,33 +142,39 @@ describe('hai dàn trang', () => {
     )
   }
 
-  it('dạng ảnh: tiêu đề dẫn đầu, ảnh và ô phụ đứng trước chữ', () => {
+  it('dạng ảnh: tiêu đề dẫn đầu, rồi ảnh và chữ, ô phụ xuống chân', () => {
     const { container } = render(<Bitesize post={post({ sub: 'ảnh phụ' })} />)
-    expect(orderOf(container)).toEqual(['tiêu đề', 'ảnh 4/3', 'ảnh 4/5', 'thân bài'])
+    expect(orderOf(container)).toEqual(['tiêu đề', 'ảnh 4/3', 'thân bài', 'ảnh 4/5'])
   })
 
-  it('dạng clip: clip dẫn đầu, tiêu đề và chữ đứng cạnh nó', () => {
+  it('dạng clip: clip dẫn đầu, tiêu đề dưới nó, ô phụ vẫn ở chân', () => {
     const { container } = render(<Bitesize post={post({ media: 'vid', sub: 'ảnh phụ' })} />)
-    expect(orderOf(container)).toEqual(['ảnh 16/9', 'tiêu đề', 'ảnh 4/5', 'thân bài'])
+    expect(orderOf(container)).toEqual(['ảnh 16/9', 'tiêu đề', 'thân bài', 'ảnh 4/5'])
   })
 
-  it('ô ảnh phụ nhỏ lại ở dạng clip', () => {
-    // Clip đã chiếm cột trái cao ngồng; thêm một ô 170px bên phải nữa thì cột
-    // chữ ở giữa còn một dải hẹp.
-    const anh = render(<Bitesize post={post({ sub: 'ảnh phụ' })} />)
-    const wrap = (c: HTMLElement) => c.querySelector<HTMLElement>('div[style*="float: right"]')!
-    expect(wrap(anh.container).style.width).toBe('170px')
-    anh.unmount()
-
-    const { container } = render(<Bitesize post={post({ media: 'vid', sub: 'ảnh phụ' })} />)
-    expect(wrap(container).style.width).toBe('130px')
+  it('lề phải của thân bài giữ nguyên một đường, chừa đúng chỗ ô phụ', () => {
+    /*
+     * Trước đây ô ảnh phụ thả trôi bên phải, nên mấy đoạn đầu bị ép hẹp còn
+     * đoạn sau — đã qua khỏi ô ấy — lại chạy rộng hết khổ: mép phải gãy làm
+     * hai. Nay khoảng lề ấy chừa sẵn cho cả khối chữ.
+     */
+    const { container } = render(<Bitesize post={post({ sub: 'ảnh phụ' })} />)
+    const flow = container.querySelector<HTMLElement>('div[style*="flow-root"][style*="margin-right"]')!
+    expect(flow.style.marginRight).toBe('200px')
+    expect(container.querySelector('div[style*="float: right"]')).toBeNull()
   })
 
-  it('trên điện thoại ô ảnh phụ xuống dưới chữ, không thả trôi', () => {
-    // Thả trôi một ô 130px trên màn 375 thì cột chữ còn 200px.
-    const { container } = render(<Bitesize post={post({ media: 'vid', sub: 'ảnh phụ' })} mobile />)
-    const order = orderOf(container)
-    expect(order.indexOf('thân bài')).toBeLessThan(order.indexOf('ảnh 4/5'))
+  it('ô ảnh phụ canh phải như một dòng chân trang', () => {
+    const { container } = render(<Bitesize post={post({ sub: 'ảnh phụ' })} />)
+    const footer = container.querySelector<HTMLElement>('div[style*="justify-content: flex-end"]')!
+    expect(footer).not.toBeNull()
+    expect(footer.querySelector<HTMLElement>('div')!.style.width).toBe('170px')
+  })
+
+  it('trên điện thoại thì không chừa lề phải — màn đã hẹp sẵn', () => {
+    const { container } = render(<Bitesize post={post({ sub: 'ảnh phụ' })} mobile />)
+    const flow = container.querySelector<HTMLElement>('div[style*="flow-root"][style*="margin-right"]')!
+    expect(flow.style.marginRight).toBe('0px')
   })
 })
 
@@ -260,8 +266,8 @@ describe('ba dàn trang của dạng mở', () => {
     expect(subWrap.style.marginTop).toBe('auto')
   })
 
-  it('ảnh tĩnh giữ nguyên: tiêu đề dẫn đầu, chữ chảy quanh ảnh', () => {
+  it('ảnh tĩnh: tiêu đề dẫn đầu, chữ chảy quanh ảnh, ô phụ ở chân', () => {
     const { container } = render(<Bitesize post={post({ sub: 'phụ' })} />)
-    expect(order(container)).toEqual(['tiêu đề', 'ảnh 4/3', 'ảnh 4/5', 'thân bài'])
+    expect(order(container)).toEqual(['tiêu đề', 'ảnh 4/3', 'thân bài', 'ảnh 4/5'])
   })
 })

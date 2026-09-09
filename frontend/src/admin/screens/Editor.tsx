@@ -80,6 +80,7 @@ import {
 } from '../../lib/postToRenderer'
 import type { BitesizeLength } from 'post-renderer'
 import { captureFrame, looksLikeVideo, probeMedia } from '../../lib/mediaShape'
+import { coverStyle } from '../../lib/imageFocus'
 import { toReportBlocks, toReportNotes } from '../../lib/reportBlocks'
 
 /**
@@ -259,7 +260,15 @@ function EditorContent({ postId }: { postId: string }) {
     updatePost(postId, patch as Parameters<typeof updatePost>[1])
   }
 
-  const body = (getBody(post) ?? {}) as { subImage?: string; poster?: string }
+  /*
+   * Đọc thẳng `post.body`, không qua `getBody`.
+   *
+   * `getBody` trả về MẢNG — nó viết cho template cất thân bài thành một dãy
+   * khối, và với body dạng đối tượng thì nó trả mảng rỗng chứ không báo gì.
+   * Bitesize cất một đối tượng, nên đi qua đó là `subImage` và `poster` luôn
+   * rỗng: ô xem trước không bao giờ hiện, mà cũng chẳng có lỗi nào để lần ra.
+   */
+  const body = (post.body ?? {}) as { subImage?: string; poster?: string }
   const heroIsClip = Boolean(post.hero_image_url && looksLikeVideo(post.hero_image_url))
 
   /*
@@ -284,22 +293,17 @@ function EditorContent({ postId }: { postId: string }) {
         post.hero_image_url && !heroIsClip
           ? { label: 'đặt vào khung', onClick: () => setFraming(post.hero_image_url) }
           : undefined,
+      /*
+       * Ô xem trước thay cho dòng "thumbnail" từng có ở đây.
+       *
+       * Chủ site: "opt thumbnail t đang băn khoăn là vì sao cần? thật ra trong
+       * phần tải ảnh bìa lên thì nên có 1 khung preview là ảnh bìa đó ra
+       * thumbnail trông như thế nào thui là ok". Đúng: thumbnail không phải
+       * thứ phải KHAI, nó là thứ cần NHÌN. Clip vẫn lấy khung hình tự động như
+       * cũ, chỉ là không bày ra thành một dòng phải điền nữa.
+       */
+      preview: heroIsClip ? body.poster ?? null : post.hero_image_url,
     },
-    ...(heroIsClip
-      ? [
-          {
-            key: 'poster',
-            label: 'thumbnail',
-            url: body.poster ?? null,
-            accept: 'image/*',
-            onPick: async (f: File) => {
-              const { url } = await uploadImage(f)
-              writeBody({ poster: url })
-            },
-            onLink: (url: string) => writeBody({ poster: url }),
-          } satisfies MediaSlotSpec,
-        ]
-      : []),
     ...(template === 'bitesize'
       ? [
           {
@@ -694,6 +698,8 @@ export type MediaSlotSpec = {
   onLink: (url: string) => void
   /** Việc thêm chỉ chỗ này mới có — ví dụ căn khung cho ảnh bìa. */
   extra?: { label: string; onClick: () => void }
+  /** Ảnh để bày ô xem trước hình cắt; không có thì không bày ô nào. */
+  preview?: string | null
 }
 
 const slotLinkStyle: CSSProperties = {
@@ -727,6 +733,18 @@ function MediaSlot({ slot }: { slot: MediaSlotSpec }) {
           </button>
         </>
       )}
+      {slot.preview ? (
+        <span
+          title="hình cắt dùng ở danh sách bài — 172×130"
+          style={{
+            width: 46,
+            height: 35,
+            flex: 'none',
+            border: `1px solid ${paper.rule}`,
+            ...coverStyle(slot.preview),
+          }}
+        />
+      ) : null}
       {linking && (
         <input
           autoFocus

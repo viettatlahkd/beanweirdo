@@ -126,6 +126,10 @@ export function frameOf(post: Pick<BitesizePostData, 'media' | 'portrait'>): str
   return post.portrait ? '9/16' : '16/9'
 }
 
+/** Bề ngang ô ảnh phụ, và khoảng lề phải nó chừa lại cho thân bài. */
+const SUB_W = 170
+const SUB_GUTTER = SUB_W + 30
+
 /** Cỡ tiêu đề đi theo độ dài bài — bài dài đội tiêu đề lớn hơn. */
 export function titleSize(len: BitesizeLength, portrait: boolean, open: boolean): number {
   if (open) return 52
@@ -437,18 +441,7 @@ export function Bitesize({
    * mà tạo ra nó. `renderSub` chỉ có mặt ở màn sửa, nên nó là dấu hiệu đủ.
    */
   const subBox = post.sub || renderSub ? (
-    <div
-      style={
-        clipDoc
-          ? { width: 130 }
-          : {
-              float: 'right',
-              clear: 'right',
-              width: clip ? 130 : 170,
-              margin: clip ? '4px 0 14px 26px' : '6px 0 18px 30px',
-            }
-      }
-    >
+    <div style={{ width: clipDoc ? 130 : SUB_W, flex: 'none' }}>
       <div
         style={{
           aspectRatio: '4/5',
@@ -530,6 +523,18 @@ export function Bitesize({
         />
       ) : null}
       <Meta post={post} wide renderTag={renderTag} renderDate={renderDate} />
+      {/*
+        * Lề phải của thân bài giữ nguyên một đường từ trên xuống dưới.
+        *
+        * Trước đây ô ảnh phụ thả trôi bên phải, nên mấy đoạn đầu bị ép hẹp còn
+        * đoạn sau — đã qua khỏi ô ấy — lại chạy rộng hết khổ. Mép phải gãy làm
+        * hai. Chủ site: "lề phải của nội dung nên đúng bằng 2 đoạn đầu tiên
+        * đang có thui (...) cái ảnh phụ thì nên kéo xuống dưới kiểu dạng footer
+        * lề phải í."
+        *
+        * Nên: chừa sẵn một khoảng lề phải đúng bằng chỗ ô ảnh phụ từng chiếm,
+        * và ô ấy xuống hẳn dưới cùng, canh phải như một dòng chân trang.
+        */}
       {clipDoc ? (
         <div style={{ display: 'grid', gridTemplateColumns: '250px minmax(0, 1fr)', gap: 34 }}>
           {media}
@@ -550,10 +555,15 @@ export function Bitesize({
         <>
           {clipNgang ? media : null}
           {title}
-          {clipNgang ? null : media}
-          {mobile ? null : subBox}
-          {body}
-          {mobile ? subBox : null}
+          <div style={{ display: 'flow-root', marginRight: mobile ? 0 : SUB_GUTTER }}>
+            {clipNgang ? null : media}
+            {body}
+          </div>
+          {subBox ? (
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: mobile ? 22 : 30 }}>
+              {subBox}
+            </div>
+          ) : null}
         </>
       )}
     </div>
