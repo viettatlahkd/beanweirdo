@@ -53,7 +53,10 @@ export function PostAddressProvider({ area, children }: { area: Area; children: 
     if (area === 'admin') {
       if (!authed) return
       listPosts('all')
-        .then((posts) => keep(posts))
+        // Bài trong thùng rác không có địa chỉ, nên cũng không giữ chỗ. Nếu nó
+        // giữ chỗ thì bài cùng module cùng ngày phải mang thêm chữ cái vì một
+        // bài không ai tới được, và xoá hẳn bài ấy sẽ đổi địa chỉ của bài kia.
+        .then((posts) => keep(posts.filter((p) => p.status !== 'deleted')))
         .catch(() => {})
       return () => {
         cancelled = true

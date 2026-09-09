@@ -24,3 +24,14 @@ describe('addressBook — dịch giữa địa chỉ và bản ghi', () => {
     expect(addressBook(rows).idOf('ghi-p999999')).toBeNull()
   })
 })
+
+describe('addressBook — bài trong thùng rác', () => {
+  it('gives the letters to the posts that have an address', () => {
+    // Bài đã xoá không ai tới được, nên nó không được đẩy bài còn sống sang
+    // `-b`. Sổ địa chỉ trong khu admin lọc chúng ra trước khi dựng.
+    const live = [
+      { id: 'a', module_id: 'biochem', created_at: '2026-08-17T09:00:00Z', status: 'published' },
+    ]
+    expect(addressBook(live).slugOf('a')).toBe('biochemistry-p260817')
+  })
+})
