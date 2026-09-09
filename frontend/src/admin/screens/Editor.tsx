@@ -82,6 +82,7 @@ import {
 } from '../../lib/postToRenderer'
 import type { BitesizeLength } from 'post-renderer'
 import { captureFrame, looksLikeVideo, probeMedia } from '../../lib/mediaShape'
+import { coverStyle } from '../../lib/imageFocus'
 import { toReportBlocks, toReportNotes } from '../../lib/reportBlocks'
 
 /**
@@ -262,7 +263,15 @@ function EditorContent({ postId }: { postId: string }) {
     updatePost(postId, patch as Parameters<typeof updatePost>[1])
   }
 
-  const body = (getBody(post) ?? {}) as { subImage?: string; poster?: string }
+  /*
+   * Đọc thẳng `post.body`, không qua `getBody`.
+   *
+   * `getBody` trả về MẢNG — nó viết cho template cất thân bài thành một dãy
+   * khối, và với body dạng đối tượng thì nó trả mảng rỗng chứ không báo gì.
+   * Bitesize cất một đối tượng, nên đi qua đó là `subImage` và `poster` luôn
+   * rỗng: ô xem trước không bao giờ hiện, mà cũng chẳng có lỗi nào để lần ra.
+   */
+  const body = (post.body ?? {}) as { subImage?: string; poster?: string }
   const heroIsClip = Boolean(post.hero_image_url && looksLikeVideo(post.hero_image_url))
 
   /*
@@ -287,22 +296,24 @@ function EditorContent({ postId }: { postId: string }) {
         post.hero_image_url && !heroIsClip
           ? { label: 'đặt vào khung', onClick: () => setFraming(post.hero_image_url) }
           : undefined,
+      /*
+       * Ô xem trước thay cho dòng "thumbnail" từng có ở đây.
+       *
+       * Chủ site: "opt thumbnail t đang băn khoăn là vì sao cần? thật ra trong
+       * phần tải ảnh bìa lên thì nên có 1 khung preview là ảnh bìa đó ra
+       * thumbnail trông như thế nào thui là ok". Đúng: thumbnail không phải
+       * thứ phải KHAI, nó là thứ cần NHÌN. Clip vẫn lấy khung hình tự động như
+       * cũ, chỉ là không bày ra thành một dòng phải điền nữa.
+       */
+      preview: heroIsClip ? body.poster ?? null : post.hero_image_url,
+      onClear: post.hero_image_url
+        ? () => {
+            applyPatch({ hero_image_url: '' } as EditPatch)
+            // Khung hình của clip cũ không còn chỗ bám vào nữa.
+            if (body.poster) writeBody({ poster: null })
+          }
+        : undefined,
     },
-    ...(heroIsClip
-      ? [
-          {
-            key: 'poster',
-            label: 'thumbnail',
-            url: body.poster ?? null,
-            accept: 'image/*',
-            onPick: async (f: File) => {
-              const { url } = await uploadImage(f)
-              writeBody({ poster: url })
-            },
-            onLink: (url: string) => writeBody({ poster: url }),
-          } satisfies MediaSlotSpec,
-        ]
-      : []),
     ...(template === 'bitesize'
       ? [
           {
@@ -312,6 +323,8 @@ function EditorContent({ postId }: { postId: string }) {
             accept: 'image/*',
             onPick: (f: File) => void setSub(f),
             onLink: (url: string) => saveSub(url),
+            preview: body.subImage ?? null,
+            onClear: body.subImage ? () => writeBody({ subImage: null }) : undefined,
           } satisfies MediaSlotSpec,
         ]
       : []),
@@ -696,6 +709,10 @@ export type MediaSlotSpec = {
   onLink: (url: string) => void
   /** Việc thêm chỉ chỗ này mới có — ví dụ căn khung cho ảnh bìa. */
   extra?: { label: string; onClick: () => void }
+  /** Ảnh để bày ô xem trước hình cắt; không có thì không bày ô nào. */
+  preview?: string | null
+  /** Gỡ ảnh ra khỏi chỗ này; chỉ có khi đang có ảnh. */
+  onClear?: () => void
 }
 
 const slotLinkStyle: CSSProperties = {
@@ -729,6 +746,27 @@ function MediaSlot({ slot }: { slot: MediaSlotSpec }) {
           </button>
         </>
       )}
+      {/* Đặt được thì phải gỡ được. Chỉ hiện khi đang có gì để gỡ. */}
+      {slot.onClear && (
+        <>
+          <span style={{ color: ink.faint }}>–</span>
+          <button onClick={slot.onClear} style={{ ...slotLinkStyle, color: '#C25C7C' }}>
+            xoá
+          </button>
+        </>
+      )}
+      {slot.preview ? (
+        <span
+          title="hình cắt dùng ở danh sách bài — 172×130"
+          style={{
+            width: 46,
+            height: 35,
+            flex: 'none',
+            border: `1px solid ${paper.rule}`,
+            ...coverStyle(slot.preview),
+          }}
+        />
+      ) : null}
       {linking && (
         <input
           autoFocus
@@ -1081,6 +1119,22 @@ function BitesizeEditor({
   const body = (post.body ?? {}) as BitesizeBody
   const write = (patch: Partial<BitesizeBody>) =>
     onChange({ body: { ...(post.body as object), ...patch } })
+
+  /*
+   * Khối nội dung, cùng kho element với các template khác.
+   *
+   * Chủ site: "trong template này thì người dùng cũng được thêm thắt tất cả
+   * các element kiểu heading.. giống các template khác đấy nhé". Nên phần
+   * kéo–thả–chèn–xoá ở đây là ĐÚNG bộ máy memo dùng, không phải một bản riêng:
+   * `RowShell` cho tay nắm, `InsertRow` cho menu chèn, `blankReportBlock` cho
+   * khối trắng. Một cái heading ở đây và một cái heading ở memo là cùng một
+   * thứ.
+   */
+  const elements = (body.elements ?? []) as ReportBlock[]
+  const palette = paletteFrom(post.theme_color ?? module?.accent ?? REPORT_BLUE)
+  const [menuAt, setMenuAt] = useState<number | null>(null)
+  const writeElements = (next: ReportBlock[]) => write({ elements: next })
+  const drag = useRowDrag((from, to) => writeElements(move(elements, from, to)))
   const control: CSSProperties = {
     fontFamily: sans,
     fontSize: 12.5,
@@ -1129,6 +1183,44 @@ function BitesizeEditor({
         renderSub={(sub) => (
           <InlineField value={sub} placeholder="Chữ trong ô ảnh phụ" onCommit={(v) => write({ sub: v })} />
         )}
+        wrapElement={(_drawn, i) => (
+          <div key={i}>
+            <RowShell
+              noun="khối"
+              index={i}
+              drag={drag}
+              onMove={(dir) => writeElements(move(elements, i, i + dir))}
+              onRemove={() => writeElements(removeAt(elements, i))}
+              onDuplicate={() => writeElements(duplicateAt(elements, i))}
+            >
+              <ReportBlockFields
+                block={elements[i]}
+                palette={palette}
+                onChange={(next) => writeElements(elements.map((x, k) => (k === i ? next : x)))}
+              />
+            </RowShell>
+            <InsertRow
+              open={menuAt === i}
+              onToggle={() => setMenuAt(menuAt === i ? null : i)}
+              onInsert={(t) => {
+                writeElements(insertAt(elements, i + 1, blankReportBlock(t)))
+                setMenuAt(null)
+              }}
+            />
+          </div>
+        )}
+        renderAfterElements={() =>
+          elements.length === 0 ? (
+            <InsertRow
+              open={menuAt === -1}
+              onToggle={() => setMenuAt(menuAt === -1 ? null : -1)}
+              onInsert={(t) => {
+                writeElements(insertAt(elements, 0, blankReportBlock(t)))
+                setMenuAt(null)
+              }}
+            />
+          ) : null
+        }
       />
     </div>
   )

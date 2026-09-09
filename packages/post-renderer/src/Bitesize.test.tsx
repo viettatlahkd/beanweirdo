@@ -135,40 +135,63 @@ describe('bài mở hết', () => {
 describe('hai dàn trang', () => {
   const orderOf = (c: HTMLElement) => {
     const nodes = Array.from(
-      c.querySelectorAll<HTMLElement>('h1, div[style*="aspect-ratio"], div[style*="pre-line"]'),
+      c.querySelectorAll<HTMLElement>('h1, div[style*="aspect-ratio"], p'),
     )
     return nodes.map((n) =>
       n.tagName === 'H1' ? 'tiêu đề' : n.style.aspectRatio ? `ảnh ${n.style.aspectRatio}` : 'thân bài',
     )
   }
 
-  it('dạng ảnh: tiêu đề dẫn đầu, ảnh và ô phụ đứng trước chữ', () => {
+  it('dạng ảnh: tiêu đề dẫn đầu, rồi ảnh và chữ, ô phụ xuống chân', () => {
     const { container } = render(<Bitesize post={post({ sub: 'ảnh phụ' })} />)
-    expect(orderOf(container)).toEqual(['tiêu đề', 'ảnh 4/3', 'ảnh 4/5', 'thân bài'])
+    expect(orderOf(container)).toEqual(['tiêu đề', 'ảnh 4/3', 'thân bài', 'ảnh 4/5'])
   })
 
-  it('dạng clip: clip dẫn đầu, tiêu đề và chữ đứng cạnh nó', () => {
+  it('dạng clip: clip dẫn đầu, tiêu đề dưới nó, ô phụ vẫn ở chân', () => {
     const { container } = render(<Bitesize post={post({ media: 'vid', sub: 'ảnh phụ' })} />)
-    expect(orderOf(container)).toEqual(['ảnh 16/9', 'tiêu đề', 'ảnh 4/5', 'thân bài'])
+    expect(orderOf(container)).toEqual(['ảnh 16/9', 'tiêu đề', 'thân bài', 'ảnh 4/5'])
   })
 
-  it('ô ảnh phụ nhỏ lại ở dạng clip', () => {
-    // Clip đã chiếm cột trái cao ngồng; thêm một ô 170px bên phải nữa thì cột
-    // chữ ở giữa còn một dải hẹp.
-    const anh = render(<Bitesize post={post({ sub: 'ảnh phụ' })} />)
-    const wrap = (c: HTMLElement) => c.querySelector<HTMLElement>('div[style*="float: right"]')!
-    expect(wrap(anh.container).style.width).toBe('170px')
-    anh.unmount()
-
-    const { container } = render(<Bitesize post={post({ media: 'vid', sub: 'ảnh phụ' })} />)
-    expect(wrap(container).style.width).toBe('130px')
+  it('lề phải của thân bài giữ nguyên một đường, chừa đúng chỗ ô phụ', () => {
+    /*
+     * Trước đây ô ảnh phụ thả trôi bên phải, nên mấy đoạn đầu bị ép hẹp còn
+     * đoạn sau — đã qua khỏi ô ấy — lại chạy rộng hết khổ: mép phải gãy làm
+     * hai. Nay khoảng lề ấy chừa sẵn cho cả khối chữ.
+     */
+    const { container } = render(<Bitesize post={post({ sub: 'ảnh phụ' })} />)
+    const flow = container.querySelector<HTMLElement>('div[style*="flow-root"][style*="position: relative"]')!
+    expect(flow.style.paddingRight).toBe('200px')
+    expect(container.querySelector('div[style*="float: right"]')).toBeNull()
   })
 
-  it('trên điện thoại ô ảnh phụ xuống dưới chữ, không thả trôi', () => {
-    // Thả trôi một ô 130px trên màn 375 thì cột chữ còn 200px.
-    const { container } = render(<Bitesize post={post({ media: 'vid', sub: 'ảnh phụ' })} mobile />)
-    const order = orderOf(container)
-    expect(order.indexOf('thân bài')).toBeLessThan(order.indexOf('ảnh 4/5'))
+  it('ô ảnh phụ chạy dọc bài, mép dưới nằm trên lằn hai phần ba', () => {
+    /*
+     * Một lằn chứ không phải hai chỗ: dưới cùng của một phần ba giữa CHÍNH LÀ
+     * trên cùng của một phần ba cuối. Bài dài ra thì lằn ấy tụt xuống theo, nên
+     * ô đi theo mà không phải đo chữ.
+     */
+    const { container } = render(<Bitesize post={post({ sub: 'ảnh phụ' })} />)
+    const holder = container.querySelector<HTMLElement>('div[style*="position: absolute"]')!
+    expect(holder.style.bottom).toBe('33.33%')
+    // Kéo ra khỏi khối chữ đúng bằng khoảng lề đã chừa, nên nó đứng trong lề.
+    expect(holder.style.right).toBe('-200px')
+    // Nằm trong khoảng lề đã chừa, nên nó không đẩy chữ.
+    const flow = container.querySelector<HTMLElement>('div[style*="flow-root"][style*="position: relative"]')!
+    expect(flow.style.paddingRight).toBe('200px')
+    expect(flow.style.position).toBe('relative')
+  })
+
+  it('khối chữ có chiều cao tối thiểu để ô ấy còn chỗ đứng', () => {
+    // Bài hai dòng mà đặt ô cao 212 ở mốc hai phần ba thì nó trồi lên khỏi khối.
+    const { container } = render(<Bitesize post={post({ sub: 'ảnh phụ' })} />)
+    expect(container.querySelector<HTMLElement>('div[style*="flow-root"][style*="position: relative"]')!.style.minHeight).toBe('330px')
+  })
+
+  it('trên điện thoại thì không chừa lề, ô ảnh phụ xuống dưới chữ', () => {
+    const { container } = render(<Bitesize post={post({ sub: 'ảnh phụ' })} mobile />)
+    const flow = container.querySelector<HTMLElement>('div[style*="flow-root"][style*="position: relative"]')!
+    expect(flow.style.paddingRight).toBe('0px')
+    expect(container.querySelector('div[style*="position: absolute"]')).toBeNull()
   })
 })
 
@@ -237,7 +260,7 @@ describe('ô ảnh phụ', () => {
 describe('ba dàn trang của dạng mở', () => {
   const order = (c: HTMLElement) =>
     Array.from(
-      c.querySelectorAll<HTMLElement>('h1, div[style*="aspect-ratio"], div[style*="pre-line"]'),
+      c.querySelectorAll<HTMLElement>('h1, div[style*="aspect-ratio"], p'),
     ).map((n) => (n.tagName === 'H1' ? 'tiêu đề' : n.style.aspectRatio ? `ảnh ${n.style.aspectRatio}` : 'thân bài'))
 
   it('clip ngang: clip chiếm trọn bề ngang, tiêu đề nằm DƯỚI nó', () => {
@@ -260,8 +283,59 @@ describe('ba dàn trang của dạng mở', () => {
     expect(subWrap.style.marginTop).toBe('auto')
   })
 
-  it('ảnh tĩnh giữ nguyên: tiêu đề dẫn đầu, chữ chảy quanh ảnh', () => {
+  it('ảnh tĩnh: tiêu đề dẫn đầu, chữ chảy quanh ảnh, ô phụ ở chân', () => {
     const { container } = render(<Bitesize post={post({ sub: 'phụ' })} />)
-    expect(order(container)).toEqual(['tiêu đề', 'ảnh 4/3', 'ảnh 4/5', 'thân bài'])
+    expect(order(container)).toEqual(['tiêu đề', 'ảnh 4/3', 'thân bài', 'ảnh 4/5'])
+  })
+})
+
+describe('chữ và khối nội dung', () => {
+  it('đoạn văn theo đúng hệ chữ của kho element, và căn đều hai bên', () => {
+    // 15.5 / 1.55, weight 300, hai mươi pixel giữa hai đoạn — `elements/text.tsx`.
+    // Trước đây khối này tự đặt 200/1.62 và không chừa khoảng nào: "khá xít".
+    const { container } = render(<Bitesize post={post({ text: 'đoạn một\nđoạn hai' })} />)
+    const paras = Array.from(container.querySelectorAll('p'))
+    expect(paras).toHaveLength(2)
+    expect(paras[0].style.marginBottom).toBe('20px')
+    expect(paras[0].style.fontWeight).toBe('300')
+    expect(paras[0].style.lineHeight).toBe('1.55')
+    expect(paras[0].style.textAlign).toBe('justify')
+  })
+
+  it('dựng được khối thêm vào, qua đúng kho element chung', () => {
+    // Một cái heading ở đây và một cái heading ở memo là cùng một thứ.
+    const { container } = render(
+      <Bitesize post={post({ elements: [{ type: 'heading', text: 'Một tiêu đề nhỏ', level: 2 }] as never })} />,
+    )
+    expect(container.textContent).toContain('Một tiêu đề nhỏ')
+  })
+
+  it('màn sửa được bọc từng khối và có chỗ đặt nút thêm', () => {
+    const wrapped: number[] = []
+    render(
+      <Bitesize
+        post={post({ elements: [{ type: 'paragraph', text: 'a' }] as never })}
+        wrapElement={(el, i) => {
+          wrapped.push(i)
+          return el
+        }}
+        renderAfterElements={() => <div>THÊM KHỐI</div>}
+      />,
+    )
+    expect(wrapped).toEqual([0])
+    expect(screen.getByText('THÊM KHỐI')).toBeInTheDocument()
+  })
+
+  it('ô ảnh phụ neo vào khối chữ, không neo vào khối có ảnh trong đó', () => {
+    /*
+     * "tính chia phần 3 từ phần body text chứ đừng tính từ title nhé" — và
+     * cũng đừng tính từ ảnh: ảnh chính thả trôi bên trái, một tấm ảnh dọc cao
+     * hơn chữ sẽ kéo khối bao ngoài dài ra và cái mốc trượt theo ảnh.
+     */
+    const { container } = render(<Bitesize post={post({ sub: 'ảnh phụ' })} />)
+    const holder = container.querySelector<HTMLElement>('div[style*="position: absolute"]')!
+    const textBlock = holder.parentElement!
+    expect(textBlock.querySelector('p')).not.toBeNull()
+    expect(textBlock.querySelector('div[style*="aspect-ratio: 4/3"]')).toBeNull()
   })
 })
