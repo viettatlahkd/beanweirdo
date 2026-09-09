@@ -21,14 +21,24 @@ export function useRoute(): [Where, (next: Where) => void] {
   const [where, setWhere] = useState(read)
 
   useEffect(() => {
-    // The address that was typed is not always the one this place is written
-    // as — `/admin` for the back office, an unknown path, a stray query.
-    // Straighten it with `replace`: the reader has not taken a step, so this
-    // must not become an entry of its own that back would have to walk past.
-    const canonical = toPath(read())
-    if (canonical !== now()) window.history.replaceState({}, '', canonical)
+    /*
+     * The address that was typed is not always the one this place is written
+     * as — `/admin` for the back office, an address written with words the
+     * owner has since changed, an unknown path, a stray query. Straighten it
+     * with `replace`: the reader has not taken a step, so this must not become
+     * an entry of its own that back would have to walk past.
+     *
+     * Also on every read back, because the words an address is written with
+     * can change under a page that is already open.
+     */
+    const sync = () => {
+      const here = read()
+      const canonical = toPath(here)
+      if (canonical !== now()) window.history.replaceState({}, '', canonical)
+      setWhere(here)
+    }
+    sync()
 
-    const sync = () => setWhere(read())
     window.addEventListener('popstate', sync)
     return () => window.removeEventListener('popstate', sync)
   }, [])

@@ -1,4 +1,5 @@
 import { moduleToUrl } from './routes'
+import { activeWords, type DateOrder, type RouteWords } from './routeWords'
 
 /**
  * The address of a post: which module it belongs to, the day it was made, and
@@ -33,16 +34,21 @@ export type SlugParts = {
  */
 const HANOI_OFFSET_MINUTES = 7 * 60
 
-/** `2026-08-24T…` → `260824`, read in Hanoi. */
-export function stamp(createdAt: string): string {
+/** `2026-08-24T…` → `260824`, read in Hanoi, in whichever order the owner set. */
+export function stamp(createdAt: string, order: DateOrder = activeWords().dateOrder): string {
   const local = new Date(new Date(createdAt).getTime() + HANOI_OFFSET_MINUTES * 60_000)
   const p = (n: number) => String(n).padStart(2, '0')
-  return `${p(local.getUTCFullYear() % 100)}${p(local.getUTCMonth() + 1)}${p(local.getUTCDate())}`
+  const yy = p(local.getUTCFullYear() % 100)
+  const mm = p(local.getUTCMonth() + 1)
+  const dd = p(local.getUTCDate())
+  if (order === 'mmddyy') return `${mm}${dd}${yy}`
+  if (order === 'ddmmyy') return `${dd}${mm}${yy}`
+  return `${yy}${mm}${dd}`
 }
 
-export function buildSlug({ moduleId, createdAt, status }: SlugParts): string {
-  const base = `${moduleToUrl(moduleId)}-p${stamp(createdAt)}`
-  return status === 'draft' ? `${base}.draft` : base
+export function buildSlug({ moduleId, createdAt, status }: SlugParts, w: RouteWords = activeWords()): string {
+  const base = `${moduleToUrl(moduleId, w)}-${w.postMark}${stamp(createdAt, w.dateOrder)}`
+  return status === 'draft' ? `${base}.${w.draftMark}` : base
 }
 
 /**
@@ -52,12 +58,12 @@ export function buildSlug({ moduleId, createdAt, status }: SlugParts): string {
  * address. The second gets a letter — `…-b`, `…-c` — appended to the part
  * before the suffix, so the day and the status still read straight off.
  */
-export function uniqueSlug(parts: SlugParts, taken: Iterable<string>): string {
+export function uniqueSlug(parts: SlugParts, taken: Iterable<string>, w: RouteWords = activeWords()): string {
   const used = new Set(taken)
-  const wanted = buildSlug(parts)
+  const wanted = buildSlug(parts, w)
   if (!used.has(wanted)) return wanted
 
-  const suffix = parts.status === 'draft' ? '.draft' : ''
+  const suffix = parts.status === 'draft' ? `.${w.draftMark}` : ''
   const base = wanted.slice(0, wanted.length - suffix.length)
   for (let i = 1; i < 26; i++) {
     const candidate = `${base}-${String.fromCharCode(98 + i - 1)}${suffix}`
@@ -73,10 +79,11 @@ export function uniqueSlug(parts: SlugParts, taken: Iterable<string>): string {
  * Publishing drops `.draft` and nothing else moves: the day it was written
  * stays the day it was written. Returns null when nothing needs rewriting.
  */
-export function slugAfterStatus(current: string, status: string): string | null {
-  const isDraft = current.endsWith('.draft')
-  if (status === 'draft') return isDraft ? null : `${current}.draft`
-  return isDraft ? current.slice(0, -'.draft'.length) : null
+export function slugAfterStatus(current: string, status: string, w: RouteWords = activeWords()): string | null {
+  const mark = `.${w.draftMark}`
+  const isDraft = current.endsWith(mark)
+  if (status === 'draft') return isDraft ? null : `${current}${mark}`
+  return isDraft ? current.slice(0, -mark.length) : null
 }
 
 /** A post as far as its address is concerned. */
@@ -104,7 +111,7 @@ export type Addressable = {
  * A slug typed by hand in the CMS is used as-is and also reserves its name, so
  * a generated one never lands on top of it.
  */
-export function slugsFor(posts: readonly Addressable[]): Map<string, string> {
+export function slugsFor(posts: readonly Addressable[], w: RouteWords = activeWords()): Map<string, string> {
   const byAge = [...posts].sort((a, b) => (a.created_at < b.created_at ? -1 : 1))
   const out = new Map<string, string>()
   const taken = new Set<string>()
@@ -118,7 +125,7 @@ export function slugsFor(posts: readonly Addressable[]): Map<string, string> {
   }
   for (const p of byAge) {
     if (out.has(p.id)) continue
-    const slug = uniqueSlug({ moduleId: p.module_id, createdAt: p.created_at, status: p.status }, taken)
+    const slug = uniqueSlug({ moduleId: p.module_id, createdAt: p.created_at, status: p.status }, taken, w)
     out.set(p.id, slug)
     taken.add(slug)
   }

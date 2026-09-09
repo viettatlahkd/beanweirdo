@@ -1,13 +1,14 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Sidebar } from './components/Sidebar'
 import { ModulesProvider } from './data/useModules'
 import { PostAddressProvider, usePostAddresses } from './data/usePostAddresses'
-import { SiteCopyProvider } from './data/useSiteCopy'
+import { SiteCopyProvider, useSiteCopy } from './data/useSiteCopy'
 import { ink, layout, paper, sans } from './design/tokens'
 import { AuthGate, AuthProvider } from './lib/auth'
 import { useIsMobile } from './lib/useIsMobile'
-import { AREA_HOME, isPrivate, screenAllowed, type Area } from './lib/area'
+import { AREA_HOME, areaFromPath, isPrivate, screenAllowed, type Area } from './lib/area'
 import { useRoute } from './lib/useRoute'
+import { adoptWords } from './lib/routeWords'
 import type { CmsTab, Where } from './lib/routes'
 import {
   NavContext,
@@ -43,11 +44,28 @@ const settings: Settings = { density: 'roomy', showPlates: true }
  */
 const FIRST_MODULE = 'sensory'
 
-export function App({ area }: { area: Area }) {
+export function App({ area: opened }: { area: Area }) {
+  /*
+   * Khu vực được chọn từ đường dẫn trước khi React chạy (`main.tsx`), bằng bộ
+   * từ nhớ trong máy. Nếu chủ site vừa đổi tên mà máy này chưa biết, bộ từ thật
+   * về sau một nhịp mạng và câu trả lời có thể khác — nên nó là state, sửa được
+   * tại chỗ. Nạp lại trang thì gọn hơn, nhưng một trình duyệt chặn lưu sẽ nạp
+   * lại mãi không thôi.
+   */
+  const [area, setArea] = useState(opened)
+
+  const onWords = useCallback(() => {
+    setArea(areaFromPath())
+    // `useRoute` đọc địa chỉ khi nghe `popstate`; địa chỉ không đổi nhưng nghĩa
+    // của nó vừa đổi, nên đọc lại đúng bằng đường ấy.
+    window.dispatchEvent(new PopStateEvent('popstate'))
+  }, [])
+
   return (
     <SettingsContext.Provider value={settings}>
       <AuthProvider>
         <SiteCopyProvider>
+          <RouteWordsSync onAdopt={onWords} />
           <ModulesProvider>
             <PostAddressProvider area={area}>
               <Routed area={area} />
@@ -57,6 +75,19 @@ export function App({ area }: { area: Area }) {
       </AuthProvider>
     </SettingsContext.Provider>
   )
+}
+
+/** Bộ từ viết địa chỉ, lấy từ hàng cài đặt mà trang nào cũng đã tải sẵn. */
+function RouteWordsSync({ onAdopt }: { onAdopt: () => void }) {
+  const { overrides, loading } = useSiteCopy()
+  const routes = overrides.routes
+
+  useEffect(() => {
+    if (loading) return
+    if (adoptWords(routes)) onAdopt()
+  }, [loading, routes, onAdopt])
+
+  return null
 }
 
 /**

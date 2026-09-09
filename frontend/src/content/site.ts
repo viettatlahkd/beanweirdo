@@ -9,6 +9,8 @@
  * overrides in the `site_settings` row (see `data/useSiteCopy`).
  */
 
+import type { RouteWords } from '../lib/routeWords'
+
 export type NavGroup = 'Public' | 'Practice' | 'Admin'
 
 export type SiteCopy = {
@@ -125,6 +127,14 @@ export const SITE_DEFAULTS: SiteCopy = {
 /** Stored overrides: any subset of `SiteCopy`, blank-as-unset. */
 export type SiteOverrides = Partial<Omit<SiteCopy, 'sections'>> & {
   sections?: Partial<Record<NavGroup, string>>
+  /**
+   * Các từ dùng để viết địa chỉ — xem `lib/routeWords.ts`.
+   *
+   * Ở đây vì đây là hàng chủ site đã sửa, và trang công khai đã đọc hàng này
+   * mỗi lần tải. Nó không nằm trong `SITE_DEFAULTS` vì nó không phải một câu
+   * chữ hiện ra đâu cả: `resolveSite` không đụng tới, chỉ `overrides` mang nó.
+   */
+  routes?: Partial<RouteWords>
 }
 
 /**

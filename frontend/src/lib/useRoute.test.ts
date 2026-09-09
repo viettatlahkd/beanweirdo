@@ -1,5 +1,6 @@
 import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it } from 'vitest'
+import { adoptWords, resetWords, withHistory, DEFAULT_WORDS } from './routeWords'
 import { useRoute } from './useRoute'
 
 const at = () => window.location.pathname + window.location.search
@@ -68,5 +69,27 @@ describe('useRoute — nút back của trình duyệt', () => {
     expect(at()).toBe('/ad')
     expect(window.history.length).toBe(before)
     expect(result.current[0]).toMatchObject({ area: 'admin', screen: 'cms' })
+  })
+})
+
+describe('useRoute — sau khi chủ site đổi tên đường dẫn', () => {
+  beforeEach(() => {
+    resetWords()
+    window.history.replaceState({}, '', '/')
+  })
+
+  it('opens an address written with the old words, then writes the new one', () => {
+    // Link cũ vẫn tới đúng chỗ; thanh địa chỉ thì mang tên mới. Thay tại chỗ,
+    // không đẩy thêm mục lịch sử — người đọc chưa bước đi đâu cả.
+    adoptWords(withHistory({ ...DEFAULT_WORDS, admin: 'quan-tri' }))
+    window.history.replaceState({}, '', '/ad-archive')
+    const before = window.history.length
+
+    const { result } = renderHook(() => useRoute())
+
+    expect(result.current[0]).toMatchObject({ area: 'admin', screen: 'archive' })
+    expect(at()).toBe('/quan-tri-archive')
+    expect(window.history.length).toBe(before)
+    resetWords()
   })
 })

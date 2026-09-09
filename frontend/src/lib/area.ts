@@ -2,6 +2,7 @@ import { navByKey } from '../content/navItems'
 import type { NavGroup } from '../content/site'
 import type { Screen } from './nav'
 import { toPath } from './routes'
+import { activeWords, type RouteWords } from './routeWords'
 
 /**
  * The three areas of the site, each its own entry point.
@@ -13,11 +14,6 @@ import { toPath } from './routes'
  */
 export type Area = 'public' | 'practice' | 'admin'
 
-export const AREA_PATH: Record<Area, string> = {
-  public: '/',
-  practice: '/practice',
-  admin: '/ad',
-}
 
 /** Which area a sidebar group belongs to. */
 export function areaOfGroup(group: NavGroup): Area {
@@ -36,12 +32,15 @@ export const isPrivate = (area: Area) => area !== 'public'
  * address the back office used to live at and is still recognised; everything
  * the site writes now begins `/ad` or `/ad-`.
  */
-export function areaFromPath(pathname: string = window.location.pathname): Area {
+export function areaFromPath(
+  pathname: string = window.location.pathname,
+  w: RouteWords = activeWords(),
+): Area {
   const path = pathname.split('?')[0]
-  if (path.startsWith('/admin') || path === '/ad' || path.startsWith('/ad/') || path.startsWith('/ad-')) {
-    return 'admin'
-  }
-  if (path.startsWith('/practice')) return 'practice'
+  const head = path.split('/').filter(Boolean)[0] ?? ''
+  // `/admin` là địa chỉ cũ, luôn nhận, kể cả khi chủ site đã đổi từ.
+  if (head === w.admin || head.startsWith(`${w.admin}-`) || path.startsWith('/admin')) return 'admin'
+  if (head === w.practice) return 'practice'
   return 'public'
 }
 
