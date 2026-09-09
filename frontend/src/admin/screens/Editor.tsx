@@ -871,6 +871,54 @@ function LongformEditor({
 }
 
 /**
+ * Ô sửa chảy theo đúng dòng chữ nó thay thế.
+ *
+ * `EditableField` dựng `input`/`textarea` — một khối đặc, không quấn quanh ảnh
+ * thả trôi được. Ở bitesize thì đó là hỏng: chữ phải chảy quanh ảnh, mà một
+ * `textarea` rộng hết khổ bị đẩy xuống dưới ô ảnh phụ, để lại đúng "khúc trắng
+ * tinh trống nguyên" chủ site chỉ ra — trong khi bản xem trước cùng dữ liệu ấy
+ * lại chảy đẹp. Hai màn nói hai chuyện về cùng một bài.
+ *
+ * `contentEditable` thì chảy y như chữ thật, nên màn sửa và trang thật là một.
+ * Chữ đặt bằng effect chứ không phải qua children: React mà đụng vào con của
+ * một `contentEditable` đang gõ thì con trỏ nhảy về đầu.
+ */
+function InlineField({
+  value,
+  onCommit,
+  placeholder,
+}: {
+  value: string
+  onCommit: (value: string) => void
+  placeholder?: string
+}) {
+  const ref = useRef<HTMLSpanElement>(null)
+
+  useEffect(() => {
+    const el = ref.current
+    if (el && el.textContent !== value) el.textContent = value
+  }, [value])
+
+  return (
+    <span
+      ref={ref}
+      contentEditable
+      suppressContentEditableWarning
+      role="textbox"
+      aria-label={placeholder}
+      data-placeholder={placeholder}
+      onBlur={(e) => {
+        // `innerText` giữ chỗ xuống dòng; `textContent` thì nuốt. jsdom không
+        // có `innerText`, nên lùi về `textContent` khi chạy trong bài kiểm.
+        const next = e.currentTarget.innerText ?? e.currentTarget.textContent ?? ''
+        if (next !== value) onCommit(next)
+      }}
+      style={{ outline: 'none', cursor: 'text' }}
+    />
+  )
+}
+
+/**
  * Bitesize note — sửa ngay trên bản vẽ, như mọi template khác.
  *
  * Hai ô chọn ở đầu không phải nội dung mà là dàn trang: độ dài quyết định cỡ
@@ -907,7 +955,7 @@ function BitesizeEditor({
           onChange={(e) => write({ len: e.target.value as BitesizeLength })}
           style={control}
         >
-          {(['ngắn', 'vừa', 'dài', 'media'] as BitesizeLength[]).map((l) => (
+          {(['ngắn', 'vừa', 'dài'] as BitesizeLength[]).map((l) => (
             <option key={l} value={l}>
               {l}
             </option>
@@ -926,14 +974,18 @@ function BitesizeEditor({
       <PostRenderer
         template="bitesize"
         post={toBitesizeData(post, { mod: module })}
-        renderTitle={(title) => <EditableField value={title} onCommit={(v) => onChange({ en: v })} />}
+        renderTitle={(title) => (
+          <InlineField value={title} placeholder="Tiêu đề" onCommit={(v) => onChange({ en: v })} />
+        )}
         renderText={(text) => (
-          <EditableField value={text} multiline rows={5} onCommit={(v) => write({ text: v })} />
+          <InlineField value={text} placeholder="Thân bài" onCommit={(v) => write({ text: v })} />
         )}
         renderMediaHint={(hint) => (
-          <EditableField value={hint} onCommit={(v) => write({ mediaHint: v })} />
+          <InlineField value={hint} placeholder="Chữ trong ô ảnh" onCommit={(v) => write({ mediaHint: v })} />
         )}
-        renderSub={(sub) => <EditableField value={sub} onCommit={(v) => write({ sub: v })} />}
+        renderSub={(sub) => (
+          <InlineField value={sub} placeholder="Chữ trong ô ảnh phụ" onCommit={(v) => write({ sub: v })} />
+        )}
       />
     </div>
   )

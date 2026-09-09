@@ -13,10 +13,18 @@ alter table templates
   add constraint templates_renderer_check
   check (renderer in ('article', 'cards', 'report', 'longform', 'memo', 'bitesize'));
 
--- Một template để chọn ngay, giống năm cái kia. Thân bài để trống: bitesize
--- đọc `body` jsonb, và bài mới bắt đầu từ một tờ trắng đúng như dạng ghi ngắn
--- vốn thế.
+-- Hai template để chọn ngay, cùng một renderer.
+--
+-- Bảng này sinh ra đúng cho việc ấy (0014): "nhiều template có thể dùng chung
+-- một renderer... thêm một cái là một hàng, không phải một migration". Hai dàn
+-- trang của bitesize khác nhau ở `body.media`, nên chúng là hai hàng chứ không
+-- phải hai renderer.
 insert into templates (name, description, renderer, body, sort_order)
-select 'Bitesize note', 'Ghi ngắn — một quan sát, một ảnh, hai dòng.', 'bitesize',
-       '{"len": "ngắn", "portrait": false, "text": ""}'::jsonb, 60
-where not exists (select 1 from templates where renderer = 'bitesize');
+select v.name, v.description, 'bitesize', v.body::jsonb, v.sort_order
+from (values
+  ('Bitesize note (img)', 'Ghi ngắn có ảnh — tiêu đề dẫn đầu, chữ chảy quanh ảnh.',
+   '{"media": "img", "len": "ngắn", "portrait": false, "text": ""}', 60),
+  ('Bitesize note (vid)', 'Ghi ngắn có clip — clip dẫn đầu bên trái, chữ đứng cạnh.',
+   '{"media": "vid", "len": "ngắn", "portrait": false, "text": ""}', 61)
+) as v(name, description, body, sort_order)
+where not exists (select 1 from templates where templates.name = v.name);

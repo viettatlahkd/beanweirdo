@@ -21,6 +21,7 @@ const post = (over: Partial<BitesizePostData> = {}): BitesizePostData => ({
   portrait: false,
   mediaHint: 'ảnh — cận cảnh lớp crema trên tách',
   sub: '',
+  media: 'img',
   text: 'Cùng máy, cùng hạt, đổi từ nước RO sang nước khoáng nhẹ.',
   ...over,
 })
@@ -34,7 +35,6 @@ describe('cỡ tiêu đề đi theo độ dài', () => {
     expect(titleSize('dài', false, false)).toBe(40)
     expect(titleSize('vừa', false, false)).toBe(34)
     expect(titleSize('ngắn', false, false)).toBe(27)
-    expect(titleSize('media', false, false)).toBe(27)
   })
 
   it('khung dọc thì tiêu đề nhỏ lại, còn mở hết thì lớn hẳn', () => {
@@ -123,5 +123,50 @@ describe('bài mở hết', () => {
     const media = container.querySelector<HTMLElement>('div[style*="aspect-ratio"]')!
     expect(media.style.float).toBe('')
     expect(media.style.width).toBe('100%')
+  })
+})
+
+/*
+ * Hai dàn trang của dạng mở. Thứ tự trong tài liệu là thứ quyết định chữ có
+ * chảy quanh ảnh được hay không — `float` chỉ đẩy được thứ đứng SAU nó — nên
+ * bài kiểm này kiểm đúng thứ tự ấy, không kiểm pixel.
+ */
+describe('hai dàn trang', () => {
+  const orderOf = (c: HTMLElement) => {
+    const nodes = Array.from(
+      c.querySelectorAll<HTMLElement>('h1, div[style*="aspect-ratio"], div[style*="pre-line"]'),
+    )
+    return nodes.map((n) =>
+      n.tagName === 'H1' ? 'tiêu đề' : n.style.aspectRatio ? `ảnh ${n.style.aspectRatio}` : 'thân bài',
+    )
+  }
+
+  it('dạng ảnh: tiêu đề dẫn đầu, ảnh và ô phụ đứng trước chữ', () => {
+    const { container } = render(<Bitesize post={post({ sub: 'ảnh phụ' })} />)
+    expect(orderOf(container)).toEqual(['tiêu đề', 'ảnh 4/3', 'ảnh 4/5', 'thân bài'])
+  })
+
+  it('dạng clip: clip dẫn đầu, tiêu đề và chữ đứng cạnh nó', () => {
+    const { container } = render(<Bitesize post={post({ media: 'vid', sub: 'ảnh phụ' })} />)
+    expect(orderOf(container)).toEqual(['ảnh 16/9', 'tiêu đề', 'ảnh 4/5', 'thân bài'])
+  })
+
+  it('ô ảnh phụ nhỏ lại ở dạng clip', () => {
+    // Clip đã chiếm cột trái cao ngồng; thêm một ô 170px bên phải nữa thì cột
+    // chữ ở giữa còn một dải hẹp.
+    const anh = render(<Bitesize post={post({ sub: 'ảnh phụ' })} />)
+    const wrap = (c: HTMLElement) => c.querySelector<HTMLElement>('div[style*="float: right"]')!
+    expect(wrap(anh.container).style.width).toBe('170px')
+    anh.unmount()
+
+    const { container } = render(<Bitesize post={post({ media: 'vid', sub: 'ảnh phụ' })} />)
+    expect(wrap(container).style.width).toBe('130px')
+  })
+
+  it('trên điện thoại ô ảnh phụ xuống dưới chữ, không thả trôi', () => {
+    // Thả trôi một ô 130px trên màn 375 thì cột chữ còn 200px.
+    const { container } = render(<Bitesize post={post({ media: 'vid', sub: 'ảnh phụ' })} mobile />)
+    const order = orderOf(container)
+    expect(order.indexOf('thân bài')).toBeLessThan(order.indexOf('ảnh 4/5'))
   })
 })

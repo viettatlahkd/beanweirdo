@@ -16,7 +16,29 @@ import { sans, serif, wrapTitle } from './tokens'
  * bài cắt hai dòng và mờ .5 cho tới khi rê chuột vào.
  */
 
-export type BitesizeLength = 'dài' | 'vừa' | 'ngắn' | 'media'
+/*
+ * Ba độ dài, không phải bốn. Bản gốc có thêm 'media' nghĩa là "bài này là một
+ * clip" — nhưng đó là một trục khác, và nay nó là `media` bên dưới. Một giá trị
+ * đứng trong danh sách độ dài mà thật ra nói về loại nội dung là chỗ chọn nhầm
+ * chờ sẵn.
+ */
+export type BitesizeLength = 'dài' | 'vừa' | 'ngắn'
+
+/**
+ * Hai dàn trang, một bộ vẽ.
+ *
+ * `img` — tiêu đề dẫn đầu, chiếm hết bề ngang; ảnh và ô ảnh phụ nằm dưới nó,
+ * chữ chảy quanh cả hai. Ảnh tĩnh cao 225px nên tiêu đề đứng cạnh nó thì thừa
+ * chỗ; cho tiêu đề đi trước là hết thừa.
+ *
+ * `vid` — clip dẫn đầu bên trái, tiêu đề và chữ đứng cạnh. Clip xổ dài xuống
+ * dưới nên nó cần cả chiều cao, và chữ có chỗ mà chạy dọc theo.
+ */
+export type BitesizeMedia = 'img' | 'vid'
+
+/** Mực và mảng màu của dạng clip — bên design đặt từ bản gốc, dạng `video`. */
+export const CLIP_INK = '#172124'
+export const CLIP_WASH = '#8CBAB4'
 
 export type BitesizePostData = {
   title: string
@@ -40,6 +62,8 @@ export type BitesizePostData = {
   mediaHint: string
   /** Chữ trong ô ảnh phụ, chỉ hiện khi bài mở hết. */
   sub: string
+  /** Ảnh tĩnh hay clip — quyết định cả dàn trang lẫn màu. */
+  media: BitesizeMedia
   text: string
   /**
    * Màu của module bài được xếp vào.
@@ -310,6 +334,15 @@ export function BitesizeCard({
  * bài chảy quanh ảnh (`float`) thay vì đứng dưới ảnh — nên bài dài không đẩy
  * ảnh lên tít trên đầu.
  */
+/**
+ * Bài mở hết — trang riêng của nó, và cũng là dạng xổ tại chỗ trong Ghi 01.
+ *
+ * Hai dàn trang, chọn theo `post.media`. Cả hai đều để chữ chảy quanh ảnh
+ * (`float`) thay vì xếp chồng: chữ đứng dưới một tấm ảnh cao 225px thì nửa
+ * trang bên phải trống trơn — đúng "khúc trắng tinh trống nguyên" chủ site chỉ
+ * ra. Muốn chảy được thì ảnh phải đứng TRƯỚC chữ trong tài liệu, kể cả ô ảnh
+ * phụ bên phải; đó là lý do thứ tự dưới đây trông ngược với thứ tự nhìn thấy.
+ */
 export function Bitesize({
   post,
   breadcrumb,
@@ -321,6 +354,82 @@ export function Bitesize({
   renderMediaHint,
   renderSub,
 }: BitesizeProps) {
+  const clip = post.media === 'vid'
+  const title = (
+    <Title
+      post={post}
+      size={mobile ? 34 : titleSize(post.len, post.portrait, true)}
+      lit
+      heading
+      render={renderTitle}
+    />
+  )
+  /*
+   * Ô ảnh phụ nhỏ hơn ở dạng clip. Clip đã chiếm cột trái cao ngồng, thêm một
+   * ô 190px bên phải nữa thì hai mảng màu ép cột chữ ở giữa còn một dải hẹp.
+   */
+  /*
+   * Trang thật không dựng ô ảnh phụ rỗng — một mảng màu không nói gì là rác.
+   * Nhưng màn sửa thì phải dựng, nếu không chủ site không có chỗ nào để gõ vào
+   * mà tạo ra nó. `renderSub` chỉ có mặt ở màn sửa, nên nó là dấu hiệu đủ.
+   */
+  const subBox = post.sub || renderSub ? (
+    <div
+      style={{
+        float: 'right',
+        clear: 'right',
+        width: clip ? 130 : 170,
+        margin: clip ? '4px 0 14px 26px' : '6px 0 18px 30px',
+      }}
+    >
+      <div
+        style={{
+          aspectRatio: '4/5',
+          backgroundColor: post.wash,
+          display: 'flex',
+          alignItems: 'flex-end',
+          padding: 12,
+          ...label,
+          fontSize: 9,
+          letterSpacing: '.18em',
+          color: '#1F3A38',
+          lineHeight: 1.5,
+        }}
+      >
+        {renderSub ? renderSub(post.sub) : post.sub}
+      </div>
+    </div>
+  ) : null
+
+  const media = (
+    <Media
+      post={post}
+      aspect={clip ? (post.portrait ? '9/16' : '16/9') : '4/3'}
+      width={mobile ? '100%' : clip ? (post.portrait ? '250px' : '340px') : '300px'}
+      hint={renderMediaHint?.(post.mediaHint)}
+      style={
+        mobile
+          ? { marginBottom: 22 }
+          : { float: 'left', marginRight: 34, marginBottom: 22 }
+      }
+    />
+  )
+
+  const body = (
+    <div
+      style={{
+        fontFamily: sans,
+        fontWeight: 200,
+        fontSize: 15.5,
+        lineHeight: 1.62,
+        color: '#4A4A42',
+        whiteSpace: 'pre-line',
+      }}
+    >
+      {renderText ? renderText(post.text) : post.text}
+    </div>
+  )
+
   return (
     <div
       style={{
@@ -342,41 +451,23 @@ export function Bitesize({
         />
       ) : null}
       <Meta post={post} wide renderTag={renderTag} renderDate={renderDate} />
-      <Media
-        post={post}
-        aspect={post.portrait ? '9/16' : '4/3'}
-        width={mobile ? '100%' : post.portrait ? '250px' : '300px'}
-        hint={renderMediaHint?.(post.mediaHint)}
-        style={
-          mobile
-            ? { marginBottom: 22 }
-            : { float: 'left', marginRight: 34, marginBottom: 22 }
-        }
-      />
-      <Title post={post} size={mobile ? 34 : titleSize(post.len, post.portrait, true)} lit heading render={renderTitle} />
-      {post.sub && !mobile ? (
-        <div style={{ float: 'right', clear: 'left', width: 190, margin: '6px 0 18px 30px' }}>
-          <div
-            style={{
-              aspectRatio: '4/5',
-              backgroundColor: post.wash,
-              display: 'flex',
-              alignItems: 'flex-end',
-              padding: 12,
-              ...label,
-              fontSize: 9,
-              letterSpacing: '.18em',
-              color: '#1F3A38',
-              lineHeight: 1.5,
-            }}
-          >
-            {renderSub ? renderSub(post.sub) : post.sub}
-          </div>
-        </div>
-      ) : null}
-      <div style={{ fontFamily: sans, fontWeight: 200, fontSize: 15.5, lineHeight: 1.62, color: '#4A4A42', whiteSpace: 'pre-line' }}>
-        {renderText ? renderText(post.text) : post.text}
-      </div>
+      {clip ? (
+        <>
+          {media}
+          {title}
+          {mobile ? null : subBox}
+          {body}
+          {mobile ? subBox : null}
+        </>
+      ) : (
+        <>
+          {title}
+          {media}
+          {mobile ? null : subBox}
+          {body}
+          {mobile ? subBox : null}
+        </>
+      )}
     </div>
   )
 }

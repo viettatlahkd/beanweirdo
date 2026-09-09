@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { PostRenderer } from 'post-renderer'
+import { CLIP_INK, CLIP_WASH, PostRenderer } from 'post-renderer'
 import { toReportBlocks, toReportNotes } from '../lib/reportBlocks'
 import type {
   ArticlePostData,
@@ -48,21 +48,23 @@ function Preview({ template }: { template: StoredTemplate }) {
   }
   if (template.renderer === 'bitesize') {
     const note = (body ?? {}) as Partial<BitesizePostData>
+    const clip = note.media === 'vid'
     return (
       <PostRenderer
         template="bitesize"
         post={{
           title,
-          tag: note.tag ?? 'quan sát',
+          tag: note.tag ?? (clip ? 'video' : 'quan sát'),
           date: note.date ?? '',
           num: '',
           pinned: false,
           image: null,
-          ink: '#B65A3C',
-          wash: '#E9B79C',
+          ink: clip ? CLIP_INK : '#B65A3C',
+          wash: clip ? CLIP_WASH : '#E9B79C',
           len: note.len ?? 'ngắn',
           portrait: note.portrait ?? false,
-          mediaHint: note.mediaHint ?? 'ảnh — cận cảnh chủ thể',
+          media: clip ? 'vid' : 'img',
+          mediaHint: note.mediaHint ?? (clip ? 'video ngang — clip ngắn không tiếng' : 'ảnh — cận cảnh chủ thể'),
           sub: note.sub ?? '',
           text: note.text ?? subtitle,
         }}

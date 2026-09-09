@@ -37,9 +37,21 @@ describe('bài trên template bitesize note', () => {
     expect(d.mediaHint).toBe('ảnh — cận cảnh chủ thể')
   })
 
-  it('bài dạng media lấy câu gợi ý của clip, và khung dọc đổi câu ấy', () => {
-    expect(toBitesizeData(post({ body: { len: 'media' } })).mediaHint).toBe('video ngang — clip ngắn không tiếng')
-    expect(toBitesizeData(post({ body: { len: 'media', portrait: true } })).mediaHint).toBe('video dọc — clip quay dọc')
+  it('dạng clip lấy câu gợi ý của clip, và khung dọc đổi câu ấy', () => {
+    expect(toBitesizeData(post({ body: { media: 'vid' } })).mediaHint).toBe('video ngang — clip ngắn không tiếng')
+    expect(toBitesizeData(post({ body: { media: 'vid', portrait: true } })).mediaHint).toBe('video dọc — clip quay dọc')
+  })
+
+  it('dạng clip mang bộ màu riêng, dạng ảnh vẫn theo tag', () => {
+    // "vid thì đổi màu" — bộ màu `video` bên design đặt sẵn ở bản gốc.
+    const clip = toBitesizeData(post({ kind: 'quan sát', body: { media: 'vid' } }))
+    expect(clip.ink).toBe('#172124')
+    expect(clip.wash).toBe('#8CBAB4')
+    expect(toBitesizeData(post({ kind: 'quan sát' })).ink).toBe('#B65A3C')
+  })
+
+  it('không nói gì thì là dạng ảnh', () => {
+    expect(toBitesizeData(post()).media).toBe('img')
   })
 
   it('màu đi theo tag chứ không theo module', () => {

@@ -1,8 +1,9 @@
-import { paletteFrom } from 'post-renderer'
+import { CLIP_INK, CLIP_WASH, paletteFrom } from 'post-renderer'
 import { toReportBlocks, toReportNotes } from './reportBlocks'
 import type {
   ArticlePostData,
   BitesizeLength,
+  BitesizeMedia,
   BitesizePostData,
   CardsPostData,
   CardData,
@@ -238,6 +239,8 @@ export type BitesizeBody = {
   portrait?: boolean
   mediaHint?: string
   sub?: string
+  /** Ảnh tĩnh hay clip — quyết định cả dàn trang lẫn màu. */
+  media?: BitesizeMedia
 }
 
 /**
@@ -258,6 +261,7 @@ export function toBitesizeData(
   const body = (post.body ?? {}) as BitesizeBody
   const len = body.len ?? 'ngắn'
   const portrait = body.portrait ?? false
+  const media: BitesizeMedia = body.media === 'vid' ? 'vid' : 'img'
   return {
     title: postTitle(post),
     tag: post.kind,
@@ -265,13 +269,19 @@ export function toBitesizeData(
     num: options.num ?? '',
     pinned: post.pinned ?? false,
     image: post.hero_image_url,
-    ink: tagColor(post.kind),
-    wash: tagWash(post.kind),
+    /*
+     * Dạng clip mang bộ màu riêng bên design đặt sẵn cho `video`, không lấy
+     * theo tag. Chủ site chốt vậy: "vid thì đổi màu". Dạng ảnh vẫn theo tag,
+     * vì cả trang Ghi 01 phân biệt bài bằng mực của tag.
+     */
+    ink: media === 'vid' ? CLIP_INK : tagColor(post.kind),
+    wash: media === 'vid' ? CLIP_WASH : tagWash(post.kind),
+    media,
     len,
     portrait,
     mediaHint:
       body.mediaHint ||
-      (len === 'media' ? (portrait ? BITESIZE_CLIP['dọc'] : BITESIZE_CLIP.ngang) : BITESIZE_HINT),
+      (media === 'vid' ? (portrait ? BITESIZE_CLIP['dọc'] : BITESIZE_CLIP.ngang) : BITESIZE_HINT),
     sub: body.sub ?? '',
     text: body.text ?? postDescription(post),
     band: bandOf(post, options.mod),
