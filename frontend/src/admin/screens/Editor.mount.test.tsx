@@ -71,4 +71,56 @@ describe('màn sửa bài', () => {
     await waitFor(() => expect(screen.queryByText('Đang tải...')).toBeNull())
     expect(screen.getByDisplayValue('taste modality: sơn la')).toBeTruthy()
   })
+
+  it('clip thì không mời căn khung ảnh', async () => {
+    /*
+     * Khung căn vẽ tệp ra bằng `background-image`, mà clip không vẽ ra được
+     * kiểu ấy — mở nó cho một clip là bày ba ô trắng trơn. Đo thật trên trình
+     * duyệt trước khi sửa: đúng ba ô trắng.
+     */
+    getPost.mockReturnValue(Promise.resolve({ ...post, hero_image_url: 'https://x/c.webm' }))
+    listModules.mockReturnValue(Promise.resolve([{ id: 'ghi01', title: 'Ghi 01', accent: '#6FA8C0' }]))
+
+    render(<Editor postId="p1" />)
+    await waitFor(() => expect(screen.queryByText('Đang tải...')).toBeNull())
+    expect(screen.queryByText('đặt vào khung')).toBeNull()
+  })
+
+  it('ảnh thì vẫn mời căn khung', async () => {
+    getPost.mockReturnValue(Promise.resolve({ ...post, hero_image_url: 'https://x/a.jpg' }))
+    listModules.mockReturnValue(Promise.resolve([{ id: 'ghi01', title: 'Ghi 01', accent: '#6FA8C0' }]))
+
+    render(<Editor postId="p1" />)
+    await waitFor(() => expect(screen.queryByText('Đang tải...')).toBeNull())
+    expect(screen.getByText('đặt vào khung')).toBeTruthy()
+  })
+
+  it('thanh đặt ảnh: mỗi chỗ một dòng, và clip thì có thêm dòng thumbnail', async () => {
+    // Trước đây mọi thứ chen chung một hàng với ô chọn template, nên thêm một
+    // chỗ đặt ảnh là hàng ấy dài thêm.
+    getPost.mockReturnValue(
+      Promise.resolve({ ...post, template: 'bitesize', body: {}, hero_image_url: 'https://x/c.webm' }),
+    )
+    listModules.mockReturnValue(Promise.resolve([{ id: 'ghi01', title: 'Ghi 01', accent: '#6FA8C0' }]))
+
+    render(<Editor postId="p1" />)
+    await waitFor(() => expect(screen.queryByText('Đang tải...')).toBeNull())
+
+    expect(screen.getByText('ảnh bìa:')).toBeTruthy()
+    expect(screen.getByText('thumbnail:')).toBeTruthy()
+    expect(screen.getByText('ảnh body 1:')).toBeTruthy()
+    // Mỗi dòng có đủ hai lối đưa ảnh vào.
+    expect(screen.getAllByText('tải ảnh lên')).toHaveLength(3)
+    expect(screen.getAllByText('đặt link')).toHaveLength(3)
+  })
+
+  it('ảnh tĩnh thì không có dòng thumbnail', async () => {
+    getPost.mockReturnValue(Promise.resolve({ ...post, hero_image_url: 'https://x/a.jpg' }))
+    listModules.mockReturnValue(Promise.resolve([{ id: 'ghi01', title: 'Ghi 01', accent: '#6FA8C0' }]))
+
+    render(<Editor postId="p1" />)
+    await waitFor(() => expect(screen.queryByText('Đang tải...')).toBeNull())
+    expect(screen.queryByText('thumbnail:')).toBeNull()
+    expect(screen.getByText('đặt vào khung')).toBeTruthy()
+  })
 })

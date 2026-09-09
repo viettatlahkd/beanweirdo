@@ -1,9 +1,10 @@
-import { useMemo, useState, type CSSProperties } from 'react'
+import { useMemo, useRef, useState, type CSSProperties } from 'react'
 import { Breadcrumbs } from '../components/Breadcrumbs'
 import { useSiteCopy } from '../data/useSiteCopy'
 import { noteFilterBar } from '../lib/notesFilter'
 import { useTags } from '../data/useTags'
 import { useIsMobile } from '../lib/useIsMobile'
+import { useNarrow } from '../lib/useNarrow'
 import {
   featureCells,
   withOverrides,
@@ -17,9 +18,10 @@ import { buildNotesGrid } from '../lib/notesGrid'
 import { featureMobile, notePlacementMobile } from '../content/notes'
 import { coverStyle } from '../lib/imageFocus'
 import { useModules } from '../data/useModules'
-import { PostRenderer } from 'post-renderer'
+import { BitesizeCard, PostRenderer } from 'post-renderer'
 import {
   toArticleData,
+  toBitesizeData,
   toCardsData,
   toLongformData,
   toMemoData,
@@ -62,7 +64,26 @@ function OpenedPost({
    * ở bề ngang 390.
    */
   const mobile = useIsMobile()
+  /*
+   * Bài mở ra chỉ chiếm ba phần tư lưới, nên trên màn 905 nó còn 561 — hẹp hơn
+   * ngưỡng 899 trong khi cửa sổ thì không. Hỏi cửa sổ ở đây là hỏi sai chỗ:
+   * memo có cột thông số rộng cứng 300px, và ở 561 thì cột tiêu đề bên cạnh còn
+   * 93px, tiêu đề xuống dòng từng chữ cái một. Nên đo chính khối này.
+   */
+  const box = useRef<HTMLDivElement>(null)
+  const narrow = useNarrow(box)
+  const tight = mobile || narrow
+  return <div ref={box}>{draw(post, mod, tight)}</div>
+}
+
+function draw(
+  post: PostRow,
+  mod: { title: string; accent: string; on_color: string } | undefined,
+  mobile: boolean,
+) {
   switch (post.template) {
+    case 'bitesize':
+      return <PostRenderer template="bitesize" post={toBitesizeData(post, { mod })} mobile={mobile} />
     case 'memo':
       return <PostRenderer template="memo" post={toMemoData(post, mod)} mobile={mobile} />
     case 'longform':
@@ -80,6 +101,75 @@ function OpenedPost({
         />
       )
   }
+}
+
+/**
+ * Thẻ một bài trong lưới Ghi 01, lúc chưa mở.
+ *
+ * Bài viết trên template bitesize note vẽ bằng đúng thẻ của template ấy — vệt
+ * sáng sau tiêu đề, gạch đầu thẻ nở ra, thân bài cắt hai dòng. Đó là dàn trang
+ * chủ site chỉ đích danh là muốn giữ. Bài trên template khác vẫn là thẻ chung:
+ * ảnh, một dòng nhãn, tiêu đề, mô tả.
+ *
+ * Trạng thái rê chuột nằm ở đây chứ không ở trang, vì nó chỉ nói về một thẻ.
+ */
+function Collapsed({
+  post,
+  num,
+  aspect,
+  mediaWidth,
+  mob,
+}: {
+  post: PostRow
+  num: string
+  aspect: string
+  mediaWidth: string
+  mob: boolean
+}) {
+  const [hovered, setHovered] = useState(false)
+  if (post.template === 'bitesize') {
+    return (
+      <div onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
+        <BitesizeCard
+          post={toBitesizeData(post, { num })}
+          hovered={hovered}
+          aspect={aspect}
+          mediaWidth={mediaWidth}
+          mobile={mob}
+        />
+      </div>
+    )
+  }
+  return (
+    <>
+      {postThumbnail(post) && (
+        <div
+          style={{
+            aspectRatio: aspect,
+            width: mediaWidth,
+            ...coverStyle(postThumbnail(post)!),
+            marginBottom: 18,
+          }}
+        />
+      )}
+      <div style={{ ...label, marginBottom: 10 }}>
+        {post.template} · {post.date_label}
+      </div>
+      <div style={{ fontFamily: serif, fontSize: 40, lineHeight: 1.06, letterSpacing: '-.035em' }}>{post.en}</div>
+      <div
+        style={{
+          fontFamily: "'Be Vietnam Pro',sans-serif",
+          fontWeight: 200,
+          fontSize: 15,
+          lineHeight: 1.62,
+          color: '#4A4A42',
+          marginTop: 12,
+        }}
+      >
+        {postDescription(post)}
+      </div>
+    </>
+  )
 }
 
 /**
@@ -435,7 +525,20 @@ export function Notes() {
                         zIndex: 2,
                       }
                     : {
-                        gridColumn: open ? '1 / -1' : place.col,
+                        /*
+                         * Bài mở ra KHÔNG chiếm trọn bề ngang.
+                         *
+                         * Chủ site: "bề ngang của bài nó chiếm trọn bề ngang
+                         * trang > trông rất lớn và cộc cằn (...) mục tiêu là
+                         * tạo cảm giác là bài này pop up và là 1 phần của trang
+                         * ghi, thay vì cảm giác như mở hẳn ra trang khác."
+                         *
+                         * Chín trên mười hai cột — ba phần tư — và thụt vào một
+                         * cột ở mép trái. Lưới của trang vẫn nhìn thấy được hai
+                         * bên, nên bài đọc ra là một khối nổi lên TRONG trang
+                         * chứ không phải một trang mới đè lên.
+                         */
+                        gridColumn: open ? '2 / span 9' : place.col,
                         marginTop: open ? '40px' : place.mt,
                       }),
                   cursor: 'pointer',
@@ -447,43 +550,13 @@ export function Notes() {
                 {open ? (
                   <OpenedPost post={p} mod={ghi01} />
                 ) : (
-                  <>
-                    {postThumbnail(p) && (
-                      <div
-                        style={{
-                          aspectRatio: mob ? pm.ar : place.ar,
-                          width: mob ? '100%' : place.mw,
-                          ...coverStyle(postThumbnail(p)!),
-                          marginBottom: 18,
-                        }}
-                      />
-                    )}
-                    <div style={{ ...label, marginBottom: 10 }}>
-                      {p.template} · {p.date_label}
-                    </div>
-                    <div
-                      style={{
-                        fontFamily: serif,
-                        fontSize: 40,
-                        lineHeight: 1.06,
-                        letterSpacing: '-.035em',
-                      }}
-                    >
-                      {p.en}
-                    </div>
-                    <div
-                      style={{
-                        fontFamily: "'Be Vietnam Pro',sans-serif",
-                        fontWeight: 200,
-                        fontSize: 15,
-                        lineHeight: 1.62,
-                        color: '#4A4A42',
-                        marginTop: 12,
-                      }}
-                    >
-                      {postDescription(p)}
-                    </div>
-                  </>
+                  <Collapsed
+                    post={p}
+                    num={String(shownPosts.length - shownPosts.indexOf(p)).padStart(2, '0')}
+                    aspect={mob ? pm.ar : place.ar}
+                    mediaWidth={mob ? '100%' : place.mw}
+                    mob={mob}
+                  />
                 )}
               </Hover>
             )

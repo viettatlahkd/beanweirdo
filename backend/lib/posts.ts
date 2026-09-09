@@ -6,7 +6,7 @@
 // docs/superpowers/specs/2026-08-13-post-authoring-admin-design.md, "## Status lifecycle".
 
 export type PostKind = 'note' | 'essay' | 'ref' | 'log'
-export type PostTemplate = 'article' | 'cards' | 'report' | 'longform' | 'memo'
+export type PostTemplate = 'article' | 'cards' | 'report' | 'longform' | 'memo' | 'bitesize'
 export type PostStatus = 'draft' | 'published' | 'archived' | 'deleted'
 
 /**
@@ -23,7 +23,7 @@ export const POST_KINDS: PostKind[] = ['note', 'essay', 'ref', 'log']
  * and memo, this list was not updated, and creating either through the admin
  * answered 400 for months. `templateContract.test.ts` compares all three.
  */
-export const POST_TEMPLATES: PostTemplate[] = ['article', 'cards', 'report', 'longform', 'memo']
+export const POST_TEMPLATES: PostTemplate[] = ['article', 'cards', 'report', 'longform', 'memo', 'bitesize']
 
 /**
  * Every column `posts` actually has.

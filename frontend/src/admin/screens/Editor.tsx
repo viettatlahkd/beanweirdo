@@ -70,7 +70,16 @@ import {
 import { AddRow, RowShell } from '../components/RowShell'
 import { duplicateAt, insertAt, move, removeAt } from '../lib/listOps'
 import { useRowDrag } from '../lib/useRowDrag'
-import { toArticleData, toCardsData, toLongformData, toMemoData } from '../../lib/postToRenderer'
+import {
+  toArticleData,
+  toBitesizeData,
+  toCardsData,
+  toLongformData,
+  toMemoData,
+  type BitesizeBody,
+} from '../../lib/postToRenderer'
+import type { BitesizeLength } from 'post-renderer'
+import { captureFrame, looksLikeVideo, probeMedia } from '../../lib/mediaShape'
 import { toReportBlocks, toReportNotes } from '../../lib/reportBlocks'
 
 /**
@@ -105,6 +114,7 @@ const TEMPLATE_LABEL: Record<string, string> = {
   report: 'Report',
   longform: 'Long-form',
   memo: 'Memo',
+  bitesize: 'Bitesize note',
 }
 
 /**
@@ -166,12 +176,82 @@ function EditorContent({ postId }: { postId: string }) {
   async function setHero(file: File) {
     const { url } = await uploadImage(file)
     saveHero(url)
-    setFraming(url)
+    /*
+     * Khung căn ảnh vẽ tệp ra bằng `background-image`, mà clip thì không vẽ ra
+     * được kiểu ấy: mở nó cho một clip là bày ba ô trắng trơn. Và căn tâm ảnh
+     * cũng chẳng có nghĩa gì với một hình đang chạy.
+     */
+    if (!looksLikeVideo(file)) setFraming(url)
   }
 
   function saveHero(url: string) {
     setPost((prev) => (prev ? { ...prev, hero_image_url: url } : prev))
     updatePost(postId, { hero_image_url: url })
+    void reshapeForMedia(url)
+    if (looksLikeVideo(url)) void autoPoster(url)
+  }
+
+  /*
+   * Đính một tệp vào bài bitesize thì hệ tự đo và tự đổi dàn trang.
+   *
+   * Chủ site: "giả định là t không báo cho m biết trước đâu, input của user chỉ
+   * là 1 video m phải tự nhận diện và reformat trên base set m đã có". Nên
+   * không có bước nào bắt khai đây là ảnh hay clip, ngang hay dọc.
+   *
+   * Đo xong mới ghi, và chỉ ghi khi đo được: link hỏng hay máy chủ treo thì bài
+   * giữ nguyên dàn trang đang có chứ không bị đổi bừa. Đọc template từ `prev`
+   * chứ không từ `post` — xem ghi chú về stale closure ở trên.
+   */
+  async function reshapeForMedia(url: string) {
+    const shape = await probeMedia(url)
+    if (!shape) return
+    setPost((prev) => {
+      if (!prev || resolveTemplate(prev) !== 'bitesize') return prev
+      /*
+       * `PostDetail['body']` khai là `SectionData[] | null` cho tiện, nhưng cột
+       * thật là jsonb và hình dạng của nó do template quyết — bitesize cất một
+       * đối tượng ở đây. Xem chú thích cùng ý ở `Editor.test.tsx`.
+       */
+      const body = { ...((prev.body ?? {}) as object), media: shape.kind, portrait: shape.portrait }
+      void updatePost(postId, { body } as unknown as Parameters<typeof updatePost>[1])
+      return { ...prev, body: body as unknown as PostDetail['body'] }
+    })
+  }
+
+  /** Ảnh của ô phụ — cùng đường tải lên với ảnh bìa, chỉ khác chỗ cất. */
+  async function setSub(file: File) {
+    const { url } = await uploadImage(file)
+    saveSub(url)
+  }
+
+  function saveSub(url: string) {
+    writeBody({ subImage: url })
+  }
+
+  /**
+   * Ảnh đại diện cho clip.
+   *
+   * Lấy tự động một khung ở giây thứ nhất ngay khi đính clip vào; đổi tay được
+   * bằng chính dòng "thumbnail" trong thanh đặt ảnh. Lấy không được — máy chủ
+   * không cho đọc pixel — thì im lặng bỏ qua, bài vẫn lưu bình thường.
+   */
+  async function autoPoster(url: string) {
+    const frame = await captureFrame(url)
+    if (!frame) return
+    const { url: posterUrl } = await uploadImage(
+      new File([frame], 'poster.jpg', { type: 'image/jpeg' }),
+    )
+    writeBody({ poster: posterUrl })
+  }
+
+  /** Ghi thêm vào `body` jsonb mà không đụng phần đã có. */
+  function writeBody(patch: Record<string, unknown>) {
+    setPost((prev) => {
+      if (!prev) return prev
+      const body = { ...((prev.body ?? {}) as object), ...patch }
+      void updatePost(postId, { body } as unknown as Parameters<typeof updatePost>[1])
+      return { ...prev, body: body as unknown as PostDetail['body'] }
+    })
   }
 
   function applyPatch(patch: EditPatch) {
@@ -179,9 +259,64 @@ function EditorContent({ postId }: { postId: string }) {
     updatePost(postId, patch as Parameters<typeof updatePost>[1])
   }
 
+  const body = (getBody(post) ?? {}) as { subImage?: string; poster?: string }
+  const heroIsClip = Boolean(post.hero_image_url && looksLikeVideo(post.hero_image_url))
+
+  /*
+   * Bài này có những chỗ đặt ảnh nào.
+   *
+   * Mọi template đều có ảnh bìa. Clip thì có thêm một dòng ảnh đại diện. Riêng
+   * bitesize có một ô ảnh trong thân bài. Template khác cất ảnh thân bài trong
+   * từng khối nội dung nên chúng đặt ngay tại chỗ, không qua thanh này.
+   */
+  const mediaSlots: MediaSlotSpec[] = [
+    {
+      key: 'hero',
+      label: 'ảnh bìa',
+      url: post.hero_image_url,
+      accept: 'image/*,video/*',
+      onPick: (f) => void setHero(f),
+      onLink: (url) => {
+        saveHero(url)
+        if (!looksLikeVideo(url)) setFraming(url)
+      },
+      extra:
+        post.hero_image_url && !heroIsClip
+          ? { label: 'đặt vào khung', onClick: () => setFraming(post.hero_image_url) }
+          : undefined,
+    },
+    ...(heroIsClip
+      ? [
+          {
+            key: 'poster',
+            label: 'thumbnail',
+            url: body.poster ?? null,
+            accept: 'image/*',
+            onPick: async (f: File) => {
+              const { url } = await uploadImage(f)
+              writeBody({ poster: url })
+            },
+            onLink: (url: string) => writeBody({ poster: url }),
+          } satisfies MediaSlotSpec,
+        ]
+      : []),
+    ...(template === 'bitesize'
+      ? [
+          {
+            key: 'sub',
+            label: 'ảnh body 1',
+            url: body.subImage ?? null,
+            accept: 'image/*',
+            onPick: (f: File) => void setSub(f),
+            onLink: (url: string) => saveSub(url),
+          } satisfies MediaSlotSpec,
+        ]
+      : []),
+  ]
+
   return (
     <div style={{ padding: '32px 40px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12, color: ink.muted, marginBottom: 14 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12, color: ink.muted, marginBottom: 12 }}>
         Template:
         {/*
           Changing it here rather than by going back: the post already exists,
@@ -211,22 +346,6 @@ function EditorContent({ postId }: { postId: string }) {
               </option>
             ))}
           </select>
-        )}
-        <HeroPicker
-          onPick={(f) => void setHero(f)}
-          onLink={(url) => {
-            saveHero(url)
-            setFraming(url)
-          }}
-          hasHero={Boolean(post.hero_image_url)}
-        />
-        {post.hero_image_url && (
-          <button
-            onClick={() => setFraming(post.hero_image_url)}
-            style={{ fontFamily: 'inherit', fontSize: 12, color: ink.green, background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
-          >
-            đặt vào khung
-          </button>
         )}
         {framing && (
           <FocusPicker
@@ -260,6 +379,16 @@ function EditorContent({ postId }: { postId: string }) {
           />
         </span>
       </div>
+
+      {/*
+        * Thanh đặt ảnh: mỗi chỗ đặt một dòng.
+        *
+        * Trước đây tất cả nằm chung một hàng với ô chọn template, nên thêm một
+        * chỗ đặt ảnh là hàng ấy dài thêm và chữ trôi đi đâu không rõ. Xuống
+        * dòng thì đọc ra ngay bài này có mấy chỗ đặt ảnh và chỗ nào đã có gì.
+        */}
+      <MediaBar slots={mediaSlots} />
+
       <EditorCanvas
         template={template}
         post={post}
@@ -327,6 +456,8 @@ export function EditorCanvas({ template, post, module, onChange, onHeroDrop }: C
           <CardsEditor post={post} module={module} onChange={onChange} />
         ) : template === 'report' ? (
           <ReportEditor post={post} module={module} onChange={onChange} />
+        ) : template === 'bitesize' ? (
+          <BitesizeEditor post={post} module={module} onChange={onChange} />
         ) : template === 'memo' ? (
           <MemoEditor post={post} module={module} onChange={onChange} />
         ) : template === 'longform' ? (
@@ -548,53 +679,64 @@ function EditableField({
   )
 }
 
-/** Sets the cover. The picture itself is shown by the page, not by this. */
 /**
- * Ảnh bìa: tải lên, hoặc dán một đường dẫn.
+ * Một chỗ đặt ảnh trong thanh: tên, rồi hai lối đưa ảnh vào.
  *
- * Trước đây chỉ có tải lên, nên một tấm ảnh đã nằm sẵn ở đâu đó trên mạng vẫn
- * phải tải về rồi tải lên lại. Ô dán link là cùng một lối mà khung ảnh của
- * trang module đã có — hai chỗ đặt ảnh thì nên mở ra bằng cùng một cách.
+ * Tải lên và dán link là hai lối cho cùng một việc — một tấm ảnh đã nằm sẵn ở
+ * đâu đó trên mạng thì không phải tải về rồi tải lên lại.
  */
-function HeroPicker({
-  onPick,
-  onLink,
-  hasHero,
-}: {
+export type MediaSlotSpec = {
+  key: string
+  label: string
+  url: string | null
+  accept: string
   onPick: (file: File) => void
   onLink: (url: string) => void
-  hasHero: boolean
-}) {
+  /** Việc thêm chỉ chỗ này mới có — ví dụ căn khung cho ảnh bìa. */
+  extra?: { label: string; onClick: () => void }
+}
+
+const slotLinkStyle: CSSProperties = {
+  fontFamily: 'inherit',
+  fontSize: 12,
+  color: ink.green,
+  background: 'none',
+  border: 'none',
+  padding: 0,
+  cursor: 'pointer',
+}
+
+function MediaSlot({ slot }: { slot: MediaSlotSpec }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [linking, setLinking] = useState(false)
-  const linkStyle: CSSProperties = {
-    fontFamily: 'inherit',
-    fontSize: 12,
-    color: ink.green,
-    background: 'none',
-    border: 'none',
-    padding: 0,
-    cursor: 'pointer',
-  }
   return (
-    <>
-      <button onClick={() => inputRef.current?.click()} style={linkStyle}>
-        {hasHero ? 'đổi ảnh bìa' : 'thêm ảnh bìa'}
+    <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, fontSize: 12, color: ink.muted, flexWrap: 'wrap' }}>
+      <span style={{ minWidth: 84, color: slot.url ? ink.strong : ink.muted }}>{slot.label}:</span>
+      <button onClick={() => inputRef.current?.click()} style={slotLinkStyle}>
+        tải ảnh lên
       </button>
-      <span style={{ color: ink.faint, fontSize: 11 }}>hoặc</span>
-      <button onClick={() => setLinking((v) => !v)} style={linkStyle}>
+      <span style={{ color: ink.faint }}>–</span>
+      <button onClick={() => setLinking((v) => !v)} style={slotLinkStyle}>
         đặt link
       </button>
+      {slot.extra && (
+        <>
+          <span style={{ color: ink.faint }}>–</span>
+          <button onClick={slot.extra.onClick} style={slotLinkStyle}>
+            {slot.extra.label}
+          </button>
+        </>
+      )}
       {linking && (
         <input
           autoFocus
-          placeholder="dán link ảnh rồi Enter"
+          placeholder={`dán link ${slot.label} rồi Enter`}
           onKeyDown={(e) => {
             if (e.key === 'Escape') return setLinking(false)
             if (e.key !== 'Enter') return
             const v = (e.target as HTMLInputElement).value.trim()
             setLinking(false)
-            if (v) onLink(v)
+            if (v) slot.onLink(v)
           }}
           onBlur={() => setLinking(false)}
           style={{
@@ -610,15 +752,25 @@ function HeroPicker({
       <input
         ref={inputRef}
         type="file"
-        accept="image/*"
+        accept={slot.accept}
         style={{ display: 'none' }}
         onChange={(e) => {
           const file = e.target.files?.[0]
           e.target.value = ''
-          if (file) onPick(file)
+          if (file) slot.onPick(file)
         }}
       />
-    </>
+    </div>
+  )
+}
+
+function MediaBar({ slots }: { slots: MediaSlotSpec[] }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
+      {slots.map((slot) => (
+        <MediaSlot key={slot.key} slot={slot} />
+      ))}
+    </div>
   )
 }
 
@@ -856,6 +1008,127 @@ function LongformEditor({
         />
       )}
     />
+  )
+}
+
+/**
+ * Ô sửa chảy theo đúng dòng chữ nó thay thế.
+ *
+ * `EditableField` dựng `input`/`textarea` — một khối đặc, không quấn quanh ảnh
+ * thả trôi được. Ở bitesize thì đó là hỏng: chữ phải chảy quanh ảnh, mà một
+ * `textarea` rộng hết khổ bị đẩy xuống dưới ô ảnh phụ, để lại đúng "khúc trắng
+ * tinh trống nguyên" chủ site chỉ ra — trong khi bản xem trước cùng dữ liệu ấy
+ * lại chảy đẹp. Hai màn nói hai chuyện về cùng một bài.
+ *
+ * `contentEditable` thì chảy y như chữ thật, nên màn sửa và trang thật là một.
+ * Chữ đặt bằng effect chứ không phải qua children: React mà đụng vào con của
+ * một `contentEditable` đang gõ thì con trỏ nhảy về đầu.
+ */
+function InlineField({
+  value,
+  onCommit,
+  placeholder,
+}: {
+  value: string
+  onCommit: (value: string) => void
+  placeholder?: string
+}) {
+  const ref = useRef<HTMLSpanElement>(null)
+
+  useEffect(() => {
+    const el = ref.current
+    if (el && el.textContent !== value) el.textContent = value
+  }, [value])
+
+  return (
+    <span
+      ref={ref}
+      contentEditable
+      suppressContentEditableWarning
+      role="textbox"
+      aria-label={placeholder}
+      data-placeholder={placeholder}
+      onBlur={(e) => {
+        // `innerText` giữ chỗ xuống dòng; `textContent` thì nuốt. jsdom không
+        // có `innerText`, nên lùi về `textContent` khi chạy trong bài kiểm.
+        const next = e.currentTarget.innerText ?? e.currentTarget.textContent ?? ''
+        if (next !== value) onCommit(next)
+      }}
+      style={{ outline: 'none', cursor: 'text' }}
+    />
+  )
+}
+
+/**
+ * Bitesize note — sửa ngay trên bản vẽ, như mọi template khác.
+ *
+ * Hai ô chọn ở đầu không phải nội dung mà là dàn trang: độ dài quyết định cỡ
+ * tiêu đề trong lưới Ghi 01, khung dọc quyết định ảnh đứng cạnh chữ hay nằm
+ * trên. Chúng nằm trong `body` jsonb chứ không thành cột mới — đúng cách bốn
+ * template kia mang phần riêng của chúng.
+ */
+function BitesizeEditor({
+  post,
+  module,
+  onChange,
+}: {
+  post: PostDetail
+  module?: Module
+  onChange: (patch: EditPatch) => void
+}) {
+  const body = (post.body ?? {}) as BitesizeBody
+  const write = (patch: Partial<BitesizeBody>) =>
+    onChange({ body: { ...(post.body as object), ...patch } })
+  const control: CSSProperties = {
+    fontFamily: sans,
+    fontSize: 12.5,
+    padding: '6px 9px',
+    border: `1px solid ${paper.rule}`,
+    background: paper.white,
+    color: ink.base,
+  }
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: 12, padding: '14px 16px', borderBottom: `1px solid ${paper.rule}` }}>
+        <select
+          aria-label="Độ dài"
+          value={body.len ?? 'ngắn'}
+          onChange={(e) => write({ len: e.target.value as BitesizeLength })}
+          style={control}
+        >
+          {(['ngắn', 'vừa', 'dài'] as BitesizeLength[]).map((l) => (
+            <option key={l} value={l}>
+              {l}
+            </option>
+          ))}
+        </select>
+        <select
+          aria-label="Khung ảnh"
+          value={body.portrait ? 'dọc' : 'ngang'}
+          onChange={(e) => write({ portrait: e.target.value === 'dọc' })}
+          style={control}
+        >
+          <option value="ngang">ngang</option>
+          <option value="dọc">dọc</option>
+        </select>
+      </div>
+      <PostRenderer
+        template="bitesize"
+        post={toBitesizeData(post, { mod: module })}
+        renderTitle={(title) => (
+          <InlineField value={title} placeholder="Tiêu đề" onCommit={(v) => onChange({ en: v })} />
+        )}
+        renderText={(text) => (
+          <InlineField value={text} placeholder="Thân bài" onCommit={(v) => write({ text: v })} />
+        )}
+        renderMediaHint={(hint) => (
+          <InlineField value={hint} placeholder="Chữ trong ô ảnh" onCommit={(v) => write({ mediaHint: v })} />
+        )}
+        renderSub={(sub) => (
+          <InlineField value={sub} placeholder="Chữ trong ô ảnh phụ" onCommit={(v) => write({ sub: v })} />
+        )}
+      />
+    </div>
   )
 }
 
@@ -2301,7 +2574,7 @@ function ImageBlockEditor({
         <input
           ref={inputRef}
           type="file"
-          accept="image/*"
+        accept="image/*"
           style={{ display: 'none' }}
           onChange={(e) => {
             const file = e.target.files?.[0]

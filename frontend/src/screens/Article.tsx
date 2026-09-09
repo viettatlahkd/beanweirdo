@@ -4,6 +4,7 @@ import { usePost } from '../data/usePost'
 import { postTitle } from '../lib/postText'
 import {
   toArticleData,
+  toBitesizeData,
   toCardsData,
   toLongformData,
   toMemoData,
@@ -78,6 +79,9 @@ export function Article() {
   )
   const moduleTitle = module_?.title ?? post.module_id
 
+  if (post.template === 'bitesize') {
+    return <PostRenderer template="bitesize" post={toBitesizeData(post, { mod: module_ })} breadcrumb={crumbs} mobile={mobile} />
+  }
   if (post.template === 'memo') {
     return <PostRenderer template="memo" post={toMemoData(post, module_)} breadcrumb={crumbs} mobile={mobile} />
   }

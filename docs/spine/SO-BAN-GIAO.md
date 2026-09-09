@@ -64,6 +64,10 @@ sinh từ code đã merge; A1–A7 đã ghi vào, A8–A46 thì chưa.
 | A44 | **Ô chữ lưu cả khi đang gõ, không chỉ khi rời ô.** Chỉ lưu khi rời ô là một cái bẫy im lặng: gõ xong rồi tải lại trang, đóng tab, hay bấm sang tab khác thì ô ấy chưa hề được lưu, và không có gì trên màn hình cho biết. Chờ một nhịp ngắn sau khi ngừng gõ để không gửi một lượt lưu cho mỗi ký tự. | #73 | 16 (template) | CHỜ |
 | A45 | Thêm một nút vào một hàng là lưới thì **đặt tuyệt đối**, đừng thêm một đứa con thứ ba: lưới hai cột gặp đứa con thứ ba là đẩy mọi thứ xuống hàng thứ ba, và cả hàng vỡ dọc. Chừa chỗ bằng `padding`. | #74 | 03 (khoảng cách & lưới) | CHỜ |
 | A46 | **Long-form sửa được.** Nó từng chỉ được vẽ ra để nhìn, không một ô nhập nào, kể cả tiêu đề — nên bài dài nhất trên site là bài duy nhất không sửa nổi một lỗi chính tả. Định dạng trong dòng nằm ở các `run`; ô chữ thường sửa chữ nên dòng vừa sửa mất định dạng, và điều đó hiện ngay trên trang lúc sửa chứ không mất lặng lẽ. | #74 | 16 (template) | CHỜ |
+| A47 | Bitesize note là một template như năm cái kia, không phải một loại thực thể riêng. Nó dùng được dưới bất kỳ module nào, không chỉ Ghi 01. | #93 | 16 (template) | CHỜ |
+| A48 | Phần riêng của bitesize — độ dài, khung ảnh dọc, chữ gợi ý trong ô ảnh, ô ảnh phụ, thân bài — nằm trong `body` jsonb, không thành cột mới. Đúng cách bốn template kia mang phần riêng của chúng. | #93 | 16 | CHỜ |
+| A49 | Thẻ bitesize trong danh sách mang màu của **tag**, không mang màu module; bài mở ra thì mới đeo dải màu module. Trang Ghi 01 phân biệt bài bằng mực của tag. | #93 | 16, và 12 (màu) | CHỜ |
+| A50 | Cỡ tiêu đề một bài bitesize do trường độ dài quyết định (dài 40 · vừa 34 · ngắn/media 27 · khung dọc 23 · mở hết 52), không do số chữ. | #93 | 16 | CHỜ |
 | A16 | Bảng luôn còn ít nhất một cột và một hàng. Bảng không cột vẽ ra là một khoảng trắng — người viết không phân biệt được bảng rỗng với bảng đã bị xoá. | #67 | 16 | CHỜ |
 
 ## B. `docs/SPEC.html` đã lỗi thời
@@ -78,6 +82,8 @@ sinh từ code đã merge; A1–A7 đã ghi vào, A8–A46 thì chưa.
 | B6 | Backend | Thêm `backend/scripts/dev-server.mjs` — cách chạy khu admin ở local. | XONG |
 | B7 | Khoảng trống đã biết | Mục "bản xem trước giống hệt bản thật" **đang sai**: có hai hàm `toCardsData` khác nhau cho công khai và admin. | XONG |
 | B8 | Thiếu hẳn | Chưa mục nào mô tả thanh lọc nhóm hương ở bài dạng thẻ. | XONG |
+| B9 | Template | Hệ nay có **sáu** template, không phải năm: thêm `bitesize` (PR #93). Mọi chỗ SPEC đếm năm đều sai. | CHỜ |
+| B10 | Cơ sở dữ liệu | Ràng buộc `posts_template_check` nay nhận sáu giá trị — migration `0022_bitesize_template.sql`. | CHỜ |
 
 ## C. Việc chờ chủ site quyết
 

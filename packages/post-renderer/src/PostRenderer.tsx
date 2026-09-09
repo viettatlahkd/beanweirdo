@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { Article, type ArticleOverrides } from './Article'
 import { Cards, type CardsOverrides } from './Cards'
 import { Longform, type LongformEdit } from './Longform'
+import { Bitesize, type BitesizeOverrides, type BitesizePostData } from './Bitesize'
 import { Memo, type MemoOverrides } from './Memo'
 import { Report, type ReportOverrides } from './Report'
 import type {
@@ -40,6 +41,10 @@ export type PostRendererProps = Chrome &
   // Memo belongs to Ghi 01 rather than to a module, but it is a template like
   // the rest — and the admin edits it in place, so it takes overrides too.
   | ({ template: 'memo'; post: MemoPostData } & MemoOverrides)
+  // Bitesize note: dạng ghi ngắn của Ghi 01, trước đây không phải template mà
+  // là một loại thực thể riêng. Ở đây nó vẽ bài mở hết; thẻ thu trong danh
+  // sách là `BitesizeCard`, cùng tệp.
+  | ({ template: 'bitesize'; post: BitesizePostData } & BitesizeOverrides)
   )
 
 /**
@@ -60,6 +65,10 @@ export function PostRenderer(props: PostRendererProps) {
     // không có gì, và không có lỗi nào để lần ra.
     const { template: _template, post, ...rest } = props
     return <Longform post={post} {...rest} />
+  }
+  if (props.template === 'bitesize') {
+    const { template: _template, post, ...overrides } = props
+    return <Bitesize post={post} {...overrides} />
   }
   if (props.template === 'memo') {
     const { template: _template, post, ...overrides } = props

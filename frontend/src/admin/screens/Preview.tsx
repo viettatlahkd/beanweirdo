@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { PostRenderer } from 'post-renderer'
 import { getPost, listModules, type Module, type PostDetail } from '../lib/apiClient'
 import { ink, paper } from '../../design/tokens'
+import { Hover } from '../../lib/Hover'
+import { useNav } from '../../lib/nav'
 import { resolveTemplate } from '../lib/postData'
 import {
   toArticleData,
@@ -9,6 +11,7 @@ import {
   toLongformData,
   toMemoData,
   toReportData,
+  toBitesizeData,
 } from '../../lib/postToRenderer'
 
 /**
@@ -30,6 +33,7 @@ export function Preview({ postId }: { postId: string }) {
 }
 
 function PreviewContent({ postId }: { postId: string }) {
+  const nav = useNav()
   const [post, setPost] = useState<PostDetail | null>(null)
   const [modules, setModules] = useState<Module[]>([])
 
@@ -48,8 +52,25 @@ function PreviewContent({ postId }: { postId: string }) {
 
   return (
     <div style={{ minHeight: '100vh', background: paper.cream, padding: '32px 24px' }}>
-      <div style={{ fontSize: 12, color: ink.muted, marginBottom: 14, maxWidth: 1320, margin: '0 auto 14px' }}>
-        Bài đang ở <b style={{ color: ink.strong, fontWeight: 500 }}>{post.status}</b>, chỉ bạn xem được link này — render bằng đúng component công khai, không có ô sửa nào.
+      {/*
+        * Đường về bản nháp.
+        *
+        * Màn này mở ở TAB MỚI qua `/admin?preview=<id>`, nên trong tab ấy nó là
+        * trang đầu tiên: nút back của trình duyệt không đưa về bản nháp mà đưa
+        * về Content management. Chủ site gặp đúng chỗ đó. Điều hướng trong app
+        * là trạng thái chứ không phải URL, nên đường về phải tự dựng ở đây.
+        */}
+      <div style={{ maxWidth: 1320, margin: '0 auto 14px', display: 'flex', alignItems: 'baseline', gap: 14 }}>
+        <Hover
+          onClick={() => nav.editPost(postId)}
+          style={{ fontSize: 12, color: ink.green, cursor: 'pointer', flex: 'none' }}
+          hoverStyle={{ color: ink.strong }}
+        >
+          ← quay lại bản nháp
+        </Hover>
+        <div style={{ fontSize: 12, color: ink.muted }}>
+          Bài đang ở <b style={{ color: ink.strong, fontWeight: 500 }}>{post.status}</b>, chỉ bạn xem được link này — render bằng đúng component công khai, không có ô sửa nào.
+        </div>
       </div>
       <div style={{ maxWidth: 1320, margin: '0 auto', border: `1px solid ${paper.rule}`, overflow: 'hidden', background: paper.white }}>
         {/* Every template, through the same adapters the public journal uses.
@@ -61,6 +82,8 @@ function PreviewContent({ postId }: { postId: string }) {
           <PostRenderer template="report" post={toReportData(source, mod)} />
         ) : template === 'longform' ? (
           <PostRenderer template="longform" post={toLongformData(source, mod)} />
+        ) : template === 'bitesize' ? (
+          <PostRenderer template="bitesize" post={toBitesizeData(source, { mod })} />
         ) : template === 'memo' ? (
           <PostRenderer template="memo" post={toMemoData(source, mod)} />
         ) : (
