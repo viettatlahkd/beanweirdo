@@ -167,8 +167,15 @@ export function checkWords(words: RouteWords): WordErrors {
 export type StoredRoutes = Partial<RouteWords> & { past?: Partial<RouteWords>[] }
 
 /** Bản đã kiểm, hoà với bản mặc định — thiếu ô nào thì lấy ô mặc định. */
-export function resolveWords(stored: Partial<RouteWords> | null | undefined): RouteWords {
-  const merged: RouteWords = { ...DEFAULT_WORDS, ...(stored ?? {}) }
+export function resolveWords(stored: StoredRoutes | null | undefined): RouteWords {
+  // Lấy đúng những ô đã biết, không bê nguyên bản lưu. Bản lưu còn mang `past`,
+  // và bê cả nó vào thì bộ từ dựng lại từ kho không bao giờ bằng bộ từ trên
+  // biểu mẫu — nút Lưu không tắt được nữa dù vừa lưu xong.
+  const merged = { ...DEFAULT_WORDS } as RouteWords
+  for (const key of Object.keys(DEFAULT_WORDS) as (keyof RouteWords)[]) {
+    const v = (stored as Record<string, unknown> | null | undefined)?.[key]
+    if (v !== undefined && v !== null) (merged as Record<string, unknown>)[key] = v
+  }
   merged.modules = { ...DEFAULT_WORDS.modules, ...(stored?.modules ?? {}) }
   // Một bản lưu hỏng không được làm sập cả trang: nó chỉ bị bỏ qua, và trang
   // chạy bằng bản mặc định như trước khi ai đó đổi tên.

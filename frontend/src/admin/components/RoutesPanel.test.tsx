@@ -12,11 +12,18 @@ const saveButton = () => screen.getByText('Lưu đường dẫn') as HTMLButtonE
 function open(stored?: StoredRoutes) {
   const onSave = vi.fn()
   render(<RoutesPanel stored={stored} modules={modules} onSave={onSave} />)
+  // Mục này co sẵn khi mở màn — xổ ra rồi mới có ô để gõ.
+  fireEvent.click(screen.getByText('Đường dẫn'))
   return onSave
 }
 
 describe('RoutesPanel — chủ site đổi từ, không đổi logic', () => {
-  beforeEach(() => resetWords())
+  beforeEach(() => {
+    resetWords()
+    // Mục co/mở nhớ lựa chọn trong máy; không dọn thì test trước mở sẵn cho
+    // test sau, và cú bấm của `open()` lại đóng nó vào.
+    window.localStorage.clear()
+  })
 
   it('renames the addresses the word appears in, and says so before saving', () => {
     const onSave = open()
@@ -62,5 +69,33 @@ describe('RoutesPanel — chủ site đổi từ, không đổi logic', () => {
     open()
     const typed = screen.getAllByRole('textbox').length
     expect(typed).toBe(Object.keys(DEFAULT_WORDS).length - 2 + modules.length)
+  })
+})
+
+describe('RoutesPanel — co lại', () => {
+  beforeEach(() => {
+    resetWords()
+    window.localStorage.clear()
+  })
+
+  it('starts collapsed, and says which words are in force without opening', () => {
+    // Đây là chỗ ít động tới nhất mà dài nhất trên tab này. Xổ sẵn thì nó đẩy
+    // sơ đồ trang — thứ người ta vào đây để xem — ra khỏi tầm mắt.
+    render(<RoutesPanel stored={undefined} modules={modules} onSave={vi.fn()} />)
+
+    expect(screen.queryByLabelText('Tên khu')).toBeNull()
+    expect(screen.getByText('/ad · /post/…')).toBeTruthy()
+
+    fireEvent.click(screen.getByText('Đường dẫn'))
+    expect(screen.getByLabelText('Tên khu')).toBeTruthy()
+  })
+
+  it('remembers that it was left open', () => {
+    const { unmount } = render(<RoutesPanel stored={undefined} modules={modules} onSave={vi.fn()} />)
+    fireEvent.click(screen.getByText('Đường dẫn'))
+    unmount()
+
+    render(<RoutesPanel stored={undefined} modules={modules} onSave={vi.fn()} />)
+    expect(screen.getByLabelText('Tên khu')).toBeTruthy()
   })
 })

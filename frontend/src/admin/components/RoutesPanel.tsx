@@ -52,6 +52,8 @@ const BLOCKS: Block[] = [
   },
 ]
 
+const OPEN_KEY = 'cms_routes_open'
+
 const label: React.CSSProperties = {
   fontFamily: sans,
   fontWeight: 300,
@@ -94,6 +96,30 @@ export function RoutesPanel({
   const live = useMemo(() => resolveWords(stored), [stored])
   const [draft, setDraft] = useState<RouteWords>(live)
   const [saved, setSaved] = useState(false)
+  /*
+   * Co lại khi mở màn. Đây là chỗ ít động tới nhất trên tab này mà lại dài
+   * nhất, nên để nó xổ sẵn là đẩy sơ đồ trang — thứ người ta vào đây để xem —
+   * ra khỏi tầm mắt. Nhớ lại lựa chọn để ai đang sửa dở không phải mở lại mỗi
+   * lần quay vào.
+   */
+  const [open, setOpen] = useState(() => {
+    try {
+      return window.localStorage.getItem(OPEN_KEY) === '1'
+    } catch {
+      return false
+    }
+  })
+
+  const toggle = () => {
+    setOpen((v) => {
+      try {
+        window.localStorage.setItem(OPEN_KEY, v ? '0' : '1')
+      } catch {
+        // Trình duyệt chặn lưu thì mỗi lần vào lại co sẵn, không sao.
+      }
+      return !v
+    })
+  }
 
   const errors = checkWords(draft)
   const bad = Object.keys(errors).length > 0
@@ -117,25 +143,52 @@ export function RoutesPanel({
   return (
     <div style={{ marginTop: space.section, borderTop: `2px solid ${ink.base}`, paddingTop: space.inner }}>
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: space.inner }}>
-        <h2 style={{ fontFamily: serif, fontWeight: 400, fontSize: 30, letterSpacing: '-.02em', margin: 0 }}>
-          Đường dẫn
-        </h2>
-        <div style={{ display: 'flex', alignItems: 'center', gap: space.gap }}>
-          {saved && !changed && (
-            <span style={{ fontFamily: sans, fontSize: 11.5, color: ink.muted }}>đã lưu</span>
-          )}
-          <button
-            className="admin-btn-ghost"
-            disabled={!changed || bad}
-            onClick={save}
-            style={{ opacity: !changed || bad ? 0.4 : 1 }}
+        <h2
+          onClick={toggle}
+          style={{
+            fontFamily: serif,
+            fontWeight: 400,
+            fontSize: 30,
+            letterSpacing: '-.02em',
+            margin: 0,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'baseline',
+            gap: 10,
+          }}
+        >
+          <span
+            aria-label={open ? 'Co lại' : 'Mở ra'}
+            role="button"
+            style={{ fontFamily: sans, fontSize: 13, color: ink.muted, width: 12 }}
           >
-            Lưu đường dẫn
-          </button>
-        </div>
+            {open ? '−' : '+'}
+          </span>
+          Đường dẫn
+          {!open && (
+            <code style={{ fontFamily: 'ui-monospace, monospace', fontSize: 12, color: ink.muted }}>
+              {toPath({ area: 'admin', screen: 'cms' }, live)} · {`/${live.post}/…`}
+            </code>
+          )}
+        </h2>
+        {open && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: space.gap }}>
+            {saved && !changed && (
+              <span style={{ fontFamily: sans, fontSize: 11.5, color: ink.muted }}>đã lưu</span>
+            )}
+            <button
+              className="admin-btn-ghost"
+              disabled={!changed || bad}
+              onClick={save}
+              style={{ opacity: !changed || bad ? 0.4 : 1 }}
+            >
+              Lưu đường dẫn
+            </button>
+          </div>
+        )}
       </div>
 
-      {BLOCKS.map((b) => (
+      {open && BLOCKS.map((b) => (
         <div key={b.title} style={{ marginTop: space.inner + 6 }}>
           <div
             style={{
@@ -213,6 +266,7 @@ export function RoutesPanel({
         </div>
       ))}
 
+      {open && (
       <div style={{ marginTop: space.inner + 6 }}>
         <div
           style={{
@@ -259,6 +313,7 @@ export function RoutesPanel({
           </div>
         ))}
       </div>
+      )}
     </div>
   )
 }

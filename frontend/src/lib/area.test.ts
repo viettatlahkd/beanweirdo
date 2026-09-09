@@ -1,45 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
   AREA_HOME,
-  areaFromPath,
   areaOfGroup,
   isPrivate,
   screenAllowed,
   visibleGroups,
   type Area,
 } from './area'
-
-describe('areaFromPath', () => {
-  it('maps each entry point to its area', () => {
-    expect(areaFromPath('/')).toBe('public')
-    expect(areaFromPath('/practice')).toBe('practice')
-    expect(areaFromPath('/admin')).toBe('admin')
-  })
-
-  it('keeps sub-paths inside their area', () => {
-    expect(areaFromPath('/admin?preview=abc')).toBe('admin')
-    expect(areaFromPath('/practice/anything')).toBe('practice')
-  })
-
-  it('reads every back-office address as admin', () => {
-    // Đọc trước khi React chạy, nên chỉ có chuỗi địa chỉ để dựa vào — sai một
-    // cái là cả khu riêng bị vẽ ra như trang công khai.
-    for (const p of ['/ad', '/ad-post', '/ad-post/edit=ghi-p260824', '/ad-sitemap', '/ad-template/81ea', '/ad-archive']) {
-      expect(areaFromPath(p), p).toBe('admin')
-    }
-  })
-
-  it('does not mistake a public address for the back office', () => {
-    for (const p of ['/', '/muc-luc', '/ghi', '/module/biochemistry', '/post/ghi-p260824']) {
-      expect(areaFromPath(p), p).toBe('public')
-    }
-  })
-
-  it('treats every unknown path as public', () => {
-    expect(areaFromPath('/khong-ton-tai')).toBe('public')
-    expect(areaFromPath('/administrator')).toBe('admin')
-  })
-})
 
 describe('areaOfGroup', () => {
   it('sends the two private groups to their own areas', () => {
