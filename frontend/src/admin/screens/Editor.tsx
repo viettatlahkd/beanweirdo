@@ -124,6 +124,21 @@ function EditorContent({ postId }: { postId: string }) {
   const nav = useNav()
   const [post, setPost] = useState<PostDetail | null>(null)
   const [modules, setModules] = useState<Module[]>([])
+  /*
+   * Đặt ảnh bìa xong thì mở luôn khung căn.
+   *
+   * Ảnh bìa của một bài không chỉ hiện một chỗ: trang module dạng dải cắt nó
+   * thành 172×130, dạng specimen cắt 3:2. Đặt xong mà không căn thì chủ site
+   * phải tự đi tìm xem nó rơi vào khung nào — nên mở khung căn ngay, bày cả hai
+   * hình cắt, và đóng lại là xong.
+   *
+   * Phải đứng TRÊN chỗ `return` sớm bên dưới. Nó từng đứng dưới, cạnh hàm dùng
+   * nó — đọc thì gọn, chạy thì vỡ: lượt vẽ đầu `post` còn null nên hàm thoát
+   * sớm và chỉ chạy bốn hook; tải xong bài thì lượt sau chạy năm. React đếm
+   * không khớp là ném lỗi và cả màn trắng xoá. Nghĩa là bấm "Sửa" bài nào cũng
+   * trắng, không riêng bài nào.
+   */
+  const [framing, setFraming] = useState<string | null>(null)
 
   useEffect(() => {
     Promise.all([getPost(postId), listModules()]).then(([p, mods]) => {
@@ -154,15 +169,6 @@ function EditorContent({ postId }: { postId: string }) {
     setFraming(url)
   }
 
-  /*
-   * Đặt ảnh bìa xong thì mở luôn khung căn.
-   *
-   * Ảnh bìa của một bài không chỉ hiện một chỗ: trang module dạng dải cắt nó
-   * thành 172×130, dạng specimen cắt 3:2. Đặt xong mà không căn thì chủ site
-   * phải tự đi tìm xem nó rơi vào khung nào — nên mở khung căn ngay, bày cả hai
-   * hình cắt, và đóng lại là xong.
-   */
-  const [framing, setFraming] = useState<string | null>(null)
   function saveHero(url: string) {
     setPost((prev) => (prev ? { ...prev, hero_image_url: url } : prev))
     updatePost(postId, { hero_image_url: url })
