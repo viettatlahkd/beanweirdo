@@ -79,6 +79,7 @@ import {
   type BitesizeBody,
 } from '../../lib/postToRenderer'
 import type { BitesizeLength } from 'post-renderer'
+import { looksLikeVideo, probeMedia } from '../../lib/mediaShape'
 import { toReportBlocks, toReportNotes } from '../../lib/reportBlocks'
 
 /**
@@ -175,12 +176,45 @@ function EditorContent({ postId }: { postId: string }) {
   async function setHero(file: File) {
     const { url } = await uploadImage(file)
     saveHero(url)
-    setFraming(url)
+    /*
+     * Khung căn ảnh vẽ tệp ra bằng `background-image`, mà clip thì không vẽ ra
+     * được kiểu ấy: mở nó cho một clip là bày ba ô trắng trơn. Và căn tâm ảnh
+     * cũng chẳng có nghĩa gì với một hình đang chạy.
+     */
+    if (!looksLikeVideo(file)) setFraming(url)
   }
 
   function saveHero(url: string) {
     setPost((prev) => (prev ? { ...prev, hero_image_url: url } : prev))
     updatePost(postId, { hero_image_url: url })
+    void reshapeForMedia(url)
+  }
+
+  /*
+   * Đính một tệp vào bài bitesize thì hệ tự đo và tự đổi dàn trang.
+   *
+   * Chủ site: "giả định là t không báo cho m biết trước đâu, input của user chỉ
+   * là 1 video m phải tự nhận diện và reformat trên base set m đã có". Nên
+   * không có bước nào bắt khai đây là ảnh hay clip, ngang hay dọc.
+   *
+   * Đo xong mới ghi, và chỉ ghi khi đo được: link hỏng hay máy chủ treo thì bài
+   * giữ nguyên dàn trang đang có chứ không bị đổi bừa. Đọc template từ `prev`
+   * chứ không từ `post` — xem ghi chú về stale closure ở trên.
+   */
+  async function reshapeForMedia(url: string) {
+    const shape = await probeMedia(url)
+    if (!shape) return
+    setPost((prev) => {
+      if (!prev || resolveTemplate(prev) !== 'bitesize') return prev
+      /*
+       * `PostDetail['body']` khai là `SectionData[] | null` cho tiện, nhưng cột
+       * thật là jsonb và hình dạng của nó do template quyết — bitesize cất một
+       * đối tượng ở đây. Xem chú thích cùng ý ở `Editor.test.tsx`.
+       */
+      const body = { ...((prev.body ?? {}) as object), media: shape.kind, portrait: shape.portrait }
+      void updatePost(postId, { body } as unknown as Parameters<typeof updatePost>[1])
+      return { ...prev, body: body as unknown as PostDetail['body'] }
+    })
   }
 
   function applyPatch(patch: EditPatch) {
@@ -225,11 +259,11 @@ function EditorContent({ postId }: { postId: string }) {
           onPick={(f) => void setHero(f)}
           onLink={(url) => {
             saveHero(url)
-            setFraming(url)
+            if (!looksLikeVideo(url)) setFraming(url)
           }}
           hasHero={Boolean(post.hero_image_url)}
         />
-        {post.hero_image_url && (
+        {post.hero_image_url && !looksLikeVideo(post.hero_image_url) && (
           <button
             onClick={() => setFraming(post.hero_image_url)}
             style={{ fontFamily: 'inherit', fontSize: 12, color: ink.green, background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
@@ -621,7 +655,8 @@ function HeroPicker({
       <input
         ref={inputRef}
         type="file"
-        accept="image/*"
+        // Clip cũng đính vào đây; hệ tự nhận ra và tự đổi dàn trang.
+        accept="image/*,video/*"
         style={{ display: 'none' }}
         onChange={(e) => {
           const file = e.target.files?.[0]
@@ -2433,7 +2468,7 @@ function ImageBlockEditor({
         <input
           ref={inputRef}
           type="file"
-          accept="image/*"
+        accept="image/*"
           style={{ display: 'none' }}
           onChange={(e) => {
             const file = e.target.files?.[0]

@@ -103,6 +103,19 @@ export type BitesizeCardProps = BitesizeOverrides & {
   mobile?: boolean
 }
 
+/**
+ * Khung hình, chốt về base set.
+ *
+ * Hai hình cho clip và hai hình cho ảnh, không sinh hình thứ ba: một clip 4:3
+ * vẫn xếp vào khung ngang 16:9. Cùng luật với `frontend/src/lib/mediaShape.ts`
+ * — gói này không phụ thuộc được vào `frontend/`, nên bốn dòng ấy nằm hai nơi;
+ * đổi bên nào thì đổi cả bên kia.
+ */
+export function frameOf(post: Pick<BitesizePostData, 'media' | 'portrait'>): string {
+  if (post.media === 'img') return post.portrait ? '3/4' : '4/3'
+  return post.portrait ? '9/16' : '16/9'
+}
+
 /** Cỡ tiêu đề đi theo độ dài bài — bài dài đội tiêu đề lớn hơn. */
 export function titleSize(len: BitesizeLength, portrait: boolean, open: boolean): number {
   if (open) return 52
@@ -117,7 +130,19 @@ const label: CSSProperties = {
   textTransform: 'uppercase',
 }
 
-/** Ô ảnh: ảnh thật thì phủ kín, chưa có thì mảng màu mang chữ gợi ý. */
+const stillPreferred = () =>
+  typeof window !== 'undefined' &&
+  window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true
+
+/**
+ * Ô phương tiện: clip thì phát, ảnh thì phủ kín, chưa có gì thì mảng màu mang
+ * chữ gợi ý.
+ *
+ * Clip chạy câm và lặp, không có thanh điều khiển — bản design gốc gọi nó là
+ * "clip ngắn không tiếng", tức một hình động chứ không phải một cái máy phát.
+ * Ai bật `prefers-reduced-motion` thì ngược lại: đứng yên, và có thanh điều
+ * khiển để tự bấm.
+ */
 function Media({
   post,
   aspect,
@@ -148,6 +173,9 @@ function Media({
         backgroundSize: post.image ? 'cover' : undefined,
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
+        // Clip nằm phủ kín ô, nên ô phải là mốc toạ độ của nó.
+        position: 'relative',
+        overflow: 'hidden',
         display: 'flex',
         alignItems: 'flex-end',
         padding: 14,
@@ -158,6 +186,17 @@ function Media({
         ...style,
       }}
     >
+      {post.image && post.media === 'vid' ? (
+        <video
+          src={post.image}
+          muted
+          loop
+          playsInline
+          autoPlay={!stillPreferred()}
+          controls={stillPreferred()}
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+        />
+      ) : null}
       {post.image ? null : (hint ?? post.mediaHint)}
     </div>
   )
@@ -287,7 +326,7 @@ export function BitesizeCard({
   renderDate,
   renderMediaHint,
 }: BitesizeCardProps) {
-  const ar = aspect ?? (post.portrait ? '3/4' : '4/3')
+  const ar = aspect ?? frameOf(post)
   const width = mediaWidth ?? (post.portrait ? '40%' : '100%')
   return (
     <div style={{ display: 'flow-root' }}>
@@ -404,7 +443,7 @@ export function Bitesize({
   const media = (
     <Media
       post={post}
-      aspect={clip ? (post.portrait ? '9/16' : '16/9') : '4/3'}
+      aspect={frameOf(post)}
       width={mobile ? '100%' : clip ? (post.portrait ? '250px' : '340px') : '300px'}
       hint={renderMediaHint?.(post.mediaHint)}
       style={

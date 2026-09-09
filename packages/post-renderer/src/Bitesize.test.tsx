@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { Bitesize, BitesizeCard, titleSize, type BitesizePostData } from './Bitesize'
+import { Bitesize, BitesizeCard, frameOf, titleSize, type BitesizePostData } from './Bitesize'
 
 /*
  * Số đo ở đây lấy từ bản design gốc (`frontend/design/prototype/Coffee Study
@@ -168,5 +168,46 @@ describe('hai dàn trang', () => {
     const { container } = render(<Bitesize post={post({ media: 'vid', sub: 'ảnh phụ' })} mobile />)
     const order = orderOf(container)
     expect(order.indexOf('thân bài')).toBeLessThan(order.indexOf('ảnh 4/5'))
+  })
+})
+
+describe('clip thì phát, ảnh thì phủ', () => {
+  it('có clip thì dựng thẻ video, câm và lặp, không thanh điều khiển', () => {
+    // Bản design gốc gọi nó là "clip ngắn không tiếng" — một hình động, không
+    // phải một cái máy phát.
+    const { container } = render(<Bitesize post={post({ media: 'vid', image: 'https://x/c.mp4' })} />)
+    const v = container.querySelector('video')!
+    expect(v.getAttribute('src')).toBe('https://x/c.mp4')
+    expect(v.muted).toBe(true)
+    expect(v.loop).toBe(true)
+    expect(v.controls).toBe(false)
+    expect(v.style.objectFit).toBe('cover')
+  })
+
+  it('ảnh thì vẫn là nền phủ kín, không có thẻ video nào', () => {
+    const { container } = render(<Bitesize post={post({ image: 'https://x/a.jpg' })} />)
+    expect(container.querySelector('video')).toBeNull()
+    expect(media(container).style.backgroundImage).toBe('url("https://x/a.jpg")')
+  })
+
+  it('chưa đính gì thì không dựng thẻ video, chỉ mảng màu và chữ gợi ý', () => {
+    const { container } = render(<Bitesize post={post({ media: 'vid' })} />)
+    expect(container.querySelector('video')).toBeNull()
+    expect(media(container).style.backgroundColor).toBe('rgb(233, 183, 156)')
+  })
+})
+
+describe('khung hình chốt về base set', () => {
+  it('bốn khung, không có khung thứ năm', () => {
+    expect(frameOf({ media: 'vid', portrait: false })).toBe('16/9')
+    expect(frameOf({ media: 'vid', portrait: true })).toBe('9/16')
+    expect(frameOf({ media: 'img', portrait: false })).toBe('4/3')
+    expect(frameOf({ media: 'img', portrait: true })).toBe('3/4')
+  })
+
+  it('clip dọc đổi cả khung lẫn bề ngang cột trái', () => {
+    const { container } = render(<Bitesize post={post({ media: 'vid', portrait: true })} />)
+    expect(media(container).style.aspectRatio).toBe('9/16')
+    expect(media(container).style.width).toBe('250px')
   })
 })

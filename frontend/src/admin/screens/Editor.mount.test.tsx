@@ -71,4 +71,27 @@ describe('màn sửa bài', () => {
     await waitFor(() => expect(screen.queryByText('Đang tải...')).toBeNull())
     expect(screen.getByDisplayValue('taste modality: sơn la')).toBeTruthy()
   })
+
+  it('clip thì không mời căn khung ảnh', async () => {
+    /*
+     * Khung căn vẽ tệp ra bằng `background-image`, mà clip không vẽ ra được
+     * kiểu ấy — mở nó cho một clip là bày ba ô trắng trơn. Đo thật trên trình
+     * duyệt trước khi sửa: đúng ba ô trắng.
+     */
+    getPost.mockReturnValue(Promise.resolve({ ...post, hero_image_url: 'https://x/c.webm' }))
+    listModules.mockReturnValue(Promise.resolve([{ id: 'ghi01', title: 'Ghi 01', accent: '#6FA8C0' }]))
+
+    render(<Editor postId="p1" />)
+    await waitFor(() => expect(screen.queryByText('Đang tải...')).toBeNull())
+    expect(screen.queryByText('đặt vào khung')).toBeNull()
+  })
+
+  it('ảnh thì vẫn mời căn khung', async () => {
+    getPost.mockReturnValue(Promise.resolve({ ...post, hero_image_url: 'https://x/a.jpg' }))
+    listModules.mockReturnValue(Promise.resolve([{ id: 'ghi01', title: 'Ghi 01', accent: '#6FA8C0' }]))
+
+    render(<Editor postId="p1" />)
+    await waitFor(() => expect(screen.queryByText('Đang tải...')).toBeNull())
+    expect(screen.getByText('đặt vào khung')).toBeTruthy()
+  })
 })
