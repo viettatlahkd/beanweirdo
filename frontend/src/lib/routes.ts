@@ -1,5 +1,6 @@
 import type { Area } from './area'
 import type { Origin, Screen } from './nav'
+import { activeWords, DEFAULT_WORDS, pastWords, type RouteWords } from './routeWords'
 
 /**
  * Every address the site answers to, in one table.
@@ -33,24 +34,23 @@ export type Where = {
  * address (`biochemistry`). Only the ones that differ are listed; the rest pass
  * through, which keeps this from becoming a list nobody remembers to update.
  */
-const MODULE_IN_URL: Record<string, string> = { biochem: 'biochemistry', ghi01: 'ghi' }
-const MODULE_FROM_URL: Record<string, string> = Object.fromEntries(
-  Object.entries(MODULE_IN_URL).map(([id, name]) => [name, id]),
-)
+export const moduleToUrl = (id: string, w: RouteWords = activeWords()) => w.modules[id] ?? id
 
-export const moduleToUrl = (id: string) => MODULE_IN_URL[id] ?? id
-export const moduleFromUrl = (name: string) => MODULE_FROM_URL[name] ?? name
+export function moduleFromUrl(name: string, w: RouteWords = activeWords()): string {
+  for (const [id, spelt] of Object.entries(w.modules)) if (spelt === name) return id
+  return name
+}
 
 /** The admin screens that live at their own `/ad-…` address. */
-const ADMIN_PAGES: Record<string, Screen> = {
-  'ad-post': 'cms',
-  'ad-sitemap': 'cms',
-  'ad-page-content': 'cms',
-  'ad-design-system': 'art',
-  'ad-convention': 'logic',
-  'ad-template': 'templates',
-  'ad-archive': 'archive',
-}
+const adminPages = (w: RouteWords): Record<string, Screen> => ({
+  [`${w.admin}-${w.adPost}`]: 'cms',
+  [`${w.admin}-${w.adSitemap}`]: 'cms',
+  [`${w.admin}-${w.adPageContent}`]: 'cms',
+  [`${w.admin}-${w.adDesignSystem}`]: 'art',
+  [`${w.admin}-${w.adConvention}`]: 'logic',
+  [`${w.admin}-${w.adTemplate}`]: 'templates',
+  [`${w.admin}-${w.adArchive}`]: 'archive',
+})
 
 export type CmsTab = 'posts' | 'map' | 'content'
 
@@ -61,35 +61,35 @@ export type CmsTab = 'posts' | 'map' | 'content'
  * three tabs are separate addresses because they are separate places to be —
  * a link to the site map should not open the post list.
  */
-export const CMS_TAB: Record<string, CmsTab> = {
-  'ad-post': 'posts',
-  'ad-sitemap': 'map',
-  'ad-page-content': 'content',
-}
-const PAGE_OF_TAB: Record<CmsTab, string> = {
-  posts: 'ad-post',
-  map: 'ad-sitemap',
-  content: 'ad-page-content',
-}
+export const cmsTabs = (w: RouteWords = activeWords()): Record<string, CmsTab> => ({
+  [`${w.admin}-${w.adPost}`]: 'posts',
+  [`${w.admin}-${w.adSitemap}`]: 'map',
+  [`${w.admin}-${w.adPageContent}`]: 'content',
+})
+const pageOfTab = (w: RouteWords): Record<CmsTab, string> => ({
+  posts: `${w.admin}-${w.adPost}`,
+  map: `${w.admin}-${w.adSitemap}`,
+  content: `${w.admin}-${w.adPageContent}`,
+})
 
-const SCREEN_PAGE: Partial<Record<Screen, string>> = {
-  art: 'ad-design-system',
-  logic: 'ad-convention',
-  templates: 'ad-template',
-  archive: 'ad-archive',
-}
+const screenPage = (w: RouteWords): Partial<Record<Screen, string>> => ({
+  art: `${w.admin}-${w.adDesignSystem}`,
+  logic: `${w.admin}-${w.adConvention}`,
+  templates: `${w.admin}-${w.adTemplate}`,
+  archive: `${w.admin}-${w.adArchive}`,
+})
 
 /** `/ad-post/edit=<slug>` and its two siblings. */
-const POST_ACTION: Record<string, Screen> = {
-  create: 'postNew',
-  edit: 'postEdit',
-  view: 'postPreview',
-}
-const ACTION_OF_SCREEN: Partial<Record<Screen, string>> = {
-  postNew: 'create',
-  postEdit: 'edit',
-  postPreview: 'view',
-}
+const postActions = (w: RouteWords): Record<string, Screen> => ({
+  [w.create]: 'postNew',
+  [w.edit]: 'postEdit',
+  [w.view]: 'postPreview',
+})
+const actionOfScreen = (w: RouteWords): Partial<Record<Screen, string>> => ({
+  postNew: w.create,
+  postEdit: w.edit,
+  postPreview: w.view,
+})
 
 /**
  * Where an address points.
@@ -97,76 +97,100 @@ const ACTION_OF_SCREEN: Partial<Record<Screen, string>> = {
  * Anything unrecognised lands on the public front page rather than an error:
  * a mistyped address is a reader who took a wrong turn, not a fault to report.
  */
-export function parsePath(pathname: string, search = ''): Where {
+export function parsePath(pathname: string, search = '', w: RouteWords = activeWords()): Where {
+  const hit = readPath(pathname, search, w)
+  if (hit) return hit
+
+  // Địa chỉ viết bằng một bộ từ cũ vẫn phải mở ra đúng chỗ — đổi tên một trang
+  // không được làm chết những link đã phát ra. Đọc được rồi thì `useRoute` viết
+  // lại nó bằng bộ từ đang dùng.
+  for (const old of [DEFAULT_WORDS, ...pastWords()]) {
+    const back = readPath(pathname, search, old)
+    if (back) return back
+  }
+  return { area: 'public', screen: 'landing' }
+}
+
+/** Một lượt đọc bằng đúng một bộ từ. `null` nghĩa là bộ từ này không nhận ra. */
+function readPath(pathname: string, search: string, w: RouteWords): Where | null {
   const seg = pathname.split('/').filter(Boolean)
   const head = seg[0] ?? ''
+  const adPrefix = `${w.admin}-`
 
-  if (head === 'practice') return { area: 'practice', screen: 'hours' }
+  if (head === w.practice) return { area: 'practice', screen: 'hours' }
 
   // ── admin ────────────────────────────────────────────────────────────────
   // `/admin` is the address the back office used to live at. It is still read
   // here — a bookmark from before this table existed should land where it
   // always did — but nothing produces it any more, so opening one rewrites
   // itself to `/ad` on arrival.
-  if (head === 'ad' || head === 'admin' || head.startsWith('ad-')) {
+  if (head === w.admin || head === 'admin' || head.startsWith(adPrefix)) {
     const preview = new URLSearchParams(search).get('preview')
     if (preview) return { area: 'admin', screen: 'postPreview', slug: preview }
 
-    if (head === 'ad-post' && seg[1]) {
+    if (head === `${w.admin}-${w.adPost}` && seg[1]) {
       // `edit=<slug>` rather than `edit/<slug>`: the verb and its object are
       // one step, so the address cannot be truncated into a half-meaning.
       const [verb, slug] = seg[1].split('=')
-      const screen = POST_ACTION[verb]
+      const screen = postActions(w)[verb]
       if (screen) return { area: 'admin', screen, slug: slug || undefined }
     }
-    if (head === 'ad-template' && seg[1]) {
+    if (head === `${w.admin}-${w.adTemplate}` && seg[1]) {
       return { area: 'admin', screen: 'templates', templateId: seg[1] }
     }
-    const screen = ADMIN_PAGES[head]
-    if (screen) return { area: 'admin', screen, tab: CMS_TAB[head] }
+    const screen = adminPages(w)[head]
+    if (screen) return { area: 'admin', screen, tab: cmsTabs(w)[head] }
     return { area: 'admin', screen: 'cms' }
   }
 
   // ── public ───────────────────────────────────────────────────────────────
-  if (head === 'muc-luc') return { area: 'public', screen: 'home' }
-  if (head === 'ghi') return { area: 'public', screen: 'notes' }
-  if (head === 'module' && seg[1]) {
-    return { area: 'public', screen: 'module', moduleId: moduleFromUrl(seg[1]) }
+  if (head === w.index) return { area: 'public', screen: 'home' }
+  if (head === w.notes) return { area: 'public', screen: 'notes' }
+  if (head === w.module && seg[1]) {
+    return { area: 'public', screen: 'module', moduleId: moduleFromUrl(seg[1], w) }
   }
-  if (head === 'post' && seg[1]) {
+  if (head === w.post && seg[1]) {
     // A reader arriving cold came through neither a module nor the admin list,
     // and `module` is the trail that makes sense to show them.
     const from = (new URLSearchParams(search).get('from') as Origin | null) ?? 'module'
     return { area: 'public', screen: 'article', slug: seg[1], from }
   }
 
-  return { area: 'public', screen: 'landing' }
+  return null
 }
 
 /** The address for a place. The exact inverse of `parsePath`. */
-export function toPath(w: Where): string {
-  if (w.area === 'practice') return '/practice'
+export function toPath(where: Where, w: RouteWords = activeWords()): string {
+  if (where.area === 'practice') return `/${w.practice}`
+  const adHome = `/${w.admin}`
+  const adPost = `/${w.admin}-${w.adPost}`
 
-  if (w.area === 'admin') {
-    const action = ACTION_OF_SCREEN[w.screen]
-    if (action) return w.slug ? `/ad-post/${action}=${w.slug}` : `/ad-post/${action}`
-    if (w.screen === 'templates') return w.templateId ? `/ad-template/${w.templateId}` : '/ad-template'
-    if (w.screen === 'article') return w.slug ? `/post/${w.slug}?from=admin` : '/ad'
-    if (w.screen === 'cms') return w.tab ? `/${PAGE_OF_TAB[w.tab]}` : '/ad'
-    return SCREEN_PAGE[w.screen] ? `/${SCREEN_PAGE[w.screen]}` : '/ad'
+  if (where.area === 'admin') {
+    const action = actionOfScreen(w)[where.screen]
+    if (action) return where.slug ? `${adPost}/${action}=${where.slug}` : `${adPost}/${action}`
+    if (where.screen === 'templates') {
+      const list = `/${w.admin}-${w.adTemplate}`
+      return where.templateId ? `${list}/${where.templateId}` : list
+    }
+    if (where.screen === 'article') return where.slug ? `/${w.post}/${where.slug}?from=admin` : adHome
+    if (where.screen === 'cms') return where.tab ? `/${pageOfTab(w)[where.tab]}` : adHome
+    const page = screenPage(w)[where.screen]
+    return page ? `/${page}` : adHome
   }
 
-  switch (w.screen) {
+  switch (where.screen) {
     case 'home':
-      return '/muc-luc'
+      return `/${w.index}`
     case 'notes':
-      return '/ghi'
+      return `/${w.notes}`
     case 'module':
-      return w.moduleId ? `/module/${moduleToUrl(w.moduleId)}` : '/'
+      return where.moduleId ? `/${w.module}/${moduleToUrl(where.moduleId, w)}` : '/'
     case 'article':
       // The door is worth carrying so the trail reads back the way in, but
       // `module` is the default and does not need saying.
-      return w.slug ? `/post/${w.slug}${w.from && w.from !== 'module' ? `?from=${w.from}` : ''}` : '/'
+      return where.slug
+        ? `/${w.post}/${where.slug}${where.from && where.from !== 'module' ? `?from=${where.from}` : ''}`
+        : '/'
     default:
       return '/'
   }

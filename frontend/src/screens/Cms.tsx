@@ -31,6 +31,7 @@ import {
 } from '../admin/lib/apiClient'
 import { tagColor } from '../lib/notesFilter'
 import { PostsPanel } from '../admin/components/PostsPanel'
+import { RoutesPanel } from '../admin/components/RoutesPanel'
 import { ModuleImages } from '../admin/components/ModuleImages'
 import { captionColumn, formShapeOf, imageColumn } from '../admin/moduleForm'
 import { FocusPicker } from '../admin/components/FocusPicker'
@@ -970,6 +971,12 @@ export function Cms() {
               ))}
             </div>
           ))}
+
+          <RoutesPanel
+            stored={site.routes}
+            modules={modules}
+            onSave={(routes) => saveSite({ routes } as SiteOverrides)}
+          />
         </div>
       )}
 
