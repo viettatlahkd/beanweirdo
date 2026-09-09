@@ -147,4 +147,19 @@ describe('màn sửa bài', () => {
     await waitFor(() => expect(screen.queryByText('Đang tải...')).toBeNull())
     expect(screen.getByText('đặt vào khung')).toBeTruthy()
   })
+
+  it('có ảnh thì có nút xoá, chưa có thì không', async () => {
+    // Đặt được thì phải gỡ được — chủ site báo là không có đường nào xoá ảnh.
+    getPost.mockReturnValue(Promise.resolve({ ...post, hero_image_url: 'https://x/a.jpg' }))
+    listModules.mockReturnValue(Promise.resolve([{ id: 'ghi01', title: 'Ghi 01', accent: '#6FA8C0' }]))
+    const co = render(<Editor postId="p1" />)
+    await waitFor(() => expect(screen.queryByText('Đang tải...')).toBeNull())
+    expect(screen.getAllByText('xoá').length).toBeGreaterThan(0)
+    co.unmount()
+
+    getPost.mockReturnValue(Promise.resolve({ ...post, hero_image_url: null }))
+    render(<Editor postId="p1" />)
+    await waitFor(() => expect(screen.queryByText('Đang tải...')).toBeNull())
+    expect(screen.queryByText('xoá')).toBeNull()
+  })
 })

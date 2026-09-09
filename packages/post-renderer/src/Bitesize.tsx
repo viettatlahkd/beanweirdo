@@ -129,6 +129,8 @@ export function frameOf(post: Pick<BitesizePostData, 'media' | 'portrait'>): str
 /** Bề ngang ô ảnh phụ, và khoảng lề phải nó chừa lại cho thân bài. */
 const SUB_W = 170
 const SUB_GUTTER = SUB_W + 30
+/** 170 ở khung 4:5 cao 212; khối chữ phải đủ cao để ô ấy có chỗ đứng. */
+const SUB_MIN_H = 330
 
 /** Cỡ tiêu đề đi theo độ dài bài — bài dài đội tiêu đề lớn hơn. */
 export function titleSize(len: BitesizeLength, portrait: boolean, open: boolean): number {
@@ -555,15 +557,37 @@ export function Bitesize({
         <>
           {clipNgang ? media : null}
           {title}
-          <div style={{ display: 'flow-root', marginRight: mobile ? 0 : SUB_GUTTER }}>
+          <div
+            style={{
+              display: 'flow-root',
+              position: 'relative',
+              paddingRight: mobile ? 0 : SUB_GUTTER,
+              minHeight: mobile || !subBox ? undefined : SUB_MIN_H,
+            }}
+          >
             {clipNgang ? null : media}
             {body}
+            {/*
+              * Ô ảnh phụ chạy dọc bài, không đứng ở chân.
+              *
+              * Chủ site: "không phải để footer (...) nó giống như ảnh chạy dọc
+              * bài, vị trí sẽ thay đổi tuỳ theo độ dài bài viết, nhưng vị trí sẽ
+              * responsive trong khoảng từ dưới cùng của phần 1/3 giữa bài hoặc
+              * trên cùng của phần 1/3 cuối bài."
+              *
+              * `bottom: 33.33%` đặt mép dưới ô đúng lên cái lằn ấy — nó là một
+              * lằn chứ không phải hai chỗ: dưới cùng của một phần ba giữa CHÍNH
+              * LÀ trên cùng của một phần ba cuối. Bài dài ra thì lằn ấy tụt
+              * xuống theo, nên ô đi theo mà không cần đo chữ.
+              *
+              * Nằm trong khoảng lề đã chừa sẵn, nên nó KHÔNG đẩy chữ: mép phải
+              * của thân bài vẫn là một đường thẳng từ trên xuống.
+              */}
+            {subBox && !mobile ? (
+              <div style={{ position: 'absolute', right: 0, bottom: '33.33%' }}>{subBox}</div>
+            ) : null}
           </div>
-          {subBox ? (
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: mobile ? 22 : 30 }}>
-              {subBox}
-            </div>
-          ) : null}
+          {subBox && mobile ? <div style={{ marginTop: 22 }}>{subBox}</div> : null}
         </>
       )}
     </div>

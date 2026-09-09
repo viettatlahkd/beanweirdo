@@ -159,22 +159,38 @@ describe('hai dàn trang', () => {
      * hai. Nay khoảng lề ấy chừa sẵn cho cả khối chữ.
      */
     const { container } = render(<Bitesize post={post({ sub: 'ảnh phụ' })} />)
-    const flow = container.querySelector<HTMLElement>('div[style*="flow-root"][style*="margin-right"]')!
-    expect(flow.style.marginRight).toBe('200px')
+    const flow = container.querySelector<HTMLElement>('div[style*="flow-root"][style*="position: relative"]')!
+    expect(flow.style.paddingRight).toBe('200px')
     expect(container.querySelector('div[style*="float: right"]')).toBeNull()
   })
 
-  it('ô ảnh phụ canh phải như một dòng chân trang', () => {
+  it('ô ảnh phụ chạy dọc bài, mép dưới nằm trên lằn hai phần ba', () => {
+    /*
+     * Một lằn chứ không phải hai chỗ: dưới cùng của một phần ba giữa CHÍNH LÀ
+     * trên cùng của một phần ba cuối. Bài dài ra thì lằn ấy tụt xuống theo, nên
+     * ô đi theo mà không phải đo chữ.
+     */
     const { container } = render(<Bitesize post={post({ sub: 'ảnh phụ' })} />)
-    const footer = container.querySelector<HTMLElement>('div[style*="justify-content: flex-end"]')!
-    expect(footer).not.toBeNull()
-    expect(footer.querySelector<HTMLElement>('div')!.style.width).toBe('170px')
+    const holder = container.querySelector<HTMLElement>('div[style*="position: absolute"]')!
+    expect(holder.style.bottom).toBe('33.33%')
+    expect(holder.style.right).toBe('0px')
+    // Nằm trong khoảng lề đã chừa, nên nó không đẩy chữ.
+    const flow = container.querySelector<HTMLElement>('div[style*="flow-root"][style*="position: relative"]')!
+    expect(flow.style.paddingRight).toBe('200px')
+    expect(flow.style.position).toBe('relative')
   })
 
-  it('trên điện thoại thì không chừa lề phải — màn đã hẹp sẵn', () => {
+  it('khối chữ có chiều cao tối thiểu để ô ấy còn chỗ đứng', () => {
+    // Bài hai dòng mà đặt ô cao 212 ở mốc hai phần ba thì nó trồi lên khỏi khối.
+    const { container } = render(<Bitesize post={post({ sub: 'ảnh phụ' })} />)
+    expect(container.querySelector<HTMLElement>('div[style*="flow-root"][style*="position: relative"]')!.style.minHeight).toBe('330px')
+  })
+
+  it('trên điện thoại thì không chừa lề, ô ảnh phụ xuống dưới chữ', () => {
     const { container } = render(<Bitesize post={post({ sub: 'ảnh phụ' })} mobile />)
-    const flow = container.querySelector<HTMLElement>('div[style*="flow-root"][style*="margin-right"]')!
-    expect(flow.style.marginRight).toBe('0px')
+    const flow = container.querySelector<HTMLElement>('div[style*="flow-root"][style*="position: relative"]')!
+    expect(flow.style.paddingRight).toBe('0px')
+    expect(container.querySelector('div[style*="position: absolute"]')).toBeNull()
   })
 })
 

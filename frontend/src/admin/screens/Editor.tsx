@@ -303,6 +303,13 @@ function EditorContent({ postId }: { postId: string }) {
        * cũ, chỉ là không bày ra thành một dòng phải điền nữa.
        */
       preview: heroIsClip ? body.poster ?? null : post.hero_image_url,
+      onClear: post.hero_image_url
+        ? () => {
+            applyPatch({ hero_image_url: '' } as EditPatch)
+            // Khung hình của clip cũ không còn chỗ bám vào nữa.
+            if (body.poster) writeBody({ poster: null })
+          }
+        : undefined,
     },
     ...(template === 'bitesize'
       ? [
@@ -313,6 +320,8 @@ function EditorContent({ postId }: { postId: string }) {
             accept: 'image/*',
             onPick: (f: File) => void setSub(f),
             onLink: (url: string) => saveSub(url),
+            preview: body.subImage ?? null,
+            onClear: body.subImage ? () => writeBody({ subImage: null }) : undefined,
           } satisfies MediaSlotSpec,
         ]
       : []),
@@ -700,6 +709,8 @@ export type MediaSlotSpec = {
   extra?: { label: string; onClick: () => void }
   /** Ảnh để bày ô xem trước hình cắt; không có thì không bày ô nào. */
   preview?: string | null
+  /** Gỡ ảnh ra khỏi chỗ này; chỉ có khi đang có ảnh. */
+  onClear?: () => void
 }
 
 const slotLinkStyle: CSSProperties = {
@@ -730,6 +741,15 @@ function MediaSlot({ slot }: { slot: MediaSlotSpec }) {
           <span style={{ color: ink.faint }}>–</span>
           <button onClick={slot.extra.onClick} style={slotLinkStyle}>
             {slot.extra.label}
+          </button>
+        </>
+      )}
+      {/* Đặt được thì phải gỡ được. Chỉ hiện khi đang có gì để gỡ. */}
+      {slot.onClear && (
+        <>
+          <span style={{ color: ink.faint }}>–</span>
+          <button onClick={slot.onClear} style={{ ...slotLinkStyle, color: '#C25C7C' }}>
+            xoá
           </button>
         </>
       )}
