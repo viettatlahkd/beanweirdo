@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react'
-import { sans, serif, wrapTitle } from './tokens'
+import { paper, sans, serif, wrapTitle } from './tokens'
 
 /**
  * Bitesize note — dạng ghi ngắn của Ghi 01.
@@ -60,8 +60,16 @@ export type BitesizePostData = {
   portrait: boolean
   /** Chữ trong ô ảnh khi chưa đặt ảnh. */
   mediaHint: string
-  /** Chữ trong ô ảnh phụ, chỉ hiện khi bài mở hết. */
+  /**
+   * Chữ trong ô ảnh phụ.
+   *
+   * Khác chữ ở ô chính: ô chính mang một câu GỢI Ý, đặt ảnh vào là nó biến mất
+   * vì việc của nó đã xong. Ô phụ mang một CHÚ THÍCH, nên nó ở lại trên ảnh —
+   * cùng cách trang chủ chú thích ảnh (`captionOnPhoto`).
+   */
   sub: string
+  /** Ảnh của ô phụ. Chưa có thì ô là mảng màu mang chú thích. */
+  subImage: string | null
   /** Ảnh tĩnh hay clip — quyết định cả dàn trang lẫn màu. */
   media: BitesizeMedia
   text: string
@@ -394,6 +402,19 @@ export function Bitesize({
   renderSub,
 }: BitesizeProps) {
   const clip = post.media === 'vid'
+  /*
+   * Ba dàn trang, không phải hai. Chủ site xem thật rồi tách clip ra làm đôi:
+   *
+   * clip DỌC — "vẫn chật chội (...) dàn layout cho chữ thấp xuống xíu để cân,
+   *   ảnh phụ thì phải thấp, xuống mé 1/3 dưới cùng". Cột phải hẹp lại còn cao
+   *   ngồng, nên `float` không kê được gì: dùng lưới hai cột, chữ tụt xuống một
+   *   quãng, ô ảnh phụ đẩy hẳn xuống đáy cột.
+   *
+   * clip NGANG — "hình ảnh hiển thị hơi nhỏ (...) text heading nên ở dưới phần
+   *   visual". Nên clip nằm trọn bề ngang ở trên, tiêu đề xuống dưới nó.
+   */
+  const clipDoc = clip && post.portrait && !mobile
+  const clipNgang = clip && !post.portrait && !mobile
   const title = (
     <Title
       post={post}
@@ -414,28 +435,38 @@ export function Bitesize({
    */
   const subBox = post.sub || renderSub ? (
     <div
-      style={{
-        float: 'right',
-        clear: 'right',
-        width: clip ? 130 : 170,
-        margin: clip ? '4px 0 14px 26px' : '6px 0 18px 30px',
-      }}
+      style={
+        clipDoc
+          ? { width: 130 }
+          : {
+              float: 'right',
+              clear: 'right',
+              width: clip ? 130 : 170,
+              margin: clip ? '4px 0 14px 26px' : '6px 0 18px 30px',
+            }
+      }
     >
       <div
         style={{
           aspectRatio: '4/5',
-          backgroundColor: post.wash,
+          backgroundColor: post.subImage ? undefined : post.wash,
+          backgroundImage: post.subImage ? `url(${post.subImage})` : undefined,
+          backgroundSize: post.subImage ? 'cover' : undefined,
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
           display: 'flex',
           alignItems: 'flex-end',
           padding: 12,
           ...label,
           fontSize: 9,
           letterSpacing: '.18em',
-          color: '#1F3A38',
+          color: post.subImage ? paper.cream : '#1F3A38',
           lineHeight: 1.5,
         }}
       >
-        {renderSub ? renderSub(post.sub) : post.sub}
+        <span style={post.subImage ? { background: 'rgba(24,22,17,.55)', padding: '3px 7px' } : undefined}>
+          {renderSub ? renderSub(post.sub) : post.sub}
+        </span>
       </div>
     </div>
   ) : null
@@ -444,12 +475,18 @@ export function Bitesize({
     <Media
       post={post}
       aspect={frameOf(post)}
-      width={mobile ? '100%' : clip ? (post.portrait ? '250px' : '340px') : '300px'}
+      /*
+       * Clip ngang chiếm trọn bề ngang: ở 340px nó chỉ là một ô nhỏ trên một
+       * trang rộng, mà một cái clip thì đáng nhìn hơn thế.
+       */
+      width={mobile || clipNgang ? '100%' : clipDoc ? '250px' : '300px'}
       hint={renderMediaHint?.(post.mediaHint)}
       style={
-        mobile
-          ? { marginBottom: 22 }
-          : { float: 'left', marginRight: 34, marginBottom: 22 }
+        mobile || clipNgang
+          ? { marginBottom: clipNgang ? 26 : 22 }
+          : clipDoc
+            ? { marginBottom: 0 }
+            : { float: 'left', marginRight: 34, marginBottom: 22 }
       }
     />
   )
@@ -490,18 +527,27 @@ export function Bitesize({
         />
       ) : null}
       <Meta post={post} wide renderTag={renderTag} renderDate={renderDate} />
-      {clip ? (
-        <>
+      {clipDoc ? (
+        <div style={{ display: 'grid', gridTemplateColumns: '250px minmax(0, 1fr)', gap: 34 }}>
           {media}
-          {title}
-          {mobile ? null : subBox}
-          {body}
-          {mobile ? subBox : null}
-        </>
+          {/*
+            * Cột chữ tụt xuống một quãng và ô ảnh phụ rơi xuống đáy.
+            *
+            * Chữ dính mép trên trong khi clip cao 444px thì nửa dưới cột phải
+            * trống trơn — đúng chỗ chủ site gọi là chật chội. `margin-top: auto`
+            * đẩy ô ảnh phụ xuống đáy cột, tức mé một phần ba dưới của clip.
+            */}
+          <div style={{ display: 'flex', flexDirection: 'column', paddingTop: 96 }}>
+            {title}
+            {body}
+            {subBox ? <div style={{ marginTop: 'auto', paddingTop: 28, alignSelf: 'flex-end' }}>{subBox}</div> : null}
+          </div>
+        </div>
       ) : (
         <>
+          {clipNgang ? media : null}
           {title}
-          {media}
+          {clipNgang ? null : media}
           {mobile ? null : subBox}
           {body}
           {mobile ? subBox : null}

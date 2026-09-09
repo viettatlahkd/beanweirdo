@@ -47,7 +47,7 @@ const CASES: Record<string, PostRendererProps> = {
     post: {
       band: BAND, title: 'Bài', tag: 'quan sát', date: '2026.02', num: '', pinned: false,
       image: null, ink: '#B65A3C', wash: '#E9B79C', len: 'ngắn', portrait: false,
-      mediaHint: 'ảnh — cận cảnh chủ thể', sub: '', media: 'img', text: 'thân bài',
+      mediaHint: 'ảnh — cận cảnh chủ thể', sub: '', subImage: null, media: 'img', text: 'thân bài',
     },
   },
 }

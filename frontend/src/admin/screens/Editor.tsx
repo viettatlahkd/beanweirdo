@@ -217,6 +217,21 @@ function EditorContent({ postId }: { postId: string }) {
     })
   }
 
+  /** Ảnh của ô phụ — cùng đường tải lên với ảnh bìa, chỉ khác chỗ cất. */
+  async function setSub(file: File) {
+    const { url } = await uploadImage(file)
+    saveSub(url)
+  }
+
+  function saveSub(url: string) {
+    setPost((prev) => {
+      if (!prev) return prev
+      const body = { ...((prev.body ?? {}) as object), subImage: url }
+      void updatePost(postId, { body } as unknown as Parameters<typeof updatePost>[1])
+      return { ...prev, body: body as unknown as PostDetail['body'] }
+    })
+  }
+
   function applyPatch(patch: EditPatch) {
     setPost((prev) => (prev ? { ...prev, ...(patch as Partial<PostDetail>) } : prev))
     updatePost(postId, patch as Parameters<typeof updatePost>[1])
@@ -263,6 +278,21 @@ function EditorContent({ postId }: { postId: string }) {
           }}
           hasHero={Boolean(post.hero_image_url)}
         />
+        {/*
+          * Ô ảnh phụ của bitesize trước đây chỉ có chú thích, không có đường
+          * nào đẩy ảnh vào. Dùng lại đúng ô đặt ảnh bìa — hai chỗ đặt ảnh thì
+          * nên mở ra bằng cùng một cách. Chỉ nhận ảnh: ô phụ là một tấm hình
+          * đứng cạnh, không phải chỗ cho clip thứ hai.
+          */}
+        {template === 'bitesize' && (
+          <HeroPicker
+            what="ảnh phụ"
+            accept="image/*"
+            onPick={(f) => void setSub(f)}
+            onLink={(url) => saveSub(url)}
+            hasHero={Boolean((getBody(post) as { subImage?: string } | null)?.subImage)}
+          />
+        )}
         {post.hero_image_url && !looksLikeVideo(post.hero_image_url) && (
           <button
             onClick={() => setFraming(post.hero_image_url)}
@@ -605,10 +635,15 @@ function HeroPicker({
   onPick,
   onLink,
   hasHero,
+  what = 'ảnh bìa',
+  accept = 'image/*,video/*',
 }: {
   onPick: (file: File) => void
   onLink: (url: string) => void
   hasHero: boolean
+  /** Tên chỗ đặt ảnh, để cùng một ô dùng được cho ảnh bìa lẫn ảnh phụ. */
+  what?: string
+  accept?: string
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [linking, setLinking] = useState(false)
@@ -624,7 +659,7 @@ function HeroPicker({
   return (
     <>
       <button onClick={() => inputRef.current?.click()} style={linkStyle}>
-        {hasHero ? 'đổi ảnh bìa' : 'thêm ảnh bìa'}
+        {hasHero ? `đổi ${what}` : `thêm ${what}`}
       </button>
       <span style={{ color: ink.faint, fontSize: 11 }}>hoặc</span>
       <button onClick={() => setLinking((v) => !v)} style={linkStyle}>
@@ -633,7 +668,7 @@ function HeroPicker({
       {linking && (
         <input
           autoFocus
-          placeholder="dán link ảnh rồi Enter"
+          placeholder={`dán link ${what} rồi Enter`}
           onKeyDown={(e) => {
             if (e.key === 'Escape') return setLinking(false)
             if (e.key !== 'Enter') return
@@ -656,7 +691,7 @@ function HeroPicker({
         ref={inputRef}
         type="file"
         // Clip cũng đính vào đây; hệ tự nhận ra và tự đổi dàn trang.
-        accept="image/*,video/*"
+        accept={accept}
         style={{ display: 'none' }}
         onChange={(e) => {
           const file = e.target.files?.[0]

@@ -21,6 +21,7 @@ const post = (over: Partial<BitesizePostData> = {}): BitesizePostData => ({
   portrait: false,
   mediaHint: 'ảnh — cận cảnh lớp crema trên tách',
   sub: '',
+  subImage: null,
   media: 'img',
   text: 'Cùng máy, cùng hạt, đổi từ nước RO sang nước khoáng nhẹ.',
   ...over,
@@ -209,5 +210,58 @@ describe('khung hình chốt về base set', () => {
     const { container } = render(<Bitesize post={post({ media: 'vid', portrait: true })} />)
     expect(media(container).style.aspectRatio).toBe('9/16')
     expect(media(container).style.width).toBe('250px')
+  })
+})
+
+describe('ô ảnh phụ', () => {
+  it('có ảnh thì phủ ảnh, và chú thích ở lại trên nền tối để còn đọc được', () => {
+    // Khác ô chính: chữ ở ô chính là một câu GỢI Ý nên đặt ảnh vào là nó xong
+    // việc; chữ ở ô phụ là CHÚ THÍCH nên nó ở lại.
+    const { container } = render(
+      <Bitesize post={post({ sub: 'vệt crema', subImage: 'https://x/p.jpg' })} />,
+    )
+    const box = container.querySelector<HTMLElement>('div[style*="aspect-ratio: 4/5"]')!
+    expect(box.style.backgroundImage).toBe('url("https://x/p.jpg")')
+    expect(screen.getByText('vệt crema')).toBeInTheDocument()
+    expect(screen.getByText('vệt crema').style.background).toContain('rgba(24, 22, 17, 0.55)')
+  })
+
+  it('chưa có ảnh thì là mảng màu, chú thích không cần nền', () => {
+    const { container } = render(<Bitesize post={post({ sub: 'vệt crema' })} />)
+    const box = container.querySelector<HTMLElement>('div[style*="aspect-ratio: 4/5"]')!
+    expect(box.style.backgroundImage).toBe('')
+    expect(screen.getByText('vệt crema').style.background).toBe('')
+  })
+})
+
+describe('ba dàn trang của dạng mở', () => {
+  const order = (c: HTMLElement) =>
+    Array.from(
+      c.querySelectorAll<HTMLElement>('h1, div[style*="aspect-ratio"], div[style*="pre-line"]'),
+    ).map((n) => (n.tagName === 'H1' ? 'tiêu đề' : n.style.aspectRatio ? `ảnh ${n.style.aspectRatio}` : 'thân bài'))
+
+  it('clip ngang: clip chiếm trọn bề ngang, tiêu đề nằm DƯỚI nó', () => {
+    // "hình ảnh hiển thị hơi nhỏ (...) text heading nên ở dưới phần visual".
+    const { container } = render(<Bitesize post={post({ media: 'vid', sub: 'phụ' })} />)
+    const clip = container.querySelector<HTMLElement>('div[style*="aspect-ratio: 16/9"]')!
+    expect(clip.style.width).toBe('100%')
+    expect(clip.style.float).toBe('')
+    expect(order(container)[0]).toBe('ảnh 16/9')
+    expect(order(container)[1]).toBe('tiêu đề')
+  })
+
+  it('clip dọc: hai cột, chữ tụt xuống, ô phụ rơi xuống đáy', () => {
+    const { container } = render(<Bitesize post={post({ media: 'vid', portrait: true, sub: 'phụ' })} />)
+    const grid = container.querySelector<HTMLElement>('div[style*="grid-template-columns"]')!
+    expect(grid.style.gridTemplateColumns).toBe('250px minmax(0, 1fr)')
+    const col = grid.children[1] as HTMLElement
+    expect(col.style.paddingTop).toBe('96px')
+    const subWrap = Array.from(col.children).at(-1) as HTMLElement
+    expect(subWrap.style.marginTop).toBe('auto')
+  })
+
+  it('ảnh tĩnh giữ nguyên: tiêu đề dẫn đầu, chữ chảy quanh ảnh', () => {
+    const { container } = render(<Bitesize post={post({ sub: 'phụ' })} />)
+    expect(order(container)).toEqual(['tiêu đề', 'ảnh 4/3', 'ảnh 4/5', 'thân bài'])
   })
 })

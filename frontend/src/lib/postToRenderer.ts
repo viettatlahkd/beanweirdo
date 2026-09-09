@@ -1,4 +1,4 @@
-import { CLIP_INK, CLIP_WASH, paletteFrom } from 'post-renderer'
+import { CLIP_INK, CLIP_WASH, paletteFrom, shade } from 'post-renderer'
 import { toReportBlocks, toReportNotes } from './reportBlocks'
 import type {
   ArticlePostData,
@@ -239,6 +239,8 @@ export type BitesizeBody = {
   portrait?: boolean
   mediaHint?: string
   sub?: string
+  /** Ảnh của ô phụ — đẩy lên qua chính `/api/upload` như ảnh bìa. */
+  subImage?: string | null
   /** Ảnh tĩnh hay clip — quyết định cả dàn trang lẫn màu. */
   media?: BitesizeMedia
 }
@@ -262,6 +264,7 @@ export function toBitesizeData(
   const len = body.len ?? 'ngắn'
   const portrait = body.portrait ?? false
   const media: BitesizeMedia = body.media === 'vid' ? 'vid' : 'img'
+  const theme = post.theme_color || null
   return {
     title: postTitle(post),
     tag: post.kind,
@@ -270,12 +273,20 @@ export function toBitesizeData(
     pinned: post.pinned ?? false,
     image: post.hero_image_url,
     /*
-     * Dạng clip mang bộ màu riêng bên design đặt sẵn cho `video`, không lấy
-     * theo tag. Chủ site chốt vậy: "vid thì đổi màu". Dạng ảnh vẫn theo tag,
-     * vì cả trang Ghi 01 phân biệt bài bằng mực của tag.
+     * Ba mức, theo thứ tự ai nói sau thắng.
+     *
+     * 1. Màu riêng của bài, đặt ở thanh màu đầu màn sửa. Trước đây nó chỉ đổi
+     *    được dải màu module ở mép trên, còn thân bài không nhúc nhích — chủ
+     *    site báo đúng chỗ đó. Đặt màu rồi thì cả vệt sáng sau tiêu đề lẫn ô
+     *    ảnh đi theo.
+     * 2. Dạng clip: bộ màu `video` bên design đặt sẵn ở bản gốc.
+     * 3. Còn lại: màu của tag, vì trang Ghi 01 phân biệt bài bằng mực của tag.
+     *
+     * Vệt sáng cần một sắc SÁNG mà vẫn có màu (như #E9B79C của bản gốc, độ sáng
+     * ~76), không phải `tint` gần trắng của bảng màu.
      */
-    ink: media === 'vid' ? CLIP_INK : tagColor(post.kind),
-    wash: media === 'vid' ? CLIP_WASH : tagWash(post.kind),
+    ink: theme ? paletteFrom(theme).ink : media === 'vid' ? CLIP_INK : tagColor(post.kind),
+    wash: theme ? shade(theme, 76) : media === 'vid' ? CLIP_WASH : tagWash(post.kind),
     media,
     len,
     portrait,
@@ -283,6 +294,7 @@ export function toBitesizeData(
       body.mediaHint ||
       (media === 'vid' ? (portrait ? BITESIZE_CLIP['dọc'] : BITESIZE_CLIP.ngang) : BITESIZE_HINT),
     sub: body.sub ?? '',
+    subImage: body.subImage ?? null,
     text: body.text ?? postDescription(post),
     band: bandOf(post, options.mod),
   }

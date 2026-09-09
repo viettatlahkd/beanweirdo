@@ -50,6 +50,25 @@ describe('bài trên template bitesize note', () => {
     expect(toBitesizeData(post({ kind: 'quan sát' })).ink).toBe('#B65A3C')
   })
 
+  it('màu riêng của bài thắng cả tag lẫn bộ màu clip', () => {
+    // Chủ site: đổi màu ở thanh trên cùng "thì mới thay được 1 dải màu đầu
+    // tiên, content thì không reflect". Nay nó tới cả vệt sáng và ô ảnh.
+    const rieng = toBitesizeData(post({ theme_color: '#8E4585', kind: 'quan sát' }))
+    expect(rieng.ink).not.toBe('#B65A3C')
+    expect(rieng.wash).not.toBe('#E9B79C')
+    // Vệt sáng phải SÁNG mà vẫn có màu — không phải trắng, không phải mực.
+    expect(rieng.wash).toMatch(/^#[0-9A-F]{6}$/i)
+    expect(rieng.wash).not.toBe(rieng.ink)
+
+    const clipCoMau = toBitesizeData(post({ theme_color: '#8E4585', body: { media: 'vid' } }))
+    expect(clipCoMau.wash).toBe(rieng.wash)
+  })
+
+  it('ảnh của ô phụ đọc từ body', () => {
+    expect(toBitesizeData(post()).subImage).toBeNull()
+    expect(toBitesizeData(post({ body: { subImage: 'https://x/p.jpg' } })).subImage).toBe('https://x/p.jpg')
+  })
+
   it('không nói gì thì là dạng ảnh', () => {
     expect(toBitesizeData(post()).media).toBe('img')
   })

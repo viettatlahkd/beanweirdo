@@ -66,6 +66,7 @@ function Preview({ template }: { template: StoredTemplate }) {
           media: clip ? 'vid' : 'img',
           mediaHint: note.mediaHint ?? (clip ? 'video ngang — clip ngắn không tiếng' : 'ảnh — cận cảnh chủ thể'),
           sub: note.sub ?? '',
+          subImage: null,
           text: note.text ?? subtitle,
         }}
       />
