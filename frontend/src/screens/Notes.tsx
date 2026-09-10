@@ -1,10 +1,9 @@
-import { useMemo, useRef, useState, type CSSProperties } from 'react'
+import { useMemo, useState, type CSSProperties } from 'react'
 import { Breadcrumbs } from '../components/Breadcrumbs'
 import { useSiteCopy } from '../data/useSiteCopy'
 import { noteFilterBar } from '../lib/notesFilter'
 import { useTags } from '../data/useTags'
 import { useIsMobile } from '../lib/useIsMobile'
-import { useNarrow } from '../lib/useNarrow'
 import {
   featureCells,
   withOverrides,
@@ -64,16 +63,7 @@ function OpenedPost({
    * ở bề ngang 390.
    */
   const mobile = useIsMobile()
-  /*
-   * Bài mở ra chỉ chiếm ba phần tư lưới, nên trên màn 905 nó còn 561 — hẹp hơn
-   * ngưỡng 899 trong khi cửa sổ thì không. Hỏi cửa sổ ở đây là hỏi sai chỗ:
-   * memo có cột thông số rộng cứng 300px, và ở 561 thì cột tiêu đề bên cạnh còn
-   * 93px, tiêu đề xuống dòng từng chữ cái một. Nên đo chính khối này.
-   */
-  const box = useRef<HTMLDivElement>(null)
-  const narrow = useNarrow(box)
-  const tight = mobile || narrow
-  return <div ref={box}>{draw(post, mod, tight)}</div>
+  return draw(post, mod, mobile)
 }
 
 function draw(
@@ -537,6 +527,23 @@ export function Notes() {
                          * cột ở mép trái. Lưới của trang vẫn nhìn thấy được hai
                          * bên, nên bài đọc ra là một khối nổi lên TRONG trang
                          * chứ không phải một trang mới đè lên.
+                         */
+                        /*
+                         * Bề ngang ô LUÔN là bề ngang chu kỳ dàn trang đưa
+                         * xuống. Không có ngoại lệ nào cho ảnh đứng.
+                         *
+                         * Bản design gốc có luật `col: n.portrait ? 'span 7'`,
+                         * nhưng luật ấy viết cho GHI CHÚ RỜI — thứ nằm sau cả
+                         * batch và không tham gia phép tính hàng. Batch của bài
+                         * là 8 bài + 7 ô feature, mỗi hàng 5·4·3 = 12 cột
+                         * (`docs/spine/data-04-feature-cells.md`), và
+                         * `lib/notesGrid.ts` tính hàng bằng chính những con số
+                         * ấy. Cho một thẻ 7 cột thì 5+7 đã đầy hàng, ô feature
+                         * bị đẩy sang hàng sau — chủ site thấy ngay: ảnh vốn
+                         * nằm giữa hai bài thì rơi đi đâu mất.
+                         *
+                         * Chỗ hẹp của thẻ ảnh đứng giải bằng bề ngang ẢNH bên
+                         * trong thẻ (40%, luật gốc), không bằng cách nong thẻ.
                          */
                         gridColumn: open ? '2 / span 9' : place.col,
                         marginTop: open ? '40px' : place.mt,

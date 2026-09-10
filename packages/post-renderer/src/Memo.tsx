@@ -217,7 +217,19 @@ export function Memo({
             display: 'grid',
             // B49 — tiêu đề và bảng thông số xếp dọc; 300px cạnh cột chữ trên
             // màn 390 thì cả hai đều không còn chỗ.
-            gridTemplateColumns: mobile ? 'minmax(0,1fr)' : 'minmax(0,1fr) 300px',
+            /*
+             * Cột thông số CO ĐƯỢC, không phải 300px cứng.
+             *
+             * 300px cứng chỉ đúng khi khối này rộng cả trang. Bài memo mở ra
+             * trong lưới Ghi 01 chỉ chiếm ba phần tư — trên màn 905 thì khối
+             * còn 561, cột thông số vẫn giữ 300, và cột tiêu đề bên cạnh còn
+             * 93px: tiêu đề 78px xuống dòng từng chữ cái một.
+             *
+             * Đã có lần tôi chữa bằng cách bắt cả khối dùng bố cục điện thoại.
+             * Sai: người đọc trên desktop lại thấy bản phone. Chỗ mục là con số
+             * cứng, nên sửa đúng con số ấy.
+             */
+            gridTemplateColumns: mobile ? 'minmax(0,1fr)' : 'minmax(0,1fr) minmax(180px, 300px)',
             gap: 56,
             alignItems: 'end',
             borderBottom: `1px solid ${palette.ink}`,

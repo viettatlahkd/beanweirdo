@@ -94,3 +94,43 @@ describe('Ghi 01 — mở bài tại chỗ khi có nhiều bài', () => {
     expect(cards().every((x) => x.style.opacity === '1')).toBe(true)
   })
 })
+
+describe('bề ngang thẻ trong lưới Ghi 01', () => {
+  it('bài ảnh đứng vẫn giữ đúng bề ngang chu kỳ dàn trang', () => {
+    /*
+     * Batch là 8 bài + 7 ô feature, mỗi hàng 5·4·3 = 12 cột
+     * (docs/spine/data-04-feature-cells.md), và `lib/notesGrid.ts` tính hàng
+     * bằng chính những con số ấy. Cho một thẻ 7 cột thì 5+7 đã đầy hàng và ô
+     * feature bị đẩy sang hàng sau — ảnh vốn nằm giữa hai bài rơi đi đâu mất.
+     *
+     * Chỗ hẹp của thẻ ảnh đứng giải bằng bề ngang ẢNH bên trong thẻ, không
+     * bằng cách nong thẻ.
+     */
+    useModules.mockReturnValue({
+      data: [{ id: 'ghi01', title: 'Ghi 01', accent: '#6FA8C0', on_color: '#123' }],
+    })
+    usePublishedPosts.mockReturnValue({
+      data: [
+        post('a', 'Bài A'),
+        { ...post('b', 'Bài B'), template: 'bitesize', body: { portrait: true, text: 'x' } },
+      ],
+      loading: false,
+      error: null,
+    })
+
+    const { container } = render(<Notes />)
+    /*
+     * Duyệt CON TRỰC TIẾP của lưới, không dùng `cards()`.
+     *
+     * `cards()` lọc theo chính `span 4|5` — nên một thẻ bị nong lên 7 cột sẽ
+     * rơi ra ngoài danh sách và vòng lặp chạy qua chỗ trống mà vẫn xanh. Bài
+     * kiểm lọc mất đúng cái nó định bắt thì không bắt gì cả.
+     */
+    const grid = Array.from(container.querySelectorAll<HTMLElement>('div')).find((d) =>
+      /repeat\(12/.test(d.style.gridTemplateColumns),
+    )!
+    const widths = Array.from(grid.children).map((c) => (c as HTMLElement).style.gridColumn)
+    expect(widths.length).toBeGreaterThan(0)
+    for (const w of widths) expect(['span 3', 'span 4', 'span 5']).toContain(w)
+  })
+})
