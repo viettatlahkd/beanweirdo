@@ -103,11 +103,6 @@ function draw(
  *
  * Trạng thái rê chuột nằm ở đây chứ không ở trang, vì nó chỉ nói về một thẻ.
  */
-/** Bài bitesize có ảnh/clip đứng — xem chú thích ở chỗ dùng nó. */
-function isPortraitNote(post: PostRow): boolean {
-  return post.template === 'bitesize' && (post.body as { portrait?: boolean } | null)?.portrait === true
-}
-
 function Collapsed({
   post,
   num,
@@ -534,18 +529,23 @@ export function Notes() {
                          * chứ không phải một trang mới đè lên.
                          */
                         /*
-                         * Thẻ có ảnh đứng cần chỗ rộng hơn.
+                         * Bề ngang ô LUÔN là bề ngang chu kỳ dàn trang đưa
+                         * xuống. Không có ngoại lệ nào cho ảnh đứng.
                          *
-                         * Luật của bản design gốc: `col: n.portrait ? 'span 7'
-                         * : p.col`. Ảnh đứng nằm CẠNH chữ chứ không nằm trên,
-                         * nên ô 4 cột của chu kỳ dàn trang bị chia đôi và cả
-                         * hai nửa đều quá hẹp.
+                         * Bản design gốc có luật `col: n.portrait ? 'span 7'`,
+                         * nhưng luật ấy viết cho GHI CHÚ RỜI — thứ nằm sau cả
+                         * batch và không tham gia phép tính hàng. Batch của bài
+                         * là 8 bài + 7 ô feature, mỗi hàng 5·4·3 = 12 cột
+                         * (`docs/spine/data-04-feature-cells.md`), và
+                         * `lib/notesGrid.ts` tính hàng bằng chính những con số
+                         * ấy. Cho một thẻ 7 cột thì 5+7 đã đầy hàng, ô feature
+                         * bị đẩy sang hàng sau — chủ site thấy ngay: ảnh vốn
+                         * nằm giữa hai bài thì rơi đi đâu mất.
+                         *
+                         * Chỗ hẹp của thẻ ảnh đứng giải bằng bề ngang ẢNH bên
+                         * trong thẻ (40%, luật gốc), không bằng cách nong thẻ.
                          */
-                        gridColumn: open
-                          ? '2 / span 9'
-                          : isPortraitNote(p)
-                            ? 'span 7'
-                            : place.col,
+                        gridColumn: open ? '2 / span 9' : place.col,
                         marginTop: open ? '40px' : place.mt,
                       }),
                   cursor: 'pointer',
