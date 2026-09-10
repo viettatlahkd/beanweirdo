@@ -178,11 +178,20 @@ describe('EditorCanvas — report', () => {
 
     // Nút `+` nay nằm trong máng bên trái mỗi khối, một cái cho mỗi khối, và
     // chèn xuống **dưới** khối ấy. Không còn dải nào nằm trong dòng chảy.
+    /*
+     * Menu của dấu `+` chỉ còn những thứ **không gõ ra được**.
+     *
+     * Chèn một tiêu đề hay đoạn văn rỗng thì vẽ ra không có gì — chủ site bấm
+     * `+` rồi bảo "chả ra cái gì". Chữ thì gõ, `+` để dành cho bảng và ảnh.
+     */
     const insertButtons = screen.getAllByLabelText('thêm khối')
     await userEvent.click(insertButtons[0])
-    await userEvent.click(screen.getByRole('button', { name: 'Đoạn văn' }))
+    expect(screen.queryByRole('button', { name: 'Đoạn văn' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Tiêu đề' })).toBeNull()
 
-    expect(onChange).toHaveBeenLastCalledWith({ body: [named[0], { type: 'paragraph', text: '', id: 'b3' }, named[1]] })
+    await userEvent.click(screen.getByRole('button', { name: 'Bảng' }))
+    const body = onChange.mock.lastCall?.[0].body as { type?: string }[]
+    expect(body.map((b) => b.type)).toContain('table')
   })
 
   it('removes a block', async () => {

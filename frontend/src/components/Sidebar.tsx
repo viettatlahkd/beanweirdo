@@ -307,7 +307,19 @@ export function Sidebar() {
           whiteSpace: 'nowrap',
         }}
       >
-        <div style={{ width: 20, height: 20, borderRadius: '50%', background: '#F2A0A5', flex: 'none' }} />
+        {/*
+          * Logo thật, thay cho chấm tròn hồng đứng tạm ở đây.
+          *
+          * Nó là một wordmark chữ nhật nên không ép vào ô 20×20 được — chữ
+          * "station" sẽ mất hẳn. Cho nó chiều cao 34px và tự co ngang.
+          */}
+        <img
+          src="/logo-bean.png"
+          alt="bean station"
+          width={56}
+          height={34}
+          style={{ height: 34, width: 'auto', flex: 'none', borderRadius: 3 }}
+        />
         <div style={{ fontFamily: serif, fontSize: 23, letterSpacing: '-.01em' }}>
           be
           <span
