@@ -34,8 +34,10 @@ describe('gom thành dải', () => {
     expect(toRuns([table('t1')]).map((r) => r.kind)).toEqual(['thing'])
   })
 
-  it('bài rỗng thì không có dải nào', () => {
-    expect(toRuns([])).toEqual([])
+  it('bài rỗng vẫn có một dải rỗng để gõ vào', () => {
+    // Không có nó thì bài mới chỉ còn cái nút `+`, và phải chọn loại khối
+    // trước khi được viết chữ đầu tiên.
+    expect(toRuns([])).toEqual([{ kind: 'text', at: [0, -1], text: '' }])
   })
 })
 

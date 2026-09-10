@@ -79,7 +79,7 @@ describe('article — cấu trúc sửa được', () => {
  * tiêu đề là nắm luôn mọi thứ bên dưới, không có cách nào tách. Nay thân bài là
  * một chuỗi phẳng: tiêu đề là element như mọi element khác.
  */
-describe('memo — chuỗi phẳng, mỗi element một tay nắm', () => {
+describe('memo — thân bài là một dải chữ liền mạch', () => {
   const body = {
     subtitle: 'ba lần rót',
     sections: [
@@ -90,75 +90,59 @@ describe('memo — chuỗi phẳng, mỗi element một tay nắm', () => {
   const bodyOf = (onChange: ReturnType<typeof vi.fn>) =>
     onChange.mock.lastCall?.[0].body as { elements: { type: string; text?: string }[]; sections?: unknown }
 
-  it('tiêu đề là element, không phải nắp của một cái bọc', async () => {
-    const onChange = draw('memo', body)
-    // Bốn element: hai tiêu đề, hai danh sách — không còn tầng "mục" nào. Nhân
-    // bản tiêu đề đầu ra element thứ năm, ngay dưới nó.
-    await userEvent.click(screen.getAllByLabelText('nhân bản khối')[0])
-    expect(bodyOf(onChange).elements.map((e) => e.type)).toEqual(['heading', 'heading', 'list', 'heading', 'list'])
+  it('mọi khối chữ vào chung một ô, nên bôi đen chạy suốt', async () => {
+    /*
+     * Đây là điều kiện, không phải lựa chọn: trình duyệt không cho một vùng
+     * chọn trải qua hai ô nhập. Chừng nào mỗi element còn một ô riêng thì
+     * chừng ấy không bôi đen từ tiêu đề xuống hết danh sách được.
+     */
+    draw('memo', body)
+    await userEvent.click(screen.getByText('hậu vị ngắn'))
+    const run = screen.getAllByRole('textbox').find(
+      (el) => (el as HTMLTextAreaElement).value?.includes('hậu vị ngắn'),
+    ) as HTMLTextAreaElement
+    expect(run.value).toContain('## Bean character')
+    expect(run.value).toContain('- Ngọt mía, *hậu vị ngắn*')
+    expect(run.value).toContain('## Pour test')
   })
 
-  it('kéo tiêu đề thì chỉ tiêu đề đi, không kéo theo danh sách dưới nó', async () => {
-    const onChange = draw('memo', body)
-    screen.getAllByLabelText(GRIP_LABEL)[0].focus()
-    await userEvent.keyboard('{ArrowDown}')
-    expect(bodyOf(onChange).elements.map((e) => e.type)).toEqual(['list', 'heading', 'heading', 'list'])
+  it('chữ nhấn vẽ ra là chữ nhấn khi con trỏ ở ngoài', () => {
+    draw('memo', body)
+    expect(screen.getByText('hậu vị ngắn').tagName).toBe('EM')
+    expect(screen.getByText('blooming')).toBeInTheDocument()
   })
 
-  it('xoá và chèn từng element một', async () => {
-    const onChange = draw('memo', body)
-    await userEvent.click(screen.getAllByLabelText('xoá khối')[0])
-    expect(bodyOf(onChange).elements).toHaveLength(3)
+  it('danh sách đánh số hiện số ngay lúc đang soạn', () => {
+    // Bản đầu của ô soạn này tự vẽ một chồng ô trống: số, bullet và thụt lề
+    // đều biến mất, nên một mốc ghi "#2" đọc thành vô nghĩa trong lúc viết.
+    draw('memo', body)
+    expect(screen.getByText('01')).toBeInTheDocument()
   })
 
-  it('viết xong thì bài chỉ còn một cách lưu, không còn hai cái cãi nhau', async () => {
+  it('sửa dải rồi rời ô thì bài chỉ còn một cách lưu, không còn hai cái cãi nhau', async () => {
     const onChange = draw('memo', body)
-    await userEvent.click(screen.getAllByLabelText('xoá khối')[0])
+    await userEvent.click(screen.getByText('blooming'))
+    const run = screen.getAllByRole('textbox').find(
+      (el) => (el as HTMLTextAreaElement).value?.includes('blooming'),
+    ) as HTMLTextAreaElement
+    await userEvent.type(run, ' thêm')
+    await userEvent.tab()
+
     const next = bodyOf(onChange)
     expect(next.elements).toBeDefined()
     expect(next.sections).toBeUndefined()
   })
 
-  it('chèn element mới ngay dưới element đang đứng', async () => {
+  it('gõ thêm một dòng là ra thêm element, không cần nút nào', async () => {
     const onChange = draw('memo', body)
-    await userEvent.click(screen.getAllByLabelText('thêm khối')[0])
-    await userEvent.click(screen.getAllByRole('button', { name: 'Bảng' })[0])
-    expect(bodyOf(onChange).elements.map((e) => e.type)).toEqual(['heading', 'table', 'list', 'heading', 'list'])
-  })
-
-  it('mọi dòng trong danh sách đều là ô gõ được, chữ nhấn vẽ ra rồi mới sửa được', async () => {
-    draw('memo', body)
-    /*
-     * Ô soạn có hai mặt. Con trỏ ở ngoài thì nó vẽ bài — chữ nhấn ra chữ
-     * nhấn, không ra dấu sao. Bấm vào mới hiện chữ thô để sửa, và chữ thô ấy
-     * vẫn phải đủ dấu, nếu không thì sửa một chữ là mất định dạng cả dòng.
-     */
-    expect(screen.getByText('hậu vị ngắn').tagName).toBe('EM')
-    expect(screen.getByText('đo lúc drop')).toBeInTheDocument()
-    expect(screen.getByText('blooming')).toBeInTheDocument()
-
-    await userEvent.click(screen.getByText('hậu vị ngắn'))
-    expect(screen.getByDisplayValue('Ngọt mía, *hậu vị ngắn*')).toBeInTheDocument()
-  })
-
-  it('danh sách đánh số hiện số ngay lúc đang soạn', () => {
-    // Bản đầu của ô soạn này tự vẽ một chồng ô trống: số, bullet và thụt lề đều
-    // biến mất, nên một mốc ghi "#2" — thứ chỉ có nghĩa khi đứng cạnh "02" —
-    // đọc thành vô nghĩa trong lúc viết.
-    draw('memo', body)
-    expect(screen.getByText('01')).toBeInTheDocument()
-  })
-
-  it('xoá hết chữ một dòng phụ thì dòng ấy đi, không để lại dòng trống', async () => {
-    const onChange = draw('memo', body)
-    // Bấm vào mặt vẽ để lật sang mặt gõ, rồi mới xoá được.
-    await userEvent.click(screen.getByText('40g'))
-    await userEvent.clear(screen.getByDisplayValue('40g'))
+    await userEvent.click(screen.getByText('blooming'))
+    const run = screen.getAllByRole('textbox').find(
+      (el) => (el as HTMLTextAreaElement).value?.includes('blooming'),
+    ) as HTMLTextAreaElement
+    await userEvent.type(run, '{End}\n\n### Mục mới')
     await userEvent.tab()
-    // '40g' thuộc danh sách thứ hai — danh sách các mốc pha.
-    const lists = bodyOf(onChange).elements.filter((e) => e.type === 'list') as unknown as {
-      items: { sub?: string[] }[]
-    }[]
-    expect(lists[1].items[0].sub).toEqual([])
+
+    expect(bodyOf(onChange).elements.map((e) => e.type)).toContain('heading')
+    expect(bodyOf(onChange).elements.at(-1)?.text).toBe('Mục mới')
   })
 })

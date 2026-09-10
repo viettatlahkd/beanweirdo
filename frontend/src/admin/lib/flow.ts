@@ -37,6 +37,14 @@ export const flows = (block: ReportBlock | undefined) => block !== undefined && 
  * lọc nó ra trước.
  */
 export function toRuns(blocks: ReportBlock[]): Run[] {
+  /*
+   * Bài rỗng vẫn có **một** dải để gõ vào.
+   *
+   * Không có nó thì một bài mới vẽ ra chỉ còn cái nút `+`, và người viết phải
+   * chọn loại khối trước khi được viết chữ đầu tiên. Trong một trình soạn thì
+   * chỗ để gõ phải có sẵn.
+   */
+  if (blocks.length === 0) return [{ kind: 'text', at: [0, -1], text: '' }]
   const out: Run[] = []
   let i = 0
   while (i < blocks.length) {

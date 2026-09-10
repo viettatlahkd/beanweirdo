@@ -751,6 +751,7 @@ function EditableField({
   focus,
   focusCaret,
   onFocused,
+  onBlurred,
   onKeyDown,
   onPasteText,
   onType,
@@ -770,6 +771,13 @@ function EditableField({
   /** Chỗ đặt con trỏ trong ô; vắng nghĩa là cuối chữ. */
   focusCaret?: number
   onFocused?: () => void
+  /**
+   * Rời ô — **luôn** báo, kể cả khi chữ không đổi.
+   *
+   * `onCommit` chỉ chạy khi chữ có đổi, nên chỗ nào treo việc "đóng ô lại" vào
+   * nó thì bấm vào rồi bấm ra mà không gõ gì là ô kẹt luôn ở mặt gõ.
+   */
+  onBlurred?: () => void
   /**
    * Phím bấm trong ô, cho những thao tác không phải là gõ chữ — Tab lùi lề
    * chẳng hạn.
@@ -928,6 +936,7 @@ function EditableField({
     // đã bấm vào rồi bấm ra vẫn nằm ở mặt chữ thô suốt buổi.
     setCaret(null)
     if (local !== value) onCommit(local)
+    onBlurred?.()
   }
 
   /*
@@ -989,10 +998,23 @@ function EditableField({
   const paste =
     pasteAsText
       ? (e: ClipboardEvent<HTMLElement>) => {
+          const node = el.current
           const text = clipboardMarkdown(e)
-          if (!text) return
+          if (!text || !node) return
           e.preventDefault()
-          document.execCommand('insertText', false, text)
+          /*
+           * Tự chèn chứ không nhờ `execCommand`.
+           *
+           * `execCommand` đã bị khai tử, và jsdom không dựng nó — nên nhờ nó
+           * là vừa mất chỗ dựa vừa không kiểm được. Tự ghép chữ thì chỗ nào
+           * cũng chạy như nhau, và vùng chọn sau khi dán do mình đặt.
+           */
+          const from = node.selectionStart ?? local.length
+          const to = node.selectionEnd ?? from
+          const next = local.slice(0, from) + text + local.slice(to)
+          pending.current = { start: from + text.length, end: from + text.length }
+          setLocal(next)
+          onType?.(next, from + text.length)
         }
       : onPasteText
         ? (e: ClipboardEvent<HTMLElement>) => {
@@ -2710,10 +2732,8 @@ function TextRun({
         focus
         focusCaret={caret}
         onFocused={() => {}}
-        onCommit={(v) => {
-          onCommit(v)
-          onLeave()
-        }}
+        onCommit={onCommit}
+        onBlurred={onLeave}
         pasteAsText
         onType={(v, caret) => {
           /*

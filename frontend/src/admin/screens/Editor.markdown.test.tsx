@@ -75,7 +75,7 @@ describe('màn soạn vẽ markdown chứ không hiện ký hiệu', () => {
   })
 
   it('ô rỗng vẫn hiện chữ mờ gợi ý', () => {
-    draw(para(''))
+    draw([])
     expect(screen.getByRole('textbox', { name: /Viết ở đây/i })).toBeTruthy()
   })
 })
@@ -123,34 +123,38 @@ describe('dán từ Notion: đọc bản HTML, giữ định dạng', () => {
   })
 
   it('chữ đậm sống sót, dù bản chữ thuần đã đánh mất nó', async () => {
-    const onChange = draw(para(''))
-    await userEvent.click(screen.getByRole('textbox', { name: /Viết ở đây/i }))
+    const onChange = draw(para('chữ sẵn có'))
+    await userEvent.click(screen.getByText('chữ sẵn có'))
 
-    fireEvent.paste(screen.getByRole('textbox', { name: /Viết ở đây/i }), {
+    fireEvent.paste(screen.getByDisplayValue('chữ sẵn có'), {
       clipboardData: clipboard(
         '<h3>Overall feedback</h3><ul><li>Chưa chốt <strong>test cases</strong>.</li></ul>',
         // Đúng thứ Notion đặt vào ô chữ thuần: đậm biến mất.
         'Overall feedback\nChưa chốt test cases.',
       ),
     })
+    await userEvent.tab()
 
     const written = onChange.mock.calls.at(-1)?.[0].body as { type?: string; items?: unknown[] }[]
-    expect(written.map((b) => b.type)).toEqual(['heading', 'list'])
+    // Định dạng sống sót: ra tiêu đề và danh sách, không ra một cục chữ trơn.
+    expect(written.map((b) => b.type)).toContain('heading')
+    expect(written.map((b) => b.type)).toContain('list')
   })
 
   it('bản HTML chỉ là chữ thuần trá hình thì bỏ qua, dùng bản chữ thuần', async () => {
     // Có nguồn trả chính chữ thuần cho ô `text/html`. Đem đi phân tích như
     // HTML là nuốt sạch ký tự xuống dòng, và sáu gạch đầu dòng về một dòng.
-    const onChange = draw(para(''))
-    await userEvent.click(screen.getByRole('textbox', { name: /Viết ở đây/i }))
+    const onChange = draw(para('chữ sẵn có'))
+    await userEvent.click(screen.getByText('chữ sẵn có'))
 
-    fireEvent.paste(screen.getByRole('textbox', { name: /Viết ở đây/i }), {
+    fireEvent.paste(screen.getByDisplayValue('chữ sẵn có'), {
       clipboardData: clipboard('- một\n- hai', '- một\n- hai'),
     })
+    await userEvent.tab()
 
     const written = onChange.mock.calls.at(-1)?.[0].body as { type?: string; items?: unknown[] }[]
-    expect(written[0].type).toBe('list')
-    expect(written[0].items).toHaveLength(2)
+    const list = written.find((b) => b.type === 'list')
+    expect(list?.items).toHaveLength(2)
   })
 })
 
@@ -208,12 +212,12 @@ describe('Cmd+B, Cmd+U, Cmd+K trong ô chữ', () => {
 })
 
 describe('hai mặt của một ô đo cùng một kiểu', () => {
-  it('cả mặt vẽ lẫn mặt gõ đều dùng box-sizing: border-box', () => {
+  it('cả mặt vẽ lẫn mặt gõ đều dùng box-sizing: border-box', async () => {
     // jsdom không dựng bố cục nên không đo được chiều cao thật; chỗ này chỉ
     // giữ cái điều kiện làm cho hai mặt đo bằng nhau. Con số thật đo bằng
     // Playwright trong Chrome: lệch 0.3px, trước khi sửa là 58.8px.
     draw(para('một dòng'))
-    const drawnFace = screen.getByRole('textbox', { name: /Viết ở đây/i })
-    expect(drawnFace.style.boxSizing).toBe('border-box')
+    await userEvent.click(screen.getByText('một dòng'))
+    expect(screen.getByDisplayValue('một dòng').style.boxSizing).toBe('border-box')
   })
 })
