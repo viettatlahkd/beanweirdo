@@ -71,8 +71,6 @@ import {
   paletteFrom,
   allElements,
   flatElements,
-  bodyToMarkdown,
-  getElement,
   htmlToMarkdown,
   Inline,
   rawIndexFor,
@@ -81,9 +79,10 @@ import {
 import { AddRow, RowShell } from '../components/RowShell'
 import { duplicateAt, insertAt, move, removeAt } from '../lib/listOps'
 import { withPastedBlocks } from '../lib/pasteBlocks'
-import { splitForThing, toRuns, writeRun } from '../lib/flow'
+import { toRuns, writeRun } from '../lib/flow'
 import { emptyHistory, historyKey, inverseOf, record, redo, undo, type History } from '../lib/editHistory'
 import { blockKey, neighbour, type BlockFocus } from '../lib/blockKeys'
+import { LiveText } from '../components/LiveText'
 import { applyMark, markFor } from '../lib/marks'
 import { useRowDrag } from '../lib/useRowDrag'
 import {
@@ -1582,12 +1581,6 @@ function BitesizeEditor({
   /** Khối đang mở menu `/`, và mấy chữ gõ sau dấu ấy. */
   const [slash, setSlash] = useState<{ at: number; query: string } | null>(null)
   const { runAt } = useFlow(elements)
-  /** Dải chữ đang mở ra thành markdown, và chỗ con trỏ trong đó. */
-  const [editing, setEditing] = useState<[number, number, string?] | null>(null)
-  /** `/` vừa gõ trong một dải chữ: chữ đang có, chỗ con trỏ, và mấy chữ lọc. */
-  const [runSlash, setRunSlash] = useState<
-    { at: [number, number]; text: string; caret: number; lineStart: number; query: string } | null
-  >(null)
   const drag = useRowDrag((from, to) => writeElements(move(elements, from, to)))
   const control: CSSProperties = {
     fontFamily: sans,
@@ -1657,38 +1650,10 @@ function BitesizeEditor({
                     }}
                   />
                 </div>
-                <TextRun
-                  blocks={elements}
-                  at={run.at}
+                <LiveText
                   text={run.text}
-                  palette={palette}
-                  editing={editing?.[0] === run.at[0]}
-                  caret={editing?.[1]}
-                  draft={editing?.[2]}
-                  onEnter={(caret) => setEditing([run.at[0], caret])}
-                  onLeave={() => setEditing(null)}
-                  onCommit={(v) => writeElements(writeRun(elements, run.at, v))}
-                  onSlash={(found) => setRunSlash(found === null ? null : { at: run.at, ...found })}
+                  onCommit={(md) => writeElements(writeRun(elements, run.at, md))}
                 />
-                {runSlash?.at[0] === run.at[0] && (
-                  <BlockMenu
-                    filter={runSlash.query}
-                    onClose={() => setRunSlash(null)}
-                    onInsert={(type) => {
-                      const before = runSlash.text.slice(0, runSlash.lineStart)
-                      const after = runSlash.text.slice(runSlash.caret)
-                      const prefix = MARKDOWN_PREFIX[type]
-                      if (prefix !== undefined) {
-                        setEditing([run.at[0], before.length + prefix.length, `${before}${prefix}${after}`])
-                        setRunSlash(null)
-                        return
-                      }
-                      else writeElements(splitForThing(elements, run.at, `${before}${after}`, runSlash.lineStart, blankReportBlock(type)).blocks)
-                      setRunSlash(null)
-                      setEditing(null)
-                    }}
-                  />
-                )}
               </div>
             )
           }
@@ -1814,12 +1779,6 @@ function MemoEditor({
   /** Khối đang mở menu `/`, và mấy chữ gõ sau dấu ấy. */
   const [slash, setSlash] = useState<{ at: number; query: string } | null>(null)
   const { runAt } = useFlow(elements)
-  /** Dải chữ đang mở ra thành markdown, và chỗ con trỏ trong đó. */
-  const [editing, setEditing] = useState<[number, number, string?] | null>(null)
-  /** `/` vừa gõ trong một dải chữ: chữ đang có, chỗ con trỏ, và mấy chữ lọc. */
-  const [runSlash, setRunSlash] = useState<
-    { at: [number, number]; text: string; caret: number; lineStart: number; query: string } | null
-  >(null)
 
   return (
     <PostRenderer
@@ -1870,38 +1829,10 @@ function MemoEditor({
                   }}
                 />
               </div>
-              <TextRun
-                blocks={elements}
-                at={run.at}
+              <LiveText
                 text={run.text}
-                palette={palette}
-                editing={editing?.[0] === run.at[0]}
-                caret={editing?.[1]}
-          draft={editing?.[2]}
-                onEnter={(caret) => setEditing([run.at[0], caret])}
-                onLeave={() => setEditing(null)}
-                onCommit={(v) => write(writeRun(elements, run.at, v))}
-                onSlash={(found) => setRunSlash(found === null ? null : { at: run.at, ...found })}
+                onCommit={(md) => write(writeRun(elements, run.at, md))}
               />
-              {runSlash?.at[0] === run.at[0] && (
-                <BlockMenu
-                  filter={runSlash.query}
-                  onClose={() => setRunSlash(null)}
-                  onInsert={(type) => {
-                    const before = runSlash.text.slice(0, runSlash.lineStart)
-                    const after = runSlash.text.slice(runSlash.caret)
-                    const prefix = MARKDOWN_PREFIX[type]
-                    if (prefix !== undefined) {
-                      setEditing([run.at[0], before.length + prefix.length, `${before}${prefix}${after}`])
-                      setRunSlash(null)
-                      return
-                    }
-                    else write(splitForThing(elements, run.at, `${before}${after}`, runSlash.lineStart, blankReportBlock(type)).blocks)
-                    setRunSlash(null)
-                    setEditing(null)
-                  }}
-                />
-              )}
             </div>
           )
         }
@@ -2337,10 +2268,6 @@ function ReportEditor({
   const [spot, setSpot] = useState<BlockFocus | null>(null)
   /** Khối đang mở menu `/`, và mấy chữ gõ sau dấu ấy. */
   const [slash, setSlash] = useState<{ at: number; query: string } | null>(null)
-  /** `/` vừa gõ trong một dải chữ: chữ đang có, chỗ con trỏ, và mấy chữ lọc. */
-  const [runSlash, setRunSlash] = useState<
-    { at: [number, number]; text: string; caret: number; lineStart: number; query: string } | null
-  >(null)
   /*
    * How wide the notes column is while composing. Deliberately not stored: the
    * ratio is a thing the writer does to see better right now, not something
@@ -2372,8 +2299,6 @@ function ReportEditor({
    * đúng chỗ nó đứng.
    */
   const runs = toRuns(blocks)
-  /** Dải chữ đang mở ra thành markdown, và chỗ con trỏ trong đó. */
-  const [editing, setEditing] = useState<[number, number, string?] | null>(null)
   const firstAnnotated = runs.findIndex((run) =>
     (run.kind === 'text' ? blocks.slice(run.at[0], run.at[1] + 1) : [blocks[run.at]]).some(
       (b) => notesOn(notes, b?.id).length > 0,
@@ -2490,55 +2415,10 @@ function ReportEditor({
                           onInsert={(t) => insertBlock(run.at[1], t)}
                         />
                       </div>
-                      <TextRun
-                        blocks={blocks}
-                        at={run.at}
+                      <LiveText
                         text={run.text}
-                        palette={palette}
-                        editing={editing?.[0] === run.at[0]}
-                        caret={editing?.[1]}
-          draft={editing?.[2]}
-                        onEnter={(caret) => setEditing([run.at[0], caret])}
-                        onLeave={() => setEditing(null)}
-                        onCommit={(v) => setBlocks(writeRun(blocks, run.at, v))}
-                        onSlash={(found) => setRunSlash(found === null ? null : { at: run.at, ...found })}
+                        onCommit={(md) => setBlocks(writeRun(blocks, run.at, md))}
                       />
-                      {runSlash?.at[0] === run.at[0] && (
-                        <BlockMenu
-                          filter={runSlash.query}
-                          onClose={() => setRunSlash(null)}
-                          onInsert={(type) => {
-                            /*
-                             * Loại chữ thì chỉ thay `/lệnh` bằng ký hiệu
-                             * markdown của nó — không cắt dải ra, vì tiêu đề
-                             * và gạch đầu dòng vốn đã là một phần của chữ.
-                             */
-                            const before = runSlash.text.slice(0, runSlash.lineStart)
-                            const after = runSlash.text.slice(runSlash.caret)
-                            const prefix = MARKDOWN_PREFIX[type]
-                            if (prefix !== undefined) {
-                              /*
-                               * Ở lại trong ô, con trỏ ngay sau ký hiệu.
-                               *
-                               * Ghi ra ngay thì `1. ` chưa có chữ nào phía sau
-                               * sẽ đọc lại thành một đoạn văn rỗng — ký hiệu
-                               * vừa chèn biến mất trước khi kịp gõ gì vào.
-                               */
-                              setEditing([run.at[0], before.length + prefix.length, `${before}${prefix}${after}`])
-                              setRunSlash(null)
-                              return
-                            } else {
-                              // Bảng, số liệu, biểu đồ, ảnh: cắt dải tại dòng
-                              // đang gõ rồi cắm chúng vào giữa.
-                              const clean = `${before}${after}`
-                              const out = splitForThing(blocks, run.at, clean, runSlash.lineStart, blankReportBlock(type))
-                              setBlocks(out.blocks)
-                            }
-                            setRunSlash(null)
-                            setEditing(null)
-                          }}
-                        />
-                      )}
                     </div>
                   ) : (
                     <div
@@ -2684,137 +2564,6 @@ function useFlow(elements: ReportBlock[]) {
   const runAt = (i: number) =>
     runs.find((r) => (r.kind === 'text' ? i >= r.at[0] && i <= r.at[1] : r.at === i))
   return { runs, runAt }
-}
-
-/**
- * Một dải chữ liền: nhiều khối, **một** ô nhập.
- *
- * Con trỏ ở ngoài thì nó vẽ đúng thứ trang vẽ — tiêu đề ra tiêu đề, gạch đầu
- * dòng ra gạch đầu dòng. Bấm vào thì cả dải mở ra thành markdown trong một ô
- * duy nhất, và từ đó bôi đen chạy suốt qua mọi đoạn, mọi bullet.
- *
- * Một ô cho cả dải là điều kiện, không phải lựa chọn: trình duyệt không cho
- * một vùng chọn trải qua hai ô nhập, nên chừng nào mỗi khối còn một ô riêng
- * thì chừng ấy không bôi đen qua hai khối được.
- */
-function TextRun({
-  blocks,
-  at,
-  text,
-  palette,
-  editing,
-  caret,
-  draft,
-  onEnter,
-  onLeave,
-  onCommit,
-  onSlash,
-}: {
-  blocks: ReportBlock[]
-  at: [number, number]
-  text: string
-  palette: Palette
-  editing: boolean
-  caret?: number
-  /** Chữ đang gõ dở, khi menu `/` vừa chèn một ký hiệu vào giữa chừng. */
-  draft?: string
-  onEnter: (caret: number) => void
-  onLeave: () => void
-  onCommit: (text: string) => void
-  onSlash: (found: { text: string; caret: number; lineStart: number; query: string } | null) => void
-}) {
-  if (editing) {
-    return (
-      <EditableField
-        value={draft ?? text}
-        multiline
-        rows={1}
-        placeholder="Viết ở đây, hoặc gõ / để chèn"
-        focus
-        focusCaret={caret}
-        onFocused={() => {}}
-        onCommit={onCommit}
-        onBlurred={onLeave}
-        pasteAsText
-        onType={(v, caret) => {
-          /*
-           * `/` chỉ mở menu khi nó đứng ở **đầu một dòng**.
-           *
-           * Giữa câu thì nó là một dấu gạch chéo — một đường dẫn, một phân
-           * số — và nuốt nó đi là sửa chữ người viết đang gõ.
-           */
-          const lineStart = v.lastIndexOf('\n', Math.max(0, caret - 1)) + 1
-          const open = v[lineStart] === '/' && caret > lineStart && !v.slice(lineStart + 1, caret).includes(' ')
-          onSlash(open ? { text: v, caret, lineStart, query: v.slice(lineStart + 1, caret) } : null)
-        }}
-        style={{ fontSize: 15, lineHeight: 1.62, color: ink.strong, fontFamily: 'inherit' }}
-      />
-    )
-  }
-
-  /*
-   * Chỗ mỗi khối bắt đầu trong dải chữ.
-   *
-   * Bấm vào khối thứ ba thì con trỏ phải rơi vào dòng thứ ba của chữ thô, chứ
-   * không rơi về đầu bài — nếu không thì mỗi lần sửa một đoạn ở cuối là một
-   * lần đi tìm lại chỗ.
-   */
-  const offsetOf = (k: number) => bodyToMarkdown(blocks.slice(at[0], at[0] + k) as never).text.length + (k > 0 ? 2 : 0)
-
-  /*
-   * Dải rỗng vẫn phải có chỗ để bấm vào.
-   *
-   * Một bài mới hoặc một dải vừa bị xoá hết chữ thì vẽ ra không có gì —
-   * không có chữ nào để bấm, nên không có đường nào vào ô nhập. Dòng chữ mờ
-   * này vừa là lối vào vừa là câu nói cho biết chỗ này gõ được.
-   */
-  if (text.trim() === '') {
-    return (
-      <div
-        className="awc-run-read"
-        role="textbox"
-        tabIndex={0}
-        aria-label="Viết ở đây, hoặc gõ / để chèn"
-        onMouseDown={(e) => {
-          e.preventDefault()
-          onEnter(0)
-        }}
-        onFocus={() => onEnter(0)}
-        style={{ color: ink.muted, fontSize: 15, lineHeight: 1.62, padding: '2px 4px', cursor: 'text' }}
-      >
-        Viết ở đây, hoặc gõ / để chèn
-      </div>
-    )
-  }
-
-  return (
-    <div className="awc-run-read">
-      {blocks.slice(at[0], at[1] + 1).map((b, k) => {
-        const element = getElement(b.type)
-        if (!element) return null
-        return (
-          <div
-            key={b.id ?? k}
-            onMouseDown={(e) => {
-              /*
-               * Chặn mặc định để trình duyệt đừng đặt focus vào cái thẻ sắp
-               * biến mất.
-               *
-               * Mặt vẽ bị thay bằng ô nhập ngay sau cú bấm; để trình duyệt tự
-               * lo thì focus rơi về `body` và mọi phím sau đó — kể cả Cmd+B —
-               * bay đi đâu mất. Đo được trong bài kiểm: `activeElement` là
-               * BODY sau khi bấm vào một dải.
-               */
-              e.preventDefault()
-              onEnter(offsetOf(k))
-            }}
-          >
-            <element.View attributes={b as never} palette={palette} index={k} />
-          </div>
-        )
-      })}
-    </div>
-  )
 }
 
 /**
@@ -3247,21 +2996,6 @@ function InsertMenu({
   )
 }
 
-
-/**
- * Loại nào viết thẳng vào chữ được thì viết, đừng cắt dải ra.
- *
- * Tiêu đề, gạch đầu dòng, trích dẫn vốn đã là một phần của văn bản liền mạch:
- * chèn chúng chỉ là gõ hộ mấy ký tự đầu dòng. Cắt dải làm đôi cho chúng là
- * dựng lại đúng cái tường ngăn mà cả lượt này đang gỡ bỏ.
- */
-const MARKDOWN_PREFIX: Record<string, string | undefined> = {
-  paragraph: '',
-  heading: '# ',
-  list: '- ',
-  [ORDERED_LIST]: '1. ',
-  quote: '> ',
-}
 
 const HEADING_SIZE: Record<1 | 2 | 3, number> = { 1: 28, 2: 22, 3: 17 }
 
