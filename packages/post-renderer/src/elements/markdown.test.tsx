@@ -7,7 +7,7 @@
  */
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { getElement, pastedToItems, runsToText, textToRuns } from './index'
+import { getElement, pastedToBlocks, pastedToItems, runsToText, textToRuns } from './index'
 import { paletteFrom } from '../palette'
 
 const palette = paletteFrom('#C25C7C')
@@ -141,5 +141,93 @@ describe('dán vào', () => {
 
   it('một dòng có dấu đầu dòng thì vẫn là một mục', () => {
     expect(pastedToItems('- một mục')?.items).toHaveLength(1)
+  })
+})
+
+describe('dán cả một trang vào canvas', () => {
+  const types = (blocks: ReturnType<typeof pastedToBlocks>) => blocks?.map((b) => b.type)
+
+  it('tiêu đề, đoạn văn, danh sách, bảng — mỗi thứ một khối', () => {
+    const blocks = pastedToBlocks(
+      [
+        '# Mẻ rang #14',
+        '',
+        'Đợt này thử hạ nhiệt vào lúc nứt lần một.',
+        '',
+        '- nhiệt vào 198°C',
+        '- thời gian 11:20',
+        '',
+        '| Ngày | Điểm |',
+        '|---|---|',
+        '| 01 | 8.5 |',
+        '| 02 | 8.0 |',
+      ].join('\n'),
+    )
+    expect(types(blocks)).toEqual(['heading', 'paragraph', 'list', 'table'])
+  })
+
+  it('cấp tiêu đề đi theo số dấu thăng, quá ba thì về ba', () => {
+    const blocks = pastedToBlocks('# một\n## hai\n### ba\n#### bốn')
+    expect(blocks?.map((b) => b.level)).toEqual([1, 2, 3, 3])
+  })
+
+  it('bảng đọc ra đúng cột và dòng', () => {
+    const blocks = pastedToBlocks('| Ngày | Điểm |\n|---|---|\n| 01 | 8.5 |')
+    expect(blocks?.[0].table).toEqual({ columns: ['Ngày', 'Điểm'], rows: [{ cells: ['01', '8.5'] }] })
+  })
+
+  it('vạch ngăn dòng thiếu thì không phải bảng — chỉ là chữ', () => {
+    // Không có vạch ngăn thì `| a | b |` chỉ là một dòng có dấu vạch đứng.
+    expect(types(pastedToBlocks('| a | b |\n\nmột đoạn'))).toEqual(['paragraph', 'paragraph'])
+  })
+
+  it('trích dẫn nhiều dòng gộp thành một khối', () => {
+    const blocks = pastedToBlocks('> câu đầu\n> câu sau\n\nđoạn thường')
+    expect(types(blocks)).toEqual(['quote', 'paragraph'])
+    expect(blocks?.[0].text).toBe('câu đầu câu sau')
+  })
+
+  it('ảnh markdown thành khối ảnh, giữ cả chú thích', () => {
+    const blocks = pastedToBlocks('![cận cảnh chủ thể](https://a.com/x.jpg)\n\nsau ảnh')
+    expect(blocks?.[0]).toMatchObject({ type: 'image', caption: 'cận cảnh chủ thể', imageUrl: 'https://a.com/x.jpg' })
+  })
+
+  it('các dòng liền nhau là một đoạn; dòng trống mới ngắt đoạn', () => {
+    const blocks = pastedToBlocks('dòng một\ndòng hai\n\nđoạn sau')
+    expect(types(blocks)).toEqual(['paragraph', 'paragraph'])
+    expect(blocks?.[0].text).toBe('dòng một dòng hai')
+  })
+
+  it('vạch ngang không sinh ra khối rỗng', () => {
+    // Design không có element nào cho `---`; vẽ một khối trống thay nó là mời
+    // người viết gõ vào một chỗ vốn không có gì.
+    expect(types(pastedToBlocks('# một\n\n---\n\n# hai'))).toEqual(['heading', 'heading'])
+  })
+
+  it('chữ trong khối mã giữ lại, chỉ hai dòng rào bị bỏ', () => {
+    const blocks = pastedToBlocks('# tiêu đề\n\n```\nnpm test\n```')
+    expect(types(blocks)).toEqual(['heading', 'paragraph'])
+    expect(blocks?.[1].text).toBe('npm test')
+  })
+
+  it('danh sách dừng lại ở đoạn văn sát lề tiếp theo', () => {
+    const blocks = pastedToBlocks('- một\n- hai\nmột câu mới')
+    expect(types(blocks)).toEqual(['list', 'paragraph'])
+    expect(blocks?.[1].text).toBe('một câu mới')
+  })
+
+  it('định dạng trong dòng vẫn giữ qua đường khối', () => {
+    const blocks = pastedToBlocks('# t\n\nxem [đây](https://a.com) nhé')
+    expect(blocks?.[1].text).toBe('xem [đây](https://a.com) nhé')
+  })
+
+  it('một đoạn văn đơn độc trả null — dán như thường', () => {
+    expect(pastedToBlocks('chỉ một câu')).toBeNull()
+    expect(pastedToBlocks('hai dòng\nliền nhau')).toBeNull()
+    expect(pastedToBlocks('  ')).toBeNull()
+  })
+
+  it('một danh sách đơn độc thì vẫn là một khối danh sách', () => {
+    expect(types(pastedToBlocks('- một\n- hai'))).toEqual(['list'])
   })
 })

@@ -14,6 +14,7 @@
  * notation, so there is no separate import path to keep correct.
  */
 import type { ListItem } from './list'
+import type { StoredElement } from './read'
 import { textToRuns } from './runs'
 
 /** `-`, `*`, `+` are Markdown's; the rest are what pasted text actually holds. */
@@ -91,4 +92,151 @@ export function pastedToItems(text: string): PastedList | null {
   // whose markers the source did not put on the clipboard.
   const first = lines.find((l) => l.marked)
   return { ordered: Boolean(first?.numbered), items }
+}
+
+/*
+ * Từ đây xuống là mức khối: một trang dán vào, không phải một dòng.
+ *
+ * Cùng một ký hiệu, đọc ở một cỡ khác. Dán vào một dòng danh sách thì cái đến
+ * là các mục; dán vào canvas thì cái đến là tiêu đề, đoạn văn, bảng, ảnh —
+ * mỗi thứ một khối, đúng như nguồn đã chia chúng.
+ */
+
+const HEADING = /^(#{1,6})[ \t]+(.*)$/
+const IMAGE = /^!\[([^\]\n]*)\]\(\s*([^()\s]+)\s*\)$/
+const QUOTE = /^>[ \t]?(.*)$/
+/** `---`, `***`, `___` — một vạch ngăn; design không có element nào cho nó. */
+const RULE = /^(-{3,}|\*{3,}|_{3,})$/
+const FENCE = /^(```|~~~)/
+const TABLE_ROW = /^\|(.*)\|$/
+/** Hàng thứ hai của một bảng markdown: chỉ gạch, hai chấm và vạch đứng. */
+const TABLE_RULE = /^\|[\s:|-]+\|$/
+
+/** Đúng thứ `pastedToItems` nhận là một mục — dùng để biết một khối danh sách bắt đầu. */
+function startsList(trimmed: string): boolean {
+  return BULLET.test(trimmed) || NUMBERED.test(trimmed)
+}
+
+/** `| a | b |` thành `['a', 'b']`. */
+function cells(row: string): string[] {
+  return (TABLE_ROW.exec(row)?.[1] ?? '').split('|').map((c) => c.trim())
+}
+
+/**
+ * Chữ dán vào thành một chuỗi element, hoặc `null` khi không có gì một chuỗi
+ * khối làm khá hơn chính ô nhập.
+ *
+ * Trả `null` cho một đoạn văn đơn độc là có chủ ý: dán một câu vào giữa một
+ * đoạn đang viết là thao tác thường nhất trong màn soạn, và biến nó thành một
+ * khối mới là làm hỏng thao tác ấy để đổi lấy một trường hợp hiếm hơn nhiều.
+ */
+export function pastedToBlocks(text: string): StoredElement[] | null {
+  const lines = text.replace(/\r\n?/g, '\n').split('\n')
+  const out: StoredElement[] = []
+  let para: string[] = []
+
+  /** Các dòng chữ liền nhau là một đoạn — dòng trống mới là chỗ ngắt đoạn. */
+  const flush = () => {
+    if (para.length > 0) out.push({ type: 'paragraph', text: para.join(' ') })
+    para = []
+  }
+
+  let i = 0
+  while (i < lines.length) {
+    const line = lines[i]
+    const trimmed = line.trim()
+
+    if (trimmed === '') {
+      flush()
+      i++
+      continue
+    }
+
+    if (FENCE.test(trimmed)) {
+      // Không có element nào vẽ được khối mã. Bỏ hai dòng rào và giữ lấy chữ
+      // bên trong — bỏ luôn cả ruột là mất chữ mà không ai được báo.
+      flush()
+      i++
+      while (i < lines.length && !FENCE.test(lines[i].trim())) {
+        para.push(lines[i].trim())
+        i++
+      }
+      i++
+      flush()
+      continue
+    }
+
+    const heading = HEADING.exec(trimmed)
+    if (heading) {
+      flush()
+      // Markdown có sáu cấp, design vẽ ba. Cấp sâu hơn về cấp ba chứ không
+      // rơi mất — một tiêu đề mất cấp vẫn là một tiêu đề.
+      out.push({ type: 'heading', text: heading[2], level: Math.min(3, heading[1].length) })
+      i++
+      continue
+    }
+
+    const image = IMAGE.exec(trimmed)
+    if (image) {
+      flush()
+      out.push({ type: 'image', caption: image[1], imageUrl: image[2] })
+      i++
+      continue
+    }
+
+    if (RULE.test(trimmed)) {
+      flush()
+      i++
+      continue
+    }
+
+    if (QUOTE.test(trimmed)) {
+      flush()
+      const said: string[] = []
+      while (i < lines.length && QUOTE.test(lines[i].trim())) {
+        said.push(QUOTE.exec(lines[i].trim())![1].trim())
+        i++
+      }
+      out.push({ type: 'quote', text: said.filter(Boolean).join(' '), attribution: '' })
+      continue
+    }
+
+    if (TABLE_ROW.test(trimmed) && TABLE_RULE.test(lines[i + 1]?.trim() ?? '')) {
+      flush()
+      const columns = cells(trimmed)
+      i += 2
+      const rows: { cells: string[] }[] = []
+      while (i < lines.length && TABLE_ROW.test(lines[i].trim())) {
+        rows.push({ cells: cells(lines[i].trim()) })
+        i++
+      }
+      out.push({ type: 'table', table: { columns, rows } })
+      continue
+    }
+
+    if (startsList(trimmed)) {
+      flush()
+      const chunk: string[] = []
+      // Một dòng thụt lề đi theo danh sách là mục con của nó; một dòng sát lề
+      // mà không có dấu đầu dòng là đoạn văn mới, và danh sách dừng ở đó.
+      while (i < lines.length) {
+        const next = lines[i]
+        if (next.trim() === '') break
+        if (!startsList(next.trim()) && next === next.trimStart()) break
+        chunk.push(next)
+        i++
+      }
+      const pasted = pastedToItems(chunk.join('\n'))
+      if (pasted) out.push({ type: 'list', ordered: pasted.ordered, items: pasted.items })
+      continue
+    }
+
+    para.push(trimmed)
+    i++
+  }
+  flush()
+
+  if (out.length === 0) return null
+  if (out.length === 1 && out[0].type === 'paragraph') return null
+  return out
 }

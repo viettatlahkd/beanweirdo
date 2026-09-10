@@ -72,6 +72,7 @@ import {
   allElements,
   flatElements,
   getElement,
+  pastedToBlocks,
   pastedToItems,
   runsToText,
   segmentsFor,
@@ -1757,6 +1758,38 @@ function ReportEditor({
     setMenuAt(null)
   }
 
+  /**
+   * Một trang dán vào canvas thành một chuỗi khối.
+   *
+   * Khối đang đứng mà rỗng thì bị thay chỗ — đó là cái ô trống người viết bấm
+   * vào để dán. Khối đã có chữ thì chữ ở lại và cái dán vào nằm dưới, giống
+   * hệt luật của một dòng trong danh sách.
+   *
+   * Trả `false` khi cái dán vào chỉ là một đoạn văn: dán một câu vào giữa đoạn
+   * đang viết phải là dán như thường, không phải sinh ra một khối mới.
+   */
+  function pasteBlocks(i: number, text: string): boolean {
+    const pasted = pastedToBlocks(text)
+    if (!pasted) return false
+
+    // Id cấp một lượt cho cả mẻ, vì `nextId` đọc danh sách đang có: cấp từng
+    // cái một trên cùng một mảng cũ sẽ ra một dãy id trùng nhau, và ghi chú
+    // cạnh bài neo vào id.
+    const taken = blocks.map((b) => b.id ?? '')
+    const named = pasted.map((b) => {
+      const id = nextId('b', taken)
+      taken.push(id)
+      return { ...b, id } as ReportBlock
+    })
+
+    const target = blocks[i]
+    const empty = target ? vanishesWhenEmpty(target) && String((target as { text?: string }).text ?? '').trim() === '' : false
+    const next = [...blocks]
+    next.splice(i + (empty ? 0 : 1), empty ? 1 : 0, ...named)
+    setBlocks(next)
+    return true
+  }
+
   /*
    * Deleting is one path whether the writer pressed Delete on the handle or
    * emptied the last word out of a paragraph. Both destroy a block, so both
@@ -1855,6 +1888,7 @@ function ReportEditor({
                           onFocused={() => setFocusAt(null)}
                           onChange={(next) => updateBlock(i, next)}
                           onEmptied={() => requestRemove(i, mergeTarget(blocks, i))}
+                          onPasteBlocks={(text) => pasteBlocks(i, text)}
                         />
                         {asking === i && (
                           <KeepNotesDialog
@@ -2214,6 +2248,7 @@ function ReportBlockFields({
   onFocused,
   onChange,
   onEmptied,
+  onPasteBlocks,
 }: {
   block: ReportBlock
   palette: Palette
@@ -2221,6 +2256,11 @@ function ReportBlockFields({
   onFocused?: () => void
   onChange: (next: ReportBlock) => void
   onEmptied?: () => void
+  /**
+   * Cái dán vào có nhiều hơn một khối thì canvas nhận, không phải ô chữ này.
+   * Trả `true` nghĩa là đã nhận.
+   */
+  onPasteBlocks?: (text: string) => boolean
 }) {
   /*
    * Emptying the words out of a paragraph is the writer saying there is no
@@ -2242,6 +2282,7 @@ function ReportBlockFields({
           focus={focus}
           onFocused={onFocused}
           onCommit={(v) => commitText(v, { ...block, text: v })}
+          onPasteText={onPasteBlocks}
           style={{ fontSize: 10.5, letterSpacing: '.18em', textTransform: 'uppercase', color: ink.muted }}
         />
       )
@@ -2255,6 +2296,7 @@ function ReportBlockFields({
             focus={focus}
             onFocused={onFocused}
             onCommit={(v) => commitText(v, { ...block, text: v })}
+            onPasteText={onPasteBlocks}
             style={{ fontFamily: serif, fontSize: HEADING_SIZE[level], color: level === 3 ? palette.ink : ink.base, margin: '10px 0 6px' }}
           />
           <div className="awc-levels">
@@ -2327,6 +2369,7 @@ function ReportBlockFields({
           focus={focus}
           onFocused={onFocused}
           onCommit={(v) => commitText(v, { ...block, text: v })}
+          onPasteText={onPasteBlocks}
           style={{ fontSize: 15, lineHeight: 1.55, color: ink.strong, maxWidth: 620 }}
         />
       )

@@ -82,6 +82,36 @@ sau đều là gạch chân, chỉ an toàn vì màu khác nhau.
 Link mở tab mới (`target="_blank"`, `rel="noreferrer noopener"`): bài dẫn ra
 nhà rang và bài báo, chúng mở bên cạnh chứ không chiếm chỗ người đọc đang đứng.
 
+## [ĐỔI HÀNH VI] Dán cả một trang vào canvas thành nhiều khối
+
+`pastedToBlocks` đọc chữ dán vào thành một chuỗi element. Cùng bộ ký hiệu, đọc
+ở một cỡ khác: dán vào một dòng danh sách thì cái đến là các mục; dán vào canvas
+thì cái đến là tiêu đề, đoạn văn, bảng, ảnh — mỗi thứ một khối.
+
+Đọc được: `#`…`######` → `heading` (quá cấp ba thì về cấp ba, design chỉ vẽ ba);
+`>` nhiều dòng liền nhau → một `quote`; `-` `*` `+` `•` và `1.` → `list`;
+`| a | b |` có hàng vạch ngăn → `table`; `![chú thích](địa chỉ)` → `image`; các
+dòng chữ liền nhau → một `paragraph`, dòng trống là chỗ ngắt đoạn.
+
+Bỏ có chủ ý: `---` (design không có element nào cho một vạch ngăn — vẽ một khối
+trống thay nó là mời người viết gõ vào chỗ vốn không có gì). Hai dòng rào của
+khối mã bị bỏ nhưng **chữ bên trong giữ lại** thành đoạn văn; bỏ luôn cả ruột
+là mất chữ mà không ai được báo.
+
+Chỗ nối ở `ReportEditor.pasteBlocks`, gọi từ ô chữ của `paragraph`, `heading`
+và `meta`. Luật đặt chỗ giống hệt bên danh sách: khối rỗng thì bị thay chỗ,
+khối đã có chữ thì chữ ở lại và cái dán vào nằm dưới.
+
+`pasteBlocks` cấp id cho **cả mẻ một lượt**, đẩy dần vào danh sách `taken`.
+Gọi `nextId` từng cái trên cùng một mảng cũ sẽ ra một dãy id trùng nhau — và
+ghi chú cạnh bài neo vào id khối (A10), nên id trùng là ghi chú bám nhầm khối.
+Có test giữ chỗ này.
+
+Trả `false` khi cái dán vào chỉ là một đoạn văn đơn độc: dán một câu vào giữa
+đoạn đang viết là thao tác thường nhất trong màn soạn.
+
+**Chỉ report có.** Bốn template kia soạn theo khuôn riêng, chưa nối.
+
 ## Bảng, cột, endpoint
 
 Không đụng cái nào. Thay đổi nằm trong `body` (jsonb) — `Run` thêm khoá `href`,
@@ -100,9 +130,9 @@ Không đụng cái nào. Thay đổi nằm trong `body` (jsonb) — `Run` thêm
 
 ## Kiểm chứng
 
-- `npm test`: 112 file, 1111 test, xanh. Gồm typecheck cả ba tsconfig.
-- Test mới: `packages/post-renderer/src/elements/markdown.test.tsx` (19) và
-  `frontend/src/admin/screens/Editor.paste.test.tsx` (8).
+- `npm test`: xanh. Gồm typecheck cả ba tsconfig.
+- Test mới: `packages/post-renderer/src/elements/markdown.test.tsx` (32) và
+  `frontend/src/admin/screens/Editor.paste.test.tsx` (13).
 - **Chưa mở trình duyệt xem.** `/practice` nằm sau cổng đăng nhập và phiên này
   không có công cụ điều khiển trình duyệt. Test xanh không chứng minh giao diện
   đúng — chỗ cần soi mắt: dòng dán vào có xuống dòng thật trong khối không, và
@@ -145,3 +175,12 @@ Nếu lane Kiến trúc muốn để nguyên như cũ thì nói, tôi trả lạ
    được thay vì dựng tầng không vẽ ra.
 5. Mọi chỗ vẽ một dòng chữ đi qua cùng một hàm. Chỗ nào tự vẽ lấy là chỗ một
    định dạng sẽ biến mất mà không báo.
+6. Ký hiệu dán vào được đọc ở hai cỡ bằng **cùng một bộ luật**: vào một dòng
+   thì ra các mục, vào canvas thì ra các khối. Hai bộ luật cho cùng một ký hiệu
+   là chỗ hai đường sẽ trôi ra khỏi nhau.
+7. Ký hiệu markdown mà design không có element để vẽ thì bỏ ký hiệu, **giữ
+   chữ**. Bỏ cả chữ là mất nội dung mà không ai được báo; vẽ một khối trống là
+   nói dối rằng chỗ đó có gì để viết.
+8. Sinh nhiều khối một lúc thì cấp id một lượt cho cả mẻ. `nextId` đọc danh
+   sách đang có, nên gọi từng cái trên cùng một mảng cũ sẽ ra id trùng — và
+   ghi chú cạnh bài neo vào id khối (A10).
