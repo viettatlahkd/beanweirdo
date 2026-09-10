@@ -70,6 +70,7 @@ import {
   notesOn,
   paletteFrom,
   allElements,
+  findElements,
   flatElements,
   getElement,
   htmlToMarkdown,
@@ -724,6 +725,7 @@ function EditableField({
   onFocused,
   onKeyDown,
   onPasteText,
+  onType,
   markdown = false,
   accentInk = ink.base,
   style,
@@ -755,6 +757,13 @@ function EditableField({
    * và chặn nó lại là làm hỏng thao tác quen thuộc nhất trong một ô nhập.
    */
   onPasteText?: (text: string) => boolean
+  /**
+   * Chữ trong ô, báo ra **ngay lúc gõ** chứ không đợi rời ô.
+   *
+   * Menu `/` lọc theo từng chữ vừa gõ, mà `onCommit` chỉ chạy lúc rời ô —
+   * đợi tới đó thì menu chỉ hiện ra sau khi người viết đã bỏ đi.
+   */
+  onType?: (text: string) => void
   /**
    * Ô vẽ markdown khi không gõ, và chỉ hiện chữ thô lúc con trỏ nằm trong nó.
    *
@@ -931,7 +940,10 @@ function EditableField({
         value={local}
         placeholder={placeholder}
         rows={rows}
-        onChange={(e) => setLocal(e.target.value)}
+        onChange={(e) => {
+          setLocal(e.target.value)
+          onType?.(e.target.value)
+        }}
         onBlur={commit}
         onKeyDown={(e) => {
           if (format(e)) return
@@ -951,7 +963,10 @@ function EditableField({
       data-dirty={local !== value ? 'true' : undefined}
       value={local}
       placeholder={placeholder}
-      onChange={(e) => setLocal(e.target.value)}
+      onChange={(e) => {
+          setLocal(e.target.value)
+          onType?.(e.target.value)
+        }}
       onBlur={commit}
       onKeyDown={(e) => {
           if (format(e)) return
@@ -1415,6 +1430,8 @@ function BitesizeEditor({
   const writeElements = (next: ReportBlock[]) => write({ elements: next })
   /** Khối vừa được mở ra bằng bàn phím, và chỗ con trỏ cần rơi vào. */
   const [spot, setSpot] = useState<BlockFocus | null>(null)
+  /** Khối đang mở menu `/`, và mấy chữ gõ sau dấu ấy. */
+  const [slash, setSlash] = useState<{ at: number; query: string } | null>(null)
   const drag = useRowDrag((from, to) => writeElements(move(elements, from, to)))
   const control: CSSProperties = {
     fontFamily: sans,
@@ -1481,6 +1498,7 @@ function BitesizeEditor({
                 focusCaret={spot?.caret}
                 onFocused={() => setSpot(null)}
                 onChange={(next) => writeElements(elements.map((x, k) => (k === i ? next : x)))}
+                onSlash={(query) => setSlash(query === null ? null : { at: i, query })}
                 onTextKey={(e, current) => {
                   const field = e.target as HTMLTextAreaElement
                   const caret = field.selectionStart ?? 0
@@ -1503,6 +1521,16 @@ function BitesizeEditor({
                 }}
               />
             </RowShell>
+            {slash?.at === i && (
+              <InsertMenu
+                filter={slash.query}
+                onInsert={(type) => {
+                  writeElements(elements.map((b, k) => (k === i ? ({ ...blankReportBlock(type), id: b.id } as ReportBlock) : b)))
+                  setSlash(null)
+                  setSpot({ at: i, caret: 0 })
+                }}
+              />
+            )}
             <InsertRow
               open={menuAt === i}
               onToggle={() => setMenuAt(menuAt === i ? null : i)}
@@ -1563,6 +1591,8 @@ function MemoEditor({
   const drag = useRowDrag((from, to) => write(move(elements, from, to)))
   /** Khối vừa được mở ra bằng bàn phím, và chỗ con trỏ cần rơi vào. */
   const [spot, setSpot] = useState<BlockFocus | null>(null)
+  /** Khối đang mở menu `/`, và mấy chữ gõ sau dấu ấy. */
+  const [slash, setSlash] = useState<{ at: number; query: string } | null>(null)
 
   return (
     <PostRenderer
@@ -1610,6 +1640,7 @@ function MemoEditor({
               focusCaret={spot?.caret}
               onFocused={() => setSpot(null)}
               onChange={(next) => write(elements.map((x, k) => (k === i ? next : x)))}
+              onSlash={(query) => setSlash(query === null ? null : { at: i, query })}
               onTextKey={(e, current) => {
                 const field = e.target as HTMLTextAreaElement
                 const caret = field.selectionStart ?? 0
@@ -1632,6 +1663,16 @@ function MemoEditor({
               }}
             />
           </RowShell>
+          {slash?.at === i && (
+            <InsertMenu
+              filter={slash.query}
+              onInsert={(type) => {
+                write(elements.map((b, k) => (k === i ? ({ ...blankReportBlock(type), id: b.id } as ReportBlock) : b)))
+                setSlash(null)
+                setSpot({ at: i, caret: 0 })
+              }}
+            />
+          )}
           <InsertRow
             open={menuAt === i}
             onToggle={() => setMenuAt(menuAt === i ? null : i)}
@@ -2003,6 +2044,8 @@ function ReportEditor({
   const [dragOver, setDragOver] = useState<number | null>(null)
   const [asking, setAsking] = useState<number | null>(null)
   const [spot, setSpot] = useState<BlockFocus | null>(null)
+  /** Khối đang mở menu `/`, và mấy chữ gõ sau dấu ấy. */
+  const [slash, setSlash] = useState<{ at: number; query: string } | null>(null)
   /*
    * How wide the notes column is while composing. Deliberately not stored: the
    * ratio is a thing the writer does to see better right now, not something
@@ -2157,6 +2200,7 @@ function ReportEditor({
                           onFocused={() => setSpot(null)}
                           onChange={(next) => updateBlock(i, next)}
                           onEmptied={() => requestRemove(i, mergeTarget(blocks, i))}
+                          onSlash={(query) => setSlash(query === null ? null : { at: i, query })}
                           onTextKey={(e, current) => {
                             const field = e.target as HTMLTextAreaElement
                             const caret = field.selectionStart ?? 0
@@ -2184,6 +2228,16 @@ function ReportEditor({
                           />
                         )}
                       </div>
+                      {slash?.at === i && (
+                        <InsertMenu
+                          filter={slash.query}
+                          onInsert={(type) => {
+                            setBlocks(blocks.map((b, k) => (k === i ? ({ ...blankReportBlock(type), id: b.id } as ReportBlock) : b)))
+                            setSlash(null)
+                            setSpot({ at: i, caret: 0 })
+                          }}
+                        />
+                      )}
                       <InsertRow open={menuAt === i} onToggle={() => setMenuAt(menuAt === i ? null : i)} onInsert={(t) => insertBlock(i, t)} />
                     </div>
                   )
@@ -2482,30 +2536,52 @@ function InsertRow({
       <button type="button" className="awc-plus-btn" onClick={onToggle} aria-expanded={open}>
         + thêm khối
       </button>
-      {open && (
-        <div className="awc-insert-menu">
-          {/*
-            * Straight out of the store, grouped the way it files them. It used
-            * to be a list written out by hand here, which is how `list` came to
-            * exist in the store and be missing from this menu, and how a block
-            * kept the name the code calls it — "Meta" — instead of the name it
-            * was given for people to read.
-            */}
-          {(['text', 'data', 'media'] as const).map((category) => {
-            const inCategory = allElements().filter((e) => e.category === category)
-            if (inCategory.length === 0) return null
-            return (
-              <div key={category} className="awc-insert-group">
-                <div className="awc-insert-cat">{CATEGORY_LABEL[category]}</div>
-                {inCategory.map((e) => (
-                  <button key={e.name} type="button" title={e.description} onClick={() => onInsert(e.name)}>
-                    {e.title}
-                  </button>
-                ))}
-              </div>
-            )
-          })}
-        </div>
+      {open && <InsertMenu onInsert={onInsert} />}
+    </div>
+  )
+}
+
+/**
+ * Danh sách loại khối, đọc thẳng từ kho.
+ *
+ * Trước đây nó là một danh sách viết tay ngay tại đây — và đó là cách `list`
+ * có mặt trong kho mà thiếu ngoài menu, và cách một khối giữ cái tên code gọi
+ * nó ("Meta") thay vì tên đặt cho người đọc.
+ *
+ * `filter` là mấy chữ gõ sau dấu `/`. Rỗng thì bày hết, xếp theo nhóm kho đã
+ * xếp; có chữ thì lọc phẳng, vì lúc đang gõ để tìm thì cái nhóm không giúp gì.
+ */
+function InsertMenu({ filter = '', onInsert }: { filter?: string; onInsert: (type: string) => void }) {
+  const hits = filter.trim() === '' ? null : findElements(filter)
+  return (
+    <div className="awc-insert-menu">
+      {hits !== null ? (
+        hits.length === 0 ? (
+          <div className="awc-insert-cat">Không có khối nào tên như vậy</div>
+        ) : (
+          <div className="awc-insert-group">
+            {hits.map((e) => (
+              <button key={e.name} type="button" title={e.description} onClick={() => onInsert(e.name)}>
+                {e.title}
+              </button>
+            ))}
+          </div>
+        )
+      ) : (
+        (['text', 'data', 'media'] as const).map((category) => {
+          const inCategory = allElements().filter((e) => e.category === category)
+          if (inCategory.length === 0) return null
+          return (
+            <div key={category} className="awc-insert-group">
+              <div className="awc-insert-cat">{CATEGORY_LABEL[category]}</div>
+              {inCategory.map((e) => (
+                <button key={e.name} type="button" title={e.description} onClick={() => onInsert(e.name)}>
+                  {e.title}
+                </button>
+              ))}
+            </div>
+          )
+        })
       )}
     </div>
   )
@@ -2534,6 +2610,7 @@ function ReportBlockFields({
   onPasteBlocks,
   focusCaret,
   onTextKey,
+  onSlash,
   onFollowWithParagraph,
 }: {
   block: ReportBlock
@@ -2560,6 +2637,12 @@ function ReportBlockFields({
    * này, và một prop tuỳ chọn là cái bẫy để dành cho màn thứ tư.
    */
   onTextKey: (e: KeyboardEvent<HTMLElement>, current: string) => void
+  /**
+   * Người viết gõ `/` ở đầu một khối rỗng — mở menu chèn ngay tại chỗ.
+   *
+   * `null` là đóng lại. Chuỗi là mấy chữ gõ sau dấu `/`, để lọc.
+   */
+  onSlash: (query: string | null) => void
   /**
    * Thay khối này rồi mở một đoạn văn ngay dưới, con trỏ nhảy vào đó.
    *
@@ -2591,6 +2674,7 @@ function ReportBlockFields({
           onCommit={(v) => commitText(v, { ...block, text: v })}
           onPasteText={onPasteBlocks}
           onKeyDown={onTextKey}
+          onType={(text) => onSlash(text.startsWith('/') ? text.slice(1) : null)}
           focusCaret={focusCaret}
           style={{ fontSize: 10.5, letterSpacing: '.18em', textTransform: 'uppercase', color: ink.muted }}
         />
@@ -2607,6 +2691,7 @@ function ReportBlockFields({
             onCommit={(v) => commitText(v, { ...block, text: v })}
             onPasteText={onPasteBlocks}
             onKeyDown={onTextKey}
+            onType={(text) => onSlash(text.startsWith('/') ? text.slice(1) : null)}
             focusCaret={focusCaret}
             markdown
             accentInk={palette.ink}
@@ -2642,6 +2727,7 @@ function ReportBlockFields({
               onCommit={(v) => onChange({ ...block, text: v })}
               onPasteText={onPasteBlocks}
               onKeyDown={onTextKey}
+              onType={(text) => onSlash(text.startsWith('/') ? text.slice(1) : null)}
               focusCaret={focusCaret}
               markdown
               accentInk={palette.ink}
@@ -2662,6 +2748,8 @@ function ReportBlockFields({
           attributes={block}
           palette={palette}
           onChange={onChange}
+          focus={focus}
+          onFocused={onFocused}
           onLeaveList={(items) =>
             onFollowWithParagraph(items.length > 0 ? ({ ...block, items } as unknown as ReportBlock) : null)
           }
@@ -2684,6 +2772,7 @@ function ReportBlockFields({
             onCommit={(v) => onChange({ ...block, text: v })}
             onPasteText={onPasteBlocks}
             onKeyDown={onTextKey}
+            onType={(text) => onSlash(text.startsWith('/') ? text.slice(1) : null)}
             focusCaret={focusCaret}
             markdown
             accentInk={palette.ink}
@@ -2703,6 +2792,7 @@ function ReportBlockFields({
           onCommit={(v) => commitText(v, { ...block, text: v })}
           onPasteText={onPasteBlocks}
           onKeyDown={onTextKey}
+          onType={(text) => onSlash(text.startsWith('/') ? text.slice(1) : null)}
           focusCaret={focusCaret}
           markdown
           accentInk={palette.ink}
@@ -2743,6 +2833,8 @@ function ListEditor({
   palette,
   onChange,
   onLeaveList,
+  focus,
+  onFocused,
 }: {
   attributes: ListAttrs
   palette: Palette
@@ -2755,12 +2847,25 @@ function ListEditor({
    * `items` rỗng nghĩa là không còn mục nào — khối này nên biến mất.
    */
   onLeaveList: (items: ListItem[]) => void
+  /** Khối vừa **trở thành** danh sách; con trỏ phải vào mục đầu, không đứng ngoài. */
+  focus?: boolean
+  onFocused?: () => void
 }) {
   const element = getElement('list')!
   const write = (items: ListItem[]) => onChange({ ...attributes, items } as unknown as ReportBlock)
 
   /** Chỗ đang chờ con trỏ sau một phím vừa đổi hình dạng danh sách. */
   const [spot, setSpot] = useState<Focus | null>(null)
+  /*
+   * Gõ `- ` biến một đoạn văn thành danh sách, và cú gõ ấy tới từ ngoài khối
+   * này. Không nhận lấy con trỏ thì người viết vừa mở một danh sách xong lại
+   * phải bấm chuột vào nó mới gõ tiếp được.
+   */
+  useEffect(() => {
+    if (!focus) return
+    setSpot({ path: [0], caret: 0 })
+    onFocused?.()
+  }, [focus, onFocused])
   const isSpot = (path: number[], sub?: number) =>
     spot !== null && spot.path.join() === path.join() && spot.sub === sub
 

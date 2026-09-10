@@ -9,7 +9,7 @@
  * Ở đây cấu trúc là **hệ quả của việc gõ chữ**, không phải điều kiện để được
  * gõ chữ. Đó là khác biệt giữa một trình soạn và một cái biểu mẫu.
  */
-import { getElement, nextId, type ReportBlock } from 'post-renderer'
+import { getElement, nextId, textToRuns, type ReportBlock } from 'post-renderer'
 
 /** Khối nào có một ô chữ để mà đứng ở đầu hay ở cuối nó. */
 const TEXTED = new Set(['paragraph', 'heading', 'meta', 'callout', 'quote'])
@@ -96,6 +96,47 @@ export function backspaceBlock(blocks: ReportBlock[], i: number, text: string, c
   return { blocks: next, focus: { at: i - 1, caret: join.length } }
 }
 
+/**
+ * Mấy ký tự đầu dòng, đọc thành một loại khối.
+ *
+ * Cùng bộ ký hiệu với lúc dán. Người viết gõ `# ` vì họ gõ thế ở mọi nơi
+ * khác, và cái menu "+ thêm khối" tồn tại để **chỉ ra** rằng có những loại
+ * khối nào, không phải để làm cách duy nhất chọn chúng.
+ */
+export function markdownPrefix(prefix: string): { type: string; extra: Record<string, unknown> } | null {
+  if (/^#{1,3}$/.test(prefix)) return { type: 'heading', extra: { level: prefix.length } }
+  if (prefix === '-' || prefix === '*' || prefix === '+') return { type: 'list', extra: { ordered: false } }
+  if (/^\d{1,3}[.)]$/.test(prefix)) return { type: 'list', extra: { ordered: true } }
+  if (prefix === '>') return { type: 'quote', extra: {} }
+  return null
+}
+
+/**
+ * Dấu cách vừa gõ có biến khối này thành loại khác không.
+ *
+ * Chỉ ăn khi mấy ký tự ấy đứng ngay **đầu** khối. `#` giữa câu là một dấu
+ * thăng, không phải một tiêu đề, và đổi nó là sửa chữ người viết đang gõ.
+ */
+export function spaceBlock(blocks: ReportBlock[], i: number, text: string, caret: number): BlockResult {
+  const block = blocks[i]
+  if (!isTexted(block) || caret === 0) return null
+
+  const hit = markdownPrefix(text.slice(0, caret))
+  if (!hit) return null
+
+  const rest = text.slice(caret)
+  // Giữ nguyên `id`: đây vẫn là khối ấy, chỉ đổi loại. Ghi chú cạnh bài neo
+  // vào id nên đổi id là làm ghi chú rơi mất chỗ bám.
+  const born =
+    hit.type === 'list'
+      ? { ...getElement('list')!.blank(), ...hit.extra, items: [{ runs: textToRuns(rest) }], id: block.id }
+      : { ...getElement(hit.type)!.blank(), ...hit.extra, text: rest, id: block.id }
+
+  const next = [...blocks]
+  next.splice(i, 1, born as unknown as ReportBlock)
+  return { blocks: next, focus: { at: i, caret: 0 } }
+}
+
 /** Một phím trong ô chữ của một khối; `null` là trả phím lại cho trình duyệt. */
 export function blockKey(
   blocks: ReportBlock[],
@@ -110,5 +151,6 @@ export function blockKey(
   // `Shift+Enter` để dành cho ngắt dòng trong cùng một khối, chưa làm.
   if (e.key === 'Enter' && !e.shiftKey) return enterBlock(blocks, i, text, caret)
   if (e.key === 'Backspace') return backspaceBlock(blocks, i, text, caret)
+  if (e.key === ' ') return spaceBlock(blocks, i, text, caret)
   return null
 }

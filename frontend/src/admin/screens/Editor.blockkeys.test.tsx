@@ -130,3 +130,68 @@ describe('cả ba màn, không riêng report', () => {
     expect(shape(onChange)).toEqual(['paragraph:xong', 'paragraph:'])
   })
 })
+
+describe('gõ ký hiệu để đổi loại khối', () => {
+  it('`# ` biến đoạn văn thành tiêu đề', async () => {
+    const onChange = draw('report', [para('', 'b1')])
+    await userEvent.click(screen.getByRole('textbox', { name: 'Đoạn văn' }))
+    await userEvent.keyboard('# ')
+    expect(shape(onChange)).toEqual(['heading:'])
+  })
+
+  it('`- ` biến thành danh sách, và con trỏ vào ngay mục đầu', async () => {
+    const onChange = draw('report', [para('', 'b1')])
+    await userEvent.click(screen.getByRole('textbox', { name: 'Đoạn văn' }))
+    await userEvent.keyboard('- ')
+    expect(shape(onChange)).toEqual(['list:'])
+    // Không nhận lấy con trỏ thì vừa mở danh sách xong lại phải bấm chuột.
+    expect(screen.getByPlaceholderText('một dòng')).toBeTruthy()
+  })
+
+  it('`#` giữa câu thì vẫn là một dấu thăng', async () => {
+    const onChange = draw('report', [para('mẻ', 'b1')])
+    const field = await into('mẻ')
+    await userEvent.type(field, ' #14')
+    await userEvent.tab()
+    expect(shape(onChange)).toEqual(['paragraph:mẻ #14'])
+  })
+})
+
+describe('gõ `/` mở menu chèn', () => {
+  it('mở menu ngay tại khối đang gõ', async () => {
+    draw('report', [para('', 'b1')])
+    await userEvent.click(screen.getByRole('textbox', { name: 'Đoạn văn' }))
+    await userEvent.keyboard('/')
+    expect(screen.getByRole('button', { name: 'Bảng' })).toBeTruthy()
+  })
+
+  it('gõ tiếp thì lọc, đọc từ kho chứ không từ danh sách viết tay', async () => {
+    draw('report', [para('', 'b1')])
+    await userEvent.click(screen.getByRole('textbox', { name: 'Đoạn văn' }))
+    await userEvent.keyboard('/bảng')
+    expect(screen.getByRole('button', { name: 'Bảng' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Trích dẫn' })).toBeNull()
+  })
+
+  it('lọc được cả bằng từ khoá, không chỉ bằng tên hiện ra', async () => {
+    draw('report', [para('', 'b1')])
+    await userEvent.click(screen.getByRole('textbox', { name: 'Đoạn văn' }))
+    await userEvent.keyboard('/gạch đầu dòng')
+    expect(screen.getByRole('button', { name: 'Danh sách' })).toBeTruthy()
+  })
+
+  it('chọn một loại thì **thay** khối đang gõ, không để lại đoạn rỗng', async () => {
+    const onChange = draw('report', [para('', 'b1')])
+    await userEvent.click(screen.getByRole('textbox', { name: 'Đoạn văn' }))
+    await userEvent.keyboard('/')
+    await userEvent.click(screen.getByRole('button', { name: 'Trích dẫn' }))
+    expect(shape(onChange)).toEqual(['quote:'])
+  })
+
+  it('không có khối nào khớp thì nói ra, không bày một menu trống', async () => {
+    draw('report', [para('', 'b1')])
+    await userEvent.click(screen.getByRole('textbox', { name: 'Đoạn văn' }))
+    await userEvent.keyboard('/zzz')
+    expect(screen.getByText(/Không có khối nào/)).toBeTruthy()
+  })
+})
