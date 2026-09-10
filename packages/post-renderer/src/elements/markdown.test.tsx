@@ -231,3 +231,15 @@ describe('dán cả một trang vào canvas', () => {
     expect(types(pastedToBlocks('- một\n- hai'))).toEqual(['list'])
   })
 })
+
+describe('ngắt dòng trong một đoạn', () => {
+  it('trang vẽ ra ngắt dòng, không nuốt mất', () => {
+    // Trước lượt này `Enter` chèn một ký tự xuống dòng mà trang không vẽ:
+    // chữ trông một kiểu lúc soạn và một kiểu khi đăng.
+    const paragraph = getElement('paragraph')!
+    const { container } = render(
+      <paragraph.View attributes={{ type: 'paragraph', text: 'dòng một\ndòng hai' }} palette={palette} index={0} />,
+    )
+    expect(getComputedStyle(container.firstElementChild as Element).whiteSpace).toBe('pre-wrap')
+  })
+})

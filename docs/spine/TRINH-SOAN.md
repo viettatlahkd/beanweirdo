@@ -191,145 +191,151 @@ ngữ nhập và ngôn ngữ hiển thị trong ô**, không nên là cách lưu
 
 ## Phần 4 — Bảng đối chiếu: hiện có gì, thiếu gì
 
-Cột "Hiện tại" đo trên `origin/main` @ `30a80aa`. **Bằng chứng là tên hàm
-trong mã**, không phải cảm nhận.
+Cột "Trước" đo trên `origin/main` @ `30a80aa`, lúc tài liệu này được viết.
+Cột "Nay" đo sau sáu đợt. **Bằng chứng là tên hàm trong mã.**
 
 Ký hiệu: ✅ có · 🟡 có một nửa · ❌ không có · ⬜ ngoài mức 2
 
 ### A. Vòng đời khối
 
-| Mã | Việc | Hiện tại | Bằng chứng / chỗ hỏng |
-|---|---|---|---|
-| A1 | `Enter` tạo khối mới | ❌ | Không handler nào. `Enter` trong `textarea` chèn một ký tự xuống dòng vào chữ — **và trang không vẽ nó ra** (`text.tsx` không đặt `whiteSpace`), nên chữ trông có ngắt dòng lúc soạn mà mất khi đăng |
-| A2 | `Enter` tách khối | ❌ | — |
-| A3 | `Backspace` gộp lên | ❌ | — |
-| A4 | Xoá khối rỗng bằng phím | 🟡 | `vanishesWhenEmpty` **chỉ nhận `paragraph`**, và phải xoá hết chữ rồi *rời ô* mới ăn. Tiêu đề, danh sách, bảng: không |
-| A5 | Hạ cấp trước khi xoá | ❌ | — |
-| A6 | `Delete` xoá khối đang chọn | 🟡 | Có, nhưng phải Tab tới **tay nắm** trước (`RowShell`, `BlockGrip`), không phải từ trong chữ |
-| A7 | `Cmd/Alt`+`↑↓` đổi chỗ | 🟡 | `↑`/`↓` trên tay nắm, không có tổ hợp từ trong chữ |
-| A8 | `Cmd+D` nhân bản | ❌ | Chỉ có nút `⧉` |
-| A9 | Gõ `# `, `- ` để đổi loại | ❌ | Chỉ đổi loại khi **dán**, không khi gõ |
-| A10 | `/` mở menu chèn | ❌ | Phải bấm "+ thêm khối" |
+| Mã | Việc | Trước | Nay | Ghi chú |
+|---|---|---|---|---|
+| A1 | `Enter` tạo khối mới | ❌ | ✅ | `enterBlock`; ở cuối tiêu đề cũng mở đoạn văn |
+| A2 | `Enter` tách khối | ❌ | ✅ | Hai nửa giữ nguyên loại, nửa sau mang id mới |
+| A3 | `Backspace` gộp lên | ❌ | ✅ | `backspaceBlock`; con trỏ ở chỗ nối |
+| A4 | Xoá khối rỗng bằng phím | 🟡 | ✅ | Mọi khối có ô chữ, không riêng `paragraph` |
+| A5 | Hạ cấp trước khi xoá | ❌ | ✅ | Tiêu đề về đoạn văn trước, bấm nữa mới gộp |
+| A6 | `Delete` xoá khối đang chọn | 🟡 | 🟡 | Vẫn phải Tab tới tay nắm; chưa có vùng chọn khối |
+| A7 | `Cmd/Alt`+`↑↓` đổi chỗ | 🟡 | 🟡 | Vẫn chỉ trên tay nắm |
+| A8 | `Cmd+D` nhân bản | ❌ | ❌ | Vẫn chỉ có nút `⧉` |
+| A9 | Gõ `# `, `- ` đổi loại | ❌ | ✅ | `spaceBlock`; chỉ ăn ở đầu khối |
+| A10 | `/` mở menu chèn | ❌ | ✅ | `InsertMenu`, lọc theo tên và từ khoá, đọc từ kho |
 
-### B. Danh sách — nơi chủ site báo lỗi
+### B. Danh sách
 
-| Mã | Việc | Hiện tại | Bằng chứng / chỗ hỏng |
-|---|---|---|---|
-| B1 | `Enter` mục mới | ❌ | `ListEditor` **không truyền `onKeyDown`** cho dòng nào |
-| B2 | `Enter` tách mục | ❌ | — |
-| B3 | `Tab` thụt vào | ❌ | Chỉ có nút "+ mục con". Longform có `Tab` (`stepIndent`) nhưng danh sách thì không |
-| B4 | `Shift+Tab` lùi ra | ❌ | Không có đường nào, kể cả chuột |
-| B5 | **`Backspace` xoá mục** | ❌ | **Đúng lỗi chủ site báo.** Chỉ có nút "xoá dòng" |
-| B6 | Bỏ mục rỗng bằng phím | ❌ | — |
-| B7 | `Enter` ở mục rỗng để thoát | ❌ | Không có đường thoát nào bằng bàn phím |
-| B8 | `Shift+Enter` dòng phụ | ❌ | Chỉ có nút "+ dòng phụ" |
-| B9 | Giữ ít nhất một mục | ✅ | `without()` giữ mục cuối |
-
-**Cả khối B chỉ có một dấu ✅.** Danh sách hiện là thứ thuần chuột.
+| Mã | Việc | Trước | Nay | Ghi chú |
+|---|---|---|---|---|
+| B1 | `Enter` mục mới | ❌ | ✅ | `listKeys.enter` |
+| B2 | `Enter` tách mục | ❌ | ✅ | Con ở lại với nửa trên |
+| B3 | `Tab` thụt vào | ❌ | ✅ | Chỉ ở **đầu** dòng, để còn Tab ra khỏi ô được |
+| B4 | `Shift+Tab` lùi ra | ❌ | ✅ | Các em phía dưới đi theo |
+| B5 | **`Backspace` xoá mục** | ❌ | ✅ | Chỗ chủ site báo. Mục lồng lùi ra trước |
+| B6 | Bỏ mục rỗng bằng phím | ❌ | ✅ | |
+| B7 | `Enter` ở mục rỗng để thoát | ❌ | ✅ | `onLeaveList` → mở một đoạn văn |
+| B8 | `Shift+Enter` dòng phụ | ❌ | ✅ | `listKeys.subLine` |
+| B9 | Giữ ít nhất một mục | ✅ | ✅ | |
 
 ### C. Con trỏ và vùng chọn
 
-| Mã | Việc | Hiện tại | Bằng chứng |
-|---|---|---|---|
-| C1 | Mũi tên đi qua khối | ❌ | Con trỏ dừng ở mép mỗi ô |
-| C2 | Nhớ cột khi lên xuống | ❌ | — |
-| C3 | `Home`/`End`/`Cmd+↑↓` | 🟡 | Chỉ trong một ô |
-| C4 | Chọn trong khối | ✅ | Trình duyệt lo |
-| C5 | Chọn qua nhiều khối | ❌ | Mỗi ô là một vùng chọn riêng |
-| C6 | `Cmd+A` hai nấc | ❌ | Chỉ chọn trong ô |
-| C7 | Thao tác trên nhiều khối | ⬜ | Ngoài mức 2 tối thiểu |
+| Mã | Việc | Trước | Nay | Ghi chú |
+|---|---|---|---|---|
+| C1 | Mũi tên đi qua khối | ❌ | ✅ | `neighbour`; bỏ qua bảng, ảnh |
+| C2 | Nhớ cột khi lên xuống | ❌ | ❌ | **Chưa làm** — xem ghi chú dưới |
+| C3 | `Home`/`End`/`Cmd+↑↓` | 🟡 | 🟡 | Vẫn trong một ô |
+| C4 | Chọn trong khối | ✅ | ✅ | |
+| C5 | Chọn qua nhiều khối | ❌ | ❌ | **Chưa làm** — xem ghi chú dưới |
+| C6 | `Cmd+A` hai nấc | ❌ | ❌ | Cần C5 trước |
+| C7 | Thao tác trên nhiều khối | ⬜ | ⬜ | Cần C5 trước |
 
 ### D. Định dạng trong dòng
 
-| Mã | Việc | Hiện tại | Bằng chứng |
-|---|---|---|---|
-| D1 | `Cmd+B` | ❌ | Phải gõ tay `**...**` |
-| D2 | `Cmd+U` | ❌ | Phải gõ tay `_..._` |
-| D3 | `Cmd+K` | ❌ | Phải gõ tay `[chữ](địa chỉ)` |
-| D4 | `Cmd+\` bỏ định dạng | ❌ | — |
-| D5 | Gõ tay tự đổi | 🟡 | Vẽ ra khi **rời ô**, không ngay lúc gõ xong dấu cuối |
-| D6 | Sửa link tại chỗ | ❌ | Phải sửa trong chữ thô |
+| Mã | Việc | Trước | Nay | Ghi chú |
+|---|---|---|---|---|
+| D1 | `Cmd+B` | ❌ | ✅ | `marks.applyMark`; bấm lại là bỏ |
+| D2 | `Cmd+U` | ❌ | ✅ | |
+| D3 | `Cmd+K` | ❌ | ✅ | Để lại `[chữ]()`, con trỏ vào chỗ điền địa chỉ |
+| D4 | `Cmd+\` bỏ định dạng | ❌ | ❌ | Bấm lại chính phím ấy thì bỏ được rồi |
+| D5 | Gõ tay tự đổi | 🟡 | ✅ | Ô vẽ markdown khi con trỏ ra khỏi ô |
+| D6 | Sửa link tại chỗ | ❌ | 🟡 | Sửa trong chữ thô; chưa có ô riêng |
 
 ### E. Nhập vào
 
-| Mã | Việc | Hiện tại | Bằng chứng |
+| Mã | Việc | Trước | Nay |
 |---|---|---|---|
-| E1 | Dán HTML | ✅ | `htmlToMarkdown` — đậm, link, tiêu đề, danh sách lồng, bảng |
-| E2 | Dán chữ thuần đọc như markdown | ✅ | `pastedToBlocks`, `pastedToItems` |
-| E3 | Dán vào giữa câu là dán chữ | ✅ | Trả `null` cho một đoạn đơn độc |
-| E4 | Dán ảnh từ clipboard | ❌ | — |
-| E5 | Kéo–thả tệp | 🟡 | Có ở ảnh bìa (`onHeroDrop`), không có trong thân bài |
-| E6 | Chép ra giữ định dạng | ⬜ | Ngoài mức 2 tối thiểu |
+| E1 | Dán HTML | ✅ | ✅ |
+| E2 | Dán chữ thuần đọc như markdown | ✅ | ✅ |
+| E3 | Dán vào giữa câu là dán chữ | ✅ | ✅ |
+| E4 | Dán ảnh từ clipboard | ❌ | ❌ |
+| E5 | Kéo–thả tệp vào thân bài | 🟡 | 🟡 |
+| E6 | Chép ra giữ định dạng | ⬜ | ⬜ |
 
-### F. Lịch sử — **không có gì**
+### F. Lịch sử
 
-| Mã | Việc | Hiện tại | Bằng chứng |
-|---|---|---|---|
-| F1 | `Cmd+Z` nhiều bậc | ❌ | Không có lịch sử. `UNDO_MS` chỉ là **2 giây hoàn tác** cho hộp thoại ghi chú |
-| F2 | `Cmd+Shift+Z` | ❌ | — |
-| F3 | Gộp bước | ❌ | — |
-| F4 | Undo cấu trúc | ❌ | Xoá nhầm một khối là mất, trừ khi kịp bấm trong hai giây |
-| F5 | Undo qua biên ô | ❌ | Undo của trình duyệt dừng trong từng `textarea` |
-
-**Đây là lỗ nguy hiểm nhất.** N5 nói không mất chữ; hiện tại xoá nhầm một khối
-đã gõ xong là mất thật.
+| Mã | Việc | Trước | Nay | Ghi chú |
+|---|---|---|---|---|
+| F1 | `Cmd+Z` nhiều bậc | ❌ | ✅ | `editHistory`, 100 bước |
+| F2 | `Cmd+Shift+Z` | ❌ | ✅ | Kèm `Ctrl+Y` |
+| F3 | Gộp bước | ❌ | ✅ | Cùng một ô, trong 800ms |
+| F4 | Undo cấu trúc | ❌ | ✅ | Lấy lại cả khối lẫn ghi chú neo vào nó |
+| F5 | Undo qua biên ô | ❌ | ✅ | Ở mức cả màn; ô đang dở thì trả phím lại |
 
 ### G. An toàn dữ liệu
 
-| Mã | Việc | Hiện tại |
-|---|---|---|
-| G1 | Tự lưu, có chỉ báo | ✅ | "Tự lưu khi rời khỏi ô soạn · trạng thái hiện tại: draft" |
-| G2 | Báo khi lưu hỏng | 🟡 | Cần kiểm lại bằng tay |
-| G3 | Chặn rời trang khi chưa lưu | ❌ | — |
-| G4 | Hai tab cùng mở | ❌ | — |
+| Mã | Việc | Trước | Nay |
+|---|---|---|---|
+| G1 | Tự lưu, có chỉ báo | ✅ | ✅ |
+| G2 | Báo khi lưu hỏng | 🟡 | 🟡 |
+| G3 | Chặn rời trang khi chưa lưu | ❌ | ❌ |
+| G4 | Hai tab cùng mở | ❌ | ❌ |
 
 ### H. Trợ năng và phản hồi
 
-| Mã | Việc | Hiện tại |
-|---|---|---|
-| H1 | Thứ tự Tab | 🟡 | Chưa rà |
-| H2 | Viền focus | 🟡 | Ô soạn có viền nét đứt; mặt vẽ mới thêm thì chưa rà |
-| H3 | Không bẫy focus | 🟡 | Chưa rà |
-| H4 | Không giật | ❓ | Mặt vẽ và mặt gõ **chưa đo** xem có cao bằng nhau không |
-| H5 | Chữ mờ đúng chỗ | ✅ | `GHOST` lấy tên element |
+| Mã | Việc | Trước | Nay | Ghi chú |
+|---|---|---|---|---|
+| H1 | Thứ tự Tab | 🟡 | 🟡 | Chưa rà |
+| H2 | Viền focus | 🟡 | 🟡 | Mặt vẽ chưa rà |
+| H3 | Không bẫy focus | 🟡 | ✅ | `Tab` chỉ thụt lề ở đầu dòng, nên vẫn Tab ra được |
+| H4 | Không giật | ❓ | ❓ | Hai mặt của ô **chưa đo** — cần soi mắt |
+| H5 | Chữ mờ đúng chỗ | ✅ | ✅ | |
 
 ### Tổng
 
-| Nhóm | ✅ | 🟡 | ❌ |
-|---|---|---|---|
-| A. Vòng đời khối | 0 | 3 | 7 |
-| B. Danh sách | 1 | 0 | 8 |
-| C. Con trỏ & chọn | 1 | 1 | 4 |
-| D. Định dạng | 0 | 1 | 5 |
-| E. Nhập vào | 3 | 1 | 1 |
-| F. Lịch sử | 0 | 0 | 5 |
-| G. An toàn | 1 | 1 | 2 |
-| H. Trợ năng | 1 | 4 | 0 |
-| **Cộng** | **7** | **11** | **32** |
+| Nhóm | Trước ✅ | Nay ✅ | Nay 🟡 | Nay ❌ |
+|---|---|---|---|---|
+| A. Vòng đời khối | 0 | 7 | 2 | 1 |
+| B. Danh sách | 1 | 9 | 0 | 0 |
+| C. Con trỏ & chọn | 1 | 2 | 1 | 3 |
+| D. Định dạng | 0 | 4 | 1 | 1 |
+| E. Nhập vào | 3 | 3 | 1 | 1 |
+| F. Lịch sử | 0 | 5 | 0 | 0 |
+| G. An toàn | 1 | 1 | 1 | 2 |
+| H. Trợ năng | 1 | 2 | 3 | 0 |
+| **Cộng** | **7** | **33** | **9** | **8** |
 
-Bốn PR vừa rồi làm gần trọn nhóm E. Nhóm E là **đường vào**. Nhóm A, B, C, F
-là **cách sống trong bài sau khi đã vào** — và gần như chưa có gì.
+### Hai mục cố ý chưa làm, và vì sao
 
----
+**C5 — chọn qua nhiều khối.** Đây không phải một tính năng thiếu mà là một
+kiến trúc khác. Mỗi khối hiện là một `textarea` riêng, và trình duyệt không
+cho một vùng chọn trải qua hai ô nhập. Làm được nó nghĩa là bỏ hết các ô ấy,
+dựng cả thân bài thành **một** mặt `contenteditable` duy nhất, rồi tự viết
+lấy việc ánh xạ giữa cây khối và vị trí trong DOM. Đó là việc nhiều ngày, và
+nó phá đúng thứ đang chạy tốt: mỗi khối một ô là lý do `Cmd+B`, `/`, và mặt
+vẽ markdown làm được gọn như vậy. **Nên hỏi chủ site trước khi bắt đầu.**
+C6 và C7 đều nằm sau nó.
 
-## Phần 5 — Thứ tự đề nghị
+**C2 — nhớ cột khi lên xuống.** Đo được cột thật thì phải đo được **hình chữ
+nhật của con trỏ** trong một `textarea`, mà trình duyệt không cho; cách duy
+nhất là dựng một khối vô hình chép lại y hệt kiểu chữ rồi đo trên đó. Hiện
+tại đi lên rơi vào cuối khối trên, đi xuống rơi vào đầu khối dưới — đoán
+được, chỉ là chưa giữ cột.
 
-Xếp theo *đau bao nhiêu* chia cho *tốn bao nhiêu*, không theo nhóm.
+## Phần 5 — Đã làm gì, và còn gì
 
-| Đợt | Làm gì | Vì sao trước | Ước lượng |
-|---|---|---|---|
-| **1** | B1, B5, B6, B7, B3, B4 — bàn phím cho danh sách | Đúng chỗ chủ site đang đau. Gọn trong một component | ~3 giờ |
-| **2** | A1, A2, A3, A4 — Enter và Backspace cho khối | Bỏ được nút "+ thêm khối" khỏi đường chính | ~4 giờ |
-| **3** | F1–F4 — undo nhiều bậc | Lỗ nguy hiểm nhất, và càng để lâu càng khó ghép | ~5 giờ |
-| **4** | D1, D2, D3 — `Cmd+B`, `Cmd+U`, `Cmd+K` | Rẻ, và là thứ người viết thử đầu tiên | ~2 giờ |
-| **5** | A9, A10 — gõ `# ` đổi loại, `/` mở menu | Cần đợt 2 xong trước | ~3 giờ |
-| **6** | C1, C2, C5 — con trỏ đi xuyên khối | Đắt nhất, đụng vào cách quản focus | ~8 giờ |
+Sáu đợt đã chạy, theo thứ tự: danh sách → hoàn tác → khối → định dạng → ký
+hiệu và `/` → con trỏ. Hoàn tác được đẩy lên làm sớm vì mỗi thao tác cấu trúc
+thêm vào là một thứ nữa lịch sử phải biết hoàn tác.
 
-**Một cảnh báo về thứ tự.** Đợt 3 (undo) càng để muộn càng đắt: mỗi thao tác
-cấu trúc thêm vào là một thứ nữa lịch sử phải biết cách hoàn tác. Làm undo
-*trước* đợt 2 sẽ rẻ hơn tổng thể, dù cảm giác ít cấp bách hơn.
+Còn lại, xếp theo đau chia cho tốn:
 
-**Một lỗi cần vá ngay, không đợi đợt nào.** `Enter` trong đoạn văn hiện chèn
-một ký tự xuống dòng mà **trang không vẽ ra** — chữ có ngắt dòng lúc soạn và
-mất ngắt dòng khi đăng. Hoặc trang phải giữ ngắt dòng, hoặc `Enter` phải làm
-việc khác. Im lặng nuốt mất là lựa chọn tệ nhất trong ba.
+| Việc | Vì sao | Ước lượng |
+|---|---|---|
+| A8 `Cmd+D`, A6/A7 từ trong chữ | Rẻ, và làm nốt nhóm A | ~2 giờ |
+| E4 dán ảnh từ clipboard | Thao tác thường, hiện phải tải lên bằng tay | ~2 giờ |
+| G3 chặn rời trang khi chưa lưu | Một dòng chữ hỏi, chặn được mất chữ thật | ~1 giờ |
+| D6 sửa link tại chỗ | Hiện phải sửa trong chữ thô | ~2 giờ |
+| C5 chọn qua nhiều khối | **Hỏi trước** — xem ghi chú ở Phần 4 | nhiều ngày |
+
+**Một lỗi đã vá trong đợt này, không đợi đợt nào:** `Enter` trong đoạn văn
+từng chèn một ký tự xuống dòng mà trang không vẽ ra. Nay `Enter` mở khối mới,
+và đoạn văn trên trang giữ ngắt dòng (`whiteSpace: pre-wrap`) cho những chỗ
+còn sót lại — bài cũ, chữ dán vào.

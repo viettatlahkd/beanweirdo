@@ -20,7 +20,15 @@ export const paragraph = registerElement<ParagraphAttrs>({
   View: ({ attributes, palette, index, testId, render }: ElementViewProps<ParagraphAttrs>) => (
     <div
       data-testid={testId}
-      style={{ fontFamily: sans, fontWeight: 300, fontSize: 15.5, lineHeight: 1.55, color: ink.strong, margin: '0 0 20px', maxWidth: 660 }}
+      /*
+       * Ngắt dòng trong một đoạn thì vẽ ra.
+       *
+       * `Enter` nay mở một khối mới, nhưng chỗ nào còn ngắt dòng — bài cũ,
+       * chữ dán vào — thì nuốt nó đi là để chữ trông một kiểu lúc soạn và
+       * một kiểu khi đăng. Im lặng đổi hình dạng chữ người viết là tệ hơn cả
+       * hai lựa chọn còn lại.
+       */
+      style={{ fontFamily: sans, fontWeight: 300, fontSize: 15.5, lineHeight: 1.55, color: ink.strong, margin: '0 0 20px', maxWidth: 660, whiteSpace: 'pre-wrap' }}
     >
       {render?.renderParagraph ? (
         render.renderParagraph(attributes.text, index)

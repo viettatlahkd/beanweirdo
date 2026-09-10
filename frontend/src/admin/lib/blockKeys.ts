@@ -137,6 +137,24 @@ export function spaceBlock(blocks: ReportBlock[], i: number, text: string, caret
   return { blocks: next, focus: { at: i, caret: 0 } }
 }
 
+/**
+ * Khối có ô chữ gần nhất theo một hướng, và chỗ con trỏ rơi vào đó.
+ *
+ * Con trỏ phải đi xuyên bài chứ không dừng ở mép mỗi ô — đó là khác biệt
+ * giữa một bài viết và một xấp biểu mẫu. Bảng, ảnh, biểu đồ bị bỏ qua: chúng
+ * không có ô chữ nào để đặt con trỏ vào.
+ *
+ * Đi lên thì rơi vào **cuối** khối trên, đi xuống thì rơi vào **đầu** khối
+ * dưới — đúng chỗ con trỏ vừa rời khỏi mép này thì sang mép kia.
+ */
+export function neighbour(blocks: ReportBlock[], i: number, dir: -1 | 1): BlockFocus | null {
+  for (let k = i + dir; k >= 0 && k < blocks.length; k += dir) {
+    if (!isTexted(blocks[k])) continue
+    return { at: k, caret: dir === -1 ? textOf(blocks[k]).length : 0 }
+  }
+  return null
+}
+
 /** Một phím trong ô chữ của một khối; `null` là trả phím lại cho trình duyệt. */
 export function blockKey(
   blocks: ReportBlock[],

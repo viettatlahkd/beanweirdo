@@ -6,7 +6,7 @@
  */
 import type { ReportBlock } from 'post-renderer'
 import { describe, expect, it } from 'vitest'
-import { backspaceBlock, blockKey, enterBlock, spaceBlock } from './blockKeys'
+import { backspaceBlock, blockKey, enterBlock, neighbour, spaceBlock } from './blockKeys'
 
 const para = (text: string, id = 'b1') => ({ type: 'paragraph', id, text }) as unknown as ReportBlock
 const head = (text: string, id = 'h1') => ({ type: 'heading', id, level: 2, text }) as unknown as ReportBlock
@@ -146,3 +146,26 @@ function enterOrSpace(prefix: string) {
   const out = spaceBlock([para(prefix)], 0, prefix, prefix.length)
   return out!.blocks[0] as unknown as Record<string, unknown>
 }
+
+describe('con trỏ đi xuyên khối', () => {
+  it('lên thì vào cuối khối trên, xuống thì vào đầu khối dưới', () => {
+    const blocks = [para('trên', 'b1'), para('dưới', 'b2')]
+    expect(neighbour(blocks, 1, -1)).toEqual({ at: 0, caret: 4 })
+    expect(neighbour(blocks, 0, 1)).toEqual({ at: 1, caret: 0 })
+  })
+
+  it('bỏ qua khối không có ô chữ — bảng không có chỗ đặt con trỏ', () => {
+    const blocks = [para('trên', 'b1'), table(), para('dưới', 'b2')]
+    expect(neighbour(blocks, 2, -1)).toEqual({ at: 0, caret: 4 })
+  })
+
+  it('đầu bài và cuối bài thì hết đường', () => {
+    const blocks = [para('một', 'b1')]
+    expect(neighbour(blocks, 0, -1)).toBeNull()
+    expect(neighbour(blocks, 0, 1)).toBeNull()
+  })
+
+  it('cả bài chỉ toàn bảng thì cũng hết đường, không lặp vô tận', () => {
+    expect(neighbour([para('a', 'b1'), table(), table()], 0, 1)).toBeNull()
+  })
+})

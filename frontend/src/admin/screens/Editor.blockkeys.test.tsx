@@ -195,3 +195,41 @@ describe('gõ `/` mở menu chèn', () => {
     expect(screen.getByText(/Không có khối nào/)).toBeTruthy()
   })
 })
+
+describe('con trỏ đi xuyên khối', () => {
+  it('mũi tên lên ở đầu khối sang khối trên, không dừng ở mép ô', async () => {
+    draw('report', [para('trên', 'b1'), para('dưới', 'b2')])
+    const field = await into('dưới')
+    field.setSelectionRange(0, 0)
+    await userEvent.keyboard('{ArrowUp}')
+
+    expect(screen.getByDisplayValue('trên')).toHaveFocus()
+  })
+
+  it('mũi tên xuống ở cuối khối sang khối dưới', async () => {
+    draw('report', [para('trên', 'b1'), para('dưới', 'b2')])
+    const field = await into('trên')
+    field.setSelectionRange(4, 4)
+    await userEvent.keyboard('{ArrowDown}')
+
+    expect(screen.getByDisplayValue('dưới')).toHaveFocus()
+  })
+
+  it('giữa chữ thì mũi tên vẫn là của trình duyệt', async () => {
+    draw('report', [para('trên', 'b1'), para('dưới', 'b2')])
+    const field = await into('dưới')
+    field.setSelectionRange(2, 2)
+    await userEvent.keyboard('{ArrowUp}')
+
+    expect(screen.getByDisplayValue('dưới')).toHaveFocus()
+  })
+
+  it('khối đầu bài thì mũi tên lên không nuốt phím', async () => {
+    draw('report', [para('một', 'b1')])
+    const field = await into('một')
+    field.setSelectionRange(0, 0)
+    await userEvent.keyboard('{ArrowUp}')
+
+    expect(screen.getByDisplayValue('một')).toHaveFocus()
+  })
+})
