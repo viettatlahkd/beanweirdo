@@ -816,10 +816,39 @@ function EditableField({
   useEffect(() => {
     const node = el.current
     if (!multiline || !node) return
-    node.style.height = 'auto'
-    const line = parseFloat(getComputedStyle(node).lineHeight) || 0
-    node.style.height = `${Math.max(node.scrollHeight, line * rows)}px`
-  }, [local, multiline, rows])
+    /*
+     * Đo từ 0, không từ `auto`.
+     *
+     * `height: auto` trên một `textarea` rơi về thuộc tính `rows`, nên
+     * `scrollHeight` đọc ra ba dòng kể cả khi trong ô chỉ có một. Đo trong
+     * Chrome thật: một đoạn một dòng ra 80px thay vì 17px.
+     */
+    node.style.height = '0px'
+    /*
+     * Ô markdown bỏ mức thấp nhất theo `rows`.
+     *
+     * Đo trong Chrome thật: một đoạn một dòng có mặt vẽ cao 17px còn mặt gõ
+     * cao 75.8px, vì `rows={3}` ép sàn ba dòng. Bấm vào một đoạn ngắn là cả
+     * trang giật xuống 47px. Hai mặt của cùng một ô phải cao bằng nhau, nên
+     * mặt gõ cũng chạy theo nội dung như mặt vẽ.
+     */
+    const css = getComputedStyle(node)
+    const line = parseFloat(css.lineHeight) || 0
+    /*
+     * Cộng thêm viền.
+     *
+     * Cả hai mặt dùng `box-sizing: border-box`, nên `height` phải bao cả viền,
+     * mà `scrollHeight` thì không đếm viền. Thiếu hai pixel ấy là mỗi lần bấm
+     * vào một ô, cả trang nhích lên một cái.
+     */
+    const border = (parseFloat(css.borderTopWidth) || 0) + (parseFloat(css.borderBottomWidth) || 0)
+    node.style.height = markdown
+      ? `${node.scrollHeight + border}px`
+      : `${Math.max(node.scrollHeight, line * rows) + border}px`
+    // `editing` nằm trong deps vì ô markdown chỉ dựng `textarea` lúc lật sang
+    // mặt gõ: không nghe nó thì chiều cao không bao giờ được đặt, và ô giữ
+    // nguyên sàn ba dòng của thuộc tính `rows`.
+  }, [local, multiline, rows, markdown, editing])
   /*
    * Chỗ khác gọi con trỏ về ô này.
    *
@@ -917,6 +946,9 @@ function EditableField({
     borderRadius: 3,
     width: '100%',
     display: 'block',
+    // Hai mặt của cùng một ô phải đo cùng một kiểu, nếu không thì lật mặt là
+    // trang nhích.
+    boxSizing: 'border-box',
     ...style,
   }
 
