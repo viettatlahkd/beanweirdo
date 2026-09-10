@@ -72,7 +72,6 @@ import {
   allElements,
   flatElements,
   getElement,
-  pastedToBlocks,
   pastedToItems,
   runsToText,
   segmentsFor,
@@ -83,6 +82,7 @@ import {
 } from 'post-renderer'
 import { AddRow, RowShell } from '../components/RowShell'
 import { duplicateAt, insertAt, move, removeAt } from '../lib/listOps'
+import { withPastedBlocks } from '../lib/pasteBlocks'
 import { useRowDrag } from '../lib/useRowDrag'
 import {
   toArticleData,
@@ -1131,6 +1131,16 @@ function InlineField({
         const next = e.currentTarget.innerText ?? e.currentTarget.textContent ?? ''
         if (next !== value) onCommit(next)
       }}
+      onPaste={(e) => {
+        /*
+         * Ô này là `contentEditable`, nên dán mặc định nhét nguyên HTML của
+         * trang nguồn vào — cả thẻ lẫn style. Chữ trông đúng trong lúc soạn
+         * rồi mang phông và màu của Notion ra trang. Chỉ nhận chữ thuần.
+         */
+        e.preventDefault()
+        const text = e.clipboardData.getData('text/plain')
+        if (text) document.execCommand('insertText', false, text)
+      }}
       style={{ outline: 'none', cursor: 'text' }}
     />
   )
@@ -1234,6 +1244,12 @@ function BitesizeEditor({
                 block={elements[i]}
                 palette={palette}
                 onChange={(next) => writeElements(elements.map((x, k) => (k === i ? next : x)))}
+                onPasteBlocks={(text) => {
+                  const next = withPastedBlocks(elements, i, text)
+                  if (!next) return false
+                  writeElements(next)
+                  return true
+                }}
               />
             </RowShell>
             <InsertRow
@@ -1338,6 +1354,12 @@ function MemoEditor({
               block={elements[i]}
               palette={palette}
               onChange={(next) => write(elements.map((x, k) => (k === i ? next : x)))}
+              onPasteBlocks={(text) => {
+                const next = withPastedBlocks(elements, i, text)
+                if (!next) return false
+                write(next)
+                return true
+              }}
             />
           </RowShell>
           <InsertRow
@@ -1758,34 +1780,10 @@ function ReportEditor({
     setMenuAt(null)
   }
 
-  /**
-   * Một trang dán vào canvas thành một chuỗi khối.
-   *
-   * Khối đang đứng mà rỗng thì bị thay chỗ — đó là cái ô trống người viết bấm
-   * vào để dán. Khối đã có chữ thì chữ ở lại và cái dán vào nằm dưới, giống
-   * hệt luật của một dòng trong danh sách.
-   *
-   * Trả `false` khi cái dán vào chỉ là một đoạn văn: dán một câu vào giữa đoạn
-   * đang viết phải là dán như thường, không phải sinh ra một khối mới.
-   */
+  /** Một trang dán vào canvas thành một chuỗi khối — luật đặt chỗ ở `withPastedBlocks`. */
   function pasteBlocks(i: number, text: string): boolean {
-    const pasted = pastedToBlocks(text)
-    if (!pasted) return false
-
-    // Id cấp một lượt cho cả mẻ, vì `nextId` đọc danh sách đang có: cấp từng
-    // cái một trên cùng một mảng cũ sẽ ra một dãy id trùng nhau, và ghi chú
-    // cạnh bài neo vào id.
-    const taken = blocks.map((b) => b.id ?? '')
-    const named = pasted.map((b) => {
-      const id = nextId('b', taken)
-      taken.push(id)
-      return { ...b, id } as ReportBlock
-    })
-
-    const target = blocks[i]
-    const empty = target ? vanishesWhenEmpty(target) && String((target as { text?: string }).text ?? '').trim() === '' : false
-    const next = [...blocks]
-    next.splice(i + (empty ? 0 : 1), empty ? 1 : 0, ...named)
+    const next = withPastedBlocks(blocks, i, text)
+    if (!next) return false
     setBlocks(next)
     return true
   }
@@ -2259,8 +2257,12 @@ function ReportBlockFields({
   /**
    * Cái dán vào có nhiều hơn một khối thì canvas nhận, không phải ô chữ này.
    * Trả `true` nghĩa là đã nhận.
+   *
+   * **Bắt buộc, có chủ ý.** Ba màn dùng chung component này và lượt đầu chỉ
+   * report được nối, nên dán vào bitesize ra nguyên một trang markdown thô.
+   * Để prop này tuỳ chọn là để nguyên cái bẫy ấy cho màn thứ tư.
    */
-  onPasteBlocks?: (text: string) => boolean
+  onPasteBlocks: (text: string) => boolean
 }) {
   /*
    * Emptying the words out of a paragraph is the writer saying there is no
@@ -2327,6 +2329,7 @@ function ReportBlockFields({
               rows={2}
               placeholder="trích dẫn"
               onCommit={(v) => onChange({ ...block, text: v })}
+              onPasteText={onPasteBlocks}
               style={{ fontFamily: serif, fontSize: 19, lineHeight: 1.35, color: ink.base }}
             />
             <EditableField
@@ -2355,6 +2358,7 @@ function ReportBlockFields({
             rows={3}
             placeholder="nội dung khối nhấn"
             onCommit={(v) => onChange({ ...block, text: v })}
+            onPasteText={onPasteBlocks}
             style={{ fontSize: 14.5, lineHeight: 1.55, color: ink.strong }}
           />
         </div>
