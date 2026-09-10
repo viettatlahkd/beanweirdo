@@ -163,7 +163,7 @@ describe('deleting a block that has writing beside it', () => {
 describe('the blocks a report can hold', () => {
   it('offers a quote and a highlight box beside the older kinds', async () => {
     draw(blocks)
-    await userEvent.click(screen.getAllByText('+ thêm khối')[0])
+    await userEvent.click(screen.getAllByLabelText('thêm khối')[0])
     expect(screen.getByRole('button', { name: 'Trích dẫn' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Khối nhấn' })).toBeInTheDocument()
   })

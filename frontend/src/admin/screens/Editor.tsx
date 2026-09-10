@@ -42,7 +42,7 @@ import { usePostAddresses } from '../../data/usePostAddresses'
 import { ink, paper, sans, serif } from '../../design/tokens'
 import { ThemePicker } from '../components/ThemePicker'
 import { FocusPicker } from '../components/FocusPicker'
-import { blankReportBlock, getBody, resolveTemplate } from '../lib/postData'
+import { blankReportBlock, getBody, ORDERED_LIST, resolveTemplate } from '../lib/postData'
 import {
   addColumn,
   addRow,
@@ -70,7 +70,6 @@ import {
   notesOn,
   paletteFrom,
   allElements,
-  findElements,
   flatElements,
   getElement,
   htmlToMarkdown,
@@ -571,19 +570,33 @@ function EditorStyles() {
       .awc-hero-drop:hover{ border-color: rgba(0,0,0,.45); }
       .awc-plus-btn{ font-family: 'Be Vietnam Pro', system-ui, sans-serif; font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: #8C8674; background: transparent; border: 1px dashed #EBE5D3; border-radius: 4px; padding: 5px 10px; cursor: pointer; margin: 8px 0; }
       .awc-plus-btn:hover{ border-color: #8C8674; color: #3B3729; }
-      .awc-insert-menu{ display: flex; flex-wrap: wrap; gap: 18px; padding: 4px 0 14px; }
-      .awc-insert-group{ display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-      .awc-insert-cat{ font-size: 9px; letter-spacing: .16em; text-transform: uppercase; color: #8C8674; margin-right: 2px; }
-      .awc-insert-menu button{ font-family: 'Be Vietnam Pro', system-ui, sans-serif; font-size: 11px; padding: 6px 10px; border: 1px solid #EBE5D3; border-radius: 4px; background: #fff; cursor: pointer; color: #3B3729; }
-      .awc-insert-menu button:hover{ background: #F6F2E2; }
+      .awc-insert-menu{ display: flex; flex-direction: column; gap: 10px; }
+      .awc-insert-group{ display: flex; flex-direction: column; gap: 1px; }
+      .awc-insert-cat{ font-size: 9px; letter-spacing: .16em; text-transform: uppercase; color: #8C8674; padding: 2px 6px; }
+      .awc-insert-menu button{ font-family: 'Be Vietnam Pro', system-ui, sans-serif; font-size: 12.5px; text-align: left; padding: 6px 8px; border: none; border-radius: 4px; background: transparent; cursor: pointer; color: #23211A; }
+      .awc-insert-menu button:hover{ background: #F1ECDC; }
       .awc-rep-grid{ display: grid; column-gap: 20px; }
       .awc-split{ position: relative; cursor: col-resize; justify-self: center; width: 1px; background: #EBE5D3; }
       .awc-split::after{ content: ''; position: absolute; inset: 0 -5px; }
       .awc-split:hover{ background: #8C8674; }
-      .awc-rep-block{ position: relative; padding-left: 26px; padding-right: 50px; margin-bottom: 4px; }
+      /*
+       * Máng bên trái, ngoài cột chữ.
+       *
+       * Trước đây tay nắm ở lề trái còn ✎ ⧉ × thì tuyệt đối bên phải, đè lên
+       * chính đoạn đang viết — và dải "+ THÊM KHỐI" thì chiếm hẳn một dòng
+       * sau mỗi khối. Nay mọi nút dồn về một máng ngoài lề: cột chữ không
+       * còn bị cắt ở hai đầu, và không nút nào nằm trên chữ.
+       */
+      .awc-rep-block{ position: relative; padding-left: 52px; margin-bottom: 2px; }
+      .awc-gutter{ position: absolute; left: 0; top: 1px; width: 46px; display: flex; align-items: center; gap: 1px; opacity: 0; transition: opacity .12s; }
+      .awc-rep-block:hover .awc-gutter, .awc-rep-block:focus-within .awc-gutter{ opacity: 1; }
+      .awc-gutter button{ width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 12px; line-height: 1; color: #8C8674; background: transparent; border: none; border-radius: 3px; cursor: pointer; padding: 0; }
+      .awc-gutter button:hover{ background: #EFEADA; color: #23211A; }
+      /* Menu nổi lên trên chữ, không đẩy chữ đi chỗ khác. */
+      .awc-menu-pop{ position: absolute; left: 46px; top: 22px; z-index: 20; background: #fff; border: 1px solid #EBE5D3; border-radius: 6px; box-shadow: 0 8px 28px rgba(35,33,26,.14); padding: 8px 10px; max-height: 320px; overflow-y: auto; min-width: 240px; }
 
       /* the handle: drag to reorder, Delete to remove — and it says so */
-      .awc-grip{ position: absolute; left: 0; top: 1px; width: 18px; height: 20px; display: flex; align-items: center; justify-content: center; cursor: grab; font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1; color: #8C8674; background: transparent; border: none; padding: 0; opacity: .35; transition: opacity .12s, color .12s; }
+      .awc-grip{ position: relative; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; cursor: grab; font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1; color: #8C8674; background: transparent; border: none; padding: 0; opacity: .35; transition: opacity .12s, color .12s; }
       .awc-rep-block:hover .awc-grip, .awc-grip:focus-visible{ opacity: 1; }
       .awc-grip:hover{ color: #3B3729; }
       .awc-grip:active{ cursor: grabbing; }
@@ -616,9 +629,9 @@ function EditorStyles() {
       @keyframes awc-run{ from{ transform: scaleX(1) } to{ transform: scaleX(0) } }
       @media (prefers-reduced-motion: reduce){ .awc-bar i{ animation: none; transform: scaleX(.45) } }
       .awc-undo{ font-family: 'Be Vietnam Pro', system-ui, sans-serif; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; border: 1px solid currentColor; background: transparent; padding: 6px 12px; cursor: pointer; }
-      .awc-block-controls{ position: absolute; right: 0; top: 2px; display: flex; gap: 2px; opacity: .35; }
-      .awc-rep-block:hover .awc-block-controls, .awc-rep-block:focus-within .awc-block-controls{ opacity: 1; }
-      .awc-block-controls button{ width: 20px; height: 20px; font-size: 11px; border: 1px solid #EBE5D3; background: #fff; cursor: pointer; border-radius: 3px; color: #5C5745; line-height: 1; }
+      .awc-block-controls{ display: contents; }
+      .awc-block-controls button{ width: 20px; height: 20px; font-size: 11px; border: none; background: transparent; cursor: pointer; border-radius: 3px; color: #8C8674; line-height: 1; }
+      .awc-block-controls button:hover{ background: #EFEADA; color: #23211A; }
       .awc-mini-add, .awc-mini-remove{ font-family: 'Be Vietnam Pro', system-ui, sans-serif; font-size: 10.5px; color: #8C8674; background: transparent; border: none; cursor: pointer; padding: 2px; }
       .awc-mini-add:hover, .awc-mini-remove:hover{ color: #3B3729; text-decoration: underline; }
       .awc-metrics-grid{ display: grid; grid-template-columns: repeat(auto-fit,minmax(132px,1fr)); gap: 1px; background: #E6E2D2; margin: 10px 0; }
@@ -1550,6 +1563,16 @@ function BitesizeEditor({
               onMove={(dir) => writeElements(move(elements, i, i + dir))}
               onRemove={() => writeElements(removeAt(elements, i))}
               onDuplicate={() => writeElements(duplicateAt(elements, i))}
+              plus={
+                <InsertPlus
+                  open={menuAt === i}
+                  onToggle={() => setMenuAt(menuAt === i ? null : i)}
+                  onInsert={(t) => {
+                    writeElements(insertAt(elements, i + 1, blankReportBlock(t)))
+                    setMenuAt(null)
+                  }}
+                />
+              }
             >
               <ReportBlockFields
                 block={elements[i]}
@@ -1597,26 +1620,22 @@ function BitesizeEditor({
                 }}
               />
             )}
-            <InsertRow
-              open={menuAt === i}
-              onToggle={() => setMenuAt(menuAt === i ? null : i)}
-              onInsert={(t) => {
-                writeElements(insertAt(elements, i + 1, blankReportBlock(t)))
-                setMenuAt(null)
-              }}
-            />
           </div>
         )}
         renderAfterElements={() =>
           elements.length === 0 ? (
-            <InsertRow
-              open={menuAt === -1}
-              onToggle={() => setMenuAt(menuAt === -1 ? null : -1)}
-              onInsert={(t) => {
-                writeElements(insertAt(elements, 0, blankReportBlock(t)))
-                setMenuAt(null)
-              }}
-            />
+            <div className="awc-rep-block">
+              <div className="awc-gutter" style={{ opacity: 1 }}>
+                <InsertPlus
+                  open={menuAt === -1}
+                  onToggle={() => setMenuAt(menuAt === -1 ? null : -1)}
+                  onInsert={(t) => {
+                    writeElements(insertAt(elements, 0, blankReportBlock(t)))
+                    setMenuAt(null)
+                  }}
+                />
+              </div>
+            </div>
           ) : null
         }
       />
@@ -1698,6 +1717,16 @@ function MemoEditor({
             onMove={(dir) => write(move(elements, i, i + dir))}
             onRemove={() => write(removeAt(elements, i))}
             onDuplicate={() => write(duplicateAt(elements, i))}
+            plus={
+              <InsertPlus
+                open={menuAt === i}
+                onToggle={() => setMenuAt(menuAt === i ? null : i)}
+                onInsert={(t) => {
+                  write(insertAt(elements, i + 1, blankReportBlock(t)))
+                  setMenuAt(null)
+                }}
+              />
+            }
           >
             <ReportBlockFields
               block={elements[i]}
@@ -1745,26 +1774,22 @@ function MemoEditor({
               }}
             />
           )}
-          <InsertRow
-            open={menuAt === i}
-            onToggle={() => setMenuAt(menuAt === i ? null : i)}
-            onInsert={(t) => {
-              write(insertAt(elements, i + 1, blankReportBlock(t)))
-              setMenuAt(null)
-            }}
-          />
         </div>
       )}
       renderAfterElements={() =>
         elements.length === 0 ? (
-          <InsertRow
-            open={menuAt === -1}
-            onToggle={() => setMenuAt(menuAt === -1 ? null : -1)}
-            onInsert={(t) => {
-              write(insertAt(elements, 0, blankReportBlock(t)))
-              setMenuAt(null)
-            }}
-          />
+          <div className="awc-rep-block">
+            <div className="awc-gutter" style={{ opacity: 1 }}>
+              <InsertPlus
+                open={menuAt === -1}
+                onToggle={() => setMenuAt(menuAt === -1 ? null : -1)}
+                onInsert={(t) => {
+                  write(insertAt(elements, 0, blankReportBlock(t)))
+                  setMenuAt(null)
+                }}
+              />
+            </div>
+          </div>
         ) : null
       }
     />
@@ -2217,7 +2242,17 @@ function ReportEditor({
       </div>
 
       <div style={{ padding: '20px 32px 40px' }}>
-        <InsertRow open={menuAt === -1} onToggle={() => setMenuAt(menuAt === -1 ? null : -1)} onInsert={(t) => insertBlock(-1, t)} />
+        {blocks.length === 0 && (
+          <div className="awc-rep-block">
+            <div className="awc-gutter" style={{ opacity: 1 }}>
+              <InsertPlus
+                open={menuAt === -1}
+                onToggle={() => setMenuAt(menuAt === -1 ? null : -1)}
+                onInsert={(t) => insertBlock(-1, t)}
+              />
+            </div>
+          </div>
+        )}
 
         <div className="awc-rep-grid" style={{ gridTemplateColumns: `minmax(0,1fr) 11px ${asideWidth}px` }}>
           <ColumnSplit width={asideWidth} onWidth={setAsideWidth} rows={segments.length} />
@@ -2239,6 +2274,12 @@ function ReportEditor({
                     >
                       {dragOver === i && dragFrom !== null && dragFrom !== i && <div className="awc-dropline" style={{ background: accent }} />}
                       <div className="awc-rep-block">
+                        <div className="awc-gutter">
+                        <InsertPlus
+                          open={menuAt === i}
+                          onToggle={() => setMenuAt(menuAt === i ? null : i)}
+                          onInsert={(t) => insertBlock(i, t)}
+                        />
                         <BlockGrip
                           onLift={() => setDragFrom(i)}
                           onDone={() => {
@@ -2263,6 +2304,7 @@ function ReportEditor({
                           <button type="button" onClick={() => requestRemove(i)} aria-label="xoá khối">
                             ×
                           </button>
+                        </div>
                         </div>
                         <ReportBlockFields
                           block={b}
@@ -2316,7 +2358,6 @@ function ReportEditor({
                           }}
                         />
                       )}
-                      <InsertRow open={menuAt === i} onToggle={() => setMenuAt(menuAt === i ? null : i)} onInsert={(t) => insertBlock(i, t)} />
                     </div>
                   )
                 })}
@@ -2600,7 +2641,17 @@ function FieldNotesEditor({
   )
 }
 
-function InsertRow({
+/**
+ * Dấu `+` trong máng bên trái, và menu nổi lên khi bấm.
+ *
+ * Trước đây đây là một dải "+ THÊM KHỐI" nằm **trong dòng chảy**, một cái sau
+ * mỗi khối — bài mười khối gánh ba trăm pixel toàn nút. Và menu mở ra cũng
+ * vẽ trong dòng chảy, nên bấm vào là cả bài tụt xuống.
+ *
+ * Nay nút nằm ngoài cột chữ và chỉ hiện khi rê chuột lên khối; menu nổi lên
+ * trên chữ chứ không đẩy chữ đi.
+ */
+function InsertPlus({
   open,
   onToggle,
   onInsert,
@@ -2610,12 +2661,16 @@ function InsertRow({
   onInsert: (type: string) => void
 }) {
   return (
-    <div>
-      <button type="button" className="awc-plus-btn" onClick={onToggle} aria-expanded={open}>
-        + thêm khối
+    <>
+      <button type="button" onClick={onToggle} aria-expanded={open} aria-label="thêm khối">
+        +
       </button>
-      {open && <InsertMenu onInsert={onInsert} />}
-    </div>
+      {open && (
+        <div className="awc-menu-pop">
+          <InsertMenu onInsert={onInsert} />
+        </div>
+      )}
+    </>
   )
 }
 
@@ -2629,41 +2684,62 @@ function InsertRow({
  * `filter` là mấy chữ gõ sau dấu `/`. Rỗng thì bày hết, xếp theo nhóm kho đã
  * xếp; có chữ thì lọc phẳng, vì lúc đang gõ để tìm thì cái nhóm không giúp gì.
  */
+/**
+ * Mục "Danh sách đánh số", ghép vào ngay sau "Danh sách".
+ *
+ * Nó không phải một element thứ hai trong kho — chỉ là cùng element ấy với
+ * `ordered: true`. Nhưng trong menu thì nó **phải** là một mục riêng: người
+ * viết chọn loại danh sách lúc tạo, không đi tìm một ô tick sau đó.
+ */
+const ORDERED_ENTRY = {
+  name: ORDERED_LIST,
+  title: 'Danh sách đánh số',
+  description: 'Một chuỗi mục, đánh số 01, 02…',
+  keywords: ['đánh số', 'số thứ tự', 'numbered', 'ordered', 'các bước'],
+}
+
+function entriesFor(filter: string) {
+  const q = filter.trim().toLowerCase()
+  const hit = (e: { title: string; name: string; keywords: string[] }) =>
+    q === '' ||
+    e.title.toLowerCase().includes(q) ||
+    e.name.includes(q) ||
+    e.keywords.some((k) => k.toLowerCase().includes(q))
+
+  return (['text', 'data', 'media'] as const).map((category) => ({
+    category,
+    items: allElements()
+      .filter((e) => e.category === category)
+      .flatMap((e) => (e.name === 'list' ? [e, ORDERED_ENTRY as unknown as typeof e] : [e]))
+      .filter(hit),
+  }))
+}
+
 function InsertMenu({ filter = '', onInsert }: { filter?: string; onInsert: (type: string) => void }) {
-  const hits = filter.trim() === '' ? null : findElements(filter)
+  const groups = entriesFor(filter)
+  const empty = groups.every((g) => g.items.length === 0)
   return (
     <div className="awc-insert-menu">
-      {hits !== null ? (
-        hits.length === 0 ? (
-          <div className="awc-insert-cat">Không có khối nào tên như vậy</div>
-        ) : (
-          <div className="awc-insert-group">
-            {hits.map((e) => (
-              <button key={e.name} type="button" title={e.description} onClick={() => onInsert(e.name)}>
-                {e.title}
-              </button>
-            ))}
-          </div>
-        )
+      {empty ? (
+        <div className="awc-insert-cat">Không có khối nào tên như vậy</div>
       ) : (
-        (['text', 'data', 'media'] as const).map((category) => {
-          const inCategory = allElements().filter((e) => e.category === category)
-          if (inCategory.length === 0) return null
-          return (
+        groups.map(({ category, items }) =>
+          items.length === 0 ? null : (
             <div key={category} className="awc-insert-group">
               <div className="awc-insert-cat">{CATEGORY_LABEL[category]}</div>
-              {inCategory.map((e) => (
+              {items.map((e) => (
                 <button key={e.name} type="button" title={e.description} onClick={() => onInsert(e.name)}>
                   {e.title}
                 </button>
               ))}
             </div>
-          )
-        })
+          ),
+        )
       )}
     </div>
   )
 }
+
 
 const HEADING_SIZE: Record<1 | 2 | 3, number> = { 1: 28, 2: 22, 3: 17 }
 
@@ -3050,29 +3126,9 @@ function ListEditor({
     return true
   }
 
-  /** Drops the one item a path points at; the last top-level line stays. */
-  function without(items: ListItem[], path: number[]): ListItem[] {
-    const [head, ...rest] = path
-    if (rest.length === 0) return items.length > 1 ? removeAt(items, head) : items
-    return items.map((item, i) =>
-      i === head ? { ...item, children: without(item.children ?? [], rest) } : item,
-    )
-  }
 
   return (
     <div className="awc-list-edit">
-      <label className="awc-list-flag">
-        <input
-          type="checkbox"
-          checked={Boolean(attributes.ordered)}
-          onChange={(e) => onChange({ ...attributes, ordered: e.target.checked } as unknown as ReportBlock)}
-        />
-        đánh số
-        <span>
-          <code>*nhấn*</code> <code>_số đo_</code> <code>[chữ](địa chỉ)</code>
-        </span>
-      </label>
-
       <element.View
         attributes={attributes}
         palette={palette}
@@ -3083,6 +3139,16 @@ function ListEditor({
               <EditableField
                 value={text}
                 placeholder="một dòng"
+                /*
+                 * Nhiều dòng, như mặt vẽ.
+                 *
+                 * Trước đây đây là `input` một dòng: một mục dài hai dòng lúc
+                 * vẽ bị ép thành một dòng lúc sửa, chữ trôi ra ngoài ô và
+                 * người viết không còn nhìn thấy cái mình đang sửa. Ô soạn mà
+                 * giấu mất nội dung thì hỏng đúng việc nó sinh ra để làm.
+                 */
+                multiline
+                rows={1}
                 onCommit={(v) => write(at(attributes.items, path, (it) => ({ ...it, runs: textToRuns(v) })))}
                 onPasteText={(pasted) => pasteInto(path, pasted)}
                 onKeyDown={(e, current) => key(path, e, current)}
@@ -3093,38 +3159,14 @@ function ListEditor({
                 accentInk={palette.ink}
                 style={{ font: 'inherit', color: 'inherit' }}
               />
-              <span className="awc-list-tools">
-                <button
-                  type="button"
-                  className="awc-mini-add"
-                  onClick={() => write(at(attributes.items, path, (it) => ({ ...it, sub: [...(it.sub ?? []), ''] })))}
-                >
-                  + dòng phụ
-                </button>
-                <button
-                  type="button"
-                  className="awc-mini-add"
-                  onClick={() =>
-                    write(at(attributes.items, path, (it) => ({ ...it, children: [...(it.children ?? []), { runs: [{ t: '' }] }] })))
-                  }
-                >
-                  + mục con
-                </button>
-                <button
-                  type="button"
-                  className="awc-mini-remove"
-                  aria-label="xoá dòng"
-                  onClick={() => write(without(attributes.items, path))}
-                >
-                  xoá dòng
-                </button>
-              </span>
             </span>
           ),
           renderListSub: (text, path, subIndex) => (
             <EditableField
               value={text}
               placeholder="dòng phụ"
+              multiline
+              rows={1}
               onCommit={(v) =>
                 write(
                   at(attributes.items, path, (it) => ({
@@ -3140,16 +3182,6 @@ function ListEditor({
               accentInk={palette.ink}
               style={{ font: 'inherit', color: 'inherit' }}
             />
-          ),
-          renderAfterList: () => (
-            <button
-              type="button"
-              className="awc-mini-add"
-              style={{ alignSelf: 'flex-start' }}
-              onClick={() => write(insertAt(attributes.items, attributes.items.length, { runs: [{ t: '' }] }))}
-            >
-              + dòng
-            </button>
           ),
         }}
       />

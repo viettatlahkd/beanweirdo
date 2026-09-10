@@ -171,14 +171,15 @@ describe('EditorCanvas — report', () => {
     expect(onChange).toHaveBeenLastCalledWith({ body: [{ ...named[0], text: 'ROASTING · LOG · 2026.05!' }, named[1]] })
   })
 
-  it('inserts a new block via the "+ thêm khối" menu', async () => {
+  it('inserts a new block via the gutter "+" menu', async () => {
     const onChange = vi.fn()
     const post = basePost({ template: 'report', body: blocks })
     render(<EditorCanvas template="report" post={post} onChange={onChange} onHeroDrop={vi.fn()} />)
 
-    // one insert row before block 0, one after block 0, one after block 1
-    const insertButtons = screen.getAllByText('+ thêm khối')
-    await userEvent.click(insertButtons[1])
+    // Nút `+` nay nằm trong máng bên trái mỗi khối, một cái cho mỗi khối, và
+    // chèn xuống **dưới** khối ấy. Không còn dải nào nằm trong dòng chảy.
+    const insertButtons = screen.getAllByLabelText('thêm khối')
+    await userEvent.click(insertButtons[0])
     await userEvent.click(screen.getByRole('button', { name: 'Đoạn văn' }))
 
     expect(onChange).toHaveBeenLastCalledWith({ body: [named[0], { type: 'paragraph', text: '', id: 'b3' }, named[1]] })
