@@ -206,3 +206,14 @@ describe('Cmd+B, Cmd+U, Cmd+K trong ô chữ', () => {
     expect(textToRuns(written[0].text!)).toContainEqual({ t: 'đây', href: 'https://a.com' })
   })
 })
+
+describe('hai mặt của một ô đo cùng một kiểu', () => {
+  it('cả mặt vẽ lẫn mặt gõ đều dùng box-sizing: border-box', () => {
+    // jsdom không dựng bố cục nên không đo được chiều cao thật; chỗ này chỉ
+    // giữ cái điều kiện làm cho hai mặt đo bằng nhau. Con số thật đo bằng
+    // Playwright trong Chrome: lệch 0.3px, trước khi sửa là 58.8px.
+    draw(para('một dòng'))
+    const drawnFace = screen.getByRole('textbox', { name: 'Đoạn văn' })
+    expect(drawnFace.style.boxSizing).toBe('border-box')
+  })
+})
