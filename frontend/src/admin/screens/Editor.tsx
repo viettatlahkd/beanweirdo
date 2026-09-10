@@ -72,7 +72,10 @@ import {
   allElements,
   flatElements,
   getElement,
+  htmlToMarkdown,
+  Inline,
   pastedToItems,
+  rawIndexFor,
   runsToText,
   segmentsFor,
   textToRuns,
@@ -597,6 +600,61 @@ function EditorStyles() {
   )
 }
 
+/**
+ * Cái clipboard mang tới, đọc về markdown.
+ *
+ * Bản HTML được ưu tiên vì nó là bản **giữ định dạng**: Notion và Lark bỏ đậm
+ * và bỏ link khi viết bản `text/plain`, nên đọc bản chữ thuần là chấp nhận
+ * mất chữ đậm và mất địa chỉ của mọi lần dán. Đọc bản HTML rồi dịch về
+ * markdown thì định dạng sống sót mà style của trang nguồn không theo sang.
+ *
+ * Nguồn nào chỉ đặt chữ thuần — trình soạn mã, cửa sổ terminal — thì bản ấy
+ * thường đã là markdown sẵn.
+ */
+function clipboardMarkdown(e: ClipboardEvent<HTMLElement>): string {
+  const html = e.clipboardData.getData('text/html')
+  /*
+   * Phải thấy một cái thẻ thật thì mới coi là HTML.
+   *
+   * Có nguồn trả về chính chữ thuần cho ô `text/html`. Đem chữ thuần đi phân
+   * tích như HTML là nuốt sạch ký tự xuống dòng — sáu gạch đầu dòng về một
+   * dòng, đúng cái lỗi lượt này đang sửa.
+   */
+  if (/<[a-z!/]/i.test(html)) {
+    const drawn = htmlToMarkdown(html)
+    if (drawn.trim() !== '') return drawn
+  }
+  return e.clipboardData.getData('text/plain')
+}
+
+/**
+ * Chỗ trong chữ mà con trỏ chuột vừa chỉ vào, tính theo chữ **đã vẽ**.
+ *
+ * Không có nó thì bấm vào giữa một đoạn sẽ nhảy về cuối dòng — thao tác
+ * thường nhất trong một ô nhập trở thành thao tác hỏng.
+ */
+function drawnIndexAt(root: HTMLElement, x: number, y: number): number {
+  type WithCaret = Document & {
+    caretPositionFromPoint?: (x: number, y: number) => { offsetNode: Node; offset: number } | null
+    caretRangeFromPoint?: (x: number, y: number) => Range | null
+  }
+  const doc = document as WithCaret
+  const spot = doc.caretPositionFromPoint?.(x, y)
+  const range = spot ? null : doc.caretRangeFromPoint?.(x, y)
+  const node = spot?.offsetNode ?? range?.startContainer
+  const offset = spot?.offset ?? range?.startOffset ?? 0
+  if (!node || !root.contains(node)) return (root.textContent ?? '').length
+
+  let seen = 0
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
+  let text: Node | null
+  while ((text = walker.nextNode())) {
+    if (text === node) return seen + offset
+    seen += text.textContent?.length ?? 0
+  }
+  return seen
+}
+
 function EditableField({
   value,
   onCommit,
@@ -607,6 +665,8 @@ function EditableField({
   onFocused,
   onKeyDown,
   onPasteText,
+  markdown = false,
+  accentInk = ink.base,
   style,
 }: {
   value: string
@@ -634,11 +694,37 @@ function EditableField({
    * và chặn nó lại là làm hỏng thao tác quen thuộc nhất trong một ô nhập.
    */
   onPasteText?: (text: string) => boolean
+  /**
+   * Ô vẽ markdown khi không gõ, và chỉ hiện chữ thô lúc con trỏ nằm trong nó.
+   *
+   * Luật nhóm 16: màn soạn vẽ đúng thứ trang sẽ vẽ. Một ô luôn hiện `**chữ**`
+   * là bắt người viết đọc ký hiệu thay vì đọc bài — họ phải sang ô Xem trước
+   * mới biết đoạn mình vừa viết trông ra sao.
+   */
+  markdown?: boolean
+  /** Màu của bài, cho chữ nhấn và link lúc vẽ. */
+  accentInk?: string
   style?: CSSProperties
 }) {
   const [local, setLocal] = useState(value)
   const el = useRef<HTMLInputElement & HTMLTextAreaElement>(null)
   useEffect(() => setLocal(value), [value])
+
+  /*
+   * Ô markdown có hai mặt: mặt vẽ và mặt gõ. `caret` mang chỗ cần đặt con trỏ
+   * khi lật từ mặt này sang mặt kia — `null` nghĩa là đang ở mặt vẽ.
+   */
+  const [caret, setCaret] = useState<number | null>(null)
+  const editing = caret !== null
+  useEffect(() => {
+    const node = el.current
+    if (!editing || !node) return
+    node.focus()
+    node.setSelectionRange(caret, caret)
+    // Chỉ chạy khi vừa lật sang mặt gõ; theo dõi `caret` nữa thì mỗi lần
+    // người viết bấm sang chỗ khác trong ô, con trỏ lại bị kéo về chỗ cũ.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editing])
 
   /*
    * Ô nhiều dòng cao đúng bằng chữ trong nó.
@@ -667,19 +753,15 @@ function EditableField({
   }, [focus, onFocused])
 
   const commit = () => {
+    // Rời ô là quay về mặt vẽ, kể cả khi chữ không đổi — nếu không thì một ô
+    // đã bấm vào rồi bấm ra vẫn nằm ở mặt chữ thô suốt buổi.
+    setCaret(null)
     if (local !== value) onCommit(local)
   }
 
-  /*
-   * Đọc clipboard dưới dạng chữ thuần.
-   *
-   * `text/plain` chứ không phải `text/html`: mọi trình soạn đều đặt sẵn bản
-   * markdown vào ô ấy, còn bản HTML thì mỗi nơi một kiểu và kéo theo cả style
-   * của trang nguồn. Bản chữ thuần là bản duy nhất có hình dạng đoán được.
-   */
   const paste = onPasteText
     ? (e: ClipboardEvent<HTMLElement>) => {
-        const text = e.clipboardData.getData('text/plain')
+        const text = clipboardMarkdown(e)
         if (text && onPasteText(text)) e.preventDefault()
       }
     : undefined
@@ -696,6 +778,43 @@ function EditableField({
     width: '100%',
     display: 'block',
     ...style,
+  }
+
+  /*
+   * Mặt vẽ. Con trỏ chưa vào ô thì người viết nhìn thấy bài, không nhìn thấy
+   * ký hiệu — `**chữ**` hiện ra là chữ nhấn, `[chữ](địa chỉ)` hiện ra là link.
+   * Bấm vào là lật sang mặt gõ, ngay tại chỗ vừa bấm.
+   */
+  if (markdown && !editing) {
+    const enter = (at: number) => setCaret(Math.max(0, Math.min(at, value.length)))
+    return (
+      <div
+        className="awc-editable awc-md-view"
+        role="textbox"
+        tabIndex={0}
+        aria-label={placeholder}
+        onMouseDown={(e) => {
+          // Chặn mặc định để cú bấm không mở link đang nằm trong chữ, và để
+          // trình duyệt khỏi đặt vùng chọn vào một cái div sắp biến mất.
+          e.preventDefault()
+          enter(rawIndexFor(value, drawnIndexAt(e.currentTarget, e.clientX, e.clientY)))
+        }}
+        onFocus={() => enter(value.length)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            enter(value.length)
+          }
+        }}
+        style={{ ...commonStyle, cursor: 'text', minHeight: '1.2em', whiteSpace: 'pre-wrap' }}
+      >
+        {value === '' ? (
+          <span style={{ color: ink.muted }}>{placeholder}</span>
+        ) : (
+          <Inline text={value} accentInk={accentInk} />
+        )}
+      </div>
+    )
   }
 
   if (multiline) {
@@ -2299,6 +2418,8 @@ function ReportBlockFields({
             onFocused={onFocused}
             onCommit={(v) => commitText(v, { ...block, text: v })}
             onPasteText={onPasteBlocks}
+            markdown
+            accentInk={palette.ink}
             style={{ fontFamily: serif, fontSize: HEADING_SIZE[level], color: level === 3 ? palette.ink : ink.base, margin: '10px 0 6px' }}
           />
           <div className="awc-levels">
@@ -2330,6 +2451,8 @@ function ReportBlockFields({
               placeholder="trích dẫn"
               onCommit={(v) => onChange({ ...block, text: v })}
               onPasteText={onPasteBlocks}
+              markdown
+              accentInk={palette.ink}
               style={{ fontFamily: serif, fontSize: 19, lineHeight: 1.35, color: ink.base }}
             />
             <EditableField
@@ -2359,6 +2482,8 @@ function ReportBlockFields({
             placeholder="nội dung khối nhấn"
             onCommit={(v) => onChange({ ...block, text: v })}
             onPasteText={onPasteBlocks}
+            markdown
+            accentInk={palette.ink}
             style={{ fontSize: 14.5, lineHeight: 1.55, color: ink.strong }}
           />
         </div>
@@ -2374,6 +2499,8 @@ function ReportBlockFields({
           onFocused={onFocused}
           onCommit={(v) => commitText(v, { ...block, text: v })}
           onPasteText={onPasteBlocks}
+          markdown
+          accentInk={palette.ink}
           style={{ fontSize: 15, lineHeight: 1.55, color: ink.strong, maxWidth: 620 }}
         />
       )
@@ -2504,6 +2631,8 @@ function ListEditor({
                 placeholder="một dòng"
                 onCommit={(v) => write(at(attributes.items, path, (it) => ({ ...it, runs: textToRuns(v) })))}
                 onPasteText={(pasted) => pasteInto(path, pasted)}
+                markdown
+                accentInk={palette.ink}
                 style={{ font: 'inherit', color: 'inherit' }}
               />
               <span className="awc-list-tools">
@@ -2546,6 +2675,8 @@ function ListEditor({
                   })),
                 )
               }
+              markdown
+              accentInk={palette.ink}
               style={{ font: 'inherit', color: 'inherit' }}
             />
           ),

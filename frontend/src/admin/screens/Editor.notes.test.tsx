@@ -182,7 +182,8 @@ describe('the blocks a report can hold', () => {
 
   it('writes the quote mark itself, so nobody types one', () => {
     draw([{ id: 'b1', type: 'quote', text: 'Vị mỏng ở cuối.', attribution: 'sổ rang' }])
-    expect(screen.getByDisplayValue('Vị mỏng ở cuối.')).toBeInTheDocument()
+    // Lời trích vẽ markdown nên là chữ trên màn; nguồn thì không, nên vẫn là ô.
+    expect(screen.getByText('Vị mỏng ở cuối.')).toBeInTheDocument()
     expect(screen.getByDisplayValue('sổ rang')).toBeInTheDocument()
   })
 })

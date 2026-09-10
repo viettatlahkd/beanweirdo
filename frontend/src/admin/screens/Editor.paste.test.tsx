@@ -57,6 +57,17 @@ function written(onChange: ReturnType<typeof vi.fn>): ListAttrs {
 
 const lines = (list: ListAttrs) => list.items.map((i) => runsToText(i.runs))
 
+/**
+ * Đưa con trỏ vào một ô soạn.
+ *
+ * Ô có hai mặt: con trỏ ở ngoài thì nó vẽ markdown, bấm vào mới hiện chữ thô.
+ * Nên tới được chỗ gõ là hai bước, và mọi lần dán dưới đây đều bắt đầu bằng
+ * bước này.
+ */
+async function enter(label: string | RegExp) {
+  await userEvent.click(screen.getByRole('textbox', { name: label }))
+}
+
 const SIX = [
   'Chưa chốt test cases.',
   'Chưa có giới hạn cho việc bổ sung test cases.',
@@ -69,7 +80,7 @@ const SIX = [
 describe('dán danh sách vào khối danh sách', () => {
   it('sáu gạch đầu dòng thành sáu dòng, không phải một', async () => {
     const onChange = draw([{ runs: [{ t: '' }] }])
-    await userEvent.click(screen.getByPlaceholderText('một dòng'))
+    await enter('một dòng')
     await userEvent.paste(SIX.map((l) => `- ${l}`).join('\n'))
 
     expect(lines(written(onChange))).toEqual(SIX)
@@ -77,7 +88,7 @@ describe('dán danh sách vào khối danh sách', () => {
 
   it('dán vào dòng trống thì thay chỗ nó, không để lại một mục rỗng ở trên', async () => {
     const onChange = draw([{ runs: [{ t: '' }] }])
-    await userEvent.click(screen.getByPlaceholderText('một dòng'))
+    await enter('một dòng')
     await userEvent.paste('- một\n- hai')
 
     expect(lines(written(onChange))).toEqual(['một', 'hai'])
@@ -85,7 +96,7 @@ describe('dán danh sách vào khối danh sách', () => {
 
   it('dán vào dòng đã có chữ thì chữ ấy ở lại, cái dán vào nằm dưới', async () => {
     const onChange = draw([{ runs: [{ t: 'sẵn có' }] }])
-    await userEvent.click(screen.getByDisplayValue('sẵn có'))
+    await enter(/đoạn văn|viết|một dòng/i)
     await userEvent.paste('- một\n- hai')
 
     expect(lines(written(onChange))).toEqual(['sẵn có', 'một', 'hai'])
@@ -93,7 +104,7 @@ describe('dán danh sách vào khối danh sách', () => {
 
   it('dán danh sách đánh số vào khối trống thì khối chuyển sang đánh số', async () => {
     const onChange = draw([{ runs: [{ t: '' }] }])
-    await userEvent.click(screen.getByPlaceholderText('một dòng'))
+    await enter('một dòng')
     await userEvent.paste('1. một\n2. hai')
 
     expect(written(onChange).ordered).toBe(true)
@@ -101,7 +112,7 @@ describe('dán danh sách vào khối danh sách', () => {
 
   it('khối đã có chữ thì không bị đổi kiểu đánh số — đó là chọn lựa của người viết', async () => {
     const onChange = draw([{ runs: [{ t: 'sẵn có' }] }])
-    await userEvent.click(screen.getByDisplayValue('sẵn có'))
+    await enter(/đoạn văn|viết|một dòng/i)
     await userEvent.paste('1. một\n2. hai')
 
     expect(written(onChange).ordered).toBeUndefined()
@@ -109,7 +120,7 @@ describe('dán danh sách vào khối danh sách', () => {
 
   it('thụt lề trong cái dán vào thành mục con', async () => {
     const onChange = draw([{ runs: [{ t: '' }] }])
-    await userEvent.click(screen.getByPlaceholderText('một dòng'))
+    await enter('một dòng')
     await userEvent.paste('- cha\n  - con')
 
     const list = written(onChange)
@@ -119,7 +130,7 @@ describe('dán danh sách vào khối danh sách', () => {
 
   it('link trong cái dán vào giữ được, và vẽ ra thành link', async () => {
     const onChange = draw([{ runs: [{ t: '' }] }])
-    await userEvent.click(screen.getByPlaceholderText('một dòng'))
+    await enter('một dòng')
     await userEvent.paste('- xem [đây](https://a.com)\n- và https://b.com')
 
     const list = written(onChange)
@@ -131,8 +142,7 @@ describe('dán danh sách vào khối danh sách', () => {
     // Chặn cả những lần dán bình thường là làm hỏng thao tác hay dùng nhất
     // trong một ô nhập, để đổi lấy một trường hợp hiếm hơn nhiều.
     const onChange = draw([{ runs: [{ t: 'sẵn có' }] }])
-    const field = screen.getByDisplayValue('sẵn có')
-    await userEvent.click(field)
+    await userEvent.click(screen.getByText('sẵn có'))
     await userEvent.paste(' thêm chữ')
     await userEvent.tab()
 
@@ -157,7 +167,7 @@ describe('dán cả một trang vào canvas', () => {
 
   it('một trang markdown thành ba khối, không phải một đoạn', async () => {
     const onChange = drawBlocks([{ type: 'paragraph', id: 'b1', text: '' } as unknown as ReportBlock])
-    await userEvent.click(screen.getByPlaceholderText(/đoạn văn|viết/i))
+    await enter(/đoạn văn|viết/i)
     await userEvent.paste(PAGE)
 
     expect(writtenBlocks(onChange).map((b) => b.type)).toEqual(['heading', 'paragraph', 'list'])
@@ -165,7 +175,7 @@ describe('dán cả một trang vào canvas', () => {
 
   it('khối rỗng bị thay chỗ, không để lại một đoạn trống ở trên', async () => {
     const onChange = drawBlocks([{ type: 'paragraph', id: 'b1', text: '' } as unknown as ReportBlock])
-    await userEvent.click(screen.getByPlaceholderText(/đoạn văn|viết/i))
+    await enter(/đoạn văn|viết/i)
     await userEvent.paste('# một\n\n# hai')
 
     expect(writtenBlocks(onChange)).toHaveLength(2)
@@ -173,7 +183,7 @@ describe('dán cả một trang vào canvas', () => {
 
   it('khối đã có chữ thì chữ ở lại, cái dán vào nằm dưới', async () => {
     const onChange = drawBlocks([{ type: 'paragraph', id: 'b1', text: 'sẵn có' } as unknown as ReportBlock])
-    await userEvent.click(screen.getByDisplayValue('sẵn có'))
+    await enter(/đoạn văn|viết|một dòng/i)
     await userEvent.paste('# một\n\n# hai')
 
     const blocks = writtenBlocks(onChange)
@@ -183,7 +193,7 @@ describe('dán cả một trang vào canvas', () => {
 
   it('mỗi khối dán vào được một id riêng — ghi chú cạnh bài neo vào id', async () => {
     const onChange = drawBlocks([{ type: 'paragraph', id: 'b1', text: 'sẵn có' } as unknown as ReportBlock])
-    await userEvent.click(screen.getByDisplayValue('sẵn có'))
+    await enter(/đoạn văn|viết|một dòng/i)
     await userEvent.paste('# một\n\n# hai\n\n# ba')
 
     const ids = writtenBlocks(onChange).map((b) => (b as { id?: string }).id)
@@ -193,7 +203,7 @@ describe('dán cả một trang vào canvas', () => {
 
   it('dán một câu vào giữa đoạn đang viết vẫn là dán như thường', async () => {
     const onChange = drawBlocks([{ type: 'paragraph', id: 'b1', text: 'sẵn có' } as unknown as ReportBlock])
-    await userEvent.click(screen.getByDisplayValue('sẵn có'))
+    await enter(/đoạn văn|viết|một dòng/i)
     await userEvent.paste(' thêm chữ')
     await userEvent.tab()
 
@@ -237,7 +247,7 @@ describe('dán vào bitesize và memo, không riêng report', () => {
       len: 'ngắn',
       elements: [{ type: 'paragraph', id: 'b1', text: '' }],
     })
-    await userEvent.click(screen.getByPlaceholderText(/đoạn văn|viết/i))
+    await enter(/đoạn văn|viết/i)
     await userEvent.paste(PAGE)
 
     expect(pastedElements(onChange).map((b) => b.type)).toEqual(['heading', 'list'])
@@ -248,7 +258,7 @@ describe('dán vào bitesize và memo, không riêng report', () => {
       subtitle: 'phụ đề',
       elements: [{ type: 'paragraph', id: 'b1', text: '' }],
     })
-    await userEvent.click(screen.getByPlaceholderText(/đoạn văn|viết/i))
+    await enter(/đoạn văn|viết/i)
     await userEvent.paste(PAGE)
 
     expect(pastedElements(onChange).map((b) => b.type)).toEqual(['heading', 'list'])

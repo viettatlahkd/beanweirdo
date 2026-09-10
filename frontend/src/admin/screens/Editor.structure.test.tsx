@@ -126,11 +126,19 @@ describe('memo — chuỗi phẳng, mỗi element một tay nắm', () => {
     expect(bodyOf(onChange).elements.map((e) => e.type)).toEqual(['heading', 'table', 'list', 'heading', 'list'])
   })
 
-  it('mọi dòng trong danh sách đều là ô gõ được, chữ nhấn hiện dạng sửa được', () => {
+  it('mọi dòng trong danh sách đều là ô gõ được, chữ nhấn vẽ ra rồi mới sửa được', async () => {
     draw('memo', body)
+    /*
+     * Ô soạn có hai mặt. Con trỏ ở ngoài thì nó vẽ bài — chữ nhấn ra chữ
+     * nhấn, không ra dấu sao. Bấm vào mới hiện chữ thô để sửa, và chữ thô ấy
+     * vẫn phải đủ dấu, nếu không thì sửa một chữ là mất định dạng cả dòng.
+     */
+    expect(screen.getByText('hậu vị ngắn').tagName).toBe('EM')
+    expect(screen.getByText('đo lúc drop')).toBeInTheDocument()
+    expect(screen.getByText('blooming')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByText('hậu vị ngắn'))
     expect(screen.getByDisplayValue('Ngọt mía, *hậu vị ngắn*')).toBeInTheDocument()
-    expect(screen.getByDisplayValue('đo lúc drop')).toBeInTheDocument()
-    expect(screen.getByDisplayValue('blooming')).toBeInTheDocument()
   })
 
   it('danh sách đánh số hiện số ngay lúc đang soạn', () => {
@@ -143,6 +151,8 @@ describe('memo — chuỗi phẳng, mỗi element một tay nắm', () => {
 
   it('xoá hết chữ một dòng phụ thì dòng ấy đi, không để lại dòng trống', async () => {
     const onChange = draw('memo', body)
+    // Bấm vào mặt vẽ để lật sang mặt gõ, rồi mới xoá được.
+    await userEvent.click(screen.getByText('40g'))
     await userEvent.clear(screen.getByDisplayValue('40g'))
     await userEvent.tab()
     // '40g' thuộc danh sách thứ hai — danh sách các mốc pha.

@@ -241,8 +241,10 @@ describe('EditorCanvas — report', () => {
       />,
     )
     // The ghost names the level too, so an empty heading says which one it is.
-    expect(screen.getByPlaceholderText('Tiêu đề 1')).toBeInTheDocument()
-    expect(screen.getByPlaceholderText('Đoạn văn')).toBeInTheDocument()
+    // An untouched field draws its markdown, so the ghost is the box's label
+    // rather than an input's placeholder — same words, same grey.
+    expect(screen.getByRole('textbox', { name: 'Tiêu đề 1' })).toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: 'Đoạn văn' })).toBeInTheDocument()
   })
 
   it('lets an emptied paragraph go, and keeps an emptied heading in place', async () => {
@@ -253,11 +255,15 @@ describe('EditorCanvas — report', () => {
     ]
     render(<EditorCanvas template="report" post={basePost({ template: 'report', body })} onChange={onChange} onHeroDrop={vi.fn()} />)
 
+    // Each field draws its markdown until clicked into, so reaching the text
+    // is two steps: click the drawn box, then type in the field behind it.
+    await userEvent.click(screen.getByText('Đẩy lửa cao hơn 8%.'))
     await userEvent.clear(screen.getByDisplayValue('Đẩy lửa cao hơn 8%.'))
     await userEvent.tab()
     expect(onChange).toHaveBeenLastCalledWith({ body: [{ ...body[0], id: 'b1' }] })
 
     onChange.mockClear()
+    await userEvent.click(screen.getByText('Mẻ rang #14'))
     await userEvent.clear(screen.getByDisplayValue('Mẻ rang #14'))
     await userEvent.tab()
     expect(onChange).toHaveBeenLastCalledWith({ body: [{ ...body[0], id: 'b1', text: '' }, { ...body[1], id: 'b2' }] })

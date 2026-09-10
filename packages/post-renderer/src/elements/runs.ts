@@ -64,6 +64,40 @@ export function runsToText(runs: Run[] | undefined): string {
 }
 
 /**
+ * Where a position in the drawn words falls in the text that produced them.
+ *
+ * A field that draws its markdown has to put the cursor where the writer
+ * clicked, and the two strings are not the same length: the markers are in one
+ * and not the other. Without this the cursor lands at the end of the line
+ * every time, and clicking into the middle of a paragraph — the most ordinary
+ * thing anyone does in a text field — stops working.
+ *
+ * Measured against the text as written, never against a rebuilt copy of it.
+ * The same emphasis can be written `*x*` or `**x**`, so a copy rebuilt from
+ * runs is a different length than what the writer is looking at, and every
+ * position after the first marker comes out short.
+ */
+export function rawIndexFor(text: string, drawnIndex: number): number {
+  let drawn = 0
+  let raw = 0
+  for (const part of text.split(MARKED)) {
+    if (!part) continue
+    const words = textToRuns(part)
+      .map((r) => r.t)
+      .join('')
+    if (drawnIndex <= drawn + words.length) {
+      // Chỗ chữ bắt đầu trong chính đoạn ấy — `**` là 2, `[` là 1, chữ trần
+      // là 0 — đo bằng chữ thật chứ không suy từ loại dấu.
+      const prefix = words === '' ? 0 : Math.max(0, part.indexOf(words))
+      return raw + prefix + (drawnIndex - drawn)
+    }
+    drawn += words.length
+    raw += part.length
+  }
+  return text.length
+}
+
+/**
  * A line of text back into runs.
  *
  * An unclosed asterisk is left as a plain character rather than swallowing the
