@@ -139,3 +139,66 @@ describe('dán danh sách vào khối danh sách', () => {
     expect(lines(written(onChange))).toEqual(['sẵn có thêm chữ'])
   })
 })
+
+describe('dán cả một trang vào canvas', () => {
+  function drawBlocks(body: ReportBlock[]) {
+    const onChange = vi.fn()
+    render(<EditorCanvas template="report" post={reportPost(body)} onChange={onChange} onHeroDrop={vi.fn()} />)
+    return onChange
+  }
+
+  /** Chuỗi khối vừa được ghi ra, bỏ phần ghi chú cạnh bài. */
+  function writtenBlocks(onChange: ReturnType<typeof vi.fn>) {
+    const body = onChange.mock.calls.at(-1)?.[0].body as { type?: string }[]
+    return body.filter((b) => b.type !== 'notes')
+  }
+
+  const PAGE = ['# Mẻ rang #14', '', 'Đợt này hạ nhiệt sớm.', '', '- nhiệt vào 198°C', '- ra 11:20'].join('\n')
+
+  it('một trang markdown thành ba khối, không phải một đoạn', async () => {
+    const onChange = drawBlocks([{ type: 'paragraph', id: 'b1', text: '' } as unknown as ReportBlock])
+    await userEvent.click(screen.getByPlaceholderText(/đoạn văn|viết/i))
+    await userEvent.paste(PAGE)
+
+    expect(writtenBlocks(onChange).map((b) => b.type)).toEqual(['heading', 'paragraph', 'list'])
+  })
+
+  it('khối rỗng bị thay chỗ, không để lại một đoạn trống ở trên', async () => {
+    const onChange = drawBlocks([{ type: 'paragraph', id: 'b1', text: '' } as unknown as ReportBlock])
+    await userEvent.click(screen.getByPlaceholderText(/đoạn văn|viết/i))
+    await userEvent.paste('# một\n\n# hai')
+
+    expect(writtenBlocks(onChange)).toHaveLength(2)
+  })
+
+  it('khối đã có chữ thì chữ ở lại, cái dán vào nằm dưới', async () => {
+    const onChange = drawBlocks([{ type: 'paragraph', id: 'b1', text: 'sẵn có' } as unknown as ReportBlock])
+    await userEvent.click(screen.getByDisplayValue('sẵn có'))
+    await userEvent.paste('# một\n\n# hai')
+
+    const blocks = writtenBlocks(onChange)
+    expect(blocks.map((b) => b.type)).toEqual(['paragraph', 'heading', 'heading'])
+    expect((blocks[0] as { text?: string }).text).toBe('sẵn có')
+  })
+
+  it('mỗi khối dán vào được một id riêng — ghi chú cạnh bài neo vào id', async () => {
+    const onChange = drawBlocks([{ type: 'paragraph', id: 'b1', text: 'sẵn có' } as unknown as ReportBlock])
+    await userEvent.click(screen.getByDisplayValue('sẵn có'))
+    await userEvent.paste('# một\n\n# hai\n\n# ba')
+
+    const ids = writtenBlocks(onChange).map((b) => (b as { id?: string }).id)
+    expect(new Set(ids).size).toBe(ids.length)
+    expect(ids.every(Boolean)).toBe(true)
+  })
+
+  it('dán một câu vào giữa đoạn đang viết vẫn là dán như thường', async () => {
+    const onChange = drawBlocks([{ type: 'paragraph', id: 'b1', text: 'sẵn có' } as unknown as ReportBlock])
+    await userEvent.click(screen.getByDisplayValue('sẵn có'))
+    await userEvent.paste(' thêm chữ')
+    await userEvent.tab()
+
+    const blocks = writtenBlocks(onChange)
+    expect(blocks).toHaveLength(1)
+    expect((blocks[0] as { text?: string }).text).toBe('sẵn có thêm chữ')
+  })
+})

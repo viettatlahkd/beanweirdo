@@ -46,6 +46,7 @@ export {
   findElements,
   getElement,
   Inline,
+  pastedToBlocks,
   pastedToItems,
   registerElement,
   Runs,
