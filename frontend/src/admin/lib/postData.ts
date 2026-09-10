@@ -29,7 +29,22 @@ export function getBody<T>(post: Pick<PostDetail, 'body'>): T[] {
  * two places and could disagree with itself. The store owns what a blank one
  * looks like now; this is the door the admin already knocks on.
  */
+/**
+ * Danh sách đánh số là một **mục riêng trong menu**, không phải một ô tick.
+ *
+ * Trước đây mỗi danh sách đeo một hàng checkbox "đánh số" nằm thường trực
+ * phía trên nó. Đánh số hay không là chuyện người viết quyết một lần lúc tạo,
+ * đúng như mọi trình soạn khác bày nó thành hai loại; để nó thành một ô tick
+ * là bắt mọi danh sách gánh một dòng chrome suốt đời.
+ *
+ * Vẫn **một** element trong kho, chỉ khác thuộc tính — kho không bị nhân đôi.
+ */
+export const ORDERED_LIST = 'list-ordered'
+
 export function blankReportBlock(type: string): ReportBlock {
+  if (type === ORDERED_LIST) {
+    return { ...getElement('list')!.blank(), ordered: true } as unknown as ReportBlock
+  }
   const element = getElement(type)
   if (!element) throw new Error(`Không có element '${type}' trong kho`)
   return element.blank() as ReportBlock

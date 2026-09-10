@@ -27,9 +27,11 @@ export type RowShellProps = {
   drag: RowDrag
   /** Extra controls, shown before copy and remove. */
   extra?: ReactNode
+  /** Nút `+` của máng bên trái, và menu nổi của nó. */
+  plus?: ReactNode
 }
 
-export function RowShell({ children, noun, onMove, onRemove, onDuplicate, index, drag, extra }: RowShellProps) {
+export function RowShell({ children, noun, onMove, onRemove, onDuplicate, index, drag, extra, plus }: RowShellProps) {
   return (
     <div
       onDragOver={(e) => {
@@ -41,6 +43,12 @@ export function RowShell({ children, noun, onMove, onRemove, onDuplicate, index,
     >
       {drag.over === index && drag.from !== null && drag.from !== index && <div className="awc-dropline" />}
       <div className="awc-rep-block">
+        {/*
+          * Máng bên trái gom hết nút: `+`, tay nắm, nhân bản, xoá. Trước đây
+          * chúng nằm hai đầu và ✎ ⧉ × đè lên chính đoạn đang viết.
+          */}
+        <div className="awc-gutter">
+        {plus}
         <button
           type="button"
           className="awc-grip"
@@ -74,6 +82,7 @@ export function RowShell({ children, noun, onMove, onRemove, onDuplicate, index,
           <button type="button" onClick={onRemove} aria-label={`xoá ${noun}`}>
             ×
           </button>
+        </div>
         </div>
         {children}
       </div>

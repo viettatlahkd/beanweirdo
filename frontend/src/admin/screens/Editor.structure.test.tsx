@@ -121,7 +121,7 @@ describe('memo — chuỗi phẳng, mỗi element một tay nắm', () => {
 
   it('chèn element mới ngay dưới element đang đứng', async () => {
     const onChange = draw('memo', body)
-    await userEvent.click(screen.getAllByText('+ thêm khối')[0])
+    await userEvent.click(screen.getAllByLabelText('thêm khối')[0])
     await userEvent.click(screen.getAllByRole('button', { name: 'Bảng' })[0])
     expect(bodyOf(onChange).elements.map((e) => e.type)).toEqual(['heading', 'table', 'list', 'heading', 'list'])
   })
