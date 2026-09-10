@@ -273,14 +273,30 @@ describe('ba dàn trang của dạng mở', () => {
     expect(order(container)[1]).toBe('tiêu đề')
   })
 
-  it('clip dọc: hai cột, chữ tụt xuống, ô phụ rơi xuống đáy', () => {
+  it('clip dọc: hai cột, chữ tụt xuống, ô phụ vẫn neo vào khối chữ', () => {
     const { container } = render(<Bitesize post={post({ media: 'vid', portrait: true, sub: 'phụ' })} />)
     const grid = container.querySelector<HTMLElement>('div[style*="grid-template-columns"]')!
     expect(grid.style.gridTemplateColumns).toBe('250px minmax(0, 1fr)')
     const col = grid.children[1] as HTMLElement
     expect(col.style.paddingTop).toBe('96px')
-    const subWrap = Array.from(col.children).at(-1) as HTMLElement
-    expect(subWrap.style.marginTop).toBe('auto')
+    // Ô ảnh phụ đi theo mốc hai phần ba của khối chữ, như mọi dàn trang khác —
+    // không còn dính đáy cột nữa.
+    expect(container.querySelector<HTMLElement>('div[style*="position: absolute"]')!.style.bottom).toBe('33.33%')
+  })
+
+  it('ảnh dọc cũng thành hai cột, để cả bài chỉ có một mép trái', () => {
+    // "ảnh dọc thì lề trái thẳng với lề chữ cạnh ảnh".
+    const { container } = render(<Bitesize post={post({ portrait: true })} />)
+    const grid = container.querySelector<HTMLElement>('div[style*="grid-template-columns"]')!
+    expect(grid.style.gridTemplateColumns).toBe('300px minmax(0, 1fr)')
+    // Tiêu đề vẫn dẫn đầu cả bề ngang, nên cột phải không tụt xuống.
+    expect((grid.children[1] as HTMLElement).style.paddingTop).toBe('0px')
+  })
+
+  it('thẻ có ảnh đứng: ảnh chiếm 40% thẻ, không lấy bề ngang lưới đưa xuống', () => {
+    // Lưới đưa 78%; ảnh đứng chiếm 78% thì cột chữ còn 22% và tiêu đề bị cắt.
+    const { container } = render(<BitesizeCard post={post({ portrait: true })} mediaWidth="78%" />)
+    expect(media(container).style.width).toBe('40%')
   })
 
   it('ảnh tĩnh: tiêu đề dẫn đầu, chữ chảy quanh ảnh, ô phụ ở chân', () => {

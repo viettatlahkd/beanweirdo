@@ -371,7 +371,15 @@ export function BitesizeCard({
   renderMediaHint,
 }: BitesizeCardProps) {
   const ar = aspect ?? frameOf(post)
-  const width = mediaWidth ?? (post.portrait ? '40%' : '100%')
+  /*
+   * Ảnh ĐỨNG thì chiếm 40% bề ngang thẻ, không lấy bề ngang mà lưới đưa xuống.
+   *
+   * Đây là luật của bản design gốc (`mediaW: n.portrait ? '40%' : p.mw`) mà tôi
+   * làm rơi mất. Hậu quả thấy ngay trên trang: lưới đưa xuống 78%, ảnh đứng
+   * chiếm 78% ấy, cột chữ bên cạnh còn 22% — tiêu đề bị nén thành một dải hẹp
+   * rồi cắt cụt giữa chừng.
+   */
+  const width = post.portrait && !mobile ? '40%' : (mediaWidth ?? '100%')
   return (
     <div style={{ display: 'flow-root' }}>
       <Meta post={post} wide={hovered} renderTag={renderTag} renderDate={renderDate} />
@@ -453,6 +461,19 @@ export function Bitesize({
    */
   const clipDoc = clip && post.portrait && !mobile
   const clipNgang = clip && !post.portrait && !mobile
+  /*
+   * Ảnh DỌC cũng đứng thành cột như clip dọc.
+   *
+   * Chủ site: "ảnh dọc thì lề trái thẳng với lề chữ cạnh ảnh". Trước đây ảnh
+   * thả trôi bên trái, nên mấy khối đầu nằm cạnh ảnh có một mép trái, còn khối
+   * nào đã qua khỏi ảnh lại tụt về mép trái của khối bao — hai mép trái trong
+   * một bài. Với ảnh ngang thì ảnh thấp, chữ qua khỏi nó nhanh nên không thấy;
+   * ảnh dọc cao gấp rưỡi nên nó lộ hẳn ra.
+   *
+   * Cột thì cả bài chỉ còn một mép trái, và không khối nào chui xuống dưới ảnh.
+   */
+  const anhDoc = !clip && post.portrait && !mobile
+  const cot = clipDoc || anhDoc
   const title = (
     <Title
       post={post}
@@ -598,8 +619,15 @@ export function Bitesize({
         * Nên: chừa sẵn một khoảng lề phải đúng bằng chỗ ô ảnh phụ từng chiếm,
         * và ô ấy xuống hẳn dưới cùng, canh phải như một dòng chân trang.
         */}
-      {clipDoc ? (
-        <div style={{ display: 'grid', gridTemplateColumns: '250px minmax(0, 1fr)', gap: 34 }}>
+      {cot ? (
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: `${clipDoc ? 250 : 300}px minmax(0, 1fr)`,
+            gap: 34,
+            paddingRight: SUB_GUTTER,
+          }}
+        >
           {media}
           {/*
             * Cột chữ tụt xuống một quãng và ô ảnh phụ rơi xuống đáy.
@@ -608,10 +636,14 @@ export function Bitesize({
             * trống trơn — đúng chỗ chủ site gọi là chật chội. `margin-top: auto`
             * đẩy ô ảnh phụ xuống đáy cột, tức mé một phần ba dưới của clip.
             */}
-          <div style={{ display: 'flex', flexDirection: 'column', paddingTop: 96 }}>
-            {title}
+          {/*
+            * Clip dọc thì tiêu đề đứng CẠNH clip và tụt xuống một quãng cho
+            * cân. Ảnh dọc thì tiêu đề đã dẫn đầu cả bề ngang ở trên rồi, nên
+            * cột này chỉ có chữ, và không tụt.
+            */}
+          <div style={{ display: 'flex', flexDirection: 'column', paddingTop: clipDoc ? 96 : 0 }}>
+            {clipDoc ? title : null}
             {body}
-            {subBox ? <div style={{ marginTop: 'auto', paddingTop: 28, alignSelf: 'flex-end' }}>{subBox}</div> : null}
           </div>
         </div>
       ) : (

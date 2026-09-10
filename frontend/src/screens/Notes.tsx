@@ -1,10 +1,9 @@
-import { useMemo, useRef, useState, type CSSProperties } from 'react'
+import { useMemo, useState, type CSSProperties } from 'react'
 import { Breadcrumbs } from '../components/Breadcrumbs'
 import { useSiteCopy } from '../data/useSiteCopy'
 import { noteFilterBar } from '../lib/notesFilter'
 import { useTags } from '../data/useTags'
 import { useIsMobile } from '../lib/useIsMobile'
-import { useNarrow } from '../lib/useNarrow'
 import {
   featureCells,
   withOverrides,
@@ -64,16 +63,7 @@ function OpenedPost({
    * ở bề ngang 390.
    */
   const mobile = useIsMobile()
-  /*
-   * Bài mở ra chỉ chiếm ba phần tư lưới, nên trên màn 905 nó còn 561 — hẹp hơn
-   * ngưỡng 899 trong khi cửa sổ thì không. Hỏi cửa sổ ở đây là hỏi sai chỗ:
-   * memo có cột thông số rộng cứng 300px, và ở 561 thì cột tiêu đề bên cạnh còn
-   * 93px, tiêu đề xuống dòng từng chữ cái một. Nên đo chính khối này.
-   */
-  const box = useRef<HTMLDivElement>(null)
-  const narrow = useNarrow(box)
-  const tight = mobile || narrow
-  return <div ref={box}>{draw(post, mod, tight)}</div>
+  return draw(post, mod, mobile)
 }
 
 function draw(
@@ -113,6 +103,11 @@ function draw(
  *
  * Trạng thái rê chuột nằm ở đây chứ không ở trang, vì nó chỉ nói về một thẻ.
  */
+/** Bài bitesize có ảnh/clip đứng — xem chú thích ở chỗ dùng nó. */
+function isPortraitNote(post: PostRow): boolean {
+  return post.template === 'bitesize' && (post.body as { portrait?: boolean } | null)?.portrait === true
+}
+
 function Collapsed({
   post,
   num,
@@ -538,7 +533,19 @@ export function Notes() {
                          * bên, nên bài đọc ra là một khối nổi lên TRONG trang
                          * chứ không phải một trang mới đè lên.
                          */
-                        gridColumn: open ? '2 / span 9' : place.col,
+                        /*
+                         * Thẻ có ảnh đứng cần chỗ rộng hơn.
+                         *
+                         * Luật của bản design gốc: `col: n.portrait ? 'span 7'
+                         * : p.col`. Ảnh đứng nằm CẠNH chữ chứ không nằm trên,
+                         * nên ô 4 cột của chu kỳ dàn trang bị chia đôi và cả
+                         * hai nửa đều quá hẹp.
+                         */
+                        gridColumn: open
+                          ? '2 / span 9'
+                          : isPortraitNote(p)
+                            ? 'span 7'
+                            : place.col,
                         marginTop: open ? '40px' : place.mt,
                       }),
                   cursor: 'pointer',
