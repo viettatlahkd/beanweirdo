@@ -89,7 +89,7 @@ import { duplicateAt, insertAt, move, removeAt } from '../lib/listOps'
 import { followWithParagraph, withPastedBlocks } from '../lib/pasteBlocks'
 import { emptyHistory, historyKey, inverseOf, record, redo, undo, type History } from '../lib/editHistory'
 import { backspace, enter, indent, outdent, subLine, type Focus } from '../lib/listKeys'
-import { blockKey, type BlockFocus } from '../lib/blockKeys'
+import { blockKey, neighbour, type BlockFocus } from '../lib/blockKeys'
 import { applyMark, markFor } from '../lib/marks'
 import { useRowDrag } from '../lib/useRowDrag'
 import {
@@ -726,6 +726,7 @@ function EditableField({
   onKeyDown,
   onPasteText,
   onType,
+  onArrowOut,
   markdown = false,
   accentInk = ink.base,
   style,
@@ -764,6 +765,13 @@ function EditableField({
    * đợi tới đó thì menu chỉ hiện ra sau khi người viết đã bỏ đi.
    */
   onType?: (text: string) => void
+  /**
+   * Con trỏ chạm mép ô và còn muốn đi tiếp.
+   *
+   * Trả `true` nghĩa là đã có chỗ để đi. `false` thì con trỏ ở lại — khối đầu
+   * bài không có gì phía trên, và nuốt phím ở đó là làm mũi tên chết cứng.
+   */
+  onArrowOut?: (dir: -1 | 1) => boolean
   /**
    * Ô vẽ markdown khi không gõ, và chỉ hiện chữ thô lúc con trỏ nằm trong nó.
    *
@@ -858,6 +866,26 @@ function EditableField({
     node.setSelectionRange(want.start, want.end)
   }, [local])
 
+  /**
+   * Mũi tên ở mép ô thì đi sang khối bên cạnh.
+   *
+   * Chỉ ở **mép**: giữa chữ thì mũi tên là của trình duyệt, và cướp nó đi là
+   * làm hỏng cách đi lại trong chính đoạn đang viết.
+   */
+  function arrows(e: KeyboardEvent<HTMLElement>): boolean {
+    const node = el.current
+    if (!onArrowOut || !node) return false
+    const at = node.selectionStart ?? 0
+    if (node.selectionEnd !== at) return false
+
+    const up = (e.key === 'ArrowUp' || e.key === 'ArrowLeft') && at === 0
+    const down = (e.key === 'ArrowDown' || e.key === 'ArrowRight') && at === node.value.length
+    if (!up && !down) return false
+    if (!onArrowOut(up ? -1 : 1)) return false
+    e.preventDefault()
+    return true
+  }
+
   /** `Cmd+B` · `Cmd+U` · `Cmd+K`. Trả `true` nghĩa là đã nhận phím. */
   function format(e: KeyboardEvent<HTMLElement>): boolean {
     if (!markdown) return false
@@ -946,7 +974,7 @@ function EditableField({
         }}
         onBlur={commit}
         onKeyDown={(e) => {
-          if (format(e)) return
+          if (format(e) || arrows(e)) return
           onKeyDown?.(e, local)
         }}
         onPaste={paste}
@@ -969,7 +997,7 @@ function EditableField({
         }}
       onBlur={commit}
       onKeyDown={(e) => {
-          if (format(e)) return
+          if (format(e) || arrows(e)) return
           onKeyDown?.(e, local)
         }}
       onPaste={paste}
@@ -1498,6 +1526,12 @@ function BitesizeEditor({
                 focusCaret={spot?.caret}
                 onFocused={() => setSpot(null)}
                 onChange={(next) => writeElements(elements.map((x, k) => (k === i ? next : x)))}
+                onArrowOut={(dir) => {
+                  const to = neighbour(elements, i, dir)
+                  if (!to) return false
+                  setSpot(to)
+                  return true
+                }}
                 onSlash={(query) => setSlash(query === null ? null : { at: i, query })}
                 onTextKey={(e, current) => {
                   const field = e.target as HTMLTextAreaElement
@@ -1640,6 +1674,12 @@ function MemoEditor({
               focusCaret={spot?.caret}
               onFocused={() => setSpot(null)}
               onChange={(next) => write(elements.map((x, k) => (k === i ? next : x)))}
+              onArrowOut={(dir) => {
+                const to = neighbour(elements, i, dir)
+                if (!to) return false
+                setSpot(to)
+                return true
+              }}
               onSlash={(query) => setSlash(query === null ? null : { at: i, query })}
               onTextKey={(e, current) => {
                 const field = e.target as HTMLTextAreaElement
@@ -2200,6 +2240,12 @@ function ReportEditor({
                           onFocused={() => setSpot(null)}
                           onChange={(next) => updateBlock(i, next)}
                           onEmptied={() => requestRemove(i, mergeTarget(blocks, i))}
+                          onArrowOut={(dir) => {
+                            const to = neighbour(blocks, i, dir)
+                            if (!to) return false
+                            setSpot(to)
+                            return true
+                          }}
                           onSlash={(query) => setSlash(query === null ? null : { at: i, query })}
                           onTextKey={(e, current) => {
                             const field = e.target as HTMLTextAreaElement
@@ -2611,6 +2657,7 @@ function ReportBlockFields({
   focusCaret,
   onTextKey,
   onSlash,
+  onArrowOut,
   onFollowWithParagraph,
 }: {
   block: ReportBlock
@@ -2644,6 +2691,12 @@ function ReportBlockFields({
    */
   onSlash: (query: string | null) => void
   /**
+   * Con trỏ chạm mép khối và còn muốn đi tiếp — sang khối có ô chữ gần nhất.
+   *
+   * Bắt buộc, cùng lý do với `onPasteBlocks` và `onTextKey`.
+   */
+  onArrowOut: (dir: -1 | 1) => boolean
+  /**
    * Thay khối này rồi mở một đoạn văn ngay dưới, con trỏ nhảy vào đó.
    *
    * `null` nghĩa là khối này không còn gì để giữ — bỏ luôn. Đây là đường
@@ -2673,6 +2726,7 @@ function ReportBlockFields({
           onFocused={onFocused}
           onCommit={(v) => commitText(v, { ...block, text: v })}
           onPasteText={onPasteBlocks}
+          onArrowOut={onArrowOut}
           onKeyDown={onTextKey}
           onType={(text) => onSlash(text.startsWith('/') ? text.slice(1) : null)}
           focusCaret={focusCaret}
@@ -2690,6 +2744,7 @@ function ReportBlockFields({
             onFocused={onFocused}
             onCommit={(v) => commitText(v, { ...block, text: v })}
             onPasteText={onPasteBlocks}
+            onArrowOut={onArrowOut}
             onKeyDown={onTextKey}
             onType={(text) => onSlash(text.startsWith('/') ? text.slice(1) : null)}
             focusCaret={focusCaret}
@@ -2726,6 +2781,7 @@ function ReportBlockFields({
               placeholder="trích dẫn"
               onCommit={(v) => onChange({ ...block, text: v })}
               onPasteText={onPasteBlocks}
+              onArrowOut={onArrowOut}
               onKeyDown={onTextKey}
               onType={(text) => onSlash(text.startsWith('/') ? text.slice(1) : null)}
               focusCaret={focusCaret}
@@ -2771,6 +2827,7 @@ function ReportBlockFields({
             placeholder="nội dung khối nhấn"
             onCommit={(v) => onChange({ ...block, text: v })}
             onPasteText={onPasteBlocks}
+            onArrowOut={onArrowOut}
             onKeyDown={onTextKey}
             onType={(text) => onSlash(text.startsWith('/') ? text.slice(1) : null)}
             focusCaret={focusCaret}
@@ -2791,6 +2848,7 @@ function ReportBlockFields({
           onFocused={onFocused}
           onCommit={(v) => commitText(v, { ...block, text: v })}
           onPasteText={onPasteBlocks}
+          onArrowOut={onArrowOut}
           onKeyDown={onTextKey}
           onType={(text) => onSlash(text.startsWith('/') ? text.slice(1) : null)}
           focusCaret={focusCaret}
