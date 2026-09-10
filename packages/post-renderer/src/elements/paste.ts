@@ -131,6 +131,21 @@ function cells(row: string): string[] {
  * khối mới là làm hỏng thao tác ấy để đổi lấy một trường hợp hiếm hơn nhiều.
  */
 export function pastedToBlocks(text: string): StoredElement[] | null {
+  const out = markdownToBlocks(text)
+  if (out.length === 0) return null
+  if (out.length === 1 && out[0].type === 'paragraph') return null
+  return out
+}
+
+/**
+ * Chữ markdown thành khối, **luôn** trả về một mảng.
+ *
+ * Đây là đường của màn soạn liền mạch và của lúc render: cả bài là một dải
+ * chữ, khối chỉ dựng lại khi vẽ. Nó khác `pastedToBlocks` đúng ở chỗ ấy —
+ * dán một câu lẻ vào giữa đoạn thì phải là dán chữ, nhưng **lưu** một bài chỉ
+ * có một câu thì bài ấy có đúng một đoạn văn, không phải không có gì.
+ */
+export function markdownToBlocks(text: string): StoredElement[] {
   const lines = text.replace(/\r\n?/g, '\n').split('\n')
   const out: StoredElement[] = []
   let para: string[] = []
@@ -235,8 +250,5 @@ export function pastedToBlocks(text: string): StoredElement[] | null {
     i++
   }
   flush()
-
-  if (out.length === 0) return null
-  if (out.length === 1 && out[0].type === 'paragraph') return null
   return out
 }

@@ -45,7 +45,9 @@ export {
   allElements,
   findElements,
   getElement,
+  bodyToMarkdown,
   htmlToMarkdown,
+  markdownToBlocks,
   Inline,
   pastedToBlocks,
   pastedToItems,
@@ -65,6 +67,7 @@ export type {
   ListAttrs,
   ListItem,
   PastedList,
+  Written,
   Run,
   StoredElement,
 } from './elements'
