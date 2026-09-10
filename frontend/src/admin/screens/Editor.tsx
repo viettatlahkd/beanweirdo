@@ -572,8 +572,8 @@ function EditorStyles() {
       .awc-plus-btn:hover{ border-color: #8C8674; color: #3B3729; }
       .awc-insert-menu{ display: flex; flex-direction: column; gap: 10px; }
       .awc-insert-group{ display: flex; flex-direction: column; gap: 1px; }
-      .awc-insert-cat{ font-size: 9px; letter-spacing: .16em; text-transform: uppercase; color: #8C8674; padding: 2px 6px; }
-      .awc-insert-menu button{ font-family: 'Be Vietnam Pro', system-ui, sans-serif; font-size: 12.5px; text-align: left; padding: 6px 8px; border: none; border-radius: 4px; background: transparent; cursor: pointer; color: #23211A; }
+      .awc-insert-cat{ font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: #8C8674; padding: 2px 6px; }
+      .awc-insert-menu button{ font-family: 'Be Vietnam Pro', system-ui, sans-serif; font-size: 14px; text-align: left; padding: 8px 10px; width: 100%; border: none; border-radius: 4px; background: transparent; cursor: pointer; color: #23211A; }
       .awc-insert-menu button:hover{ background: #F1ECDC; }
       .awc-rep-grid{ display: grid; column-gap: 20px; }
       .awc-split{ position: relative; cursor: col-resize; justify-self: center; width: 1px; background: #EBE5D3; }
@@ -587,13 +587,33 @@ function EditorStyles() {
        * sau mỗi khối. Nay mọi nút dồn về một máng ngoài lề: cột chữ không
        * còn bị cắt ở hai đầu, và không nút nào nằm trên chữ.
        */
-      .awc-rep-block{ position: relative; padding-left: 52px; margin-bottom: 2px; }
-      .awc-gutter{ position: absolute; left: 0; top: 1px; width: 46px; display: flex; align-items: center; gap: 1px; opacity: 0; transition: opacity .12s; }
-      .awc-rep-block:hover .awc-gutter, .awc-rep-block:focus-within .awc-gutter{ opacity: 1; }
-      .awc-gutter button{ width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 12px; line-height: 1; color: #8C8674; background: transparent; border: none; border-radius: 3px; cursor: pointer; padding: 0; }
-      .awc-gutter button:hover{ background: #EFEADA; color: #23211A; }
+      .awc-rep-block{ position: relative; padding-left: 122px; margin-bottom: 2px; }
+      .awc-gutter{ position: absolute; left: 0; top: 0; width: 114px; display: flex; align-items: center; gap: 2px; }
+      /*
+       * Ẩn từng NÚT, không ẩn cả máng.
+       *
+       * Ẩn cả máng thì cái menu đang mở — vốn là con của máng — cũng mờ đi
+       * ngay khi chuột rời khỏi khối, nên nó cứ chớp tắt và phải bấm thêm
+       * lần nữa mới dứt điểm. Đúng cái chủ site báo.
+       */
+      .awc-gutter > button, .awc-gutter > .awc-block-controls > button{ opacity: 0; transition: opacity .12s, background .12s; }
+      .awc-rep-block:hover .awc-gutter > button, .awc-rep-block:focus-within .awc-gutter > button,
+      .awc-rep-block:hover .awc-gutter > .awc-block-controls > button,
+      .awc-rep-block:focus-within .awc-gutter > .awc-block-controls > button{ opacity: 1; }
+      /*
+       * flex: 0 0 26px, không phải width: 26px.
+       *
+       * Đo trong Chrome: bốn nút width 20px trong một máng 46px co lại còn
+       * **8px** mỗi cái — bé như hạt bụi và bấm trượt liên tục. Flex item co
+       * được, nên phải nói thẳng là không co.
+       *
+       * Dùng dấu con: luật này mà với tới nút trong menu thì mỗi mục của menu
+       * bị ép thành ô 26×26 và chữ vỡ mỗi dòng một từ.
+       */
+      .awc-gutter > button, .awc-gutter > .awc-block-controls > button{ flex: 0 0 26px; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; font-size: 15px; line-height: 1; color: #8C8674; background: transparent; border: none; border-radius: 4px; cursor: pointer; padding: 0; }
+      .awc-gutter > button:hover, .awc-gutter > .awc-block-controls > button:hover{ background: #EFEADA; color: #23211A; }
       /* Menu nổi lên trên chữ, không đẩy chữ đi chỗ khác. */
-      .awc-menu-pop{ position: absolute; left: 46px; top: 22px; z-index: 20; background: #fff; border: 1px solid #EBE5D3; border-radius: 6px; box-shadow: 0 8px 28px rgba(35,33,26,.14); padding: 8px 10px; max-height: 320px; overflow-y: auto; min-width: 240px; }
+      .awc-menu-pop{ position: absolute; left: 114px; top: 26px; z-index: 20; background: #fff; border: 1px solid #EBE5D3; border-radius: 8px; box-shadow: 0 10px 32px rgba(35,33,26,.16); padding: 8px; max-height: 340px; overflow-y: auto; width: 264px; }
 
       /* the handle: drag to reorder, Delete to remove — and it says so */
       .awc-grip{ position: relative; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; cursor: grab; font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1; color: #8C8674; background: transparent; border: none; padding: 0; opacity: .35; transition: opacity .12s, color .12s; }
