@@ -9,8 +9,30 @@
  *
  * Nên luật đặt chỗ nằm ở đây, một bản, cho cả ba gọi.
  */
-import { nextId, pastedToBlocks, type ReportBlock } from 'post-renderer'
+import { getElement, nextId, pastedToBlocks, type ReportBlock } from 'post-renderer'
 import { vanishesWhenEmpty } from './reportNotes'
+
+/**
+ * Thay một khối rồi mở một đoạn văn ngay dưới nó.
+ *
+ * Đây là đường ra khỏi một cấu trúc bằng bàn phím — Enter ở mục rỗng cuối một
+ * danh sách. `keep` là `null` khi khối cũ không còn gì để giữ.
+ *
+ * Trả về chuỗi khối mới và **chỗ đoạn văn vừa mở**, vì chỗ gọi còn phải đặt
+ * con trỏ vào đó: mở một khối rồi để con trỏ ở lại chỗ cũ thì người viết vừa
+ * thoát khỏi danh sách xong vẫn đang đứng trong danh sách.
+ */
+export function followWithParagraph(
+  blocks: ReportBlock[],
+  at: number,
+  keep: ReportBlock | null,
+): { blocks: ReportBlock[]; focus: number } {
+  const taken = blocks.map((b) => b.id ?? '')
+  const fresh = { ...getElement('paragraph')!.blank(), id: nextId('b', taken) } as unknown as ReportBlock
+  const next = [...blocks]
+  next.splice(at, 1, ...(keep ? [keep, fresh] : [fresh]))
+  return { blocks: next, focus: keep ? at + 1 : at }
+}
 
 /** Khối rỗng là cái ô trống người viết bấm vào để dán, nên nó bị thay chỗ. */
 function isBlank(block: ReportBlock | undefined): boolean {
