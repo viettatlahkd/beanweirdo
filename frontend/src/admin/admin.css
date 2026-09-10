@@ -107,3 +107,35 @@
   outline: none;
   border-color: #8c8674;
 }
+
+/*
+ * Mặt soạn sống.
+ *
+ * Chữ và chỗ gõ là một, nên kiểu chữ ở đây phải khớp đúng thứ trang vẽ — nếu
+ * lệch thì người viết canh một đằng, trang ra một nẻo.
+ */
+.awc-live { position: relative; }
+.awc-live-input {
+  outline: none;
+  font-family: 'Be Vietnam Pro', system-ui, sans-serif;
+  font-weight: 300;
+  font-size: 15.5px;
+  line-height: 1.55;
+  color: #23211A;
+  min-height: 1.6em;
+}
+.awc-live-ghost {
+  position: absolute; top: 0; left: 0; pointer-events: none;
+  color: #8C8674; font-size: 15px; line-height: 1.62;
+}
+.awc-live-p { margin: 0 0 20px; }
+.awc-live-h1 { font-family: 'Playfair Display', Georgia, serif; font-size: 34px; line-height: 1.08; letter-spacing: -.03em; margin: 40px 0 20px; }
+.awc-live-h2 { font-family: 'Playfair Display', Georgia, serif; font-size: 26px; line-height: 1.08; letter-spacing: -.03em; margin: 20px 0 20px; }
+.awc-live-h3 { font-family: 'Playfair Display', Georgia, serif; font-size: 20px; line-height: 1.1; margin: 20px 0 20px; }
+.awc-live-quote { border-left: 2px solid #EBE5D3; padding-left: 14px; margin: 20px 0; font-family: 'Playfair Display', Georgia, serif; font-size: 21px; line-height: 1.35; }
+.awc-live-ul, .awc-live-ol { margin: 0 0 20px; padding-left: 22px; }
+.awc-live-li { margin: 0 0 11px; }
+.awc-live-li-nested { margin-left: 8px; }
+.awc-live-bold { font-weight: 600; font-style: italic; }
+.awc-live-u { border-bottom: 1px solid #CFCFC4; }
+.awc-live-link { color: inherit; border-bottom: 1px solid currentColor; }
