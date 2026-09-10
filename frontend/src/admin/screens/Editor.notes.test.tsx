@@ -175,11 +175,13 @@ describe('deleting a block that has writing beside it', () => {
 })
 
 describe('the blocks a report can hold', () => {
-  it('offers a quote and a highlight box beside the older kinds', async () => {
+  it('menu `+` chỉ bày thứ không gõ ra được', async () => {
     draw(blocks)
     await userEvent.click(screen.getAllByLabelText('thêm khối')[0])
-    expect(screen.getByRole('button', { name: 'Trích dẫn' })).toBeInTheDocument()
+    // Khối nhấn không có ký hiệu markdown nên vẫn phải chèn bằng menu; trích
+    // dẫn thì gõ `> ` là ra, nên nó rời khỏi đây.
     expect(screen.getByRole('button', { name: 'Khối nhấn' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Trích dẫn' })).toBeNull()
   })
 
   it('đổi cấp tiêu đề bằng số dấu thăng, không bằng nút', async () => {

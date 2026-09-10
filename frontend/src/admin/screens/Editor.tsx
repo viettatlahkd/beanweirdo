@@ -567,8 +567,9 @@ function EditorStyles() {
       .awc-plus-btn:hover{ border-color: #8C8674; color: #3B3729; }
       .awc-insert-menu{ display: flex; flex-direction: column; gap: 10px; }
       .awc-insert-group{ display: flex; flex-direction: column; gap: 1px; }
+      .awc-insert-glyph{ flex: 0 0 24px; height: 24px; display: flex; align-items: center; justify-content: center; border: 1px solid #EBE5D3; border-radius: 4px; font-size: 12px; color: #6E6858; background: #FDFBF2; }
       .awc-insert-cat{ font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: #8C8674; padding: 2px 6px; }
-      .awc-insert-menu button{ font-family: 'Be Vietnam Pro', system-ui, sans-serif; font-size: 14px; text-align: left; padding: 8px 10px; width: 100%; border: none; border-radius: 4px; background: transparent; cursor: pointer; color: #23211A; }
+      .awc-insert-menu button{ display: flex; align-items: center; gap: 10px; font-family: 'Be Vietnam Pro', system-ui, sans-serif; font-size: 14px; text-align: left; padding: 8px 10px; width: 100%; border: none; border-radius: 4px; background: transparent; cursor: pointer; color: #23211A; }
       .awc-insert-menu button:hover{ background: #F1ECDC; }
       .awc-rep-grid{ display: grid; column-gap: 20px; }
       .awc-split{ position: relative; cursor: col-resize; justify-self: center; width: 1px; background: #EBE5D3; }
@@ -3090,7 +3091,7 @@ function InsertPlus({
       <button type="button" onClick={onToggle} aria-expanded={open} aria-label="thêm khối">
         +
       </button>
-      {open && <BlockMenu onInsert={onInsert} onClose={onToggle} />}
+      {open && <BlockMenu mode="things" onInsert={onInsert} onClose={onToggle} />}
     </>
   )
 }
@@ -3103,10 +3104,12 @@ function InsertPlus({
  */
 function BlockMenu({
   filter,
+  mode,
   onInsert,
   onClose,
 }: {
   filter?: string
+  mode?: 'all' | 'things'
   onInsert: (type: string) => void
   onClose: () => void
 }) {
@@ -3128,7 +3131,7 @@ function BlockMenu({
 
   return (
     <div className="awc-menu-pop" ref={box}>
-      <InsertMenu filter={filter} onInsert={onInsert} />
+      <InsertMenu filter={filter} mode={mode} onInsert={onInsert} />
     </div>
   )
 }
@@ -3150,6 +3153,35 @@ function BlockMenu({
  * `ordered: true`. Nhưng trong menu thì nó **phải** là một mục riêng: người
  * viết chọn loại danh sách lúc tạo, không đi tìm một ô tick sau đó.
  */
+/**
+ * Một ký hiệu nhỏ cho mỗi loại, thay cho một cột chữ thuần.
+ *
+ * Chủ site chỉ sang Lark: menu ở đó đọc bằng mắt trong một nhịp vì mỗi dòng có
+ * một hình. Cột chữ thuần thì phải đọc từng dòng mới biết cái nào là cái nào.
+ */
+const GLYPH: Record<string, string> = {
+  heading: 'H',
+  list: '\u2022',
+  quote: '\u275D',
+  meta: '\u2014',
+  callout: '\u258A',
+  table: '\u229E',
+  metrics: '\u22EE',
+  chart: '\u2583',
+  image: '\u25A3',
+  paragraph: '\u00B6',
+}
+
+/**
+ * Loại nào **gõ ra được** thì không nằm trong menu của dấu `+`.
+ *
+ * Chèn một tiêu đề rỗng vào giữa bài thì vẽ ra không có gì — chủ site bấm `+`
+ * rồi bảo "chả ra cái gì", và đúng là chả ra gì thật. Tiêu đề, danh sách,
+ * trích dẫn là chữ: gõ `# `, `- `, `> ` là có. Dấu `+` để dành cho những thứ
+ * không gõ ra được.
+ */
+const TYPED = new Set(['paragraph', 'heading', 'list', 'quote'])
+
 const ORDERED_ENTRY = {
   name: ORDERED_LIST,
   title: 'Danh sách đánh số',
@@ -3157,13 +3189,17 @@ const ORDERED_ENTRY = {
   keywords: ['đánh số', 'số thứ tự', 'numbered', 'ordered', 'các bước'],
 }
 
-function entriesFor(filter: string) {
+function entriesFor(filter: string, mode: 'all' | 'things') {
   const q = filter.trim().toLowerCase()
   const hit = (e: { title: string; name: string; keywords: string[] }) =>
-    q === '' ||
+    (mode === 'all' || !(TYPED.has(e.name) || e.name === ORDERED_LIST)) &&
+    // Đoạn văn không bao giờ có mặt: nó là thứ mặc định của chữ, chọn nó ra
+    // một khối rỗng chẳng nói lên điều gì.
+    e.name !== 'paragraph' &&
+    (q === '' ||
     e.title.toLowerCase().includes(q) ||
     e.name.includes(q) ||
-    e.keywords.some((k) => k.toLowerCase().includes(q))
+    e.keywords.some((k) => k.toLowerCase().includes(q)))
 
   return (['text', 'data', 'media'] as const).map((category) => ({
     category,
@@ -3174,8 +3210,17 @@ function entriesFor(filter: string) {
   }))
 }
 
-function InsertMenu({ filter = '', onInsert }: { filter?: string; onInsert: (type: string) => void }) {
-  const groups = entriesFor(filter)
+function InsertMenu({
+  filter = '',
+  mode = 'all',
+  onInsert,
+}: {
+  filter?: string
+  /** `things` bỏ hết loại gõ ra được — đó là menu của dấu `+`. */
+  mode?: 'all' | 'things'
+  onInsert: (type: string) => void
+}) {
+  const groups = entriesFor(filter, mode)
   const empty = groups.every((g) => g.items.length === 0)
   return (
     <div className="awc-insert-menu">
@@ -3188,6 +3233,9 @@ function InsertMenu({ filter = '', onInsert }: { filter?: string; onInsert: (typ
               <div className="awc-insert-cat">{CATEGORY_LABEL[category]}</div>
               {items.map((e) => (
                 <button key={e.name} type="button" title={e.description} onClick={() => onInsert(e.name)}>
+                  <span className="awc-insert-glyph" aria-hidden>
+                    {e.name === ORDERED_LIST ? '1.' : (GLYPH[e.name] ?? '\u25A2')}
+                  </span>
                   {e.title}
                 </button>
               ))}
