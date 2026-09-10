@@ -88,6 +88,7 @@ import { duplicateAt, insertAt, move, removeAt } from '../lib/listOps'
 import { followWithParagraph, withPastedBlocks } from '../lib/pasteBlocks'
 import { emptyHistory, historyKey, inverseOf, record, redo, undo, type History } from '../lib/editHistory'
 import { backspace, enter, indent, outdent, subLine, type Focus } from '../lib/listKeys'
+import { blockKey, type BlockFocus } from '../lib/blockKeys'
 import { useRowDrag } from '../lib/useRowDrag'
 import {
   toArticleData,
@@ -1376,8 +1377,8 @@ function BitesizeEditor({
   const palette = paletteFrom(post.theme_color ?? module?.accent ?? REPORT_BLUE)
   const [menuAt, setMenuAt] = useState<number | null>(null)
   const writeElements = (next: ReportBlock[]) => write({ elements: next })
-  /** Khối vừa được mở ra bằng bàn phím, đang chờ con trỏ. */
-  const [focusAt, setFocusAt] = useState<number | null>(null)
+  /** Khối vừa được mở ra bằng bàn phím, và chỗ con trỏ cần rơi vào. */
+  const [spot, setSpot] = useState<BlockFocus | null>(null)
   const drag = useRowDrag((from, to) => writeElements(move(elements, from, to)))
   const control: CSSProperties = {
     fontFamily: sans,
@@ -1440,9 +1441,19 @@ function BitesizeEditor({
               <ReportBlockFields
                 block={elements[i]}
                 palette={palette}
-                focus={focusAt === i}
-                onFocused={() => setFocusAt(null)}
+                focus={spot?.at === i}
+                focusCaret={spot?.caret}
+                onFocused={() => setSpot(null)}
                 onChange={(next) => writeElements(elements.map((x, k) => (k === i ? next : x)))}
+                onTextKey={(e, current) => {
+                  const field = e.target as HTMLTextAreaElement
+                  const caret = field.selectionStart ?? 0
+                  const out = blockKey(elements, i, e, current, caret, field.selectionEnd !== caret)
+                  if (!out) return
+                  e.preventDefault()
+                  writeElements(out.blocks)
+                  setSpot(out.focus ?? null)
+                }}
                 onPasteBlocks={(text) => {
                   const next = withPastedBlocks(elements, i, text)
                   if (!next) return false
@@ -1452,7 +1463,7 @@ function BitesizeEditor({
                 onFollowWithParagraph={(keep) => {
                   const out = followWithParagraph(elements, i, keep)
                   writeElements(out.blocks)
-                  setFocusAt(out.focus)
+                  setSpot({ at: out.focus, caret: 0 })
                 }}
               />
             </RowShell>
@@ -1514,8 +1525,8 @@ function MemoEditor({
     onChange({ body: { ...rest, elements: next } })
   }
   const drag = useRowDrag((from, to) => write(move(elements, from, to)))
-  /** Khối vừa được mở ra bằng bàn phím, đang chờ con trỏ. */
-  const [focusAt, setFocusAt] = useState<number | null>(null)
+  /** Khối vừa được mở ra bằng bàn phím, và chỗ con trỏ cần rơi vào. */
+  const [spot, setSpot] = useState<BlockFocus | null>(null)
 
   return (
     <PostRenderer
@@ -1559,9 +1570,19 @@ function MemoEditor({
             <ReportBlockFields
               block={elements[i]}
               palette={palette}
-              focus={focusAt === i}
-              onFocused={() => setFocusAt(null)}
+              focus={spot?.at === i}
+              focusCaret={spot?.caret}
+              onFocused={() => setSpot(null)}
               onChange={(next) => write(elements.map((x, k) => (k === i ? next : x)))}
+              onTextKey={(e, current) => {
+                const field = e.target as HTMLTextAreaElement
+                const caret = field.selectionStart ?? 0
+                const out = blockKey(elements, i, e, current, caret, field.selectionEnd !== caret)
+                if (!out) return
+                e.preventDefault()
+                write(out.blocks)
+                setSpot(out.focus ?? null)
+              }}
               onPasteBlocks={(text) => {
                 const next = withPastedBlocks(elements, i, text)
                 if (!next) return false
@@ -1571,7 +1592,7 @@ function MemoEditor({
               onFollowWithParagraph={(keep) => {
                 const out = followWithParagraph(elements, i, keep)
                 write(out.blocks)
-                setFocusAt(out.focus)
+                setSpot({ at: out.focus, caret: 0 })
               }}
             />
           </RowShell>
@@ -1945,7 +1966,7 @@ function ReportEditor({
   const [dragFrom, setDragFrom] = useState<number | null>(null)
   const [dragOver, setDragOver] = useState<number | null>(null)
   const [asking, setAsking] = useState<number | null>(null)
-  const [focusAt, setFocusAt] = useState<number | null>(null)
+  const [spot, setSpot] = useState<BlockFocus | null>(null)
   /*
    * How wide the notes column is while composing. Deliberately not stored: the
    * ratio is a thing the writer does to see better right now, not something
@@ -2014,7 +2035,7 @@ function ReportEditor({
       return
     }
     write(removeBlock(content, i, 'delete'))
-    setFocusAt(thenFocus)
+    setSpot(thenFocus === null ? null : { at: thenFocus, caret: Number.MAX_SAFE_INTEGER })
   }
 
   function commitRemove(i: number, choice: KeepChoice) {
@@ -2095,15 +2116,25 @@ function ReportEditor({
                         <ReportBlockFields
                           block={b}
                           palette={palette}
-                          focus={focusAt === i}
-                          onFocused={() => setFocusAt(null)}
+                          focus={spot?.at === i}
+                          focusCaret={spot?.caret}
+                          onFocused={() => setSpot(null)}
                           onChange={(next) => updateBlock(i, next)}
                           onEmptied={() => requestRemove(i, mergeTarget(blocks, i))}
+                          onTextKey={(e, current) => {
+                            const field = e.target as HTMLTextAreaElement
+                            const caret = field.selectionStart ?? 0
+                            const out = blockKey(blocks, i, e, current, caret, field.selectionEnd !== caret)
+                            if (!out) return
+                            e.preventDefault()
+                            setBlocks(out.blocks)
+                            setSpot(out.focus ?? null)
+                          }}
                           onPasteBlocks={(text) => pasteBlocks(i, text)}
                           onFollowWithParagraph={(keep) => {
                             const out = followWithParagraph(blocks, i, keep)
                             setBlocks(out.blocks)
-                            setFocusAt(out.focus)
+                            setSpot({ at: out.focus, caret: 0 })
                           }}
                         />
                         {asking === i && (
@@ -2465,6 +2496,8 @@ function ReportBlockFields({
   onChange,
   onEmptied,
   onPasteBlocks,
+  focusCaret,
+  onTextKey,
   onFollowWithParagraph,
 }: {
   block: ReportBlock
@@ -2482,6 +2515,15 @@ function ReportBlockFields({
    * Để prop này tuỳ chọn là để nguyên cái bẫy ấy cho màn thứ tư.
    */
   onPasteBlocks: (text: string) => boolean
+  /** Chỗ đặt con trỏ trong ô chữ của khối; vắng nghĩa là cuối chữ. */
+  focusCaret?: number
+  /**
+   * Một phím trong ô chữ của khối — Enter mở khối, Backspace nhập lên.
+   *
+   * Bắt buộc, cùng lý do với `onPasteBlocks`: ba màn dùng chung component
+   * này, và một prop tuỳ chọn là cái bẫy để dành cho màn thứ tư.
+   */
+  onTextKey: (e: KeyboardEvent<HTMLElement>, current: string) => void
   /**
    * Thay khối này rồi mở một đoạn văn ngay dưới, con trỏ nhảy vào đó.
    *
@@ -2512,6 +2554,8 @@ function ReportBlockFields({
           onFocused={onFocused}
           onCommit={(v) => commitText(v, { ...block, text: v })}
           onPasteText={onPasteBlocks}
+          onKeyDown={onTextKey}
+          focusCaret={focusCaret}
           style={{ fontSize: 10.5, letterSpacing: '.18em', textTransform: 'uppercase', color: ink.muted }}
         />
       )
@@ -2526,6 +2570,8 @@ function ReportBlockFields({
             onFocused={onFocused}
             onCommit={(v) => commitText(v, { ...block, text: v })}
             onPasteText={onPasteBlocks}
+            onKeyDown={onTextKey}
+            focusCaret={focusCaret}
             markdown
             accentInk={palette.ink}
             style={{ fontFamily: serif, fontSize: HEADING_SIZE[level], color: level === 3 ? palette.ink : ink.base, margin: '10px 0 6px' }}
@@ -2559,6 +2605,8 @@ function ReportBlockFields({
               placeholder="trích dẫn"
               onCommit={(v) => onChange({ ...block, text: v })}
               onPasteText={onPasteBlocks}
+              onKeyDown={onTextKey}
+              focusCaret={focusCaret}
               markdown
               accentInk={palette.ink}
               style={{ fontFamily: serif, fontSize: 19, lineHeight: 1.35, color: ink.base }}
@@ -2599,6 +2647,8 @@ function ReportBlockFields({
             placeholder="nội dung khối nhấn"
             onCommit={(v) => onChange({ ...block, text: v })}
             onPasteText={onPasteBlocks}
+            onKeyDown={onTextKey}
+            focusCaret={focusCaret}
             markdown
             accentInk={palette.ink}
             style={{ fontSize: 14.5, lineHeight: 1.55, color: ink.strong }}
@@ -2616,6 +2666,8 @@ function ReportBlockFields({
           onFocused={onFocused}
           onCommit={(v) => commitText(v, { ...block, text: v })}
           onPasteText={onPasteBlocks}
+          onKeyDown={onTextKey}
+          focusCaret={focusCaret}
           markdown
           accentInk={palette.ink}
           style={{ fontSize: 15, lineHeight: 1.55, color: ink.strong, maxWidth: 620 }}
