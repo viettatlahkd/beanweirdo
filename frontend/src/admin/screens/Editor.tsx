@@ -89,6 +89,7 @@ import { followWithParagraph, withPastedBlocks } from '../lib/pasteBlocks'
 import { emptyHistory, historyKey, inverseOf, record, redo, undo, type History } from '../lib/editHistory'
 import { backspace, enter, indent, outdent, subLine, type Focus } from '../lib/listKeys'
 import { blockKey, type BlockFocus } from '../lib/blockKeys'
+import { applyMark, markFor } from '../lib/marks'
 import { useRowDrag } from '../lib/useRowDrag'
 import {
   toArticleData,
@@ -832,6 +833,35 @@ function EditableField({
     if (local !== value) onCommit(local)
   }
 
+  /*
+   * Vùng chọn cần khôi phục sau khi chèn dấu.
+   *
+   * Chèn `**` vào giữa chữ làm mọi vị trí phía sau xê dịch, nên để trình
+   * duyệt tự giữ vùng chọn là để nó ôm nhầm chữ. Phải đặt lại sau lượt vẽ,
+   * khi ô đã mang chữ mới.
+   */
+  const pending = useRef<{ start: number; end: number } | null>(null)
+  useEffect(() => {
+    const want = pending.current
+    const node = el.current
+    if (!want || !node) return
+    pending.current = null
+    node.setSelectionRange(want.start, want.end)
+  }, [local])
+
+  /** `Cmd+B` · `Cmd+U` · `Cmd+K`. Trả `true` nghĩa là đã nhận phím. */
+  function format(e: KeyboardEvent<HTMLElement>): boolean {
+    if (!markdown) return false
+    const mark = markFor(e)
+    const node = el.current
+    if (!mark || !node) return false
+    e.preventDefault()
+    const out = applyMark(local, node.selectionStart ?? 0, node.selectionEnd ?? 0, mark)
+    pending.current = { start: out.start, end: out.end }
+    setLocal(out.text)
+    return true
+  }
+
   const paste = onPasteText
     ? (e: ClipboardEvent<HTMLElement>) => {
         const text = clipboardMarkdown(e)
@@ -903,7 +933,10 @@ function EditableField({
         rows={rows}
         onChange={(e) => setLocal(e.target.value)}
         onBlur={commit}
-        onKeyDown={onKeyDown && ((e) => onKeyDown(e, local))}
+        onKeyDown={(e) => {
+          if (format(e)) return
+          onKeyDown?.(e, local)
+        }}
         onPaste={paste}
         // Ô đã tự cao bằng chữ, nên tay kéo không còn việc gì — và nó là cái
         // dấu `//` nằm rải khắp trang lúc trước.
@@ -920,7 +953,10 @@ function EditableField({
       placeholder={placeholder}
       onChange={(e) => setLocal(e.target.value)}
       onBlur={commit}
-      onKeyDown={onKeyDown && ((e) => onKeyDown(e, local))}
+      onKeyDown={(e) => {
+          if (format(e)) return
+          onKeyDown?.(e, local)
+        }}
       onPaste={paste}
       style={commonStyle}
     />

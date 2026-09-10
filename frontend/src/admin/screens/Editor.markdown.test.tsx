@@ -11,7 +11,7 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { ReportBlock } from 'post-renderer'
-import { rawIndexFor } from 'post-renderer'
+import { rawIndexFor, textToRuns } from 'post-renderer'
 import { describe, expect, it, vi } from 'vitest'
 import type { PostDetail } from '../lib/apiClient'
 import { EditorCanvas } from './Editor'
@@ -151,5 +151,58 @@ describe('dán từ Notion: đọc bản HTML, giữ định dạng', () => {
     const written = onChange.mock.calls.at(-1)?.[0].body as { type?: string; items?: unknown[] }[]
     expect(written[0].type).toBe('list')
     expect(written[0].items).toHaveLength(2)
+  })
+})
+
+describe('Cmd+B, Cmd+U, Cmd+K trong ô chữ', () => {
+  it('Cmd+B nhấn chữ đang bôi đen', async () => {
+    const onChange = draw(para('có chữ đây'))
+    await userEvent.click(screen.getByText('có chữ đây'))
+    const field = screen.getByDisplayValue('có chữ đây')
+    field.setSelectionRange(3, 6)
+    await userEvent.keyboard('{Meta>}b{/Meta}')
+    await userEvent.tab()
+
+    const written = onChange.mock.calls.at(-1)?.[0].body as { text?: string }[]
+    expect(written[0].text).toBe('có **chữ** đây')
+  })
+
+  it('bấm lại là bỏ nhấn', async () => {
+    const onChange = draw(para('có **chữ** đây'))
+    await userEvent.click(screen.getByText('chữ'))
+    const field = screen.getByDisplayValue('có **chữ** đây')
+    field.setSelectionRange(5, 8)
+    await userEvent.keyboard('{Meta>}b{/Meta}')
+    await userEvent.tab()
+
+    const written = onChange.mock.calls.at(-1)?.[0].body as { text?: string }[]
+    expect(written[0].text).toBe('có chữ đây')
+  })
+
+  it('Cmd+K mở vỏ link và đặt con trỏ vào chỗ điền địa chỉ', async () => {
+    draw(para('xem đây'))
+    await userEvent.click(screen.getByText('xem đây'))
+    const field = screen.getByDisplayValue('xem đây') as HTMLTextAreaElement
+    field.setSelectionRange(4, 7)
+    await userEvent.keyboard('{Meta>}k{/Meta}')
+
+    expect(field.value).toBe('xem [đây]()')
+    expect(field.selectionStart).toBe(field.value.indexOf('()') + 1)
+  })
+
+  it('gõ địa chỉ vào chỗ con trỏ vừa nhảy tới là ra một link đủ', async () => {
+    // `draw` ở đây không nuôi lại bài, nên soi cái được ghi ra chứ không soi
+    // mặt vẽ — mặt vẽ đã có test riêng ở trên.
+    const onChange = draw(para('xem đây'))
+    await userEvent.click(screen.getByText('xem đây'))
+    const field = screen.getByDisplayValue('xem đây') as HTMLTextAreaElement
+    field.setSelectionRange(4, 7)
+    await userEvent.keyboard('{Meta>}k{/Meta}')
+    await userEvent.keyboard('https://a.com')
+    await userEvent.tab()
+
+    const written = onChange.mock.calls.at(-1)?.[0].body as { text?: string }[]
+    expect(written[0].text).toBe('xem [đây](https://a.com)')
+    expect(textToRuns(written[0].text!)).toContainEqual({ t: 'đây', href: 'https://a.com' })
   })
 })
