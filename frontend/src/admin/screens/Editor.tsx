@@ -85,7 +85,8 @@ import {
 } from 'post-renderer'
 import { AddRow, RowShell } from '../components/RowShell'
 import { duplicateAt, insertAt, move, removeAt } from '../lib/listOps'
-import { withPastedBlocks } from '../lib/pasteBlocks'
+import { followWithParagraph, withPastedBlocks } from '../lib/pasteBlocks'
+import { backspace, enter, indent, outdent, subLine, type Focus } from '../lib/listKeys'
 import { useRowDrag } from '../lib/useRowDrag'
 import {
   toArticleData,
@@ -662,6 +663,7 @@ function EditableField({
   rows = 2,
   placeholder,
   focus,
+  focusCaret,
   onFocused,
   onKeyDown,
   onPasteText,
@@ -676,6 +678,8 @@ function EditableField({
   placeholder?: string
   /** Put the cursor here — used when an emptied block merges into the text above. */
   focus?: boolean
+  /** Chỗ đặt con trỏ trong ô; vắng nghĩa là cuối chữ. */
+  focusCaret?: number
   onFocused?: () => void
   /**
    * Phím bấm trong ô, cho những thao tác không phải là gõ chữ — Tab lùi lề
@@ -742,15 +746,28 @@ function EditableField({
     const line = parseFloat(getComputedStyle(node).lineHeight) || 0
     node.style.height = `${Math.max(node.scrollHeight, line * rows)}px`
   }, [local, multiline, rows])
+  /*
+   * Chỗ khác gọi con trỏ về ô này.
+   *
+   * Một phím trong danh sách hay một khối vừa biến mất đều để lại câu hỏi
+   * "giờ con trỏ ở đâu", và câu trả lời gần như không bao giờ là "cuối ô" —
+   * nhập một mục lên thì con trỏ phải đứng ở **chỗ nối**, tách một mục thì
+   * phải ở đầu mục mới. Nên chỗ gọi nói rõ vị trí; không nói thì mới là cuối.
+   */
   useEffect(() => {
-    if (!focus || !el.current) return
-    el.current.focus()
-    // The cursor lands at the end, where the writer was typing when the block
-    // below them disappeared — not at the start of somebody else's sentence.
-    const end = el.current.value.length
-    el.current.setSelectionRange(end, end)
+    if (!focus) return
+    // Ô đang ở mặt vẽ thì phải lật sang mặt gõ trước khi có gì để đặt con trỏ.
+    if (markdown && caret === null) {
+      setCaret(focusCaret ?? value.length)
+      return
+    }
+    const node = el.current
+    if (!node) return
+    node.focus()
+    const spot = Math.max(0, Math.min(focusCaret ?? node.value.length, node.value.length))
+    node.setSelectionRange(spot, spot)
     onFocused?.()
-  }, [focus, onFocused])
+  }, [focus, focusCaret, markdown, caret, value.length, onFocused])
 
   const commit = () => {
     // Rời ô là quay về mặt vẽ, kể cả khi chữ không đổi — nếu không thì một ô
@@ -1300,6 +1317,8 @@ function BitesizeEditor({
   const palette = paletteFrom(post.theme_color ?? module?.accent ?? REPORT_BLUE)
   const [menuAt, setMenuAt] = useState<number | null>(null)
   const writeElements = (next: ReportBlock[]) => write({ elements: next })
+  /** Khối vừa được mở ra bằng bàn phím, đang chờ con trỏ. */
+  const [focusAt, setFocusAt] = useState<number | null>(null)
   const drag = useRowDrag((from, to) => writeElements(move(elements, from, to)))
   const control: CSSProperties = {
     fontFamily: sans,
@@ -1362,12 +1381,19 @@ function BitesizeEditor({
               <ReportBlockFields
                 block={elements[i]}
                 palette={palette}
+                focus={focusAt === i}
+                onFocused={() => setFocusAt(null)}
                 onChange={(next) => writeElements(elements.map((x, k) => (k === i ? next : x)))}
                 onPasteBlocks={(text) => {
                   const next = withPastedBlocks(elements, i, text)
                   if (!next) return false
                   writeElements(next)
                   return true
+                }}
+                onFollowWithParagraph={(keep) => {
+                  const out = followWithParagraph(elements, i, keep)
+                  writeElements(out.blocks)
+                  setFocusAt(out.focus)
                 }}
               />
             </RowShell>
@@ -1429,6 +1455,8 @@ function MemoEditor({
     onChange({ body: { ...rest, elements: next } })
   }
   const drag = useRowDrag((from, to) => write(move(elements, from, to)))
+  /** Khối vừa được mở ra bằng bàn phím, đang chờ con trỏ. */
+  const [focusAt, setFocusAt] = useState<number | null>(null)
 
   return (
     <PostRenderer
@@ -1472,12 +1500,19 @@ function MemoEditor({
             <ReportBlockFields
               block={elements[i]}
               palette={palette}
+              focus={focusAt === i}
+              onFocused={() => setFocusAt(null)}
               onChange={(next) => write(elements.map((x, k) => (k === i ? next : x)))}
               onPasteBlocks={(text) => {
                 const next = withPastedBlocks(elements, i, text)
                 if (!next) return false
                 write(next)
                 return true
+              }}
+              onFollowWithParagraph={(keep) => {
+                const out = followWithParagraph(elements, i, keep)
+                write(out.blocks)
+                setFocusAt(out.focus)
               }}
             />
           </RowShell>
@@ -2006,6 +2041,11 @@ function ReportEditor({
                           onChange={(next) => updateBlock(i, next)}
                           onEmptied={() => requestRemove(i, mergeTarget(blocks, i))}
                           onPasteBlocks={(text) => pasteBlocks(i, text)}
+                          onFollowWithParagraph={(keep) => {
+                            const out = followWithParagraph(blocks, i, keep)
+                            setBlocks(out.blocks)
+                            setFocusAt(out.focus)
+                          }}
                         />
                         {asking === i && (
                           <KeepNotesDialog
@@ -2366,6 +2406,7 @@ function ReportBlockFields({
   onChange,
   onEmptied,
   onPasteBlocks,
+  onFollowWithParagraph,
 }: {
   block: ReportBlock
   palette: Palette
@@ -2382,6 +2423,14 @@ function ReportBlockFields({
    * Để prop này tuỳ chọn là để nguyên cái bẫy ấy cho màn thứ tư.
    */
   onPasteBlocks: (text: string) => boolean
+  /**
+   * Thay khối này rồi mở một đoạn văn ngay dưới, con trỏ nhảy vào đó.
+   *
+   * `null` nghĩa là khối này không còn gì để giữ — bỏ luôn. Đây là đường
+   * người viết **ra khỏi** một cấu trúc bằng bàn phím: Enter ở mục rỗng cuối
+   * một danh sách. Không có nó thì danh sách là chỗ vào được mà không ra được.
+   */
+  onFollowWithParagraph: (keep: ReportBlock | null) => void
 }) {
   /*
    * Emptying the words out of a paragraph is the writer saying there is no
@@ -2465,7 +2514,16 @@ function ReportBlockFields({
         </div>
       )
     case 'list':
-      return <ListEditor attributes={block} palette={palette} onChange={onChange} />
+      return (
+        <ListEditor
+          attributes={block}
+          palette={palette}
+          onChange={onChange}
+          onLeaveList={(items) =>
+            onFollowWithParagraph(items.length > 0 ? ({ ...block, items } as unknown as ReportBlock) : null)
+          }
+        />
+      )
     case 'callout':
       return (
         <div className="awc-callout" style={{ background: palette.tint, borderColor: palette.accent }}>
@@ -2537,13 +2595,27 @@ function ListEditor({
   attributes,
   palette,
   onChange,
+  onLeaveList,
 }: {
   attributes: ListAttrs
   palette: Palette
   onChange: (next: ReportBlock) => void
+  /**
+   * Người viết vừa ra khỏi danh sách bằng bàn phím.
+   *
+   * Khối danh sách không tự làm được việc này: nó phải sinh ra một khối
+   * **khác** loại và đặt con trỏ vào đó, mà cả hai đều nằm ngoài tầm nó.
+   * `items` rỗng nghĩa là không còn mục nào — khối này nên biến mất.
+   */
+  onLeaveList: (items: ListItem[]) => void
 }) {
   const element = getElement('list')!
   const write = (items: ListItem[]) => onChange({ ...attributes, items } as unknown as ReportBlock)
+
+  /** Chỗ đang chờ con trỏ sau một phím vừa đổi hình dạng danh sách. */
+  const [spot, setSpot] = useState<Focus | null>(null)
+  const isSpot = (path: number[], sub?: number) =>
+    spot !== null && spot.path.join() === path.join() && spot.sub === sub
 
   /** Rewrites the one item a path points at, however deep it sits. */
   function at(items: ListItem[], path: number[], change: (item: ListItem) => ListItem): ListItem[] {
@@ -2574,6 +2646,46 @@ function ListEditor({
     const next = [...items]
     next.splice(head + (empty ? 0 : 1), empty ? 1 : 0, ...incoming)
     return next
+  }
+
+  /**
+   * Một phím trong một dòng danh sách.
+   *
+   * Chữ đang gõ được ghi vào cây **trước** khi phép biến đổi chạy. Không thế
+   * thì `Tab` hay `Shift+Tab` sẽ dựng lại danh sách từ bản đã lưu và nuốt mất
+   * những chữ vừa gõ mà chưa rời ô.
+   */
+  function key(path: number[], e: KeyboardEvent<HTMLElement>, current: string) {
+    const field = e.target as HTMLTextAreaElement
+    const caret = field.selectionStart ?? 0
+    // Đang bôi đen thì phím thuộc về vùng chọn ấy, không thuộc về cấu trúc.
+    if (field.selectionEnd !== caret) return
+
+    const base = at(attributes.items, path, (it) => ({ ...it, runs: textToRuns(current) }))
+    const done =
+      e.key === 'Enter' && e.shiftKey
+        ? subLine(base, path)
+        : e.key === 'Enter'
+          ? enter(base, path, current, caret)
+          : e.key === 'Backspace'
+            ? backspace(base, path, current, caret)
+            : // Tab chỉ thụt lề khi con trỏ ở **đầu** dòng. Nuốt Tab ở mọi chỗ
+              // là biến ô soạn thành cái bẫy: vào được bằng bàn phím mà không
+              // ra được, và người dùng bàn phím mắc kẹt trong danh sách.
+              e.key === 'Tab' && caret === 0
+              ? e.shiftKey
+                ? outdent(base, path)
+                : indent(base, path)
+              : null
+    if (!done) return
+
+    e.preventDefault()
+    if (done.leave) {
+      onLeaveList(done.items ?? base)
+      return
+    }
+    if (done.items) write(done.items)
+    if (done.focus) setSpot(done.focus)
   }
 
   /**
@@ -2631,6 +2743,10 @@ function ListEditor({
                 placeholder="một dòng"
                 onCommit={(v) => write(at(attributes.items, path, (it) => ({ ...it, runs: textToRuns(v) })))}
                 onPasteText={(pasted) => pasteInto(path, pasted)}
+                onKeyDown={(e, current) => key(path, e, current)}
+                focus={isSpot(path)}
+                focusCaret={spot?.caret}
+                onFocused={() => setSpot(null)}
                 markdown
                 accentInk={palette.ink}
                 style={{ font: 'inherit', color: 'inherit' }}
@@ -2675,6 +2791,9 @@ function ListEditor({
                   })),
                 )
               }
+              focus={isSpot(path, subIndex)}
+              focusCaret={spot?.caret}
+              onFocused={() => setSpot(null)}
               markdown
               accentInk={palette.ink}
               style={{ font: 'inherit', color: 'inherit' }}

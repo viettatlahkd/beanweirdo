@@ -263,7 +263,8 @@ describe('EditorCanvas — report', () => {
     expect(onChange).toHaveBeenLastCalledWith({ body: [{ ...body[0], id: 'b1' }] })
 
     onChange.mockClear()
-    await userEvent.click(screen.getByText('Mẻ rang #14'))
+    // Đoạn văn vừa đi thì con trỏ nhập lên tiêu đề, nên ô ấy đã ở mặt gõ sẵn
+    // — không phải bấm vào lần nữa.
     await userEvent.clear(screen.getByDisplayValue('Mẻ rang #14'))
     await userEvent.tab()
     expect(onChange).toHaveBeenLastCalledWith({ body: [{ ...body[0], id: 'b1', text: '' }, { ...body[1], id: 'b2' }] })
