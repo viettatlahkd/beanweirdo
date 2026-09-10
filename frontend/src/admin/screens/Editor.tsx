@@ -71,13 +71,13 @@ import {
   paletteFrom,
   allElements,
   flatElements,
+  bodyToMarkdown,
   getElement,
   htmlToMarkdown,
   Inline,
   pastedToItems,
   rawIndexFor,
   runsToText,
-  segmentsFor,
   textToRuns,
   type ListAttrs,
   type ListItem,
@@ -86,6 +86,7 @@ import {
 import { AddRow, RowShell } from '../components/RowShell'
 import { duplicateAt, insertAt, move, removeAt } from '../lib/listOps'
 import { followWithParagraph, withPastedBlocks } from '../lib/pasteBlocks'
+import { splitForThing, toRuns, writeRun } from '../lib/flow'
 import { emptyHistory, historyKey, inverseOf, record, redo, undo, type History } from '../lib/editHistory'
 import { backspace, enter, indent, outdent, subLine, type Focus } from '../lib/listKeys'
 import { blockKey, neighbour, type BlockFocus } from '../lib/blockKeys'
@@ -760,6 +761,7 @@ function EditableField({
   onPasteText,
   onType,
   onArrowOut,
+  pasteAsText = false,
   markdown = false,
   accentInk = ink.base,
   style,
@@ -797,7 +799,7 @@ function EditableField({
    * Menu `/` lọc theo từng chữ vừa gõ, mà `onCommit` chỉ chạy lúc rời ô —
    * đợi tới đó thì menu chỉ hiện ra sau khi người viết đã bỏ đi.
    */
-  onType?: (text: string) => void
+  onType?: (text: string, caret: number) => void
   /**
    * Con trỏ chạm mép ô và còn muốn đi tiếp.
    *
@@ -805,6 +807,14 @@ function EditableField({
    * bài không có gì phía trên, và nuốt phím ở đó là làm mũi tên chết cứng.
    */
   onArrowOut?: (dir: -1 | 1) => boolean
+  /**
+   * Dán vào ô này là **chèn chữ**, không phải sinh khối mới.
+   *
+   * Với một dải chữ liền thì cấu trúc đã nằm ngay trong chữ, nên cái dán vào
+   * chỉ cần về đúng markdown rồi chèn tại con trỏ. Vẫn đọc bản HTML trước để
+   * chữ đậm và link của Notion không rơi mất.
+   */
+  pasteAsText?: boolean
   /**
    * Ô vẽ markdown khi không gõ, và chỉ hiện chữ thô lúc con trỏ nằm trong nó.
    *
@@ -961,12 +971,20 @@ function EditableField({
     return true
   }
 
-  const paste = onPasteText
-    ? (e: ClipboardEvent<HTMLElement>) => {
-        const text = clipboardMarkdown(e)
-        if (text && onPasteText(text)) e.preventDefault()
-      }
-    : undefined
+  const paste =
+    pasteAsText
+      ? (e: ClipboardEvent<HTMLElement>) => {
+          const text = clipboardMarkdown(e)
+          if (!text) return
+          e.preventDefault()
+          document.execCommand('insertText', false, text)
+        }
+      : onPasteText
+        ? (e: ClipboardEvent<HTMLElement>) => {
+            const text = clipboardMarkdown(e)
+            if (text && onPasteText(text)) e.preventDefault()
+          }
+        : undefined
 
   const commonStyle: CSSProperties = {
     font: 'inherit',
@@ -1035,7 +1053,7 @@ function EditableField({
         rows={rows}
         onChange={(e) => {
           setLocal(e.target.value)
-          onType?.(e.target.value)
+          onType?.(e.target.value, e.target.selectionStart ?? e.target.value.length)
         }}
         onBlur={commit}
         onKeyDown={(e) => {
@@ -1058,7 +1076,7 @@ function EditableField({
       placeholder={placeholder}
       onChange={(e) => {
           setLocal(e.target.value)
-          onType?.(e.target.value)
+          onType?.(e.target.value, e.target.selectionStart ?? e.target.value.length)
         }}
       onBlur={commit}
       onKeyDown={(e) => {
@@ -2163,6 +2181,10 @@ function ReportEditor({
   const [spot, setSpot] = useState<BlockFocus | null>(null)
   /** Khối đang mở menu `/`, và mấy chữ gõ sau dấu ấy. */
   const [slash, setSlash] = useState<{ at: number; query: string } | null>(null)
+  /** `/` vừa gõ trong một dải chữ: chữ đang có, chỗ con trỏ, và mấy chữ lọc. */
+  const [runSlash, setRunSlash] = useState<
+    { at: [number, number]; text: string; caret: number; lineStart: number; query: string } | null
+  >(null)
   /*
    * How wide the notes column is while composing. Deliberately not stored: the
    * ratio is a thing the writer does to see better right now, not something
@@ -2186,8 +2208,21 @@ function ReportEditor({
    * a reader gets — the explorations at the head of the column in both, and a
    * note still level with the block it hangs off. See `segmentsFor`.
    */
-  const segments = segmentsFor(blocks, notes)
-  const firstAnnotated = segments.findIndex((seg) => seg.anchor)
+  /*
+   * Thân bài bày ra thành các dải, không thành từng khối.
+   *
+   * Mọi khối chữ liền nhau dùng chung một ô nhập, nên bôi đen chạy suốt qua
+   * chúng. Bảng, số liệu, biểu đồ, ảnh vẫn là widget riêng, cắm vào giữa dải
+   * đúng chỗ nó đứng.
+   */
+  const runs = toRuns(blocks)
+  /** Dải chữ đang mở ra thành markdown, và chỗ con trỏ trong đó. */
+  const [editing, setEditing] = useState<[number, number] | null>(null)
+  const firstAnnotated = runs.findIndex((run) =>
+    (run.kind === 'text' ? blocks.slice(run.at[0], run.at[1] + 1) : [blocks[run.at]]).some(
+      (b) => notesOn(notes, b?.id).length > 0,
+    ),
+  )
 
   function addFieldNote(blockId?: string) {
     if (!blockId) return
@@ -2275,138 +2310,288 @@ function ReportEditor({
         )}
 
         <div className="awc-rep-grid" style={{ gridTemplateColumns: `minmax(0,1fr) 11px ${asideWidth}px` }}>
-          <ColumnSplit width={asideWidth} onWidth={setAsideWidth} rows={segments.length} />
+          <ColumnSplit width={asideWidth} onWidth={setAsideWidth} rows={runs.length} />
 
-          {segments.map((seg, si) => (
-            <Fragment key={seg.start}>
-              <div style={{ gridColumn: 1, gridRow: si + 1, minWidth: 0 }}>
-                {blocks.slice(seg.start, seg.end).map((b, bi) => {
-                  const i = seg.start + bi
-                  return (
+          {runs.map((run, ri) => {
+            /*
+             * Ghi chú của cả dải, không của từng khối.
+             *
+             * Một dải chữ nay là một đơn vị soạn, nên ghi chú của mọi khối
+             * trong nó xếp cạnh nó. Neo vẫn là `id` khối như cũ — chỉ chỗ bày
+             * ra là đổi.
+             */
+            const inRun = run.kind === 'text' ? blocks.slice(run.at[0], run.at[1] + 1) : [blocks[run.at]]
+            const annotated = inRun.filter((b) => notesOn(notes, b?.id).length > 0)
+            return (
+              <Fragment key={run.kind === 'text' ? `t${run.at[0]}` : `b${run.at}`}>
+                <div style={{ gridColumn: 1, gridRow: ri + 1, minWidth: 0 }}>
+                  {run.kind === 'text' ? (
+                    <div className="awc-rep-block">
+                      <div className="awc-gutter">
+                        <InsertPlus
+                          open={menuAt === run.at[0]}
+                          onToggle={() => setMenuAt(menuAt === run.at[0] ? null : run.at[0])}
+                          onInsert={(t) => insertBlock(run.at[1], t)}
+                        />
+                      </div>
+                      <TextRun
+                        blocks={blocks}
+                        at={run.at}
+                        text={run.text}
+                        palette={palette}
+                        editing={editing?.[0] === run.at[0]}
+                        caret={editing?.[1]}
+                        onEnter={(caret) => setEditing([run.at[0], caret])}
+                        onLeave={() => setEditing(null)}
+                        onCommit={(v) => setBlocks(writeRun(blocks, run.at, v))}
+                        onSlash={(found) => setRunSlash(found === null ? null : { at: run.at, ...found })}
+                      />
+                      {runSlash?.at[0] === run.at[0] && (
+                        <BlockMenu
+                          filter={runSlash.query}
+                          onClose={() => setRunSlash(null)}
+                          onInsert={(type) => {
+                            /*
+                             * Loại chữ thì chỉ thay `/lệnh` bằng ký hiệu
+                             * markdown của nó — không cắt dải ra, vì tiêu đề
+                             * và gạch đầu dòng vốn đã là một phần của chữ.
+                             */
+                            const before = runSlash.text.slice(0, runSlash.lineStart)
+                            const after = runSlash.text.slice(runSlash.caret)
+                            const prefix = MARKDOWN_PREFIX[type]
+                            if (prefix !== undefined) {
+                              setBlocks(writeRun(blocks, run.at, `${before}${prefix}${after}`))
+                            } else {
+                              // Bảng, số liệu, biểu đồ, ảnh: cắt dải tại dòng
+                              // đang gõ rồi cắm chúng vào giữa.
+                              const clean = `${before}${after}`
+                              const out = splitForThing(blocks, run.at, clean, runSlash.lineStart, blankReportBlock(type))
+                              setBlocks(out.blocks)
+                            }
+                            setRunSlash(null)
+                            setEditing(null)
+                          }}
+                        />
+                      )}
+                    </div>
+                  ) : (
                     <div
-                      key={b.id ?? i}
                       onDragOver={(e) => {
                         if (dragFrom === null) return
                         e.preventDefault()
-                        setDragOver(i)
+                        setDragOver(run.at)
                       }}
-                      onDrop={() => drop(i)}
+                      onDrop={() => drop(run.at)}
                     >
-                      {dragOver === i && dragFrom !== null && dragFrom !== i && <div className="awc-dropline" style={{ background: accent }} />}
+                      {dragOver === run.at && dragFrom !== null && dragFrom !== run.at && (
+                        <div className="awc-dropline" style={{ background: accent }} />
+                      )}
                       <div className="awc-rep-block">
                         <div className="awc-gutter">
-                        <InsertPlus
-                          open={menuAt === i}
-                          onToggle={() => setMenuAt(menuAt === i ? null : i)}
-                          onInsert={(t) => insertBlock(i, t)}
-                        />
-                        <BlockGrip
-                          onLift={() => setDragFrom(i)}
-                          onDone={() => {
-                            setDragFrom(null)
-                            setDragOver(null)
-                          }}
-                          onMove={(dir) => setBlocks(moveBlock(blocks, i, i + dir))}
-                          onRemove={() => requestRemove(i)}
-                        />
-                        <div className="awc-block-controls">
-                          {/*
-                            * Annotating a block is a thing you do to that block,
-                            * so the control is on it — not a faint slot in the
-                            * margin you have to find first.
-                            */}
-                          <button type="button" onClick={() => addFieldNote(b.id)} aria-label="thêm ghi chú cho khối này">
-                            ✎
-                          </button>
-                          <button type="button" onClick={() => write(cloneBlock(content, i))} aria-label="nhân bản khối">
-                            ⧉
-                          </button>
-                          <button type="button" onClick={() => requestRemove(i)} aria-label="xoá khối">
-                            ×
-                          </button>
-                        </div>
+                          <InsertPlus
+                            open={menuAt === run.at}
+                            onToggle={() => setMenuAt(menuAt === run.at ? null : run.at)}
+                            onInsert={(t) => insertBlock(run.at, t)}
+                          />
+                          <BlockGrip
+                            onLift={() => setDragFrom(run.at)}
+                            onDone={() => {
+                              setDragFrom(null)
+                              setDragOver(null)
+                            }}
+                            onMove={(dir) => setBlocks(moveBlock(blocks, run.at, run.at + dir))}
+                            onRemove={() => requestRemove(run.at)}
+                          />
+                          <div className="awc-block-controls">
+                            <button type="button" onClick={() => addFieldNote(run.block.id)} aria-label="thêm ghi chú cho khối này">
+                              ✎
+                            </button>
+                            <button type="button" onClick={() => write(cloneBlock(content, run.at))} aria-label="nhân bản khối">
+                              ⧉
+                            </button>
+                            <button type="button" onClick={() => requestRemove(run.at)} aria-label="xoá khối">
+                              ×
+                            </button>
+                          </div>
                         </div>
                         <ReportBlockFields
-                          block={b}
+                          block={run.block}
                           palette={palette}
-                          focus={spot?.at === i}
+                          focus={spot?.at === run.at}
                           focusCaret={spot?.caret}
                           onFocused={() => setSpot(null)}
-                          onChange={(next) => updateBlock(i, next)}
-                          onEmptied={() => requestRemove(i, mergeTarget(blocks, i))}
+                          onChange={(next) => updateBlock(run.at, next)}
+                          onEmptied={() => requestRemove(run.at, mergeTarget(blocks, run.at))}
                           onArrowOut={(dir) => {
-                            const to = neighbour(blocks, i, dir)
+                            const to = neighbour(blocks, run.at, dir)
                             if (!to) return false
                             setSpot(to)
                             return true
                           }}
-                          onSlash={(query) => setSlash(query === null ? null : { at: i, query })}
+                          onSlash={(query) => setSlash(query === null ? null : { at: run.at, query })}
                           onTextKey={(e, current) => {
                             const field = e.target as HTMLTextAreaElement
                             const caret = field.selectionStart ?? 0
-                            const out = blockKey(blocks, i, e, current, caret, field.selectionEnd !== caret)
+                            const out = blockKey(blocks, run.at, e, current, caret, field.selectionEnd !== caret)
                             if (!out) return
                             e.preventDefault()
                             setBlocks(out.blocks)
                             setSpot(out.focus ?? null)
                           }}
-                          onPasteBlocks={(text) => pasteBlocks(i, text)}
+                          onPasteBlocks={(text) => pasteBlocks(run.at, text)}
                           onFollowWithParagraph={(keep) => {
-                            const out = followWithParagraph(blocks, i, keep)
+                            const out = followWithParagraph(blocks, run.at, keep)
                             setBlocks(out.blocks)
                             setSpot({ at: out.focus, caret: 0 })
                           }}
                         />
-                        {asking === i && (
+                        {slash?.at === run.at && (
+                          <BlockMenu
+                            filter={slash.query}
+                            onClose={() => setSlash(null)}
+                            onInsert={(type) => {
+                              setBlocks(
+                                blocks.map((b, k) =>
+                                  k === run.at ? ({ ...blankReportBlock(type), id: b.id } as ReportBlock) : b,
+                                ),
+                              )
+                              setSlash(null)
+                              setSpot({ at: run.at, caret: 0 })
+                            }}
+                          />
+                        )}
+                        {asking === run.at && (
                           <KeepNotesDialog
-                            count={notesOn(notes, b.id).length}
-                            canUp={i > 0}
-                            canDown={i < blocks.length - 1}
+                            count={notesOn(notes, run.block.id).length}
+                            canUp={run.at > 0}
+                            canDown={run.at < blocks.length - 1}
                             accent={accent}
-                            onDo={(choice) => commitRemove(i, choice)}
+                            onDo={(choice) => commitRemove(run.at, choice)}
                             onCancel={() => setAsking(null)}
                           />
                         )}
                       </div>
-                      {slash?.at === i && (
-                        <InsertMenu
-                          filter={slash.query}
-                          onInsert={(type) => {
-                            setBlocks(blocks.map((b, k) => (k === i ? ({ ...blankReportBlock(type), id: b.id } as ReportBlock) : b)))
-                            setSlash(null)
-                            setSpot({ at: i, caret: 0 })
-                          }}
-                        />
-                      )}
                     </div>
-                  )
-                })}
-              </div>
+                  )}
+                </div>
 
-              <div style={{ gridColumn: 3, gridRow: si + 1, minWidth: 0 }}>
-                {si === 0 && (
-                  <ExplorationsEditor
-                    notes={notes}
-                    accent={accent}
-                    onChange={(explorations) => write({ blocks, notes: { ...notes, explorations } })}
-                  />
-                )}
-                <FieldNotesEditor
-                  notes={notes}
-                  blockId={seg.anchor}
-                  label={si === firstAnnotated ? fieldNotesLabel('report') : null}
-                  accent={accent}
-                  onChange={(fieldNotes) => write({ blocks, notes: { ...notes, fieldNotes } })}
-                />
-              </div>
-            </Fragment>
-          ))}
+                <div style={{ gridColumn: 3, gridRow: ri + 1, minWidth: 0 }}>
+                  {ri === 0 && (
+                    <ExplorationsEditor
+                      notes={notes}
+                      accent={accent}
+                      onChange={(explorations) => write({ blocks, notes: { ...notes, explorations } })}
+                    />
+                  )}
+                  {annotated.map((b, k) => (
+                    <FieldNotesEditor
+                      key={b.id}
+                      notes={notes}
+                      blockId={b.id}
+                      label={ri === firstAnnotated && k === 0 ? fieldNotesLabel('report') : null}
+                      accent={accent}
+                      onChange={(fieldNotes) => write({ blocks, notes: { ...notes, fieldNotes } })}
+                    />
+                  ))}
+                </div>
+              </Fragment>
+            )
+          })}
         </div>
 
         {blocks.length === 0 && (
           <div style={{ color: ink.muted, fontSize: 13, padding: '8px 0 20px' }}>Chưa có khối nào — bấm "+ thêm khối" để bắt đầu.</div>
         )}
       </div>
+    </div>
+  )
+}
+
+/**
+ * Một dải chữ liền: nhiều khối, **một** ô nhập.
+ *
+ * Con trỏ ở ngoài thì nó vẽ đúng thứ trang vẽ — tiêu đề ra tiêu đề, gạch đầu
+ * dòng ra gạch đầu dòng. Bấm vào thì cả dải mở ra thành markdown trong một ô
+ * duy nhất, và từ đó bôi đen chạy suốt qua mọi đoạn, mọi bullet.
+ *
+ * Một ô cho cả dải là điều kiện, không phải lựa chọn: trình duyệt không cho
+ * một vùng chọn trải qua hai ô nhập, nên chừng nào mỗi khối còn một ô riêng
+ * thì chừng ấy không bôi đen qua hai khối được.
+ */
+function TextRun({
+  blocks,
+  at,
+  text,
+  palette,
+  editing,
+  caret,
+  onEnter,
+  onLeave,
+  onCommit,
+  onSlash,
+}: {
+  blocks: ReportBlock[]
+  at: [number, number]
+  text: string
+  palette: Palette
+  editing: boolean
+  caret?: number
+  onEnter: (caret: number) => void
+  onLeave: () => void
+  onCommit: (text: string) => void
+  onSlash: (found: { text: string; caret: number; lineStart: number; query: string } | null) => void
+}) {
+  if (editing) {
+    return (
+      <EditableField
+        value={text}
+        multiline
+        rows={1}
+        placeholder="Viết ở đây, hoặc gõ / để chèn"
+        focus
+        focusCaret={caret}
+        onFocused={() => {}}
+        onCommit={(v) => {
+          onCommit(v)
+          onLeave()
+        }}
+        pasteAsText
+        onType={(v, caret) => {
+          /*
+           * `/` chỉ mở menu khi nó đứng ở **đầu một dòng**.
+           *
+           * Giữa câu thì nó là một dấu gạch chéo — một đường dẫn, một phân
+           * số — và nuốt nó đi là sửa chữ người viết đang gõ.
+           */
+          const lineStart = v.lastIndexOf('\n', Math.max(0, caret - 1)) + 1
+          const open = v[lineStart] === '/' && caret > lineStart && !v.slice(lineStart + 1, caret).includes(' ')
+          onSlash(open ? { text: v, caret, lineStart, query: v.slice(lineStart + 1, caret) } : null)
+        }}
+        style={{ fontSize: 15, lineHeight: 1.62, color: ink.strong, fontFamily: 'inherit' }}
+      />
+    )
+  }
+
+  /*
+   * Chỗ mỗi khối bắt đầu trong dải chữ.
+   *
+   * Bấm vào khối thứ ba thì con trỏ phải rơi vào dòng thứ ba của chữ thô, chứ
+   * không rơi về đầu bài — nếu không thì mỗi lần sửa một đoạn ở cuối là một
+   * lần đi tìm lại chỗ.
+   */
+  const offsetOf = (k: number) => bodyToMarkdown(blocks.slice(at[0], at[0] + k) as never).text.length + (k > 0 ? 2 : 0)
+
+  return (
+    <div className="awc-run-read">
+      {blocks.slice(at[0], at[1] + 1).map((b, k) => {
+        const element = getElement(b.type)
+        if (!element) return null
+        return (
+          <div key={b.id ?? k} onMouseDown={() => onEnter(offsetOf(k))}>
+            <element.View attributes={b as never} palette={palette} index={k} />
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -2685,12 +2870,46 @@ function InsertPlus({
       <button type="button" onClick={onToggle} aria-expanded={open} aria-label="thêm khối">
         +
       </button>
-      {open && (
-        <div className="awc-menu-pop">
-          <InsertMenu onInsert={onInsert} />
-        </div>
-      )}
+      {open && <BlockMenu onInsert={onInsert} onClose={onToggle} />}
     </>
+  )
+}
+
+/**
+ * Menu chèn, nổi lên trên chữ và **đóng khi bấm ra ngoài**.
+ *
+ * Không có đường đóng ấy thì menu mở rồi nằm lì che mất chữ, và phải bấm lại
+ * đúng cái nút vừa mở nó mới dứt — chủ site báo đúng chỗ này.
+ */
+function BlockMenu({
+  filter,
+  onInsert,
+  onClose,
+}: {
+  filter?: string
+  onInsert: (type: string) => void
+  onClose: () => void
+}) {
+  const box = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const away = (e: MouseEvent) => {
+      const el = box.current
+      // Bấm vào chính cái nút đã mở nó thì để nút tự đóng, đừng đóng hai lần.
+      if (el && !el.contains(e.target as Node) && !(e.target as Element)?.closest?.('.awc-gutter')) onClose()
+    }
+    const esc = (e: globalThis.KeyboardEvent) => e.key === 'Escape' && onClose()
+    document.addEventListener('mousedown', away)
+    document.addEventListener('keydown', esc)
+    return () => {
+      document.removeEventListener('mousedown', away)
+      document.removeEventListener('keydown', esc)
+    }
+  }, [onClose])
+
+  return (
+    <div className="awc-menu-pop" ref={box}>
+      <InsertMenu filter={filter} onInsert={onInsert} />
+    </div>
   )
 }
 
@@ -2760,6 +2979,21 @@ function InsertMenu({ filter = '', onInsert }: { filter?: string; onInsert: (typ
   )
 }
 
+
+/**
+ * Loại nào viết thẳng vào chữ được thì viết, đừng cắt dải ra.
+ *
+ * Tiêu đề, gạch đầu dòng, trích dẫn vốn đã là một phần của văn bản liền mạch:
+ * chèn chúng chỉ là gõ hộ mấy ký tự đầu dòng. Cắt dải làm đôi cho chúng là
+ * dựng lại đúng cái tường ngăn mà cả lượt này đang gỡ bỏ.
+ */
+const MARKDOWN_PREFIX: Record<string, string | undefined> = {
+  paragraph: '',
+  heading: '# ',
+  list: '- ',
+  [ORDERED_LIST]: '1. ',
+  quote: '> ',
+}
 
 const HEADING_SIZE: Record<1 | 2 | 3, number> = { 1: 28, 2: 22, 3: 17 }
 
