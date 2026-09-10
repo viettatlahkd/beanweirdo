@@ -80,6 +80,12 @@ describe('article — cấu trúc sửa được', () => {
  * một chuỗi phẳng: tiêu đề là element như mọi element khác.
  */
 describe('memo — thân bài là một dải chữ liền mạch', () => {
+  /*
+   * jsdom không dựng `contenteditable`, nên gõ vào mặt soạn sống ở đây không
+   * sinh ra chữ nào. Phần gõ và bôi đen đo bằng Playwright trong Chrome —
+   * xem `tools/e2e/live.mjs`. Chỗ này giữ cái jsdom trả lời thật được: mọi
+   * khối chữ có nằm chung MỘT mặt soạn không.
+   */
   const body = {
     subtitle: 'ba lần rót',
     sections: [
@@ -87,62 +93,36 @@ describe('memo — thân bài là một dải chữ liền mạch', () => {
       { h: 'Pour test', phases: [{ n: '01', label: 'blooming', lines: ['40g'] }] },
     ],
   }
-  const bodyOf = (onChange: ReturnType<typeof vi.fn>) =>
-    onChange.mock.lastCall?.[0].body as { elements: { type: string; text?: string }[]; sections?: unknown }
 
-  it('mọi khối chữ vào chung một ô, nên bôi đen chạy suốt', async () => {
-    /*
-     * Đây là điều kiện, không phải lựa chọn: trình duyệt không cho một vùng
-     * chọn trải qua hai ô nhập. Chừng nào mỗi element còn một ô riêng thì
-     * chừng ấy không bôi đen từ tiêu đề xuống hết danh sách được.
-     */
+  it('mọi khối chữ vào chung một mặt, nên bôi đen chạy suốt', () => {
     draw('memo', body)
-    await userEvent.click(screen.getByText('hậu vị ngắn'))
-    const run = screen.getAllByRole('textbox').find(
-      (el) => (el as HTMLTextAreaElement).value?.includes('hậu vị ngắn'),
-    ) as HTMLTextAreaElement
-    expect(run.value).toContain('## Bean character')
-    expect(run.value).toContain('- Ngọt mía, *hậu vị ngắn*')
-    expect(run.value).toContain('## Pour test')
+    const surfaces = document.querySelectorAll('.awc-live-input')
+    expect(surfaces).toHaveLength(1)
+    const text = surfaces[0].textContent ?? ''
+    expect(text).toContain('Bean character')
+    expect(text).toContain('Ngọt mía')
+    expect(text).toContain('Pour test')
+    expect(text).toContain('blooming')
   })
 
-  it('chữ nhấn vẽ ra là chữ nhấn khi con trỏ ở ngoài', () => {
+  it('chữ nhấn vẽ ra đậm ngay trong mặt soạn, không hiện dấu sao', () => {
     draw('memo', body)
-    expect(screen.getByText('hậu vị ngắn').tagName).toBe('EM')
-    expect(screen.getByText('blooming')).toBeInTheDocument()
+    expect(document.querySelector('.awc-live-bold')?.textContent).toBe('hậu vị ngắn')
+    expect(document.querySelector('.awc-live-input')?.textContent).not.toContain('*')
   })
 
-  it('danh sách đánh số hiện số ngay lúc đang soạn', () => {
-    // Bản đầu của ô soạn này tự vẽ một chồng ô trống: số, bullet và thụt lề
-    // đều biến mất, nên một mốc ghi "#2" đọc thành vô nghĩa trong lúc viết.
+  it('tiêu đề mục vẽ ra thẻ tiêu đề, không ra dấu thăng', () => {
     draw('memo', body)
-    expect(screen.getByText('01')).toBeInTheDocument()
+    expect([...document.querySelectorAll('.awc-live-input h2')].map((el) => el.textContent)).toEqual([
+      'Bean character',
+      'Pour test',
+    ])
   })
 
-  it('sửa dải rồi rời ô thì bài chỉ còn một cách lưu, không còn hai cái cãi nhau', async () => {
-    const onChange = draw('memo', body)
-    await userEvent.click(screen.getByText('blooming'))
-    const run = screen.getAllByRole('textbox').find(
-      (el) => (el as HTMLTextAreaElement).value?.includes('blooming'),
-    ) as HTMLTextAreaElement
-    await userEvent.type(run, ' thêm')
-    await userEvent.tab()
-
-    const next = bodyOf(onChange)
-    expect(next.elements).toBeDefined()
-    expect(next.sections).toBeUndefined()
-  })
-
-  it('gõ thêm một dòng là ra thêm element, không cần nút nào', async () => {
-    const onChange = draw('memo', body)
-    await userEvent.click(screen.getByText('blooming'))
-    const run = screen.getAllByRole('textbox').find(
-      (el) => (el as HTMLTextAreaElement).value?.includes('blooming'),
-    ) as HTMLTextAreaElement
-    await userEvent.type(run, '{End}\n\n### Mục mới')
-    await userEvent.tab()
-
-    expect(bodyOf(onChange).elements.map((e) => e.type)).toContain('heading')
-    expect(bodyOf(onChange).elements.at(-1)?.text).toBe('Mục mới')
+  it('danh sách vẽ ra thẻ danh sách thật', () => {
+    draw('memo', body)
+    const items = [...document.querySelectorAll('.awc-live-input li')].map((el) => el.textContent)
+    expect(items.some((t) => t?.includes('Ngọt mía'))).toBe(true)
+    expect(items.some((t) => t?.includes('blooming'))).toBe(true)
   })
 })

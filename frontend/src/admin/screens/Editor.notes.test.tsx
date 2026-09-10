@@ -184,24 +184,17 @@ describe('the blocks a report can hold', () => {
     expect(screen.queryByRole('button', { name: 'Trích dẫn' })).toBeNull()
   })
 
-  it('đổi cấp tiêu đề bằng số dấu thăng, không bằng nút', async () => {
-    // Tiêu đề nay là một dòng trong dải chữ, nên cấp của nó là số dấu thăng
-    // người viết gõ. Ba cái nút H1/H2/H3 cũ không còn chỗ đứng.
-    const onChange = draw([{ id: 'b1', type: 'heading', text: 'Tổng quan', level: 2 }])
-    await userEvent.click(screen.getByText('Tổng quan'))
-    const run = screen.getByDisplayValue('## Tổng quan')
-    await userEvent.clear(run)
-    await userEvent.type(run, '### Tổng quan')
-    await userEvent.tab()
-
-    const body = onChange.mock.lastCall?.[0].body as { level?: number }[]
-    expect(body[0].level).toBe(3)
+  it('cấp tiêu đề vẽ ra đúng thẻ, không hiện dấu thăng', () => {
+    // Đổi cấp nay là gõ thêm hay bớt dấu thăng ngay trong mặt soạn sống; phần
+    // gõ đo bằng Playwright. Ở đây kiểm cái vẽ ra.
+    draw([{ id: 'b1', type: 'heading', text: 'Tổng quan', level: 2 }])
+    expect(document.querySelector('.awc-live-input h2')?.textContent).toBe('Tổng quan')
+    expect(document.querySelector('.awc-live-input')?.textContent).not.toContain('##')
   })
 
-  it('cấp hiện tại đọc ra được ngay trong chữ thô', async () => {
-    draw([{ id: 'b1', type: 'heading', text: 'Tổng quan', level: 2 }])
-    await userEvent.click(screen.getByText('Tổng quan'))
-    expect(screen.getByDisplayValue('## Tổng quan')).toBeInTheDocument()
+  it('cấp ba ra thẻ cấp ba, không lẫn với cấp hai', () => {
+    draw([{ id: 'b1', type: 'heading', text: 'Tổng quan', level: 3 }])
+    expect(document.querySelector('.awc-live-input h3')?.textContent).toBe('Tổng quan')
   })
 
   it('writes the quote mark itself, so nobody types one', () => {
