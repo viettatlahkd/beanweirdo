@@ -76,7 +76,7 @@ describe('màn soạn vẽ markdown chứ không hiện ký hiệu', () => {
 
   it('ô rỗng vẫn hiện chữ mờ gợi ý', () => {
     draw(para(''))
-    expect(screen.getByRole('textbox', { name: 'Đoạn văn' })).toBeTruthy()
+    expect(screen.getByRole('textbox', { name: /Viết ở đây/i })).toBeTruthy()
   })
 })
 
@@ -124,9 +124,9 @@ describe('dán từ Notion: đọc bản HTML, giữ định dạng', () => {
 
   it('chữ đậm sống sót, dù bản chữ thuần đã đánh mất nó', async () => {
     const onChange = draw(para(''))
-    await userEvent.click(screen.getByRole('textbox', { name: 'Đoạn văn' }))
+    await userEvent.click(screen.getByRole('textbox', { name: /Viết ở đây/i }))
 
-    fireEvent.paste(screen.getByPlaceholderText('Đoạn văn'), {
+    fireEvent.paste(screen.getByRole('textbox', { name: /Viết ở đây/i }), {
       clipboardData: clipboard(
         '<h3>Overall feedback</h3><ul><li>Chưa chốt <strong>test cases</strong>.</li></ul>',
         // Đúng thứ Notion đặt vào ô chữ thuần: đậm biến mất.
@@ -142,9 +142,9 @@ describe('dán từ Notion: đọc bản HTML, giữ định dạng', () => {
     // Có nguồn trả chính chữ thuần cho ô `text/html`. Đem đi phân tích như
     // HTML là nuốt sạch ký tự xuống dòng, và sáu gạch đầu dòng về một dòng.
     const onChange = draw(para(''))
-    await userEvent.click(screen.getByRole('textbox', { name: 'Đoạn văn' }))
+    await userEvent.click(screen.getByRole('textbox', { name: /Viết ở đây/i }))
 
-    fireEvent.paste(screen.getByPlaceholderText('Đoạn văn'), {
+    fireEvent.paste(screen.getByRole('textbox', { name: /Viết ở đây/i }), {
       clipboardData: clipboard('- một\n- hai', '- một\n- hai'),
     })
 
@@ -213,7 +213,7 @@ describe('hai mặt của một ô đo cùng một kiểu', () => {
     // giữ cái điều kiện làm cho hai mặt đo bằng nhau. Con số thật đo bằng
     // Playwright trong Chrome: lệch 0.3px, trước khi sửa là 58.8px.
     draw(para('một dòng'))
-    const drawnFace = screen.getByRole('textbox', { name: 'Đoạn văn' })
+    const drawnFace = screen.getByRole('textbox', { name: /Viết ở đây/i })
     expect(drawnFace.style.boxSizing).toBe('border-box')
   })
 })

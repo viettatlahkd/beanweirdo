@@ -75,20 +75,14 @@ import {
   getElement,
   htmlToMarkdown,
   Inline,
-  pastedToItems,
   rawIndexFor,
-  runsToText,
-  textToRuns,
-  type ListAttrs,
-  type ListItem,
   type Palette,
 } from 'post-renderer'
 import { AddRow, RowShell } from '../components/RowShell'
 import { duplicateAt, insertAt, move, removeAt } from '../lib/listOps'
-import { followWithParagraph, withPastedBlocks } from '../lib/pasteBlocks'
+import { withPastedBlocks } from '../lib/pasteBlocks'
 import { splitForThing, toRuns, writeRun } from '../lib/flow'
 import { emptyHistory, historyKey, inverseOf, record, redo, undo, type History } from '../lib/editHistory'
-import { backspace, enter, indent, outdent, subLine, type Focus } from '../lib/listKeys'
 import { blockKey, neighbour, type BlockFocus } from '../lib/blockKeys'
 import { applyMark, markFor } from '../lib/marks'
 import { useRowDrag } from '../lib/useRowDrag'
@@ -900,15 +894,29 @@ function EditableField({
    * nhập một mục lên thì con trỏ phải đứng ở **chỗ nối**, tách một mục thì
    * phải ở đầu mục mới. Nên chỗ gọi nói rõ vị trí; không nói thì mới là cuối.
    */
+  /*
+   * Đặt con trỏ **đúng một lần** cho mỗi lần được gọi tới.
+   *
+   * Không chốt lại thì effect chạy mỗi lượt vẽ — chỗ gọi thường truyền một
+   * arrow mới cho `onFocused` nên deps đổi liên tục — và mỗi lần chạy nó kéo
+   * con trỏ về chỗ cũ. Hệ quả: vừa bôi đen xong là vùng chọn biến mất. Test
+   * bắt được đúng lúc chuyển sang mô hình dải, nơi bôi đen là việc chính.
+   */
+  const placed = useRef(false)
   useEffect(() => {
-    if (!focus) return
+    if (!focus) {
+      placed.current = false
+      return
+    }
     // Ô đang ở mặt vẽ thì phải lật sang mặt gõ trước khi có gì để đặt con trỏ.
     if (markdown && caret === null) {
       setCaret(focusCaret ?? value.length)
       return
     }
+    if (placed.current) return
     const node = el.current
     if (!node) return
+    placed.current = true
     node.focus()
     const spot = Math.max(0, Math.min(focusCaret ?? node.value.length, node.value.length))
     node.setSelectionRange(spot, spot)
@@ -960,7 +968,14 @@ function EditableField({
 
   /** `Cmd+B` · `Cmd+U` · `Cmd+K`. Trả `true` nghĩa là đã nhận phím. */
   function format(e: KeyboardEvent<HTMLElement>): boolean {
-    if (!markdown) return false
+    /*
+     * Bật ở mọi ô đang giữ markdown, không riêng ô hai mặt.
+     *
+     * Dải chữ liền mạch cũng là markdown, chỉ khác là nó tự lo phần vẽ. Quên
+     * nó ở đây là Cmd+B với Cmd+K chết ngay trong chỗ người viết gõ nhiều
+     * nhất — test bắt được đúng lúc chuyển sang mô hình dải.
+     */
+    if (!markdown && !pasteAsText) return false
     const mark = markFor(e)
     const node = el.current
     if (!mark || !node) return false
@@ -1543,6 +1558,13 @@ function BitesizeEditor({
   const [spot, setSpot] = useState<BlockFocus | null>(null)
   /** Khối đang mở menu `/`, và mấy chữ gõ sau dấu ấy. */
   const [slash, setSlash] = useState<{ at: number; query: string } | null>(null)
+  const { runAt } = useFlow(elements)
+  /** Dải chữ đang mở ra thành markdown, và chỗ con trỏ trong đó. */
+  const [editing, setEditing] = useState<[number, number, string?] | null>(null)
+  /** `/` vừa gõ trong một dải chữ: chữ đang có, chỗ con trỏ, và mấy chữ lọc. */
+  const [runSlash, setRunSlash] = useState<
+    { at: [number, number]; text: string; caret: number; lineStart: number; query: string } | null
+  >(null)
   const drag = useRowDrag((from, to) => writeElements(move(elements, from, to)))
   const control: CSSProperties = {
     fontFamily: sans,
@@ -1592,7 +1614,62 @@ function BitesizeEditor({
         renderSub={(sub) => (
           <InlineField value={sub} placeholder="Chữ trong ô ảnh phụ" onCommit={(v) => write({ sub: v })} />
         )}
-        wrapElement={(_drawn, i) => (
+        wrapElement={(_drawn, i) => {
+          const run = runAt(i)
+          /*
+           * Cả dải chữ vẽ một lần, ở element đầu dải. Những element sau
+           * trong cùng dải không vẽ gì — chữ của chúng đã nằm trong ô ấy.
+           */
+          if (run?.kind === 'text') {
+            if (i !== run.at[0]) return null
+            return (
+              <div key={i} className="awc-rep-block">
+                <div className="awc-gutter">
+                  <InsertPlus
+                    open={menuAt === i}
+                    onToggle={() => setMenuAt(menuAt === i ? null : i)}
+                    onInsert={(t) => {
+                      writeElements(insertAt(elements, run.at[1] + 1, blankReportBlock(t)))
+                      setMenuAt(null)
+                    }}
+                  />
+                </div>
+                <TextRun
+                  blocks={elements}
+                  at={run.at}
+                  text={run.text}
+                  palette={palette}
+                  editing={editing?.[0] === run.at[0]}
+                  caret={editing?.[1]}
+                  draft={editing?.[2]}
+                  onEnter={(caret) => setEditing([run.at[0], caret])}
+                  onLeave={() => setEditing(null)}
+                  onCommit={(v) => writeElements(writeRun(elements, run.at, v))}
+                  onSlash={(found) => setRunSlash(found === null ? null : { at: run.at, ...found })}
+                />
+                {runSlash?.at[0] === run.at[0] && (
+                  <BlockMenu
+                    filter={runSlash.query}
+                    onClose={() => setRunSlash(null)}
+                    onInsert={(type) => {
+                      const before = runSlash.text.slice(0, runSlash.lineStart)
+                      const after = runSlash.text.slice(runSlash.caret)
+                      const prefix = MARKDOWN_PREFIX[type]
+                      if (prefix !== undefined) {
+                        setEditing([run.at[0], before.length + prefix.length, `${before}${prefix}${after}`])
+                        setRunSlash(null)
+                        return
+                      }
+                      else writeElements(splitForThing(elements, run.at, `${before}${after}`, runSlash.lineStart, blankReportBlock(type)).blocks)
+                      setRunSlash(null)
+                      setEditing(null)
+                    }}
+                  />
+                )}
+              </div>
+            )
+          }
+          return (
           <div key={i}>
             <RowShell
               noun="khối"
@@ -1641,16 +1718,12 @@ function BitesizeEditor({
                   writeElements(next)
                   return true
                 }}
-                onFollowWithParagraph={(keep) => {
-                  const out = followWithParagraph(elements, i, keep)
-                  writeElements(out.blocks)
-                  setSpot({ at: out.focus, caret: 0 })
-                }}
               />
             </RowShell>
             {slash?.at === i && (
-              <InsertMenu
+              <BlockMenu
                 filter={slash.query}
+                onClose={() => setSlash(null)}
                 onInsert={(type) => {
                   writeElements(elements.map((b, k) => (k === i ? ({ ...blankReportBlock(type), id: b.id } as ReportBlock) : b)))
                   setSlash(null)
@@ -1659,7 +1732,8 @@ function BitesizeEditor({
               />
             )}
           </div>
-        )}
+          )
+        }}
         renderAfterElements={() =>
           elements.length === 0 ? (
             <div className="awc-rep-block">
@@ -1716,6 +1790,13 @@ function MemoEditor({
   const [spot, setSpot] = useState<BlockFocus | null>(null)
   /** Khối đang mở menu `/`, và mấy chữ gõ sau dấu ấy. */
   const [slash, setSlash] = useState<{ at: number; query: string } | null>(null)
+  const { runAt } = useFlow(elements)
+  /** Dải chữ đang mở ra thành markdown, và chỗ con trỏ trong đó. */
+  const [editing, setEditing] = useState<[number, number, string?] | null>(null)
+  /** `/` vừa gõ trong một dải chữ: chữ đang có, chỗ con trỏ, và mấy chữ lọc. */
+  const [runSlash, setRunSlash] = useState<
+    { at: [number, number]; text: string; caret: number; lineStart: number; query: string } | null
+  >(null)
 
   return (
     <PostRenderer
@@ -1746,7 +1827,62 @@ function MemoEditor({
       renderSpecValue={(value, i) => (
         <EditableField value={value} placeholder="giá trị" onCommit={(v) => setSpec(i, { v })} />
       )}
-      wrapElement={(_drawn, i) => (
+      wrapElement={(_drawn, i) => {
+        const run = runAt(i)
+        /*
+         * Cả dải chữ vẽ một lần, ở element đầu dải. Những element sau
+         * trong cùng dải không vẽ gì — chữ của chúng đã nằm trong ô ấy.
+         */
+        if (run?.kind === 'text') {
+          if (i !== run.at[0]) return null
+          return (
+            <div key={i} className="awc-rep-block">
+              <div className="awc-gutter">
+                <InsertPlus
+                  open={menuAt === i}
+                  onToggle={() => setMenuAt(menuAt === i ? null : i)}
+                  onInsert={(t) => {
+                    write(insertAt(elements, run.at[1] + 1, blankReportBlock(t)))
+                    setMenuAt(null)
+                  }}
+                />
+              </div>
+              <TextRun
+                blocks={elements}
+                at={run.at}
+                text={run.text}
+                palette={palette}
+                editing={editing?.[0] === run.at[0]}
+                caret={editing?.[1]}
+          draft={editing?.[2]}
+                onEnter={(caret) => setEditing([run.at[0], caret])}
+                onLeave={() => setEditing(null)}
+                onCommit={(v) => write(writeRun(elements, run.at, v))}
+                onSlash={(found) => setRunSlash(found === null ? null : { at: run.at, ...found })}
+              />
+              {runSlash?.at[0] === run.at[0] && (
+                <BlockMenu
+                  filter={runSlash.query}
+                  onClose={() => setRunSlash(null)}
+                  onInsert={(type) => {
+                    const before = runSlash.text.slice(0, runSlash.lineStart)
+                    const after = runSlash.text.slice(runSlash.caret)
+                    const prefix = MARKDOWN_PREFIX[type]
+                    if (prefix !== undefined) {
+                      setEditing([run.at[0], before.length + prefix.length, `${before}${prefix}${after}`])
+                      setRunSlash(null)
+                      return
+                    }
+                    else write(splitForThing(elements, run.at, `${before}${after}`, runSlash.lineStart, blankReportBlock(type)).blocks)
+                    setRunSlash(null)
+                    setEditing(null)
+                  }}
+                />
+              )}
+            </div>
+          )
+        }
+        return (
         <div key={i}>
           <RowShell
             noun="khối"
@@ -1795,16 +1931,12 @@ function MemoEditor({
                 write(next)
                 return true
               }}
-              onFollowWithParagraph={(keep) => {
-                const out = followWithParagraph(elements, i, keep)
-                write(out.blocks)
-                setSpot({ at: out.focus, caret: 0 })
-              }}
             />
           </RowShell>
           {slash?.at === i && (
-            <InsertMenu
+            <BlockMenu
               filter={slash.query}
+              onClose={() => setSlash(null)}
               onInsert={(type) => {
                 write(elements.map((b, k) => (k === i ? ({ ...blankReportBlock(type), id: b.id } as ReportBlock) : b)))
                 setSlash(null)
@@ -1813,7 +1945,8 @@ function MemoEditor({
             />
           )}
         </div>
-      )}
+        )
+      }}
       renderAfterElements={() =>
         elements.length === 0 ? (
           <div className="awc-rep-block">
@@ -2217,7 +2350,7 @@ function ReportEditor({
    */
   const runs = toRuns(blocks)
   /** Dải chữ đang mở ra thành markdown, và chỗ con trỏ trong đó. */
-  const [editing, setEditing] = useState<[number, number] | null>(null)
+  const [editing, setEditing] = useState<[number, number, string?] | null>(null)
   const firstAnnotated = runs.findIndex((run) =>
     (run.kind === 'text' ? blocks.slice(run.at[0], run.at[1] + 1) : [blocks[run.at]]).some(
       (b) => notesOn(notes, b?.id).length > 0,
@@ -2341,6 +2474,7 @@ function ReportEditor({
                         palette={palette}
                         editing={editing?.[0] === run.at[0]}
                         caret={editing?.[1]}
+          draft={editing?.[2]}
                         onEnter={(caret) => setEditing([run.at[0], caret])}
                         onLeave={() => setEditing(null)}
                         onCommit={(v) => setBlocks(writeRun(blocks, run.at, v))}
@@ -2360,7 +2494,16 @@ function ReportEditor({
                             const after = runSlash.text.slice(runSlash.caret)
                             const prefix = MARKDOWN_PREFIX[type]
                             if (prefix !== undefined) {
-                              setBlocks(writeRun(blocks, run.at, `${before}${prefix}${after}`))
+                              /*
+                               * Ở lại trong ô, con trỏ ngay sau ký hiệu.
+                               *
+                               * Ghi ra ngay thì `1. ` chưa có chữ nào phía sau
+                               * sẽ đọc lại thành một đoạn văn rỗng — ký hiệu
+                               * vừa chèn biến mất trước khi kịp gõ gì vào.
+                               */
+                              setEditing([run.at[0], before.length + prefix.length, `${before}${prefix}${after}`])
+                              setRunSlash(null)
+                              return
                             } else {
                               // Bảng, số liệu, biểu đồ, ảnh: cắt dải tại dòng
                               // đang gõ rồi cắm chúng vào giữa.
@@ -2439,11 +2582,6 @@ function ReportEditor({
                             setSpot(out.focus ?? null)
                           }}
                           onPasteBlocks={(text) => pasteBlocks(run.at, text)}
-                          onFollowWithParagraph={(keep) => {
-                            const out = followWithParagraph(blocks, run.at, keep)
-                            setBlocks(out.blocks)
-                            setSpot({ at: out.focus, caret: 0 })
-                          }}
                         />
                         {slash?.at === run.at && (
                           <BlockMenu
@@ -2508,6 +2646,24 @@ function ReportEditor({
 }
 
 /**
+ * Thân bài của memo và bitesize, bày ra thành dải như report.
+ *
+ * Hai template này vẽ element trên đúng bản vẽ của chúng qua `wrapElement`,
+ * nên chỗ này không thay cả bản vẽ — nó chỉ **gom** những element chữ liền
+ * nhau lại: cái đầu dải vẽ ra một ô nhập chung, những cái sau trong cùng dải
+ * không vẽ gì nữa. Widget thì vẫn vẽ như template vốn vẽ.
+ *
+ * Nhờ vậy bôi đen chạy suốt qua chúng, mà bảng với ảnh vẫn nằm đúng chỗ
+ * template đặt.
+ */
+function useFlow(elements: ReportBlock[]) {
+  const runs = toRuns(elements)
+  const runAt = (i: number) =>
+    runs.find((r) => (r.kind === 'text' ? i >= r.at[0] && i <= r.at[1] : r.at === i))
+  return { runs, runAt }
+}
+
+/**
  * Một dải chữ liền: nhiều khối, **một** ô nhập.
  *
  * Con trỏ ở ngoài thì nó vẽ đúng thứ trang vẽ — tiêu đề ra tiêu đề, gạch đầu
@@ -2525,6 +2681,7 @@ function TextRun({
   palette,
   editing,
   caret,
+  draft,
   onEnter,
   onLeave,
   onCommit,
@@ -2536,6 +2693,8 @@ function TextRun({
   palette: Palette
   editing: boolean
   caret?: number
+  /** Chữ đang gõ dở, khi menu `/` vừa chèn một ký hiệu vào giữa chừng. */
+  draft?: string
   onEnter: (caret: number) => void
   onLeave: () => void
   onCommit: (text: string) => void
@@ -2544,7 +2703,7 @@ function TextRun({
   if (editing) {
     return (
       <EditableField
-        value={text}
+        value={draft ?? text}
         multiline
         rows={1}
         placeholder="Viết ở đây, hoặc gõ / để chèn"
@@ -2580,6 +2739,29 @@ function TextRun({
    * lần đi tìm lại chỗ.
    */
   const offsetOf = (k: number) => bodyToMarkdown(blocks.slice(at[0], at[0] + k) as never).text.length + (k > 0 ? 2 : 0)
+
+  /*
+   * Dải rỗng vẫn phải có chỗ để bấm vào.
+   *
+   * Một bài mới hoặc một dải vừa bị xoá hết chữ thì vẽ ra không có gì —
+   * không có chữ nào để bấm, nên không có đường nào vào ô nhập. Dòng chữ mờ
+   * này vừa là lối vào vừa là câu nói cho biết chỗ này gõ được.
+   */
+  if (text.trim() === '') {
+    return (
+      <div
+        className="awc-run-read"
+        role="textbox"
+        tabIndex={0}
+        aria-label="Viết ở đây, hoặc gõ / để chèn"
+        onMouseDown={() => onEnter(0)}
+        onFocus={() => onEnter(0)}
+        style={{ color: ink.muted, fontSize: 15, lineHeight: 1.62, padding: '2px 4px', cursor: 'text' }}
+      >
+        Viết ở đây, hoặc gõ / để chèn
+      </div>
+    )
+  }
 
   return (
     <div className="awc-run-read">
@@ -3020,7 +3202,6 @@ function ReportBlockFields({
   onTextKey,
   onSlash,
   onArrowOut,
-  onFollowWithParagraph,
 }: {
   block: ReportBlock
   palette: Palette
@@ -3058,14 +3239,6 @@ function ReportBlockFields({
    * Bắt buộc, cùng lý do với `onPasteBlocks` và `onTextKey`.
    */
   onArrowOut: (dir: -1 | 1) => boolean
-  /**
-   * Thay khối này rồi mở một đoạn văn ngay dưới, con trỏ nhảy vào đó.
-   *
-   * `null` nghĩa là khối này không còn gì để giữ — bỏ luôn. Đây là đường
-   * người viết **ra khỏi** một cấu trúc bằng bàn phím: Enter ở mục rỗng cuối
-   * một danh sách. Không có nó thì danh sách là chỗ vào được mà không ra được.
-   */
-  onFollowWithParagraph: (keep: ReportBlock | null) => void
 }) {
   /*
    * Emptying the words out of a paragraph is the writer saying there is no
@@ -3161,18 +3334,12 @@ function ReportBlockFields({
         </div>
       )
     case 'list':
-      return (
-        <ListEditor
-          attributes={block}
-          palette={palette}
-          onChange={onChange}
-          focus={focus}
-          onFocused={onFocused}
-          onLeaveList={(items) =>
-            onFollowWithParagraph(items.length > 0 ? ({ ...block, items } as unknown as ReportBlock) : null)
-          }
-        />
-      )
+      /*
+       * Danh sách nay luôn nằm trong một dải chữ — `flows()` xếp nó vào đó —
+       * nên nhánh này không còn đường tới. Giữ một ô soạn riêng cho nó là
+       * giữ đúng cái tường ngăn khiến bôi đen không chạy qua được hai mục.
+       */
+      return null
     case 'callout':
       return (
         <div className="awc-callout" style={{ background: palette.tint, borderColor: palette.accent }}>
@@ -3235,212 +3402,6 @@ function ReportBlockFields({
         />
       )
   }
-}
-
-/**
- * A list, edited where it is read.
- *
- * The first version of this drew its own stack of fields, and that was wrong in
- * a way worth naming: the numbers, the bullets and the indenting all vanished,
- * so a phase reading `#2` on the page — which only means anything beside the
- * `02` in front of it — read as nonsense while it was being written. The rest
- * of this screen edits on the real canvas for exactly that reason.
- *
- * So the element draws itself, and the lines inside it are fields.
- */
-function ListEditor({
-  attributes,
-  palette,
-  onChange,
-  onLeaveList,
-  focus,
-  onFocused,
-}: {
-  attributes: ListAttrs
-  palette: Palette
-  onChange: (next: ReportBlock) => void
-  /**
-   * Người viết vừa ra khỏi danh sách bằng bàn phím.
-   *
-   * Khối danh sách không tự làm được việc này: nó phải sinh ra một khối
-   * **khác** loại và đặt con trỏ vào đó, mà cả hai đều nằm ngoài tầm nó.
-   * `items` rỗng nghĩa là không còn mục nào — khối này nên biến mất.
-   */
-  onLeaveList: (items: ListItem[]) => void
-  /** Khối vừa **trở thành** danh sách; con trỏ phải vào mục đầu, không đứng ngoài. */
-  focus?: boolean
-  onFocused?: () => void
-}) {
-  const element = getElement('list')!
-  const write = (items: ListItem[]) => onChange({ ...attributes, items } as unknown as ReportBlock)
-
-  /** Chỗ đang chờ con trỏ sau một phím vừa đổi hình dạng danh sách. */
-  const [spot, setSpot] = useState<Focus | null>(null)
-  /*
-   * Gõ `- ` biến một đoạn văn thành danh sách, và cú gõ ấy tới từ ngoài khối
-   * này. Không nhận lấy con trỏ thì người viết vừa mở một danh sách xong lại
-   * phải bấm chuột vào nó mới gõ tiếp được.
-   */
-  useEffect(() => {
-    if (!focus) return
-    setSpot({ path: [0], caret: 0 })
-    onFocused?.()
-  }, [focus, onFocused])
-  const isSpot = (path: number[], sub?: number) =>
-    spot !== null && spot.path.join() === path.join() && spot.sub === sub
-
-  /** Rewrites the one item a path points at, however deep it sits. */
-  function at(items: ListItem[], path: number[], change: (item: ListItem) => ListItem): ListItem[] {
-    const [head, ...rest] = path
-    return items.map((item, i) => {
-      if (i !== head) return item
-      return rest.length === 0 ? change(item) : { ...item, children: at(item.children ?? [], rest, change) }
-    })
-  }
-
-  /**
-   * Puts pasted lines in beside the one the cursor was on.
-   *
-   * An empty line is replaced — it is the blank the writer clicked into to
-   * paste, and leaving it behind puts an empty bullet above everything they
-   * just brought in. A line with words in it keeps them, and the paste lands
-   * underneath at the same depth.
-   */
-  function splice(items: ListItem[], path: number[], incoming: ListItem[]): ListItem[] {
-    const [head, ...rest] = path
-    if (rest.length > 0) {
-      return items.map((item, i) =>
-        i === head ? { ...item, children: splice(item.children ?? [], rest, incoming) } : item,
-      )
-    }
-    const target = items[head]
-    const empty = runsToText(target?.runs).trim() === ''
-    const next = [...items]
-    next.splice(head + (empty ? 0 : 1), empty ? 1 : 0, ...incoming)
-    return next
-  }
-
-  /**
-   * Một phím trong một dòng danh sách.
-   *
-   * Chữ đang gõ được ghi vào cây **trước** khi phép biến đổi chạy. Không thế
-   * thì `Tab` hay `Shift+Tab` sẽ dựng lại danh sách từ bản đã lưu và nuốt mất
-   * những chữ vừa gõ mà chưa rời ô.
-   */
-  function key(path: number[], e: KeyboardEvent<HTMLElement>, current: string) {
-    const field = e.target as HTMLTextAreaElement
-    const caret = field.selectionStart ?? 0
-    // Đang bôi đen thì phím thuộc về vùng chọn ấy, không thuộc về cấu trúc.
-    if (field.selectionEnd !== caret) return
-
-    const base = at(attributes.items, path, (it) => ({ ...it, runs: textToRuns(current) }))
-    const done =
-      e.key === 'Enter' && e.shiftKey
-        ? subLine(base, path)
-        : e.key === 'Enter'
-          ? enter(base, path, current, caret)
-          : e.key === 'Backspace'
-            ? backspace(base, path, current, caret)
-            : // Tab chỉ thụt lề khi con trỏ ở **đầu** dòng. Nuốt Tab ở mọi chỗ
-              // là biến ô soạn thành cái bẫy: vào được bằng bàn phím mà không
-              // ra được, và người dùng bàn phím mắc kẹt trong danh sách.
-              e.key === 'Tab' && caret === 0
-              ? e.shiftKey
-                ? outdent(base, path)
-                : indent(base, path)
-              : null
-    if (!done) return
-
-    e.preventDefault()
-    if (done.leave) {
-      onLeaveList(done.items ?? base)
-      return
-    }
-    if (done.items) write(done.items)
-    if (done.focus) setSpot(done.focus)
-  }
-
-  /**
-   * Reads a paste, and says whether the field should still handle it.
-   *
-   * One plain line goes back to the browser: pasting a phrase into the middle
-   * of a sentence is ordinary typing, and taking it over would break it.
-   */
-  function pasteInto(path: number[], text: string): boolean {
-    const pasted = pastedToItems(text)
-    if (!pasted || pasted.items.length === 0) return false
-    // Numbering is the pasted list's, but only when there is no list here yet
-    // to disagree with — an existing list is something the writer already set.
-    const blank = attributes.items.length === 1 && runsToText(attributes.items[0]?.runs).trim() === ''
-    onChange({
-      ...attributes,
-      ...(blank && pasted.ordered ? { ordered: true } : null),
-      items: splice(attributes.items, path, pasted.items),
-    } as unknown as ReportBlock)
-    return true
-  }
-
-
-  return (
-    <div className="awc-list-edit">
-      <element.View
-        attributes={attributes}
-        palette={palette}
-        index={0}
-        render={{
-          renderListLine: (text, path) => (
-            <span className="awc-list-line">
-              <EditableField
-                value={text}
-                placeholder="một dòng"
-                /*
-                 * Nhiều dòng, như mặt vẽ.
-                 *
-                 * Trước đây đây là `input` một dòng: một mục dài hai dòng lúc
-                 * vẽ bị ép thành một dòng lúc sửa, chữ trôi ra ngoài ô và
-                 * người viết không còn nhìn thấy cái mình đang sửa. Ô soạn mà
-                 * giấu mất nội dung thì hỏng đúng việc nó sinh ra để làm.
-                 */
-                multiline
-                rows={1}
-                onCommit={(v) => write(at(attributes.items, path, (it) => ({ ...it, runs: textToRuns(v) })))}
-                onPasteText={(pasted) => pasteInto(path, pasted)}
-                onKeyDown={(e, current) => key(path, e, current)}
-                focus={isSpot(path)}
-                focusCaret={spot?.caret}
-                onFocused={() => setSpot(null)}
-                markdown
-                accentInk={palette.ink}
-                style={{ font: 'inherit', color: 'inherit' }}
-              />
-            </span>
-          ),
-          renderListSub: (text, path, subIndex) => (
-            <EditableField
-              value={text}
-              placeholder="dòng phụ"
-              multiline
-              rows={1}
-              onCommit={(v) =>
-                write(
-                  at(attributes.items, path, (it) => ({
-                    ...it,
-                    sub: v === '' ? it.sub?.filter((_, k) => k !== subIndex) : it.sub?.map((y, k) => (k === subIndex ? v : y)),
-                  })),
-                )
-              }
-              focus={isSpot(path, subIndex)}
-              focusCaret={spot?.caret}
-              onFocused={() => setSpot(null)}
-              markdown
-              accentInk={palette.ink}
-              style={{ font: 'inherit', color: 'inherit' }}
-            />
-          ),
-        }}
-      />
-    </div>
-  )
 }
 
 function MetricsEditor({ items, onChange }: { items: ReportMetric[]; onChange: (items: ReportMetric[]) => void }) {
