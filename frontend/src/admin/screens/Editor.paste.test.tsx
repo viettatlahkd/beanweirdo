@@ -202,3 +202,55 @@ describe('dán cả một trang vào canvas', () => {
     expect((blocks[0] as { text?: string }).text).toBe('sẵn có thêm chữ')
   })
 })
+
+/**
+ * Cùng một bộ máy thì phải cùng một hành vi.
+ *
+ * `ReportBlockFields` được ba màn dùng chung — report, memo, bitesize — và
+ * lượt trước chỉ report được nối chỗ dán. Dán một trang markdown vào bitesize
+ * ra nguyên dấu thăng với dấu sao trên màn. Prop `onPasteBlocks` nay là bắt
+ * buộc, nên chỗ này giữ cho cả ba thật sự chạy chứ không chỉ biên dịch được.
+ */
+describe('dán vào bitesize và memo, không riêng report', () => {
+  const PAGE = ['### Overall feedback', '', '* Chưa chốt test cases.', '* Chưa có exit criteria.'].join('\n')
+
+  function drawTemplate(template: 'bitesize' | 'memo', body: unknown) {
+    const onChange = vi.fn()
+    render(
+      <EditorCanvas
+        template={template}
+        post={{ ...reportPost(body), template } as PostDetail}
+        onChange={onChange}
+        onHeroDrop={vi.fn()}
+      />,
+    )
+    return onChange
+  }
+
+  function pastedElements(onChange: ReturnType<typeof vi.fn>) {
+    const body = onChange.mock.calls.at(-1)?.[0].body as { elements?: { type?: string }[] }
+    return body.elements ?? []
+  }
+
+  it('bitesize — một trang markdown thành nhiều khối, không phải một đoạn thô', async () => {
+    const onChange = drawTemplate('bitesize', {
+      len: 'ngắn',
+      elements: [{ type: 'paragraph', id: 'b1', text: '' }],
+    })
+    await userEvent.click(screen.getByPlaceholderText(/đoạn văn|viết/i))
+    await userEvent.paste(PAGE)
+
+    expect(pastedElements(onChange).map((b) => b.type)).toEqual(['heading', 'list'])
+  })
+
+  it('memo — cũng vậy', async () => {
+    const onChange = drawTemplate('memo', {
+      subtitle: 'phụ đề',
+      elements: [{ type: 'paragraph', id: 'b1', text: '' }],
+    })
+    await userEvent.click(screen.getByPlaceholderText(/đoạn văn|viết/i))
+    await userEvent.paste(PAGE)
+
+    expect(pastedElements(onChange).map((b) => b.type)).toEqual(['heading', 'list'])
+  })
+})
