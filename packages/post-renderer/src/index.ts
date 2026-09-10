@@ -45,7 +45,10 @@ export {
   allElements,
   findElements,
   getElement,
+  Inline,
+  pastedToItems,
   registerElement,
+  Runs,
   runsToText,
   textToRuns,
   toElements,
@@ -58,6 +61,7 @@ export type {
   ElementViewProps,
   ListAttrs,
   ListItem,
+  PastedList,
   Run,
   StoredElement,
 } from './elements'

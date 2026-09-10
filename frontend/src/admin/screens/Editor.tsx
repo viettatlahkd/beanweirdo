@@ -1,4 +1,13 @@
-import { Fragment, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react'
+import {
+  Fragment,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ClipboardEvent,
+  type CSSProperties,
+  type KeyboardEvent,
+} from 'react'
 import {
   PostRenderer,
   FLAVOR_GROUP_NAMES,
@@ -63,6 +72,8 @@ import {
   allElements,
   flatElements,
   getElement,
+  pastedToItems,
+  runsToText,
   segmentsFor,
   textToRuns,
   type ListAttrs,
@@ -594,6 +605,7 @@ function EditableField({
   focus,
   onFocused,
   onKeyDown,
+  onPasteText,
   style,
 }: {
   value: string
@@ -613,6 +625,14 @@ function EditableField({
    * mất chữ vừa gõ. Người nhận phải gộp cả hai vào một lần ghi.
    */
   onKeyDown?: (e: KeyboardEvent<HTMLElement>, current: string) => void
+  /**
+   * Chỗ đọc cái vừa dán trước khi ô nhập thấy nó.
+   *
+   * Trả `true` nghĩa là đã nhận và tự xử lý — ô nhập không dán nữa. Trả
+   * `false` thì trình duyệt dán như thường: một dòng chữ vẫn chỉ là gõ chữ,
+   * và chặn nó lại là làm hỏng thao tác quen thuộc nhất trong một ô nhập.
+   */
+  onPasteText?: (text: string) => boolean
   style?: CSSProperties
 }) {
   const [local, setLocal] = useState(value)
@@ -649,6 +669,20 @@ function EditableField({
     if (local !== value) onCommit(local)
   }
 
+  /*
+   * Đọc clipboard dưới dạng chữ thuần.
+   *
+   * `text/plain` chứ không phải `text/html`: mọi trình soạn đều đặt sẵn bản
+   * markdown vào ô ấy, còn bản HTML thì mỗi nơi một kiểu và kéo theo cả style
+   * của trang nguồn. Bản chữ thuần là bản duy nhất có hình dạng đoán được.
+   */
+  const paste = onPasteText
+    ? (e: ClipboardEvent<HTMLElement>) => {
+        const text = e.clipboardData.getData('text/plain')
+        if (text && onPasteText(text)) e.preventDefault()
+      }
+    : undefined
+
   const commonStyle: CSSProperties = {
     font: 'inherit',
     color: 'inherit',
@@ -674,6 +708,7 @@ function EditableField({
         onChange={(e) => setLocal(e.target.value)}
         onBlur={commit}
         onKeyDown={onKeyDown && ((e) => onKeyDown(e, local))}
+        onPaste={paste}
         // Ô đã tự cao bằng chữ, nên tay kéo không còn việc gì — và nó là cái
         // dấu `//` nằm rải khắp trang lúc trước.
         style={{ ...commonStyle, resize: 'none', overflow: 'hidden' }}
@@ -689,6 +724,7 @@ function EditableField({
       onChange={(e) => setLocal(e.target.value)}
       onBlur={commit}
       onKeyDown={onKeyDown && ((e) => onKeyDown(e, local))}
+      onPaste={paste}
       style={commonStyle}
     />
   )
@@ -2344,6 +2380,48 @@ function ListEditor({
     })
   }
 
+  /**
+   * Puts pasted lines in beside the one the cursor was on.
+   *
+   * An empty line is replaced — it is the blank the writer clicked into to
+   * paste, and leaving it behind puts an empty bullet above everything they
+   * just brought in. A line with words in it keeps them, and the paste lands
+   * underneath at the same depth.
+   */
+  function splice(items: ListItem[], path: number[], incoming: ListItem[]): ListItem[] {
+    const [head, ...rest] = path
+    if (rest.length > 0) {
+      return items.map((item, i) =>
+        i === head ? { ...item, children: splice(item.children ?? [], rest, incoming) } : item,
+      )
+    }
+    const target = items[head]
+    const empty = runsToText(target?.runs).trim() === ''
+    const next = [...items]
+    next.splice(head + (empty ? 0 : 1), empty ? 1 : 0, ...incoming)
+    return next
+  }
+
+  /**
+   * Reads a paste, and says whether the field should still handle it.
+   *
+   * One plain line goes back to the browser: pasting a phrase into the middle
+   * of a sentence is ordinary typing, and taking it over would break it.
+   */
+  function pasteInto(path: number[], text: string): boolean {
+    const pasted = pastedToItems(text)
+    if (!pasted || pasted.items.length === 0) return false
+    // Numbering is the pasted list's, but only when there is no list here yet
+    // to disagree with — an existing list is something the writer already set.
+    const blank = attributes.items.length === 1 && runsToText(attributes.items[0]?.runs).trim() === ''
+    onChange({
+      ...attributes,
+      ...(blank && pasted.ordered ? { ordered: true } : null),
+      items: splice(attributes.items, path, pasted.items),
+    } as unknown as ReportBlock)
+    return true
+  }
+
   /** Drops the one item a path points at; the last top-level line stays. */
   function without(items: ListItem[], path: number[]): ListItem[] {
     const [head, ...rest] = path
@@ -2363,7 +2441,7 @@ function ListEditor({
         />
         đánh số
         <span>
-          <code>*nhấn*</code> <code>_số đo_</code>
+          <code>*nhấn*</code> <code>_số đo_</code> <code>[chữ](địa chỉ)</code>
         </span>
       </label>
 
@@ -2378,6 +2456,7 @@ function ListEditor({
                 value={text}
                 placeholder="một dòng"
                 onCommit={(v) => write(at(attributes.items, path, (it) => ({ ...it, runs: textToRuns(v) })))}
+                onPasteText={(pasted) => pasteInto(path, pasted)}
                 style={{ font: 'inherit', color: 'inherit' }}
               />
               <span className="awc-list-tools">

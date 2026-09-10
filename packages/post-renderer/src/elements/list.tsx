@@ -16,6 +16,7 @@ import { serif } from '../tokens'
 import { shade } from '../palette'
 import { registerElement, type ElementRenderOverrides, type ElementViewProps } from './registry'
 import { runsToText, type Run } from './runs'
+import { Inline, Runs } from './inline'
 
 export type ListItem = {
   /**
@@ -101,27 +102,15 @@ function Row({
         )}
         <div style={{ fontSize: depth === 0 ? 15.5 : 15, lineHeight: 1.62 }}>
           <div>
-            {render?.renderListLine
-              ? render.renderListLine(runsToText(item.runs), path)
-              : item.runs.map((r, i) =>
-              r.em ? (
-                <em key={i} style={{ fontWeight: 600, fontStyle: 'italic', color: accentInk }}>
-                  {r.t}
-                </em>
-              ) : r.u ? (
-                // A reading worth pausing on — a hairline, and the colour left
-                // alone. Emphasis changes colour and slant; this changes neither.
-                <span key={i} style={{ borderBottom: '1px solid #CFCFC4' }}>
-                  {r.t}
-                </span>
-                  ) : (
-                    <span key={i}>{r.t}</span>
-                  ),
-                )}
+            {render?.renderListLine ? (
+              render.renderListLine(runsToText(item.runs), path)
+            ) : (
+              <Runs runs={item.runs} accentInk={accentInk} />
+            )}
           </div>
           {item.sub?.map((line, i) => (
             <div key={i} style={{ color: '#4B4A40', fontSize: 14.5, lineHeight: 1.66 }}>
-              {render?.renderListSub ? render.renderListSub(line, path, i) : line}
+              {render?.renderListSub ? render.renderListSub(line, path, i) : <Inline text={line} accentInk={accentInk} />}
             </div>
           ))}
         </div>

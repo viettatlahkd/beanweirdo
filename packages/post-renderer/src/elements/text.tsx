@@ -1,6 +1,7 @@
 /** The elements a post is mostly made of: words, and words set apart. */
 import { ink, sans, serif } from '../tokens'
 import { registerElement, type ElementViewProps } from './registry'
+import { Inline } from './inline'
 
 export type ParagraphAttrs = { type: 'paragraph'; id?: string; text: string }
 export type HeadingAttrs = { type: 'heading'; id?: string; text: string; level?: 1 | 2 | 3 }
@@ -16,12 +17,16 @@ export const paragraph = registerElement<ParagraphAttrs>({
   keywords: ['đoạn', 'văn', 'chữ', 'text', 'body'],
   attributes: { text: { type: 'string', note: 'nội dung đoạn' } },
   blank: () => ({ type: 'paragraph', text: '' }),
-  View: ({ attributes, index, testId, render }: ElementViewProps<ParagraphAttrs>) => (
+  View: ({ attributes, palette, index, testId, render }: ElementViewProps<ParagraphAttrs>) => (
     <div
       data-testid={testId}
       style={{ fontFamily: sans, fontWeight: 300, fontSize: 15.5, lineHeight: 1.55, color: ink.strong, margin: '0 0 20px', maxWidth: 660 }}
     >
-      {render?.renderParagraph ? render.renderParagraph(attributes.text, index) : attributes.text}
+      {render?.renderParagraph ? (
+        render.renderParagraph(attributes.text, index)
+      ) : (
+        <Inline text={attributes.text} accentInk={palette.ink} />
+      )}
     </div>
   ),
 })
@@ -102,7 +107,9 @@ export const quote = registerElement<QuoteAttrs>({
       <span aria-hidden style={{ position: 'absolute', left: 0, top: -8, fontFamily: serif, fontSize: 52, lineHeight: 1, color: palette.edge }}>
         “
       </span>
-      <div style={{ fontFamily: serif, fontSize: 21, lineHeight: 1.35, color: '#172124' }}>{attributes.text}</div>
+      <div style={{ fontFamily: serif, fontSize: 21, lineHeight: 1.35, color: '#172124' }}>
+        <Inline text={attributes.text} accentInk={palette.ink} />
+      </div>
       {attributes.attribution && (
         <div style={{ fontFamily: sans, fontSize: 11, letterSpacing: '.08em', textTransform: 'uppercase', color: palette.ink, marginTop: 8 }}>
           {attributes.attribution}
@@ -133,7 +140,9 @@ export const callout = registerElement<CalloutAttrs>({
           {attributes.heading}
         </div>
       )}
-      <div style={{ fontFamily: sans, fontWeight: 300, fontSize: 14.5, lineHeight: 1.55, color: ink.strong }}>{attributes.text}</div>
+      <div style={{ fontFamily: sans, fontWeight: 300, fontSize: 14.5, lineHeight: 1.55, color: ink.strong }}>
+        <Inline text={attributes.text} accentInk={palette.ink} />
+      </div>
     </div>
   ),
 })
