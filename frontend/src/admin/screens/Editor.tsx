@@ -86,6 +86,7 @@ import {
 import { AddRow, RowShell } from '../components/RowShell'
 import { duplicateAt, insertAt, move, removeAt } from '../lib/listOps'
 import { followWithParagraph, withPastedBlocks } from '../lib/pasteBlocks'
+import { emptyHistory, historyKey, inverseOf, record, redo, undo, type History } from '../lib/editHistory'
 import { backspace, enter, indent, outdent, subLine, type Focus } from '../lib/listKeys'
 import { useRowDrag } from '../lib/useRowDrag'
 import {
@@ -170,12 +171,39 @@ function EditorContent({ postId }: { postId: string }) {
    */
   const [framing, setFraming] = useState<string | null>(null)
 
+  /*
+   * Lịch sử sửa bài, giữ trong ref chứ không trong state.
+   *
+   * Nó không vẽ ra gì cả — đổi nó không cần vẽ lại màn hình — và nó phải đọc
+   * được từ trong hàm cập nhật của `setPost`, nơi một biến state sẽ là bản
+   * của lượt vẽ cũ.
+   */
+  const history = useRef<History>(emptyHistory)
+
   useEffect(() => {
     Promise.all([getPost(postId), listModules()]).then(([p, mods]) => {
       setPost(p)
       setModules(mods)
     })
   }, [postId])
+
+  /*
+   * Cmd+Z ở mức cả màn, không ở mức từng ô.
+   *
+   * Lùi từng ô là lùi trong một cái ô đã đóng lại từ lâu: xoá nhầm một khối
+   * thì không có ô nào để mà lùi trong đó nữa. `historyKey` là chỗ quyết định
+   * khi nào phím này thuộc về màn và khi nào trả lại cho trình duyệt.
+   */
+  useEffect(() => {
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      const want = historyKey(e, document.activeElement)
+      if (!want) return
+      e.preventDefault()
+      step(want === 'undo' ? undo : redo)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  })
 
   if (!post) return <div style={{ padding: 32, color: ink.muted, fontSize: 13 }}>Đang tải...</div>
 
@@ -275,8 +303,35 @@ function EditorContent({ postId }: { postId: string }) {
   }
 
   function applyPatch(patch: EditPatch) {
-    setPost((prev) => (prev ? { ...prev, ...(patch as Partial<PostDetail>) } : prev))
+    setPost((prev) => {
+      if (!prev) return prev
+      // Ghi bước lùi từ `prev`, không từ `post` của lượt vẽ đã tạo ra closure
+      // này — cùng lý do với ghi chú stale closure ở trên.
+      history.current = record(
+        history.current,
+        inverseOf(prev as unknown as Record<string, unknown>, patch as Record<string, unknown>),
+        Date.now(),
+      )
+      return { ...prev, ...(patch as Partial<PostDetail>) }
+    })
     updatePost(postId, patch as Parameters<typeof updatePost>[1])
+  }
+
+  /**
+   * Đi lại một bước đã ghi.
+   *
+   * Không đi qua `applyPatch`: bản vá này **là** lịch sử, ghi nó vào lịch sử
+   * lần nữa là tự sinh ra một bước để rồi lùi chính nó.
+   */
+  function step(pick: typeof undo) {
+    setPost((prev) => {
+      if (!prev) return prev
+      const done = pick(history.current, prev as unknown as Record<string, unknown>)
+      if (!done) return prev
+      history.current = done.history
+      updatePost(postId, done.patch as Parameters<typeof updatePost>[1])
+      return { ...prev, ...(done.patch as Partial<PostDetail>) }
+    })
   }
 
   /*
@@ -839,6 +894,9 @@ function EditableField({
       <textarea
         ref={el}
         className="awc-editable"
+        // Ô còn chữ chưa ghi thì Cmd+Z là của trình duyệt, không của màn soạn
+        // — xem `historyKey`.
+        data-dirty={local !== value ? 'true' : undefined}
         value={local}
         placeholder={placeholder}
         rows={rows}
@@ -856,6 +914,7 @@ function EditableField({
     <input
       ref={el}
       className="awc-editable"
+      data-dirty={local !== value ? 'true' : undefined}
       value={local}
       placeholder={placeholder}
       onChange={(e) => setLocal(e.target.value)}
