@@ -209,7 +209,9 @@ describe('EditorCanvas — report', () => {
 
   it('says what the handle does, so nobody has to guess', async () => {
     render(<EditorCanvas template="report" post={basePost({ template: 'report', body: blocks })} onChange={vi.fn()} onHeroDrop={vi.fn()} />)
-    expect(screen.getAllByLabelText(GRIP)).toHaveLength(2)
+    // Tay nắm nay chỉ có ở widget: chữ nằm trong dải liền mạch, đổi chỗ chữ là
+    // cắt dán chữ chứ không kéo khối.
+    expect(screen.getAllByLabelText(GRIP).length).toBeGreaterThanOrEqual(1)
     expect(screen.getAllByText(GRIP)[0]).toBeInTheDocument()
   })
 
@@ -236,19 +238,17 @@ describe('EditorCanvas — report', () => {
     render(
       <EditorCanvas
         template="report"
-        post={basePost({ template: 'report', body: [{ type: 'heading', text: '' }, { type: 'paragraph', text: '' }] })}
+        post={basePost({ template: 'report', body: [] })}
         onChange={vi.fn()}
         onHeroDrop={vi.fn()}
       />,
     )
-    // The ghost names the level too, so an empty heading says which one it is.
-    // An untouched field draws its markdown, so the ghost is the box's label
-    // rather than an input's placeholder — same words, same grey.
-    expect(screen.getByRole('textbox', { name: 'Tiêu đề 1' })).toBeInTheDocument()
-    expect(screen.getByRole('textbox', { name: 'Đoạn văn' })).toBeInTheDocument()
+    // Thân bài nay là một dải chữ, nên chữ mờ nói "chỗ này gõ được" thay vì
+    // gọi tên từng loại khối rỗng như hồi mỗi khối một ô.
+    expect(screen.getByRole('textbox', { name: /Viết ở đây/i })).toBeInTheDocument()
   })
 
-  it('lets an emptied paragraph go, and keeps an emptied heading in place', async () => {
+  it('xoá hết chữ của một dải thì cả dải đi', async () => {
     const onChange = vi.fn()
     const body: ReportBlock[] = [
       { type: 'heading', text: 'Mẻ rang #14' },
@@ -256,19 +256,18 @@ describe('EditorCanvas — report', () => {
     ]
     render(<EditorCanvas template="report" post={basePost({ template: 'report', body })} onChange={onChange} onHeroDrop={vi.fn()} />)
 
-    // Each field draws its markdown until clicked into, so reaching the text
-    // is two steps: click the drawn box, then type in the field behind it.
+    /*
+     * Cả tiêu đề lẫn đoạn văn nằm trong **một** dải, nên xoá hết chữ của dải
+     * là xoá cả hai. Không còn chuyện "khối này biến mất, khối kia ở lại" —
+     * chữ giờ là chữ.
+     */
     await userEvent.click(screen.getByText('Đẩy lửa cao hơn 8%.'))
-    await userEvent.clear(screen.getByDisplayValue('Đẩy lửa cao hơn 8%.'))
+    const run = screen.getAllByRole('textbox').find(
+      (el) => (el as HTMLTextAreaElement).value?.includes('Đẩy lửa'),
+    ) as HTMLTextAreaElement
+    await userEvent.clear(run)
     await userEvent.tab()
-    expect(onChange).toHaveBeenLastCalledWith({ body: [{ ...body[0], id: 'b1' }] })
-
-    onChange.mockClear()
-    // Đoạn văn vừa đi thì con trỏ nhập lên tiêu đề, nên ô ấy đã ở mặt gõ sẵn
-    // — không phải bấm vào lần nữa.
-    await userEvent.clear(screen.getByDisplayValue('Mẻ rang #14'))
-    await userEvent.tab()
-    expect(onChange).toHaveBeenLastCalledWith({ body: [{ ...body[0], id: 'b1', text: '' }, { ...body[1], id: 'b2' }] })
+    expect(onChange).toHaveBeenLastCalledWith({ body: [] })
   })
 
   it('edits and adds items in a metrics block', async () => {

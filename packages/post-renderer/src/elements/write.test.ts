@@ -103,3 +103,16 @@ describe('những thứ markdown không đựng nổi — báo tên ra, không n
     expect(lost).toEqual([])
   })
 })
+
+describe('nguồn trích không được rơi mất', () => {
+  it('đi một vòng vẫn còn tên người được trích', () => {
+    const { back } = roundTrip([{ type: 'quote', text: 'Vị mỏng ở cuối.', attribution: 'sổ rang' }])
+    expect(back[0]).toMatchObject({ type: 'quote', text: 'Vị mỏng ở cuối.', attribution: 'sổ rang' })
+  })
+
+  it('không có nguồn thì không đẻ ra dòng gạch ngang thừa', () => {
+    const { text, back } = roundTrip([{ type: 'quote', text: 'Không nguồn.', attribution: '' }])
+    expect(text).toBe('> Không nguồn.')
+    expect(back[0]).toMatchObject({ type: 'quote', attribution: '' })
+  })
+})

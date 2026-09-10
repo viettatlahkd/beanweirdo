@@ -28,6 +28,18 @@ const blocks: ReportBlock[] = [
   { id: 'b3', type: 'image', caption: 'nhân sau khi drop' },
 ]
 
+/*
+ * Ghi chú neo vào một **widget** cho mấy bài kiểm xoá khối.
+ *
+ * Chữ nay nằm trong dải liền mạch nên không có nút "xoá khối" riêng — xoá chữ
+ * là xoá chữ. Chỉ widget (ảnh, bảng, số liệu) mới còn nút ấy, nên hộp thoại
+ * "ghi chú đi đâu" cũng chỉ gặp ở đó.
+ */
+const noteOnImage = [
+  ...blocks,
+  { type: 'notes', explorations: [], fieldNotes: [{ id: 'n1', anchor: 'b3', text: 'First crack muộn hơn.' }] },
+]
+
 const withNote = [
   ...blocks,
   { type: 'notes', explorations: [], fieldNotes: [{ id: 'n1', anchor: 'b2', text: 'First crack muộn hơn.' }] },
@@ -61,7 +73,8 @@ describe('the notes column in the editor', () => {
     await userEvent.click(screen.getAllByLabelText('thêm ghi chú cho khối này')[0])
 
     const body = onChange.mock.lastCall?.[0].body as { type: string; fieldNotes: { anchor: string }[] }[]
-    expect(body[3].fieldNotes).toEqual([{ id: 'n1', anchor: 'b1', text: '' }])
+    // Nút ✎ nay chỉ có ở widget, nên ghi chú neo vào tấm ảnh.
+    expect(body[3].fieldNotes).toEqual([{ id: 'n1', anchor: 'b3', text: '' }])
   })
 
   it('adds nothing to the body of a post nobody wrote notes on', async () => {
@@ -81,25 +94,26 @@ describe('the notes column in the editor', () => {
  */
 describe('deleting a block that has writing beside it', () => {
   it('asks where the writing goes, with deleting it as one of the choices', async () => {
-    draw(withNote)
-    await userEvent.click(screen.getAllByLabelText('xoá khối')[1])
+    draw(noteOnImage)
+    await userEvent.click(screen.getByLabelText('xoá khối'))
 
     expect(screen.getByText(/Khối này có 1 ghi chú/)).toBeInTheDocument()
     expect(screen.getByText('Lưu lên đoạn trên')).toBeInTheDocument()
-    expect(screen.getByText('Lưu xuống đoạn dưới')).toBeInTheDocument()
+    // Tấm ảnh là khối cuối, nên không có bên dưới để mà lưu xuống.
+    expect(screen.queryByText('Lưu xuống đoạn dưới')).not.toBeInTheDocument()
     expect(screen.getByText('Chuyển sang Explorations')).toBeInTheDocument()
     expect(screen.getByText('Xoá cùng khối')).toBeInTheDocument()
   })
 
   it('does not ask at all when there is nothing to lose', async () => {
     const onChange = draw(withNote)
-    await userEvent.click(screen.getAllByLabelText('xoá khối')[0])
+    await userEvent.click(screen.getByLabelText('xoá khối'))
     expect(screen.queryByText(/Làm gì với chúng/)).not.toBeInTheDocument()
     expect(onChange).toHaveBeenCalled()
   })
 
   it('offers only the sides that have a block on them', async () => {
-    draw([blocks[0], { type: 'notes', explorations: [], fieldNotes: [{ id: 'n1', anchor: 'b1', text: 'x' }] }])
+    draw([blocks[2], { type: 'notes', explorations: [], fieldNotes: [{ id: 'n1', anchor: 'b3', text: 'x' }] }])
     await userEvent.click(screen.getByLabelText('xoá khối'))
 
     expect(screen.queryByText('Lưu lên đoạn trên')).not.toBeInTheDocument()
@@ -110,8 +124,8 @@ describe('deleting a block that has writing beside it', () => {
   it(
     'waits before doing it, with no confirm step in between',
     async () => {
-      const onChange = draw(withNote)
-      await userEvent.click(screen.getAllByLabelText('xoá khối')[1])
+      const onChange = draw(noteOnImage)
+      await userEvent.click(screen.getByLabelText('xoá khối'))
       await userEvent.click(screen.getByText('Lưu lên đoạn trên'))
 
       expect(screen.getByText('← quay lại')).toBeInTheDocument()
@@ -122,7 +136,7 @@ describe('deleting a block that has writing beside it', () => {
       const body = onChange.mock.lastCall?.[0].body as { type: string; fieldNotes?: { anchor: string }[] }[]
       expect(body.filter((b) => b.type !== 'notes')).toHaveLength(2)
       expect(body.find((b) => b.type === 'notes')?.fieldNotes).toEqual([
-        { id: 'n1', anchor: 'b1', text: 'First crack muộn hơn.' },
+        { id: 'n1', anchor: 'b2', text: 'First crack muộn hơn.' },
       ])
     },
     10000,
@@ -131,8 +145,8 @@ describe('deleting a block that has writing beside it', () => {
   it(
     'takes it back if the writer says so inside the window',
     async () => {
-      const onChange = draw(withNote)
-      await userEvent.click(screen.getAllByLabelText('xoá khối')[1])
+      const onChange = draw(noteOnImage)
+      await userEvent.click(screen.getByLabelText('xoá khối'))
       await userEvent.click(screen.getByText('Xoá cùng khối'))
       await userEvent.click(screen.getByText('← quay lại'))
 
@@ -147,8 +161,8 @@ describe('deleting a block that has writing beside it', () => {
   it(
     'drops the writing when that is the choice',
     async () => {
-      const onChange = draw(withNote)
-      await userEvent.click(screen.getAllByLabelText('xoá khối')[1])
+      const onChange = draw(noteOnImage)
+      await userEvent.click(screen.getByLabelText('xoá khối'))
       await userEvent.click(screen.getByText('Xoá cùng khối'))
       await waitFor(() => expect(onChange).toHaveBeenCalled(), { timeout: 4000 })
 
@@ -168,22 +182,31 @@ describe('the blocks a report can hold', () => {
     expect(screen.getByRole('button', { name: 'Khối nhấn' })).toBeInTheDocument()
   })
 
-  it('sets a heading to one of three levels', async () => {
-    const onChange = draw([{ id: 'b1', type: 'heading', text: 'Tổng quan' }])
-    await userEvent.click(screen.getByLabelText('tiêu đề cấp 3'))
-    expect(onChange).toHaveBeenLastCalledWith({ body: [{ id: 'b1', type: 'heading', text: 'Tổng quan', level: 3 }] })
+  it('đổi cấp tiêu đề bằng số dấu thăng, không bằng nút', async () => {
+    // Tiêu đề nay là một dòng trong dải chữ, nên cấp của nó là số dấu thăng
+    // người viết gõ. Ba cái nút H1/H2/H3 cũ không còn chỗ đứng.
+    const onChange = draw([{ id: 'b1', type: 'heading', text: 'Tổng quan', level: 2 }])
+    await userEvent.click(screen.getByText('Tổng quan'))
+    const run = screen.getByDisplayValue('## Tổng quan')
+    await userEvent.clear(run)
+    await userEvent.type(run, '### Tổng quan')
+    await userEvent.tab()
+
+    const body = onChange.mock.lastCall?.[0].body as { level?: number }[]
+    expect(body[0].level).toBe(3)
   })
 
-  it('marks which level a heading is already on', () => {
+  it('cấp hiện tại đọc ra được ngay trong chữ thô', async () => {
     draw([{ id: 'b1', type: 'heading', text: 'Tổng quan', level: 2 }])
-    expect(screen.getByLabelText('tiêu đề cấp 2')).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.getByLabelText('tiêu đề cấp 1')).toHaveAttribute('aria-pressed', 'false')
+    await userEvent.click(screen.getByText('Tổng quan'))
+    expect(screen.getByDisplayValue('## Tổng quan')).toBeInTheDocument()
   })
 
   it('writes the quote mark itself, so nobody types one', () => {
     draw([{ id: 'b1', type: 'quote', text: 'Vị mỏng ở cuối.', attribution: 'sổ rang' }])
-    // Lời trích vẽ markdown nên là chữ trên màn; nguồn thì không, nên vẫn là ô.
+    // Trích dẫn nay là chữ trong dải: dấu ngoặc kép do template in, còn nguồn
+    // đi kèm dưới dạng một dòng gạch ngang.
     expect(screen.getByText('Vị mỏng ở cuối.')).toBeInTheDocument()
-    expect(screen.getByDisplayValue('sổ rang')).toBeInTheDocument()
+    expect(screen.getByText(/sổ rang/)).toBeInTheDocument()
   })
 })

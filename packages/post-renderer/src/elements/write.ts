@@ -56,8 +56,19 @@ function lines(block: StoredElement): string[] | null {
       return [text]
     case 'heading':
       return [`${HASHES[Math.min(3, Number((block as { level?: number }).level ?? 1)) - 1]} ${text}`]
-    case 'quote':
-      return text.split('\n').map((l) => `> ${l}`)
+    case 'quote': {
+      /*
+       * Nguồn trích đi kèm, viết thành một dòng `> — nguồn`.
+       *
+       * Không viết ra thì nó **mất hẳn** khi bài đi một vòng khối→chữ→khối —
+       * người viết sửa một chữ trong đoạn và mất luôn tên người được trích.
+       * Dấu gạch ngang đầu dòng cuối là lối ghi nguồn quen thuộc, không phải
+       * ký hiệu tự chế.
+       */
+      const said = text.split('\n').map((l) => `> ${l}`)
+      const from = String((block as { attribution?: string }).attribution ?? '').trim()
+      return from === '' ? said : [...said, `> — ${from}`]
+    }
     case 'list':
       return listLines(block as ListLike)
     case 'table':

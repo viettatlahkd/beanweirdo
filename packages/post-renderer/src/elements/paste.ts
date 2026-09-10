@@ -212,7 +212,21 @@ export function markdownToBlocks(text: string): StoredElement[] {
         said.push(QUOTE.exec(lines[i].trim())![1].trim())
         i++
       }
-      out.push({ type: 'quote', text: said.filter(Boolean).join(' '), attribution: '' })
+      /*
+       * Dòng cuối mở đầu bằng gạch ngang là **nguồn**, không phải lời trích.
+       *
+       * Đây là lối ghi nguồn quen thuộc, và cũng là cách `bodyToMarkdown` viết
+       * nó ra — thiếu vế đọc lại thì mỗi vòng đi về là mất tên người được
+       * trích.
+       */
+      const kept = said.filter(Boolean)
+      const last = kept[kept.length - 1] ?? ''
+      const credited = /^(—|--|–)\s*(.+)$/.exec(last)
+      out.push({
+        type: 'quote',
+        text: (credited ? kept.slice(0, -1) : kept).join(' '),
+        attribution: credited ? credited[2].trim() : '',
+      })
       continue
     }
 
