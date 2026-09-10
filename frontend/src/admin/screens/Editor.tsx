@@ -2754,7 +2754,10 @@ function TextRun({
         role="textbox"
         tabIndex={0}
         aria-label="Viết ở đây, hoặc gõ / để chèn"
-        onMouseDown={() => onEnter(0)}
+        onMouseDown={(e) => {
+          e.preventDefault()
+          onEnter(0)
+        }}
         onFocus={() => onEnter(0)}
         style={{ color: ink.muted, fontSize: 15, lineHeight: 1.62, padding: '2px 4px', cursor: 'text' }}
       >
@@ -2769,7 +2772,22 @@ function TextRun({
         const element = getElement(b.type)
         if (!element) return null
         return (
-          <div key={b.id ?? k} onMouseDown={() => onEnter(offsetOf(k))}>
+          <div
+            key={b.id ?? k}
+            onMouseDown={(e) => {
+              /*
+               * Chặn mặc định để trình duyệt đừng đặt focus vào cái thẻ sắp
+               * biến mất.
+               *
+               * Mặt vẽ bị thay bằng ô nhập ngay sau cú bấm; để trình duyệt tự
+               * lo thì focus rơi về `body` và mọi phím sau đó — kể cả Cmd+B —
+               * bay đi đâu mất. Đo được trong bài kiểm: `activeElement` là
+               * BODY sau khi bấm vào một dải.
+               */
+              e.preventDefault()
+              onEnter(offsetOf(k))
+            }}
+          >
             <element.View attributes={b as never} palette={palette} index={k} />
           </div>
         )
