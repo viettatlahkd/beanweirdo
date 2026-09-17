@@ -6,6 +6,7 @@ dist-ssr
 .vite
 tsconfig.tsbuildinfo
 .claude/worktrees
+.claude/settings.local.json
 .superpowers
 .next
 next-env.d.ts

@@ -17,7 +17,7 @@
 import { CodeHighlightNode, CodeNode } from '@lexical/code'
 import { LinkNode } from '@lexical/link'
 import { ListItemNode, ListNode } from '@lexical/list'
-import { $convertFromMarkdownString, $convertToMarkdownString, TRANSFORMERS } from '@lexical/markdown'
+import { $convertFromMarkdownString, $convertToMarkdownString } from '@lexical/markdown'
 import { LexicalComposer } from '@lexical/react/LexicalComposer'
 import { ContentEditable } from '@lexical/react/LexicalContentEditable'
 import { LexicalErrorBoundary } from '@lexical/react/LexicalErrorBoundary'
@@ -26,8 +26,9 @@ import { MarkdownShortcutPlugin } from '@lexical/react/LexicalMarkdownShortcutPl
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin'
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
 import { HeadingNode, QuoteNode } from '@lexical/rich-text'
-import { BLUR_COMMAND, COMMAND_PRIORITY_LOW } from 'lexical'
+import { BLUR_COMMAND, COMMAND_PRIORITY_LOW, TextNode } from 'lexical'
 import { useEffect } from 'react'
+import { SITE_TRANSFORMERS, unescapeSite } from '../lib/liveMarkdown'
 
 /**
  * Tên lớp cho từng loại, để CSS của trang vẽ chúng.
@@ -64,12 +65,36 @@ function CommitOnBlur({ onCommit }: { onCommit: (markdown: string) => void }) {
       editor.registerCommand(
         BLUR_COMMAND,
         () => {
-          editor.getEditorState().read(() => onCommit($convertToMarkdownString(TRANSFORMERS)))
+          editor
+            .getEditorState()
+            .read(() => onCommit(unescapeSite($convertToMarkdownString(SITE_TRANSFORMERS))))
           return false
         },
         COMMAND_PRIORITY_LOW,
       ),
     [editor, onCommit],
+  )
+  return null
+}
+
+/**
+ * Design chỉ có một mức nhấn, nên nghiêng cũng là nhấn.
+ *
+ * `Cmd+I` là phím ai cũng thử, và HTML dán từ nơi khác vào thì đầy `<em>`.
+ * Cả hai đường đều đặt được format `italic`, thứ `SITE_TRANSFORMERS` không có
+ * chỗ ghi ra — nên nó hiện lên màn hình rồi biến mất lúc rời ô. Đổi ngay tại
+ * gốc thì cả hai đường cùng về một chỗ, và không đường nào ăn mất chữ.
+ */
+function OneEmphasis() {
+  const [editor] = useLexicalComposerContext()
+  useEffect(
+    () =>
+      editor.registerNodeTransform(TextNode, (node) => {
+        if (!node.hasFormat('italic')) return
+        node.toggleFormat('italic')
+        if (!node.hasFormat('bold')) node.toggleFormat('bold')
+      }),
+    [editor],
   )
   return null
 }
@@ -94,7 +119,7 @@ export function LiveText({
         onError: (e: Error) => {
           throw e
         },
-        editorState: () => $convertFromMarkdownString(text, TRANSFORMERS),
+        editorState: () => $convertFromMarkdownString(text, SITE_TRANSFORMERS),
       }}
     >
       <div className="awc-live">
@@ -104,8 +129,9 @@ export function LiveText({
           ErrorBoundary={LexicalErrorBoundary}
         />
         {/* Gõ `# `, `- `, `> `, `**đậm**` là đổi ngay tại chỗ, không đợi rời ô. */}
-        <MarkdownShortcutPlugin transformers={TRANSFORMERS} />
+        <MarkdownShortcutPlugin transformers={SITE_TRANSFORMERS} />
         <HistoryPlugin />
+        <OneEmphasis />
         <CommitOnBlur onCommit={onCommit} />
       </div>
     </LexicalComposer>
