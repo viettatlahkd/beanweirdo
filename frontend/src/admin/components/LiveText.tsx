@@ -22,6 +22,7 @@ import { LexicalComposer } from '@lexical/react/LexicalComposer'
 import { ContentEditable } from '@lexical/react/LexicalContentEditable'
 import { LexicalErrorBoundary } from '@lexical/react/LexicalErrorBoundary'
 import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin'
+import { ListPlugin } from '@lexical/react/LexicalListPlugin'
 import { MarkdownShortcutPlugin } from '@lexical/react/LexicalMarkdownShortcutPlugin'
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin'
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
@@ -29,6 +30,7 @@ import { HeadingNode, QuoteNode } from '@lexical/rich-text'
 import { BLUR_COMMAND, COMMAND_PRIORITY_LOW, TextNode } from 'lexical'
 import { useEffect } from 'react'
 import { SITE_TRANSFORMERS, unescapeSite } from '../lib/liveMarkdown'
+import { registerLiveKeys } from './liveKeys'
 
 /**
  * Tên lớp cho từng loại, để CSS của trang vẽ chúng.
@@ -99,6 +101,13 @@ function OneEmphasis() {
   return null
 }
 
+/** `Tab` trong danh sách, `Cmd+K`, `Cmd+\` — xem `liveKeys.ts`. */
+function LiveKeys() {
+  const [editor] = useLexicalComposerContext()
+  useEffect(() => registerLiveKeys(editor), [editor])
+  return null
+}
+
 export function LiveText({
   text,
   placeholder = 'Viết ở đây, hoặc gõ / để chèn',
@@ -130,8 +139,11 @@ export function LiveText({
         />
         {/* Gõ `# `, `- `, `> `, `**đậm**` là đổi ngay tại chỗ, không đợi rời ô. */}
         <MarkdownShortcutPlugin transformers={SITE_TRANSFORMERS} />
+        {/* Gõ `- ` ra danh sách thì `Enter`, `Tab` trong danh sách phải chạy theo. */}
+        <ListPlugin />
         <HistoryPlugin />
         <OneEmphasis />
+        <LiveKeys />
         <CommitOnBlur onCommit={onCommit} />
       </div>
     </LexicalComposer>
