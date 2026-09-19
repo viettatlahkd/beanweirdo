@@ -2,6 +2,8 @@ import { Fragment, type CSSProperties, type ReactNode } from 'react'
 import { ElementList } from './elements'
 import { paletteFrom } from './palette'
 import { garden, ink, layout, paper, sans, serif, wrapTitle } from './tokens'
+import { fillStyle } from './focus'
+import { PlateCorner, plateHost, type PlateAction } from './plates'
 import type { ArticlePlateData, ArticlePostData, FigureData } from './types'
 
 /**
@@ -29,6 +31,15 @@ export type ArticleOverrides = {
   renderLead?: (lead: string) => ReactNode
   /** the four decorative tint plates: hero, opener-primary, opener-secondary, rail-detail */
   renderPlateCaption?: (plate: ArticlePlateData, slot: 'hero' | 'primary' | 'secondary' | 'detail') => ReactNode
+  /**
+   * A handle in the corner of each fixed picture cell — the four plates above
+   * and every section figure, keyed `fig-0`, `fig-1`, …
+   *
+   * Article draws more of these cells than any other template, and three of the
+   * four plates had nowhere at all to put a photo: `toArticleData` filled them
+   * with `imageUrl: null` and there was no field behind them.
+   */
+  renderPlateAction?: PlateAction
   renderSectionHeading?: (h: string, index: number) => ReactNode
   /**
    * Wraps one section, so the admin can hang its move / copy / delete handles
@@ -151,9 +162,7 @@ export function Article({ post, breadcrumb, mobile = false, ...overrides }: Arti
             bottom: 0,
             width: mobile ? '100%' : 300,
             height: mobile ? 200 : undefined,
-            background: post.heroPlate.imageUrl ? undefined : post.heroPlate.tint,
-            backgroundImage: post.heroPlate.imageUrl ? `url(${post.heroPlate.imageUrl})` : undefined,
-            backgroundSize: 'cover',
+            ...fillStyle(post.heroPlate.imageUrl, post.heroPlate.tint),
             display: 'flex',
             alignItems: 'flex-end',
             padding: 14,
@@ -164,6 +173,12 @@ export function Article({ post, breadcrumb, mobile = false, ...overrides }: Arti
               ? overrides.renderPlateCaption(post.heroPlate, 'hero')
               : post.heroPlate.caption}
           </div>
+          {/* Already `absolute` (or `relative` on mobile), so it is its own
+              positioning context without `plateHost`. */}
+          <PlateCorner
+            action={overrides.renderPlateAction}
+            slot={{ key: 'hero', imageUrl: post.heroPlate.imageUrl ?? null }}
+          />
         </div>
       </div>
 
@@ -194,10 +209,9 @@ export function Article({ post, breadcrumb, mobile = false, ...overrides }: Arti
             >
               <div
                 style={{
+                  ...plateHost,
                   height: 280,
-                  background: post.platePrimary.imageUrl ? undefined : post.platePrimary.tint,
-                  backgroundImage: post.platePrimary.imageUrl ? `url(${post.platePrimary.imageUrl})` : undefined,
-                  backgroundSize: 'cover',
+                  ...fillStyle(post.platePrimary.imageUrl, post.platePrimary.tint),
                   display: 'flex',
                   alignItems: 'flex-end',
                   padding: 14,
@@ -208,14 +222,17 @@ export function Article({ post, breadcrumb, mobile = false, ...overrides }: Arti
                     ? overrides.renderPlateCaption(post.platePrimary, 'primary')
                     : post.platePrimary.caption}
                 </div>
+                <PlateCorner
+                  action={overrides.renderPlateAction}
+                  slot={{ key: 'primary', imageUrl: post.platePrimary.imageUrl ?? null }}
+                />
               </div>
               <div
                 style={{
+                  ...plateHost,
                   height: 180,
                   alignSelf: 'end',
-                  background: post.plateSecondary.imageUrl ? undefined : post.plateSecondary.tint,
-                  backgroundImage: post.plateSecondary.imageUrl ? `url(${post.plateSecondary.imageUrl})` : undefined,
-                  backgroundSize: 'cover',
+                  ...fillStyle(post.plateSecondary.imageUrl, post.plateSecondary.tint),
                   display: 'flex',
                   alignItems: 'flex-end',
                   padding: 12,
@@ -226,6 +243,10 @@ export function Article({ post, breadcrumb, mobile = false, ...overrides }: Arti
                     ? overrides.renderPlateCaption(post.plateSecondary, 'secondary')
                     : post.plateSecondary.caption}
                 </div>
+                <PlateCorner
+                  action={overrides.renderPlateAction}
+                  slot={{ key: 'secondary', imageUrl: post.plateSecondary.imageUrl ?? null }}
+                />
               </div>
             </div>
 
@@ -288,10 +309,9 @@ export function Article({ post, breadcrumb, mobile = false, ...overrides }: Arti
                       <div style={{ width: s.fig.w, flex: 'none' }}>
                         <div
                           style={{
+                            ...plateHost,
                             height: s.fig.h,
-                            background: s.fig.imageUrl ? undefined : s.fig.tint,
-                            backgroundImage: s.fig.imageUrl ? `url(${s.fig.imageUrl})` : undefined,
-                            backgroundSize: 'cover',
+                            ...fillStyle(s.fig.imageUrl, s.fig.tint),
                             display: 'flex',
                             alignItems: 'flex-end',
                             padding: 12,
@@ -302,6 +322,10 @@ export function Article({ post, breadcrumb, mobile = false, ...overrides }: Arti
                               ? overrides.renderFigureCaption(s.fig.caption ?? '', i)
                               : s.fig.caption}
                           </div>
+                          <PlateCorner
+                            action={overrides.renderPlateAction}
+                            slot={{ key: `fig-${i}`, imageUrl: s.fig.imageUrl ?? null }}
+                          />
                         </div>
                       </div>
                     </div>
@@ -353,10 +377,9 @@ export function Article({ post, breadcrumb, mobile = false, ...overrides }: Arti
 
             <div
               style={{
+                ...plateHost,
                 aspectRatio: '1',
-                background: post.detailPlate.imageUrl ? undefined : post.detailPlate.tint,
-                backgroundImage: post.detailPlate.imageUrl ? `url(${post.detailPlate.imageUrl})` : undefined,
-                backgroundSize: 'cover',
+                ...fillStyle(post.detailPlate.imageUrl, post.detailPlate.tint),
                 display: 'flex',
                 alignItems: 'flex-end',
                 padding: 12,
@@ -367,6 +390,10 @@ export function Article({ post, breadcrumb, mobile = false, ...overrides }: Arti
                   ? overrides.renderPlateCaption(post.detailPlate, 'detail')
                   : post.detailPlate.caption}
               </div>
+              <PlateCorner
+                action={overrides.renderPlateAction}
+                slot={{ key: 'detail', imageUrl: post.detailPlate.imageUrl ?? null }}
+              />
             </div>
 
             <div style={{ fontFamily: sans, fontSize: 10, color: ink.muted, lineHeight: 1.6 }}>

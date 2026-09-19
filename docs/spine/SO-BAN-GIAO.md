@@ -92,7 +92,7 @@ sinh từ code đã merge; A1–A7 đã ghi vào, A8–A46 thì chưa.
 | C1 | ~~Nhánh `design/v4-cms-templates`~~ — đã gắn tag `archive/v4-cms-templates` và xoá nhánh, 2026-08-21. Xem mục E. | XONG |
 | C2 | ~~Chạy migration `0016` (bỏ cột `n`)~~ — chạy xong 2026-08-21, đúng thứ tự: code lên trước. Đã kiểm: `posts` 21 cột, ghi vào `n` trả 400, `sort_order` vẫn ghi được. | XONG |
 | C3 | Tiêu đề trang chủ đang là `beӕn weirdo#viettatlahkd` — nghi gõ nhầm trong CMS. | CHỜ |
-| C4 | `content/modules.ts` còn 82 dòng mô tả 3 module, không ai import. | CHỜ |
+| C4 | ~~`content/modules.ts` còn 82 dòng mô tả 3 module, không ai import.~~ — đã xoá 2026-09-19 cùng kho đăng ký dàn trang. Kiểm trước khi xoá: không file `.ts`/`.tsx` nào import, chỉ còn nhắc trong `docs/`. | XONG |
 | C5 | Nút "+ tag" ở bài dạng thẻ — cần chốt nhóm hương mới lưu ở đâu trước khi làm. | CHỜ |
 | C6 | Trang Report — làm đủ cột ghi chú, hay sửa 4 luật nhóm 11 cho khớp thực tế. | CHỜ |
 | C7 | Token GitHub cũ trong Keychain vẫn còn quyền quá rộng và không hết hạn. | CHỜ |

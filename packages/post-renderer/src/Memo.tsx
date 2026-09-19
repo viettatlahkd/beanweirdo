@@ -1,6 +1,7 @@
 import { getElement } from './elements'
 import { TableScroll } from './elements/data'
 import { flatElements } from './memoElements'
+import { PlateCorner, plateHost, type PlateAction } from './plates'
 import { paletteFrom, type Palette } from './palette'
 import { Fragment } from 'react'
 import type { ReactNode } from 'react'
@@ -44,6 +45,14 @@ export type MemoOverrides = {
    */
   renderSpecKey?: (key: string, index: number) => ReactNode
   renderSpecValue?: (value: string, index: number) => ReactNode
+  /**
+   * Móc treo nút tải ảnh vào góc tấm ảnh đầu trang, khoá `hero`.
+   *
+   * Có móc thì ô ảnh vẽ **cả khi bài chưa có ảnh**: trước đây `post.img` rỗng
+   * là cả khối biến mất, nên trong màn sửa không còn chỗ nào để bấm — muốn đặt
+   * ảnh thì phải đi tìm một hàng chữ ở trên đầu khung.
+   */
+  renderPlateAction?: PlateAction
 }
 
 export type MemoProps = MemoOverrides & {
@@ -195,6 +204,7 @@ export function Memo({
   renderAfterElements,
   renderSpecKey,
   renderSpecValue,
+  renderPlateAction,
 }: MemoProps) {
   // Everything this template tints comes from the one colour the post wears.
   const palette = paletteFrom(post.band?.bg ?? MEMO_BLUE, post.band?.fg)
@@ -281,10 +291,13 @@ export function Memo({
         </div>
       </div>
 
-      {post.img && (
+      {(post.img || renderPlateAction) && (
         <div style={{ padding: '30px 56px 0' }}>
-          <div style={{ aspectRatio: '21/9', overflow: 'hidden', background: '#EDE8DD' }}>
-            <img src={post.img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+          <div style={{ ...plateHost, aspectRatio: '21/9', overflow: 'hidden', background: '#EDE8DD' }}>
+            {post.img && (
+              <img src={post.img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+            )}
+            <PlateCorner action={renderPlateAction} slot={{ key: 'hero', imageUrl: post.img ?? null }} />
           </div>
           <div style={{ display: 'flex', gap: 10, alignItems: 'baseline', marginTop: 10, fontSize: 11, color: '#A2A296' }}>
             <div style={{ width: 22, height: 1, background: palette.accent, transform: 'translateY(-4px)' }} />

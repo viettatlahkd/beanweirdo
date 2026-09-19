@@ -14,21 +14,36 @@ import type { ReactNode } from 'react'
 import { textToRuns, type Run } from './runs'
 
 /**
- * Three marks, three signals, deliberately unalike.
+ * Bốn dấu, bốn tín hiệu, cố ý không giống nhau.
  *
- * Emphasis changes slant and colour; a reading changes neither and takes a
- * grey hairline; an address takes the post's colour and a hairline of its own.
- * Two of them being underlines is only safe because the colours differ — an
- * address looks like somewhere to go, a reading looks like a number.
+ * Nhấn đổi màu, và đổi dáng chữ theo hai cách rời nhau — nghiêng, đậm, hoặc
+ * cả hai. Số đo không đổi màu, chỉ lấy một gạch chân xám mảnh. Địa chỉ lấy
+ * màu của bài kèm gạch chân của riêng nó. Hai thứ cùng là gạch chân chỉ an
+ * toàn vì màu khác nhau: địa chỉ trông như chỗ để đi tới, số đo trông như một
+ * con số.
+ *
+ * Đậm và nghiêng bật cùng lúc cho ra đúng mức nhấn mà site có trước
+ * 2026-09-19, lúc nó chỉ có một. Nên bài cũ viết `***x***` trông y như trước;
+ * bài viết `**x**` nay mất phần nghiêng, `*x*` nay mất phần đậm. Đó là chỗ
+ * duy nhất bản tách này đổi hình dạng bài đã đăng.
  */
 function mark(run: Run, key: number, accentInk: string): ReactNode {
-  const inner = run.em ? (
-    <em style={{ fontWeight: 600, fontStyle: 'italic', color: accentInk }}>{run.t}</em>
-  ) : run.u ? (
-    <span style={{ borderBottom: '1px solid #CFCFC4' }}>{run.t}</span>
-  ) : (
-    run.t
-  )
+  const inner =
+    run.em || run.b ? (
+      <em
+        style={{
+          fontWeight: run.b ? 600 : 'inherit',
+          fontStyle: run.em ? 'italic' : 'normal',
+          color: accentInk,
+        }}
+      >
+        {run.t}
+      </em>
+    ) : run.u ? (
+      <span style={{ borderBottom: '1px solid #CFCFC4' }}>{run.t}</span>
+    ) : (
+      run.t
+    )
 
   if (run.href) {
     return (

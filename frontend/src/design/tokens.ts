@@ -30,6 +30,27 @@ export const ink = {
   green: '#3E7A4E',
   /** anchor colour: quote block, deep accents */
   moss: '#2B4B33',
+  /**
+   * Viền của mọi control có viền: nút, ô nhập, tab, thẻ, menu.
+   *
+   * Trước đây mỗi cấp một màu — `#b5ae99` cho ghost, `#8c8674` cho secondary,
+   * `#ebe5d3` cho ô nhập — nên cái nhạt nhất gần như biến mất trên nền kem, và
+   * chủ site đọc cả bộ là "nhạt nhạt". Một màu, đủ đậm để thấy, và là nâu chứ
+   * không phải đen: đen là màu của nút primary, viền mà cũng đen thì nút đặc
+   * với nút rỗng trông như nhau.
+   */
+  border: '#5A4632',
+  /**
+   * Destructive ink, and the line that goes with it.
+   *
+   * Both were already in the back office — `#8E1E42` in six places and
+   * `#C25C7C` in nine — written out by hand each time, alongside four more
+   * reds that meant the same thing (`#B3413E`, `#A8443A`, `#773236`,
+   * `#8A3B41`). Naming them is what makes "Xoá" able to look different from
+   * "Sửa", which it did not.
+   */
+  danger: '#8E1E42',
+  dangerLine: '#C25C7C',
 } as const
 
 /** The five garden hues plus their supporting tints. */

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { PostRenderer } from 'post-renderer'
-import { getPost, listModules, type Module, type PostDetail } from '../lib/apiClient'
+import { getPost, type Module, type PostDetail } from '../lib/apiClient'
+import { listModulesCached } from '../lib/lists'
 import { ink, paper } from '../../design/tokens'
 import { Hover } from '../../lib/Hover'
 import { useNav } from '../../lib/nav'
@@ -38,7 +39,7 @@ function PreviewContent({ postId }: { postId: string }) {
   const [modules, setModules] = useState<Module[]>([])
 
   useEffect(() => {
-    Promise.all([getPost(postId), listModules()]).then(([p, mods]) => {
+    Promise.all([getPost(postId), listModulesCached()]).then(([p, mods]) => {
       setPost(p)
       setModules(mods)
     })

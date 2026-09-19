@@ -59,12 +59,17 @@ async function handleReorder(req: VercelRequest, res: VercelResponse): Promise<v
   }
 
   const supabase = getSupabase()
-  for (const [i, id] of (order as string[]).entries()) {
-    const { error } = await supabase.from('modules').update({ sort_order: i + 1 }).eq('id', id)
-    if (error) {
-      res.status(500).json({ error: error.message })
-      return
-    }
+  // Sequential `await` in a loop, same as the posts reorder had — see the note
+  // in api/posts/index.ts. Each row is independent, so they go together.
+  const writes = await Promise.all(
+    (order as string[]).map((id, i) =>
+      supabase.from('modules').update({ sort_order: i + 1 }).eq('id', id),
+    ),
+  )
+  const failed = writes.find((w) => w.error)
+  if (failed?.error) {
+    res.status(500).json({ error: failed.error.message })
+    return
   }
 
   const { data, error } = await supabase.from('modules').select('*').order('sort_order', { ascending: true })

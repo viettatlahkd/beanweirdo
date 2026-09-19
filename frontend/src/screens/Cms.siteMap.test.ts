@@ -7,8 +7,9 @@ import { NAV } from '../content/navItems'
  * real one, and the map listed both — so each appeared twice, and Ghi 02, which
  * is private, appeared under Public as well as Practice.
  *
- * These guard the link that fixed it. The tree itself is built inside the CMS
- * screen; what is checked here is the declaration it reads.
+ * The tree itself is gone — it only ever listed what the sidebar already
+ * shows, and the CMS tab it sat on now opens on a grid of editable boxes. The
+ * declaration it read is still what the sidebar reads, so these stay.
  */
 describe('nav entries that are modules', () => {
   it('names the module each such page is', () => {

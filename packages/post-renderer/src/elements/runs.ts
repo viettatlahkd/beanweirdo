@@ -21,8 +21,22 @@
 
 export type Run = {
   t: string
-  /** The design's emphasis: italic, and in the post's own colour. */
+  /**
+   * Nghiêng, trong màu của bài. Viết `*x*`.
+   *
+   * Trước 2026-09-19 đây là **mức nhấn duy nhất** của site và nó vẽ ra vừa
+   * đậm vừa nghiêng, nên `*x*` với `**x**` cùng đổ về đây. Chủ site tách đôi:
+   * *"ctrl B là in đậm thôi không in nghiêng, ctrl I là in nghiêng không in
+   * đậm"*. Nay `em` chỉ còn phần nghiêng; phần đậm là `b`.
+   */
   em?: boolean
+  /**
+   * Đậm, trong màu của bài. Viết `**x**`.
+   *
+   * `em` và `b` cùng bật thì ra đúng cái mức nhấn cũ, và viết là `***x***` —
+   * ký hiệu markdown chuẩn cho cả hai.
+   */
+  b?: boolean
   /**
    * A reading worth pausing on — a hairline under it, colour untouched.
    * Deliberately not the same signal as emphasis: one says "this matters",
@@ -45,7 +59,7 @@ export type Run = {
  * the moment this parser started running over it.
  */
 const MARKED =
-  /(\[[^\]\n]*\]\(\s*[^()\s]+\s*\)|https?:\/\/[^\s<>[\]()]+|\*\*[^*\n]+\*\*|__[^_\n]+__|(?<![\p{L}\p{N}])\*[^*\n]+\*(?![\p{L}\p{N}])|(?<![\p{L}\p{N}])_[^_\n]+_(?![\p{L}\p{N}]))/gu
+  /(\[[^\]\n]*\]\(\s*[^()\s]+\s*\)|https?:\/\/[^\s<>[\]()]+|\*\*\*[^*\n]+\*\*\*|___[^_\n]+___|\*\*[^*\n]+\*\*|__[^_\n]+__|(?<![\p{L}\p{N}])\*[^*\n]+\*(?![\p{L}\p{N}])|(?<![\p{L}\p{N}])_[^_\n]+_(?![\p{L}\p{N}]))/gu
 
 /** A bare address at the end of a sentence should not swallow the full stop. */
 const TRAILING = /[.,;:!?)]+$/
@@ -57,7 +71,11 @@ export function runsToText(runs: Run[] | undefined): string {
       let t = r.t
       if (r.href) t = r.href === r.t ? t : `[${t}](${r.href})`
       if (r.u) t = `_${t}_`
-      if (r.em) t = `*${t}*`
+      // Ba sao trước hai sao trước một: `***x***` là cả hai, không phải một
+      // dấu nhấn nằm trong một dấu nhấn khác.
+      if (r.em && r.b) t = `***${t}***`
+      else if (r.b) t = `**${t}**`
+      else if (r.em) t = `*${t}*`
       return t
     })
     .join('')
@@ -112,7 +130,7 @@ export function textToRuns(text: string): Run[] {
   const pushPlain = (t: string) => {
     if (!t) return
     const last = out[out.length - 1]
-    if (last && !last.em && !last.u && !last.href) out[out.length - 1] = { t: last.t + t }
+    if (last && !last.em && !last.b && !last.u && !last.href) out[out.length - 1] = { t: last.t + t }
     else out.push({ t })
   }
 
@@ -132,18 +150,28 @@ export function textToRuns(text: string): Run[] {
     }
     let t = part
     let em = false
+    let b = false
     let u = false
-    // Everywhere else writes bold as `**`; this design has one emphasis, so
-    // both notations land on it rather than one of them arriving as asterisks
-    // the reader can see.
-    if (t.length > 4 && t.startsWith('**') && t.endsWith('**')) {
+    /*
+     * Ký hiệu markdown chuẩn: một sao là nghiêng, hai sao là đậm, ba sao là
+     * cả hai. Dấu dài thử trước dấu ngắn, không thì `***x***` đọc thành một
+     * sao lẻ cộng `**x**` cộng một sao lẻ nữa.
+     */
+    if (t.length > 6 && t.startsWith('***') && t.endsWith('***')) {
       em = true
+      b = true
+      t = t.slice(3, -3)
+    } else if (t.length > 6 && t.startsWith('___') && t.endsWith('___')) {
+      em = true
+      b = true
+      t = t.slice(3, -3)
+    } else if (t.length > 4 && t.startsWith('**') && t.endsWith('**')) {
+      b = true
       t = t.slice(2, -2)
     } else if (t.length > 4 && t.startsWith('__') && t.endsWith('__')) {
-      em = true
+      b = true
       t = t.slice(2, -2)
-    }
-    if (!em && t.length > 2 && t.startsWith('*') && t.endsWith('*')) {
+    } else if (t.length > 2 && t.startsWith('*') && t.endsWith('*')) {
       em = true
       t = t.slice(1, -1)
     }
@@ -151,8 +179,13 @@ export function textToRuns(text: string): Run[] {
       u = true
       t = t.slice(1, -1)
     }
-    if (!em && !u) return false
-    push({ t, ...(em ? { em: true } : null), ...(u ? { u: true } : null) })
+    if (!em && !b && !u) return false
+    push({
+      t,
+      ...(em ? { em: true } : null),
+      ...(b ? { b: true } : null),
+      ...(u ? { u: true } : null),
+    })
     return true
   }
 

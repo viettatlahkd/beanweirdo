@@ -20,9 +20,13 @@ export type RouteWords = {
   practice: string
   /** Bảy trang con của khu quản trị — phần đứng sau `ad-`. */
   adPost: string
+  adConfig: string
+  /**
+   * Hai trang con đã gộp lại thành `adConfig`. Chúng không còn được sinh ra,
+   * nhưng vẫn đọc được: link cũ phải mở ra đúng chỗ.
+   */
   adSitemap: string
   adPageContent: string
-  adConvention: string
   adArchive: string
   /** Ba động từ soạn bài: `/ad-post/edit=<slug>`. */
   create: string
@@ -45,9 +49,9 @@ export const DEFAULT_WORDS: RouteWords = {
   notes: 'ghi',
   practice: 'practice',
   adPost: 'post',
+  adConfig: 'config',
   adSitemap: 'sitemap',
   adPageContent: 'page-content',
-  adConvention: 'convention',
   adArchive: 'archive',
   create: 'create',
   edit: 'edit',
@@ -69,9 +73,9 @@ export const WORD_LABELS: Record<Exclude<keyof RouteWords, 'dateOrder' | 'module
   notes: 'Ghi 01',
   practice: 'Nhật ký',
   adPost: 'Tạo bài đăng',
+  adConfig: 'Cấu hình',
   adSitemap: 'Sơ đồ trang',
   adPageContent: 'Sửa nội dung',
-  adConvention: 'System conventions',
   adArchive: 'Archive',
   create: 'Tạo bài',
   edit: 'Sửa bài',
@@ -102,7 +106,7 @@ const MUST_DIFFER: (keyof RouteWords)[][] = [
   // Đoạn đầu địa chỉ: mọi trang công khai và khu quản trị nằm cùng một chỗ.
   ['admin', 'post', 'module', 'index', 'notes', 'practice'],
   // Bảy trang con đứng cùng một chỗ, ngay sau `ad-`.
-  ['adPost', 'adSitemap', 'adPageContent', 'adConvention', 'adArchive'],
+  ['adPost', 'adConfig', 'adSitemap', 'adPageContent', 'adArchive'],
   // Ba động từ đứng cùng một chỗ, ngay sau `/ad-post/`.
   ['create', 'edit', 'view'],
 ]

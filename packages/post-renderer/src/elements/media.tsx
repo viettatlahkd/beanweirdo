@@ -1,4 +1,5 @@
 /** Elements that are a picture, or stand where one will be. */
+import { fillStyle } from '../focus'
 import { sans } from '../tokens'
 import { registerElement, type ElementViewProps } from './registry'
 
@@ -20,13 +21,11 @@ export const image = registerElement<ImageAttrs>({
       data-testid={testId}
       style={{
         height: 250,
-        background: palette.tint,
         display: 'flex',
         alignItems: 'flex-end',
         padding: 20,
         margin: '0 0 20px',
-        backgroundImage: attributes.imageUrl ? `url(${attributes.imageUrl})` : undefined,
-        backgroundSize: 'cover',
+        ...fillStyle(attributes.imageUrl, palette.tint),
       }}
     >
       <div style={{ fontFamily: sans, fontSize: 10, color: palette.ink }}>

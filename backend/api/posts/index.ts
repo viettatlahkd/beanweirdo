@@ -3,6 +3,7 @@ import { withCors } from '../../lib/cors.js'
 import { requireAuth } from '../../lib/auth.js'
 import { getSupabase } from '../../lib/supabase.js'
 import {
+  firstImageIn,
   POST_STATUSES,
   POST_SUMMARY_COLUMNS,
   POST_TEMPLATES,
@@ -11,6 +12,7 @@ import {
   type PostRow,
   type PostTemplate,
 } from '../../lib/posts.js'
+import { slug } from '../../lib/tags.js'
 
 const LIST_FILTERS = [...POST_STATUSES, 'all'] as const
 
@@ -41,7 +43,18 @@ async function handleList(req: VercelRequest, res: VercelResponse): Promise<void
 
 interface CreatePostBody {
   module_id?: unknown
+  /** An existing tag's id. Ignored when `kindLabel` is sent. */
   kind?: unknown
+  /**
+   * A tag as the owner typed it, which this route writes down for them.
+   *
+   * "Bài mới" used to be two calls: POST /api/tags to get an id, then POST
+   * /api/posts carrying it. Two calls from a browser is two preflights and two
+   * cold starts before the editor can even open, for a screen whose whole job
+   * is "start writing". The label comes along with the post now and the id is
+   * derived from it, so the wizard is one call.
+   */
+  kindLabel?: unknown
   en?: unknown
   vi?: unknown
   /** The stored template to start from — its body is copied into the new post. */
@@ -74,7 +87,9 @@ async function handleCreate(req: VercelRequest, res: VercelResponse): Promise<vo
   const body = (req.body ?? {}) as CreatePostBody
 
   const module_id = body.module_id
-  const kind = body.kind
+  const kindLabel = typeof body.kindLabel === 'string' ? body.kindLabel.trim() : ''
+  // A label sent by the caller wins: it is what the owner actually typed.
+  const kind = kindLabel ? slug(kindLabel) : body.kind
   const en = body.en
   const vi = body.vi
   const templateId = typeof body.templateId === 'string' ? body.templateId : null
@@ -97,7 +112,9 @@ async function handleCreate(req: VercelRequest, res: VercelResponse): Promise<vo
    * the fence down. What is left to check is that there is something there.
    */
   if (typeof kind !== 'string' || kind.length === 0) {
-    res.status(400).json({ error: 'kind is required' })
+    res.status(400).json({
+      error: kindLabel ? 'kindLabel must contain a letter or a number' : 'kind is required',
+    })
     return
   }
 
@@ -133,6 +150,18 @@ async function handleCreate(req: VercelRequest, res: VercelResponse): Promise<vo
   }
 
   const supabase = getSupabase()
+
+  /*
+   * Ghi tag xuống song song với ghi bài.
+   *
+   * `posts.kind` không có khoá ngoại trỏ sang `tags` (migration 0020 chỉ bỏ
+   * ràng buộc bốn chữ đi, cột vẫn là text thường), và `id` của tag tính được
+   * ngay tại chỗ từ nhãn — nên bài không phải đợi tag ghi xong. Hai câu đi
+   * cùng lúc, và `upsert` khiến việc gõ lại một chữ đã dùng không phải là lỗi.
+   */
+  const tagWrite = kindLabel
+    ? supabase.from('tags').upsert({ id: kind, label: kindLabel }, { onConflict: 'id' })
+    : null
 
   /*
    * Copying a post takes its content, not its place in the world. Status,
@@ -188,7 +217,7 @@ async function handleCreate(req: VercelRequest, res: VercelResponse): Promise<vo
   // and nobody has: order falls to `published_at`, which is what a new post
   // should follow until someone drags it somewhere. Writing a number here would
   // make every post look hand-placed and so make the real ones indistinguishable.
-  const { data, error } = await supabase
+  const insert = supabase
     .from('posts')
     .insert({
       module_id: module_id,
@@ -199,6 +228,9 @@ async function handleCreate(req: VercelRequest, res: VercelResponse): Promise<vo
       date_label: formatDateLabel(new Date()),
       sort_order: null,
       body: startingBody,
+      // Derived from the body being written, in the same statement that writes
+      // it. A template or a copied post can arrive with pictures already in it.
+      thumbnail_url: firstImageIn(startingBody),
       lead: copied?.lead ?? null,
       theme_color,
       hero_image_url: copied?.hero_image_url ?? null,
@@ -208,6 +240,23 @@ async function handleCreate(req: VercelRequest, res: VercelResponse): Promise<vo
     })
     .select('id')
     .single()
+
+  /*
+   * Hai câu đi cùng lúc, thật sự.
+   *
+   * Builder của supabase-js chỉ gửi request lúc nó được `then` — nên dựng câu
+   * lệnh ra biến rồi `await` lần lượt vẫn là nối tiếp. `Promise.all` gọi `then`
+   * của cả hai trong cùng một nhịp, đó mới là thứ khiến chúng chồng lên nhau.
+   */
+  const [{ data, error }, tagResult] = await Promise.all([
+    insert,
+    tagWrite ?? Promise.resolve({ error: null }),
+  ])
+
+  if (tagResult?.error) {
+    res.status(500).json({ error: tagResult.error.message })
+    return
+  }
 
   if (error) {
     // 23503 = foreign key violation, i.e. module_id doesn't exist.
@@ -247,16 +296,25 @@ async function handleReorder(req: VercelRequest, res: VercelResponse): Promise<v
   const supabase = getSupabase()
   const nowIso = new Date().toISOString()
 
-  for (const [i, id] of (order as string[]).entries()) {
-    const { error } = await supabase
-      .from('posts')
-      .update({ sort_order: i + 1, updated_at: nowIso })
-      .eq('id', id)
-      .eq('module_id', module_id)
-    if (error) {
-      res.status(500).json({ error: error.message })
-      return
-    }
+  /*
+   * The `await` used to sit inside the loop, so reordering ten posts was ten
+   * round trips waiting on each other before the select below could even start.
+   * They do not depend on one another — each writes its own row — so they go
+   * together. Still N statements, but N in flight instead of N in a queue.
+   */
+  const writes = await Promise.all(
+    (order as string[]).map((id, i) =>
+      supabase
+        .from('posts')
+        .update({ sort_order: i + 1, updated_at: nowIso })
+        .eq('id', id)
+        .eq('module_id', module_id),
+    ),
+  )
+  const failed = writes.find((w) => w.error)
+  if (failed?.error) {
+    res.status(500).json({ error: failed.error.message })
+    return
   }
 
   const { data, error } = await supabase

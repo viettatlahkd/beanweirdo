@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import type { PostTemplate } from '../content/templates'
 
 export type PostKind = 'note' | 'essay' | 'ref' | 'log'
-export type PostTemplate = 'article' | 'cards' | 'report' | 'longform' | 'memo' | 'bitesize'
+export type { PostTemplate }
 export type PostStatus = 'draft' | 'published' | 'archived' | 'deleted'
 
 /**
@@ -32,6 +33,14 @@ export type PostRow = {
   status: PostStatus
   template: PostTemplate
   hero_image_url: string | null
+  /** Màu riêng của bài; rỗng nghĩa là theo màu module. */
+  theme_color: string | null
+  /**
+   * Tấm ảnh đầu tiên nằm trong thân bài, giữ sẵn thành cột để một danh sách
+   * không phải kéo `body` về mới vẽ được ô ảnh. Xem
+   * docs/inbox/qa/2026-09-19-qa-42-trang-cong-khai.md.
+   */
+  thumbnail_url: string | null
   published_at: string | null
   deleted_at: string | null
   previous_status: PostStatus | null
@@ -58,6 +67,17 @@ export type UsePostsOptions = {
   ascending?: boolean
   /** Set false to skip the fetch entirely (e.g. while a dependency isn't ready yet). Defaults to true. */
   enabled?: boolean
+  /**
+   * Kéo cả `body` về. Mặc định **không**.
+   *
+   * `body` là toàn bộ nội dung một bài. Một danh sách cần tiêu đề, ngày và một
+   * tấm ảnh — nên mặc định là không lấy nó, và `thumbnail_url` trả lời hộ câu
+   * hỏi về ảnh. Đúng một màn cần bật: trang Ghi, nơi bài mở ra ngay tại chỗ
+   * thay vì sang trang riêng (`screens/Notes.tsx` → `OpenedPost`).
+   *
+   * Một bài đọc riêng lẻ thì đã có `usePost`, và nó vẫn lấy cả hàng.
+   */
+  withBody?: boolean
 }
 
 export type UsePostsResult = {
@@ -65,6 +85,22 @@ export type UsePostsResult = {
   loading: boolean
   error: string | null
 }
+
+/**
+ * Mọi cột của `posts` **trừ `body`**.
+ *
+ * Trước đây chỗ này là `select('*')`, nghĩa là mở bất cứ trang nào của site
+ * cũng tải toàn bộ nội dung của mọi bài đã đăng — thanh bên gọi hook này không
+ * kèm `moduleId`, nên nó kéo cả site về trên mỗi lần vẽ. Cái duy nhất nặng
+ * trong một hàng là `body`; phần còn lại là vài chuỗi ngắn, nên liệt kê hết
+ * rồi bỏ đúng một cột là bản sửa ít rủi ro nhất.
+ *
+ * Danh sách này phải khớp với các cột thật của bảng — đối chiếu
+ * `backend/lib/posts.ts` → `POST_COLUMNS`. Viết nguyên một chuỗi vì PostgREST
+ * nhận chuỗi, và không có cú pháp "tất cả trừ một cột".
+ */
+const LIST_COLUMNS =
+  'id, module_id, kind, template, en, vi, slug, lead, date_label, sort_order, pinned, status, previous_status, hero_image_url, hero_caption, theme_color, thumbnail_url, pull_quote, further_reading, published_at, deleted_at, created_at, updated_at'
 
 /**
  * Published posts only — `archived` rows are anon-readable at the RLS layer
@@ -79,6 +115,7 @@ export function usePublishedPosts(options: UsePostsOptions = {}): UsePostsResult
     ascending = true,
     enabled = true,
     includeArchived = false,
+    withBody = false,
   } = options
   const [data, setData] = useState<PostRow[]>([])
   const [loading, setLoading] = useState(enabled)
@@ -95,9 +132,10 @@ export function usePublishedPosts(options: UsePostsOptions = {}): UsePostsResult
     let cancelled = false
     setLoading(true)
 
+    const columns = withBody ? '*' : LIST_COLUMNS
     let query = includeArchived
-      ? supabase.from('posts').select('*').in('status', ['published', 'archived'])
-      : supabase.from('posts').select('*').eq('status', 'published')
+      ? supabase.from('posts').select(columns).in('status', ['published', 'archived'])
+      : supabase.from('posts').select(columns).eq('status', 'published')
     if (moduleId) query = query.eq('module_id', moduleId)
 
     // Thứ tự chuẩn của một module, đúng ba tầng:
@@ -126,13 +164,21 @@ export function usePublishedPosts(options: UsePostsOptions = {}): UsePostsResult
         return
       }
       setError(null)
-      setData((data ?? []) as PostRow[])
+      /*
+       * Qua `unknown` vì kiểu sinh sẵn của supabase-js đọc danh sách cột ngay
+       * trong chuỗi truyền cho `.select()`, và nó không theo nổi một chuỗi
+       * chọn lúc chạy. `PostRow` ở file này vốn viết tay chứ không sinh ra từ
+       * schema, nên phép ép này không làm mất thứ gì đang được kiểm — thứ giữ
+       * cho `LIST_COLUMNS` khớp với bảng là comment trên nó và
+       * `backend/scripts/verify-schema.mjs`, không phải chỗ này.
+       */
+      setData((data ?? []) as unknown as PostRow[])
     })
 
     return () => {
       cancelled = true
     }
-  }, [moduleId, orderBy, ascending, enabled, includeArchived])
+  }, [moduleId, orderBy, ascending, enabled, includeArchived, withBody])
 
   return { data, loading, error }
 }

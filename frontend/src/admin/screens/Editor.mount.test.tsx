@@ -72,94 +72,100 @@ describe('màn sửa bài', () => {
     expect(screen.getByDisplayValue('taste modality: sơn la')).toBeTruthy()
   })
 
-  it('clip thì không mời căn khung ảnh', async () => {
-    /*
-     * Khung căn vẽ tệp ra bằng `background-image`, mà clip không vẽ ra được
-     * kiểu ấy — mở nó cho một clip là bày ba ô trắng trơn. Đo thật trên trình
-     * duyệt trước khi sửa: đúng ba ô trắng.
-     */
-    getPost.mockReturnValue(Promise.resolve({ ...post, hero_image_url: 'https://x/c.webm' }))
+  /*
+   * Thanh "ảnh bìa: tải ảnh lên – đặt link – đặt vào khung – xoá" ở đầu khung
+   * sửa đã bỏ. Bốn việc của nó không bỏ, chúng chuyển vào băng "trang bìa" —
+   * nên bốn bài kiểm dưới đây vẫn hỏi đúng những câu cũ, chỉ hỏi ở chỗ mới.
+   *
+   * Hỏi bằng `aria-label`: nút ở góc ô là nút icon, không có chữ để đọc, và
+   * cái tên đọc lên được chính là thứ phải giữ.
+   */
+  const coverBand = (container: HTMLElement) =>
+    Array.from(container.querySelectorAll('[data-cover-band] button')).map((b) =>
+      b.getAttribute('aria-label'),
+    )
+
+  it('không còn thanh đặt ảnh ở đầu khung sửa', async () => {
+    getPost.mockReturnValue(Promise.resolve({ ...post, hero_image_url: 'https://x/a.jpg' }))
     listModules.mockReturnValue(Promise.resolve([{ id: 'ghi01', title: 'Ghi 01', accent: '#6FA8C0' }]))
 
     render(<Editor postId="p1" />)
     await waitFor(() => expect(screen.queryByText('Đang tải...')).toBeNull())
-    expect(screen.queryByText('đặt vào khung')).toBeNull()
+    expect(screen.queryByText('ảnh bìa:')).toBeNull()
+    expect(screen.queryByText('ảnh body 1:')).toBeNull()
+  })
+
+  it('clip thì không mời căn khung ảnh', async () => {
+    /*
+     * Khung căn vẽ tệp ra bằng `background-image`, mà clip không vẽ ra được
+     * kiểu ấy — mở nó cho một clip là bày ba ô trắng trơn. Đo thật trên trình
+     * duyệt trước khi sửa: đúng ba ô trắng. Nên nút ấy phải VẮNG, chứ không
+     * phải có mà bấm vào không xảy ra gì.
+     */
+    getPost.mockReturnValue(Promise.resolve({ ...post, hero_image_url: 'https://x/c.webm' }))
+    listModules.mockReturnValue(Promise.resolve([{ id: 'ghi01', title: 'Ghi 01', accent: '#6FA8C0' }]))
+
+    const { container } = render(<Editor postId="p1" />)
+    await waitFor(() => expect(screen.queryByText('Đang tải...')).toBeNull())
+    expect(coverBand(container)).not.toContain('đặt vào khung')
+  })
+
+  it('ảnh bìa chỉ hiện ở băng, không vẽ lại ở ô của template', async () => {
+    /*
+     * Chủ site, khi thấy bản đầu bày cả hai: *"hiện 1 chỗ thôi chứ?"*. Nên ô
+     * ảnh bìa của memo đứng giữ chỗ chứ không vẽ ảnh — muốn biết nó trông ra
+     * sao thì bấm "xem trước".
+     */
+    getPost.mockReturnValue(Promise.resolve({ ...post, hero_image_url: 'https://x/a.jpg' }))
+    listModules.mockReturnValue(Promise.resolve([{ id: 'ghi01', title: 'Ghi 01', accent: '#6FA8C0' }]))
+
+    const { container } = render(<Editor postId="p1" />)
+    await waitFor(() => expect(screen.queryByText('Đang tải...')).toBeNull())
+    const drawn = Array.from(container.querySelectorAll<HTMLElement>('*')).filter((el) =>
+      el.style.backgroundImage.includes('a.jpg'),
+    )
+    expect(drawn).toHaveLength(1)
+    expect(drawn[0].hasAttribute('data-cover-band')).toBe(true)
   })
 
   it('ảnh thì vẫn mời căn khung', async () => {
     getPost.mockReturnValue(Promise.resolve({ ...post, hero_image_url: 'https://x/a.jpg' }))
     listModules.mockReturnValue(Promise.resolve([{ id: 'ghi01', title: 'Ghi 01', accent: '#6FA8C0' }]))
 
-    render(<Editor postId="p1" />)
-    await waitFor(() => expect(screen.queryByText('Đang tải...')).toBeNull())
-    expect(screen.getByText('đặt vào khung')).toBeTruthy()
-  })
-
-  it('thanh đặt ảnh: mỗi chỗ một dòng, và không có dòng thumbnail nào', async () => {
-    /*
-     * Trước đây mọi thứ chen chung một hàng với ô chọn template, nên thêm một
-     * chỗ đặt ảnh là hàng ấy dài thêm.
-     *
-     * Và không có dòng "thumbnail": thumbnail không phải thứ phải khai, nó là
-     * thứ cần nhìn — clip tự lấy khung hình, còn thanh chỉ bày ô xem trước.
-     */
-    getPost.mockReturnValue(
-      Promise.resolve({
-        ...post,
-        template: 'bitesize',
-        body: { poster: 'https://x/p.jpg' },
-        hero_image_url: 'https://x/c.webm',
-      }),
-    )
-    listModules.mockReturnValue(Promise.resolve([{ id: 'ghi01', title: 'Ghi 01', accent: '#6FA8C0' }]))
-
     const { container } = render(<Editor postId="p1" />)
     await waitFor(() => expect(screen.queryByText('Đang tải...')).toBeNull())
-
-    expect(screen.getByText('ảnh bìa:')).toBeTruthy()
-    expect(screen.queryByText('thumbnail:')).toBeNull()
-    expect(screen.getByText('ảnh body 1:')).toBeTruthy()
-    // Ô xem trước lấy khung hình của clip.
-    expect(container.querySelector('span[title*="172×130"]')).not.toBeNull()
-    // Mỗi dòng có đủ hai lối đưa ảnh vào.
-    expect(screen.getAllByText('tải ảnh lên')).toHaveLength(2)
-    expect(screen.getAllByText('đặt link')).toHaveLength(2)
+    expect(coverBand(container)).toContain('đặt vào khung')
   })
 
-  it('ảnh bìa bày một ô xem trước hình cắt', async () => {
-    // Từng không hiện bao giờ: chỗ đọc `body` đi qua `getBody`, mà hàm ấy trả
-    // MẢNG rỗng cho body dạng đối tượng — và bitesize cất một đối tượng.
+  it('băng trang bìa có đủ bốn việc, kể cả đặt link', async () => {
+    // Chủ site: "lấy cái logic của cái chỗ đặt link hiện tại thêm vào tất cả
+    // các ảnh bên cạnh button tải lên và xoá".
     getPost.mockReturnValue(Promise.resolve({ ...post, hero_image_url: 'https://x/a.jpg' }))
     listModules.mockReturnValue(Promise.resolve([{ id: 'ghi01', title: 'Ghi 01', accent: '#6FA8C0' }]))
 
     const { container } = render(<Editor postId="p1" />)
     await waitFor(() => expect(screen.queryByText('Đang tải...')).toBeNull())
-    const box = container.querySelector<HTMLElement>('span[title*="172×130"]')
-    expect(box).not.toBeNull()
-    expect(box!.style.backgroundImage).toBe('url("https://x/a.jpg")')
+    expect(coverBand(container)).toEqual([
+      'tải ảnh lên',
+      'đặt link',
+      'đặt vào khung',
+      'gỡ ảnh khỏi ô này',
+    ])
   })
 
-  it('ảnh tĩnh thì không có dòng thumbnail', async () => {
-    getPost.mockReturnValue(Promise.resolve({ ...post, hero_image_url: 'https://x/a.jpg' }))
-    listModules.mockReturnValue(Promise.resolve([{ id: 'ghi01', title: 'Ghi 01', accent: '#6FA8C0' }]))
-
-    render(<Editor postId="p1" />)
-    await waitFor(() => expect(screen.queryByText('Đang tải...')).toBeNull())
-    expect(screen.getByText('đặt vào khung')).toBeTruthy()
-  })
-
-  it('có ảnh thì có nút xoá, chưa có thì không', async () => {
+  it('có ảnh thì có nút gỡ, chưa có thì không', async () => {
     // Đặt được thì phải gỡ được — chủ site báo là không có đường nào xoá ảnh.
     getPost.mockReturnValue(Promise.resolve({ ...post, hero_image_url: 'https://x/a.jpg' }))
     listModules.mockReturnValue(Promise.resolve([{ id: 'ghi01', title: 'Ghi 01', accent: '#6FA8C0' }]))
     const co = render(<Editor postId="p1" />)
     await waitFor(() => expect(screen.queryByText('Đang tải...')).toBeNull())
-    expect(screen.getAllByText('xoá').length).toBeGreaterThan(0)
+    expect(coverBand(co.container)).toContain('gỡ ảnh khỏi ô này')
     co.unmount()
 
     getPost.mockReturnValue(Promise.resolve({ ...post, hero_image_url: null }))
-    render(<Editor postId="p1" />)
+    const { container } = render(<Editor postId="p1" />)
     await waitFor(() => expect(screen.queryByText('Đang tải...')).toBeNull())
-    expect(screen.queryByText('xoá')).toBeNull()
+    // Chưa có ảnh thì chỉ còn hai lối đưa ảnh vào, không có gì để gỡ hay căn.
+    expect(coverBand(container)).toEqual(['tải ảnh lên', 'đặt link'])
   })
 })

@@ -85,10 +85,17 @@ describe('POST /api/posts/:id/status', () => {
     expect(res.statusCode).toBe(404)
   })
 
-  it('publish: draft -> published', async () => {
-    fromMock
-      .mockReturnValueOnce(queryBuilder({ data: { id: 'p1', status: 'draft', previous_status: null }, error: null }))
-      .mockReturnValueOnce(queryBuilder({ data: fullRow('published'), error: null }))
+  /*
+   * Bốn hành động dưới đây là MỘT câu lệnh. Phép kiểm "bài đang ở trạng thái
+   * nào" nằm trong mệnh đề `WHERE` của chính câu ghi, nên `toHaveBeenCalledTimes(1)`
+   * ở đây không phải chi tiết vặt — nó chính là điều đang được giữ.
+   */
+  it('publish: draft -> published, in one statement', async () => {
+    const builder = queryBuilder({
+      data: { id: 'p1', status: 'published', published_at: 'now', updated_at: 'now' },
+      error: null,
+    })
+    fromMock.mockReturnValue(builder)
 
     const req = mockReq({
       method: 'POST',
@@ -100,12 +107,20 @@ describe('POST /api/posts/:id/status', () => {
     await handler(req, res)
     expect(res.statusCode).toBe(200)
     expect(res.body.post.status).toBe('published')
+
+    expect(fromMock).toHaveBeenCalledTimes(1)
+    expect(builder.in).toHaveBeenCalledWith('status', ['draft'])
+    // Và câu trả lời không kéo cả bài về: chỉ những cột vừa ghi.
+    expect(builder.select.mock.calls[0][0]).not.toContain('body')
   })
 
   it('rejects archiving a draft with 400', async () => {
-    fromMock.mockReturnValueOnce(
-      queryBuilder({ data: { id: 'p1', status: 'draft', previous_status: null }, error: null }),
-    )
+    fromMock
+      // Câu ghi không khớp dòng nào: bài đang là draft, `archive` chỉ áp được
+      // từ published.
+      .mockReturnValueOnce(queryBuilder({ data: null, error: null }))
+      // Chỉ ở nhánh hỏng mới đọc, để nói rõ vì sao.
+      .mockReturnValueOnce(queryBuilder({ data: { status: 'draft' }, error: null }))
 
     const req = mockReq({
       method: 'POST',
@@ -117,6 +132,7 @@ describe('POST /api/posts/:id/status', () => {
     await handler(req, res)
     expect(res.statusCode).toBe(400)
     expect(res.body.error).toMatch(/archive/)
+    expect(res.body.error).toMatch(/draft/)
   })
 
   it('delete: published -> deleted, records previous_status', async () => {
@@ -159,12 +175,9 @@ describe('POST /api/posts/:id/status', () => {
     expect(res.body.post.previous_status).toBeNull()
   })
 
-  it('permanently-delete: deleted -> hard delete, no post in response', async () => {
-    fromMock
-      .mockReturnValueOnce(
-        queryBuilder({ data: { id: 'p1', status: 'deleted', previous_status: 'draft' }, error: null }),
-      )
-      .mockReturnValueOnce(queryBuilder({ error: null }))
+  it('permanently-delete: deleted -> hard delete, in one statement', async () => {
+    const builder = queryBuilder({ data: { id: 'p1' }, error: null })
+    fromMock.mockReturnValue(builder)
 
     const req = mockReq({
       method: 'POST',
@@ -177,14 +190,17 @@ describe('POST /api/posts/:id/status', () => {
     expect(res.statusCode).toBe(200)
     expect(res.body).toEqual({ deleted: true })
 
-    const deleteBuilder = fromMock.mock.results[1].value
-    expect(deleteBuilder.delete).toHaveBeenCalled()
+    expect(fromMock).toHaveBeenCalledTimes(1)
+    expect(builder.delete).toHaveBeenCalled()
+    // Cái giữ cho một bài chưa xoá mềm không bị xoá cứng.
+    expect(builder.in).toHaveBeenCalledWith('status', ['deleted'])
   })
 
   it('rejects permanently-delete on a non-deleted post', async () => {
-    fromMock.mockReturnValueOnce(
-      queryBuilder({ data: { id: 'p1', status: 'published', previous_status: null }, error: null }),
-    )
+    fromMock
+      .mockReturnValueOnce(queryBuilder({ data: null, error: null }))
+      .mockReturnValueOnce(queryBuilder({ data: { status: 'published' }, error: null }))
+
     const req = mockReq({
       method: 'POST',
       headers: authHeaders(token),
@@ -194,5 +210,6 @@ describe('POST /api/posts/:id/status', () => {
     const res = mockRes()
     await handler(req, res)
     expect(res.statusCode).toBe(400)
+    expect(res.body.error).toMatch(/published/)
   })
 })

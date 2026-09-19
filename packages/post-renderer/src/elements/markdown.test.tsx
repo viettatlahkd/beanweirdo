@@ -39,8 +39,30 @@ describe('định dạng trong một dòng', () => {
     expect(runsToText(textToRuns(text))).toBe(text)
   })
 
-  it('`**đậm**` của nơi khác về chung một nhấn', () => {
-    expect(textToRuns('có **đậm** đây')).toEqual([{ t: 'có ' }, { t: 'đậm', em: true }, { t: ' đây' }])
+  it('một sao là nghiêng, hai sao là đậm, ba sao là cả hai', () => {
+    // Trước 2026-09-19 cả ba cùng về `em`: site chỉ có một mức nhấn. Chủ site
+    // tách đôi, nên mỗi số lượng dấu sao phải ra đúng mức của nó.
+    expect(textToRuns('có *nghiêng* đây')).toEqual([
+      { t: 'có ' },
+      { t: 'nghiêng', em: true },
+      { t: ' đây' },
+    ])
+    expect(textToRuns('có **đậm** đây')).toEqual([{ t: 'có ' }, { t: 'đậm', b: true }, { t: ' đây' }])
+    expect(textToRuns('có ***cả hai*** đây')).toEqual([
+      { t: 'có ' },
+      { t: 'cả hai', em: true, b: true },
+      { t: ' đây' },
+    ])
+  })
+
+  it('`__x__` vẫn là đậm — nơi khác viết đậm như vậy', () => {
+    expect(textToRuns('có __đậm__ đây')).toEqual([{ t: 'có ' }, { t: 'đậm', b: true }, { t: ' đây' }])
+  })
+
+  it('đi rồi về không đổi ký hiệu', () => {
+    for (const line of ['có *nghiêng* đây', 'có **đậm** đây', 'có ***cả hai*** đây']) {
+      expect(runsToText(textToRuns(line))).toBe(line)
+    }
   })
 
   it('gạch dưới giữa chữ không phải định dạng', () => {
@@ -120,7 +142,7 @@ describe('dán vào', () => {
 
   it('định dạng trong dòng dán vào vẫn giữ', () => {
     const pasted = pastedToItems('- xem **đây**: https://a.com\n- và [kia](https://b.com)')
-    expect(pasted?.items[0].runs).toContainEqual({ t: 'đây', em: true })
+    expect(pasted?.items[0].runs).toContainEqual({ t: 'đây', b: true })
     expect(pasted?.items[1].runs).toContainEqual({ t: 'kia', href: 'https://b.com' })
   })
 

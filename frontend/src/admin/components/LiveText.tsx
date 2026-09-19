@@ -27,7 +27,7 @@ import { MarkdownShortcutPlugin } from '@lexical/react/LexicalMarkdownShortcutPl
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin'
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
 import { HeadingNode, QuoteNode } from '@lexical/rich-text'
-import { BLUR_COMMAND, COMMAND_PRIORITY_LOW, TextNode } from 'lexical'
+import { BLUR_COMMAND, COMMAND_PRIORITY_LOW } from 'lexical'
 import { useEffect, useRef } from 'react'
 import { SITE_TRANSFORMERS, unescapeSite } from '../lib/liveMarkdown'
 import { registerLiveKeys, type LiveEdges } from './liveKeys'
@@ -49,7 +49,7 @@ const THEME = {
     nested: { listitem: 'awc-live-li-nested' },
   },
   link: 'awc-live-link',
-  text: { bold: 'awc-live-bold', italic: 'awc-live-bold', underline: 'awc-live-u' },
+  text: { bold: 'awc-live-bold', italic: 'awc-live-em', underline: 'awc-live-u' },
 }
 
 const NODES = [HeadingNode, QuoteNode, ListNode, ListItemNode, LinkNode, CodeNode, CodeHighlightNode]
@@ -75,28 +75,6 @@ function CommitOnBlur({ onCommit }: { onCommit: (markdown: string) => void }) {
         COMMAND_PRIORITY_LOW,
       ),
     [editor, onCommit],
-  )
-  return null
-}
-
-/**
- * Design chỉ có một mức nhấn, nên nghiêng cũng là nhấn.
- *
- * `Cmd+I` là phím ai cũng thử, và HTML dán từ nơi khác vào thì đầy `<em>`.
- * Cả hai đường đều đặt được format `italic`, thứ `SITE_TRANSFORMERS` không có
- * chỗ ghi ra — nên nó hiện lên màn hình rồi biến mất lúc rời ô. Đổi ngay tại
- * gốc thì cả hai đường cùng về một chỗ, và không đường nào ăn mất chữ.
- */
-function OneEmphasis() {
-  const [editor] = useLexicalComposerContext()
-  useEffect(
-    () =>
-      editor.registerNodeTransform(TextNode, (node) => {
-        if (!node.hasFormat('italic')) return
-        node.toggleFormat('italic')
-        if (!node.hasFormat('bold')) node.toggleFormat('bold')
-      }),
-    [editor],
   )
   return null
 }
@@ -158,7 +136,6 @@ export function LiveText({
         {/* Gõ `- ` ra danh sách thì `Enter`, `Tab` trong danh sách phải chạy theo. */}
         <ListPlugin />
         <HistoryPlugin />
-        <OneEmphasis />
         <LiveKeys edges={{ onBackspaceAtStart, onDeleteAtEnd }} />
         <CommitOnBlur onCommit={onCommit} />
       </div>

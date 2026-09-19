@@ -42,6 +42,22 @@ const PLATE_FALLBACK = {
   detail: { tint: garden.leafTint, caption: 'chi tiết — chưa có ảnh' },
 } as const
 
+/**
+ * Ảnh của một ô ảnh cố định, theo tên ô mà template đặt.
+ *
+ * Ba ô của article — `primary`, `secondary`, `detail` — trước đây nhận thẳng
+ * `imageUrl: null` ở đây, nghĩa là dù chủ site có đặt ảnh bằng cách nào thì
+ * trang vẫn vẽ mảng màu. Chúng không có cột riêng: `plate_images` là một jsonb
+ * đánh theo tên ô, nên thêm một ô ảnh cố định ở template khác không phải thêm
+ * một cột nữa.
+ *
+ * Chuỗi rỗng đọc ra `null` — "đã gỡ ảnh ra", cùng một câu trả lời với "chưa
+ * đặt bao giờ", vì ở đây không có gì để mượn như ô ảnh của trang module.
+ */
+export function plateImage(post: Pick<RenderablePost, 'plate_images'>, key: string): string | null {
+  return post.plate_images?.[key] || null
+}
+
 /** What every template needs from a post, under the names the database uses. */
 export type RenderablePost = {
   en: string
@@ -52,6 +68,14 @@ export type RenderablePost = {
   body: unknown
   hero_caption: string | null
   hero_image_url: string | null
+  /**
+   * Ảnh của các ô ảnh cố định mà template đặt tên — migration 0027.
+   *
+   * Tuỳ chọn vì hai lý do, cả hai đều thật: danh sách bài công khai chỉ chọn
+   * một số cột và cột này không nằm trong đó (danh sách vẽ ảnh đại diện, không
+   * vẽ khuôn bài), và một database chưa chạy 0027 trả lời mà không có nó.
+   */
+  plate_images?: Record<string, string | null> | null
   /** Màu riêng của bài; rỗng nghĩa là theo màu module — xem migration 0021. */
   theme_color?: string | null
   pull_quote: string | null
@@ -118,8 +142,8 @@ export function toArticleData(
     title,
     titleItalic,
     lead: postDescription(post),
-    platePrimary: { ...PLATE_FALLBACK.primary, imageUrl: null },
-    plateSecondary: { ...PLATE_FALLBACK.secondary, imageUrl: null },
+    platePrimary: { ...PLATE_FALLBACK.primary, imageUrl: plateImage(post, 'primary') },
+    plateSecondary: { ...PLATE_FALLBACK.secondary, imageUrl: plateImage(post, 'secondary') },
     heroPlate: {
       tint: PLATE_FALLBACK.hero.tint,
       caption: post.hero_caption ?? PLATE_FALLBACK.hero.caption,
@@ -129,7 +153,7 @@ export function toArticleData(
     pull: post.pull_quote ?? post.vi,
     relatedHeading: 'Trong module này',
     related: related.map((r) => ({ label: r.en })),
-    detailPlate: { ...PLATE_FALLBACK.detail, imageUrl: null },
+    detailPlate: { ...PLATE_FALLBACK.detail, imageUrl: plateImage(post, 'detail') },
     furtherReadingHeading: 'Đọc thêm',
     furtherReading: post.further_reading ?? [],
     band: bandOf(post, mod),

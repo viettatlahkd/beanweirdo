@@ -11,11 +11,9 @@ export type Screen =
   | 'hours'
   | 'notes'
   | 'cms'
-  | 'logic'
   | 'cards'
   | 'report'
   // The post-authoring flow, reached from Content management's first tab.
-  | 'postNew'
   | 'postEdit'
   | 'postPreview'
   /** Admin › Templates — the stored blueprints. */
@@ -59,7 +57,6 @@ export type Nav = {
   goHours(): void
   goNotes(): void
   goCms(tab?: CmsTab): void
-  goLogic(): void
   /**
    * Open one template, or `null` for the list.
    *

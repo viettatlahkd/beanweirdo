@@ -46,6 +46,15 @@ export interface ModuleRow {
   page_shot3: string
   page_shot4: string
   sort_order: number
+  /**
+   * The module this one sits inside; null at the top level. See migration
+   * 0025 — one self-referencing column is what lets the table of contents be
+   * a tree instead of a list.
+   *
+   * Optional because a database that has not run 0025 answers without the
+   * column, and the API must keep serving modules either way.
+   */
+  parent_id?: string | null
   /** 'normal' = reading module; 'special' = a journal you can file under. */
   kind: 'normal' | 'special'
 }
@@ -84,6 +93,7 @@ export interface Module {
   page_shot3: string
   page_shot4: string
   sort_order: number
+  parent_id: string | null
   kind: 'normal' | 'special'
 }
 
@@ -118,6 +128,10 @@ export function toModule(row: ModuleRow): Module {
     img2: row.img2,
     img3: row.img3,
     sort_order: row.sort_order,
+    // `?? null` rather than passing it through: a database without the column
+    // answers `undefined`, and a client reading `parent_id` should see "no
+    // parent", not "field missing".
+    parent_id: row.parent_id ?? null,
     kind: row.kind ?? 'normal',
   }
 }
@@ -150,7 +164,9 @@ export const MODULE_PATCHABLE: Array<{ jsonKey: string; column: keyof ModuleRow 
   { jsonKey: 'page_shot2', column: 'page_shot2' },
   { jsonKey: 'page_shot3', column: 'page_shot3' },
   { jsonKey: 'page_shot4', column: 'page_shot4' },
-
+  // Moving a module inside another one is an edit like any other — but the one
+  // edit with a rule attached, checked by `canReparent` before it is written.
+  { jsonKey: 'parent_id', column: 'parent_id' },
 ]
 
 /**
@@ -185,7 +201,63 @@ export function newModuleRow(
     shot2: 'ảnh phụ',
     shot3: 'ảnh phụ',
     sort_order: sort_order,
+    // A new module starts at the top of the table of contents. Filing it
+    // inside another one is a second, deliberate step.
+    parent_id: null,
     // Created from the CMS means a reading module; the journals are seeded.
     kind: 'normal',
   }
+}
+
+/** The little the one tree rule needs to know about a module. */
+export type ParentedRow = { id: string; parent_id?: string | null }
+
+/**
+ * Everything filed anywhere beneath `id`, including `id` itself.
+ *
+ * Breadth-first with a seen-set rather than recursion: this exists to *stop*
+ * cycles being written, so it must not itself hang on data that already
+ * contains one.
+ */
+function descendantIds(rows: readonly ParentedRow[], id: string): Set<string> {
+  const out = new Set<string>()
+  const queue = [id]
+
+  while (queue.length > 0) {
+    const next = queue.shift() as string
+    if (out.has(next)) continue
+    out.add(next)
+    for (const r of rows) if (r.parent_id && r.parent_id === next) queue.push(r.id)
+  }
+
+  return out
+}
+
+/**
+ * Whether a module may be filed inside another — the only rule the tree has.
+ *
+ * A module inside itself, directly or round a longer loop, makes a branch with
+ * no top: no walk up it ever reaches the front page, and no walk down it ever
+ * ends. Nothing in the schema forbids it, because one small rule reads more
+ * plainly in code than in a trigger and the refusal here can say which loop it
+ * found — the same call migration 0019 made for hour-log sittings.
+ *
+ * The frontend answers this question too, in `lib/contentTree.ts`, because the
+ * CMS should grey the option out rather than let the owner find out by being
+ * refused. `moduleTree.contract.test.ts` runs both against the same cases.
+ */
+export function canReparent(
+  rows: readonly ParentedRow[],
+  childId: string,
+  parentId: string | null,
+): { ok: true } | { ok: false; reason: string } {
+  if (parentId === null) return { ok: true }
+  if (parentId === childId) return { ok: false, reason: 'a module cannot sit inside itself' }
+  if (!rows.some((r) => r.id === parentId)) {
+    return { ok: false, reason: `no module with id "${parentId}"` }
+  }
+  if (descendantIds(rows, childId).has(parentId)) {
+    return { ok: false, reason: 'a module cannot sit inside one of its own descendants' }
+  }
+  return { ok: true }
 }

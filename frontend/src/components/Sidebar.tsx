@@ -1,9 +1,10 @@
 import { useState, type CSSProperties, type ReactNode } from 'react'
 import { NAV, type Glyph, type NavItem } from '../content/navItems'
-import type { NavGroup } from '../content/site'
+import { SECTION_NAMES, type NavGroup } from '../content/site'
 import { sidebarModules, useModules, type ModuleRow } from '../data/useModules'
+import { buildTree, flattenTree } from '../lib/contentTree'
+import { countUnder } from '../lib/postGroups'
 import { usePublishedPosts, type PostRow } from '../data/usePublishedPosts'
-import { useSiteCopy } from '../data/useSiteCopy'
 import { layout, paper, sans, serif } from '../design/tokens'
 import { areaOfGroup, goToArea, visibleGroups } from '../lib/area'
 import { useAuth } from '../lib/auth'
@@ -107,6 +108,7 @@ function Row({
   label,
   count,
   sub,
+  depth = 0,
   muted,
   hoverBg,
   onClick,
@@ -116,12 +118,25 @@ function Row({
   count?: ReactNode
   /** Template pages sit one level in, marked by a short dash instead of a glyph. */
   sub?: boolean
+  /**
+   * How far inside the table of contents this row sits. 0 is a top-level entry.
+   *
+   * A number rather than the `sub` flag beside it: `sub` says "one level in"
+   * and cannot say "two", which is the same thing that stopped the rest of the
+   * site holding a third level. The indent is per step, so a branch four deep
+   * needs nothing added here.
+   */
+  depth?: number
   muted: string
   hoverBg: string
   onClick: () => void
 }) {
   return (
-    <Hover style={{ ...row, color: muted }} hoverStyle={{ background: hoverBg }} onClick={onClick}>
+    <Hover
+      style={{ ...row, color: muted, paddingLeft: 22 + depth * 15 }}
+      hoverStyle={{ background: hoverBg }}
+      onClick={onClick}
+    >
       <div style={glyphSlot}>{sub ? null : glyph}</div>
       <div
         style={{
@@ -194,8 +209,6 @@ function go(nav: Nav, item: NavItem): () => void {
       // Thẳng tới danh sách bài. `/ad` chỉ gọi tên màn mà không gọi tên tab,
       // nên bấm vào đây từng dừng ở một địa chỉ không phải chỗ nào cả.
       return () => nav.goCms('posts')
-    case 'logic':
-      return nav.goLogic
     case 'archive':
       return nav.goArchive
     default:
@@ -219,13 +232,18 @@ export function Sidebar() {
   const { data: allModules } = useModules()
   const modules = sidebarModules(allModules)
   const { data: posts } = usePublishedPosts()
-  const { site } = useSiteCopy()
   const { authed, signOut } = useAuth()
   const dark = nav.screen === 'notes' || nav.screen === 'hours'
   const t = theme(dark)
   const groups = visibleGroups(nav.area, authed)
 
-  const countFor = (m: ModuleRow) => posts.filter((p: PostRow) => p.module_id === m.id).length
+  /*
+   * The count beside a name covers the whole branch, not just what is filed
+   * directly under it. A heading holding two sub-sections of six posts each
+   * reads as empty otherwise — and "chưa có bài" is a different statement from
+   * "everything here is one level down".
+   */
+  const countFor = (m: ModuleRow) => countUnder(posts as PostRow[], modules, m.id)
 
   const section = (group: NavGroup) => {
     const items = NAV.filter((n) => n.group === group && !n.hiddenFromSidebar)
@@ -238,13 +256,21 @@ export function Sidebar() {
         // Every module is listed, published or not: the sidebar is the map of
         // what the journal covers, and a module with nothing in it yet is still
         // part of that map. The count beside it tells the truth.
-        for (const m of modules) {
+        /*
+         * Parents before their own children, each carrying how deep it sits.
+         * This used to be a flat loop, which is why the sidebar could show a
+         * list of modules and never a table of contents. Nothing here names a
+         * number of levels, so a branch four deep draws itself.
+         */
+        for (const node of flattenTree(buildTree(modules))) {
+          const m = node.row
           rows.push(
             <Row
               key={`mod-${m.id}`}
               onClick={() => openModule(nav, m)}
               label={m.title}
               count={countFor(m)}
+              depth={node.depth}
               muted={t.muted}
               hoverBg={t.hover}
               glyph={<ModuleMark m={m} />}
@@ -356,7 +382,7 @@ export function Sidebar() {
       <div style={{ height: 1, background: t.rule, margin: '0 0 20px' }} />
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-        <SectionLabel>{site.sections.Public}</SectionLabel>
+        <SectionLabel>{SECTION_NAMES.Public}</SectionLabel>
         {section('Public')}
       </div>
 
@@ -369,13 +395,13 @@ export function Sidebar() {
         <>
           <div style={{ margin: '16px 0 0' }}>
             <div style={{ height: 1, background: t.rule, marginBottom: 10 }} />
-            <SectionLabel>{site.sections.Practice}</SectionLabel>
+            <SectionLabel>{SECTION_NAMES.Practice}</SectionLabel>
             {section('Practice')}
           </div>
 
           <div style={{ margin: '16px 0 0' }}>
             <div style={{ height: 1, background: t.rule, marginBottom: 10 }} />
-            <SectionLabel>{site.sections.Admin}</SectionLabel>
+            <SectionLabel>{SECTION_NAMES.Admin}</SectionLabel>
             {section('Admin')}
           </div>
 

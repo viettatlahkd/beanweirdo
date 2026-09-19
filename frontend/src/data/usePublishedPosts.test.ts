@@ -84,3 +84,50 @@ describe('usePublishedPosts', () => {
     expect(result.current.data).toEqual([])
   })
 })
+
+/*
+ * Cái đắt nhất của trang công khai không phải số lượt gọi, mà là cỡ gói dữ
+ * liệu: `select('*')` kéo `body` — toàn bộ nội dung — của **mọi** bài đã đăng,
+ * trên mỗi lần vẽ. Thanh bên gọi hook này không kèm `moduleId`, nên nó kéo cả
+ * site về. Ba bài dưới đây khoá lại chuyện đó.
+ */
+describe('usePublishedPosts — không kéo thân bài về', () => {
+  beforeEach(() => {
+    from.mockClear()
+  })
+
+  it('mặc định không hỏi `body`, và có hỏi `thumbnail_url`', async () => {
+    const builder = makeQueryBuilder({ data: [], error: null })
+    from.mockReturnValue(builder)
+
+    const { result } = renderHook(() => usePublishedPosts())
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    const columns = (builder.select as ReturnType<typeof vi.fn>).mock.calls[0][0] as string
+    expect(columns).not.toBe('*')
+    expect(columns.split(', ')).not.toContain('body')
+    expect(columns).toContain('thumbnail_url')
+  })
+
+  it('kể cả khi lấy cả bài lưu trữ — đường đó cũng từng là `*`', async () => {
+    const builder = makeQueryBuilder({ data: [], error: null })
+    from.mockReturnValue(builder)
+
+    const { result } = renderHook(() => usePublishedPosts({ includeArchived: true }))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    const columns = (builder.select as ReturnType<typeof vi.fn>).mock.calls[0][0] as string
+    expect(columns.split(', ')).not.toContain('body')
+    expect(builder.in).toHaveBeenCalledWith('status', ['published', 'archived'])
+  })
+
+  it('withBody mới lấy cả hàng — đúng một màn cần, là trang Ghi', async () => {
+    const builder = makeQueryBuilder({ data: [], error: null })
+    from.mockReturnValue(builder)
+
+    const { result } = renderHook(() => usePublishedPosts({ moduleId: 'ghi01', withBody: true }))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    expect((builder.select as ReturnType<typeof vi.fn>).mock.calls[0][0]).toBe('*')
+  })
+})

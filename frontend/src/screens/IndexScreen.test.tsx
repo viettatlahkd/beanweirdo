@@ -91,6 +91,54 @@ describe('IndexScreen', () => {
     expect(openArticle).toHaveBeenCalledWith('post-1', 'module')
   })
 
+  it('variant A puts a nested module after the one holding it, and one level in', async () => {
+    // Trước bản này, Mục lục liệt kê "bean weirdo", "Roasting", "Biochem"
+    // ngang hàng nhau — một danh sách module, không phải một mục lục.
+    useNav.mockReturnValue({ variant: 'A', openArticle, openModule, toggleVariant })
+    useSettings.mockReturnValue({ density: 'roomy', showPlates: true })
+    useModules.mockReturnValue({
+      data: [
+        { ...sensory, id: 'bean', title: 'bean weirdo' },
+        { ...sensory, id: 'roasting', title: 'Roasting', parent_id: 'bean' },
+      ],
+      loading: false,
+      error: null,
+    })
+    usePublishedPosts.mockReturnValue({ data: [], loading: false, error: null })
+
+    render(<IndexScreen />)
+
+    const parent = await screen.findByText('bean weirdo')
+    const child = screen.getByText('Roasting')
+    // Con nằm sau cha trong thứ tự đọc của trang.
+    expect(parent.compareDocumentPosition(child) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    // và thụt vào so với cha: 56 + 28.
+    // và thụt vào so với cha. React gộp vào shorthand `padding`, nên đọc qua
+    // CSSOM chứ không đọc chuỗi thuộc tính.
+    const sectionOf = (el: HTMLElement) =>
+      el.closest('div[style*="max-width: 1240px"]') as HTMLElement | null
+    expect(sectionOf(parent)?.style.paddingLeft).toBe('56px')
+    expect(sectionOf(child)?.style.paddingLeft).toBe('84px')
+  })
+
+  it('variant B names the module a nested one sits inside, since every tile is the same size', async () => {
+    useNav.mockReturnValue({ variant: 'B', openArticle, openModule, toggleVariant })
+    useSettings.mockReturnValue({ density: 'roomy', showPlates: true })
+    useModules.mockReturnValue({
+      data: [
+        { ...sensory, id: 'bean', title: 'bean weirdo' },
+        { ...sensory, id: 'roasting', title: 'Roasting', parent_id: 'bean' },
+      ],
+      loading: false,
+      error: null,
+    })
+    usePublishedPosts.mockReturnValue({ data: [], loading: false, error: null })
+
+    render(<IndexScreen />)
+
+    expect(await screen.findByText('trong bean weirdo · flavor')).toBeInTheDocument()
+  })
+
   it('variant B (columns) also renders real posts per module', async () => {
     useNav.mockReturnValue({ variant: 'B', openArticle, openModule, toggleVariant })
     useSettings.mockReturnValue({ density: 'roomy', showPlates: true })

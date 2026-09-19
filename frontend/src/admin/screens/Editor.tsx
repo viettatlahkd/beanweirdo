@@ -1,6 +1,8 @@
 import {
   Fragment,
+  useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -20,6 +22,7 @@ import {
 import type {
   CardData,
   CardPart,
+  FigureData,
   LongformBlock,
   ReportBlock,
   ReportChartPoint,
@@ -29,7 +32,6 @@ import type {
 } from 'post-renderer'
 import {
   getPost,
-  listModules,
   transitionStatus,
   updatePost,
   uploadImage,
@@ -37,12 +39,16 @@ import {
   type PostDetail,
   type PostTemplate,
 } from '../lib/apiClient'
+import { listModulesCached } from '../lib/lists'
+import { TEMPLATE_LABEL } from '../../content/templates'
 import { useNav } from '../../lib/nav'
 import { toPath } from '../../lib/routes'
 import { usePostAddresses } from '../../data/usePostAddresses'
 import { ink, paper, sans, serif } from '../../design/tokens'
 import { ThemePicker } from '../components/ThemePicker'
-import { FocusPicker } from '../components/FocusPicker'
+import { CoverBand } from '../components/CoverBand'
+import { FramingProvider, useFraming } from '../components/framing'
+import { PlateImageUpload } from '../components/PlateUpload'
 import { blankReportBlock, getBody, ORDERED_LIST, resolveTemplate } from '../lib/postData'
 import {
   addColumn,
@@ -70,6 +76,7 @@ import {
   nextId,
   notesOn,
   paletteFrom,
+  fillStyle,
   allElements,
   flatElements,
   htmlToMarkdown,
@@ -99,7 +106,6 @@ import {
 } from '../../lib/postToRenderer'
 import type { BitesizeLength } from 'post-renderer'
 import { captureFrame, looksLikeVideo, probeMedia } from '../../lib/mediaShape'
-import { coverStyle } from '../../lib/imageFocus'
 import { toReportBlocks, toReportNotes } from '../../lib/reportBlocks'
 
 /**
@@ -115,27 +121,55 @@ export type EditPatch = Partial<{
   further_reading: string[]
   body: unknown
   hero_image_url: string
+  /**
+   * Ảnh của các ô ảnh cố định do khuôn bài đặt tên — migration 0027.
+   *
+   * Ghi cả bản đồ chứ không ghi từng khoá: `plate_images` là một cột jsonb,
+   * nên PATCH một khoá lẻ sẽ thay cả cột bằng mỗi khoá ấy.
+   */
+  plate_images: Record<string, string | null>
   /** Màu riêng của bài; null trả nó về theo màu module. */
   theme_color: string | null
 }>
+
+/**
+ * Những việc chỉ ảnh bìa mới làm được, gom một chỗ.
+ *
+ * Ảnh bìa không cất trong `plate_images` như các ô khác: nó là cột riêng
+ * `hero_image_url`, nhận cả clip, và gỡ nó ra thì khung hình tự động của clip
+ * cũng phải đi theo. Nên ba việc này không viết được trong `PlateImageUpload`
+ * mà phải đi từ màn sửa xuống.
+ *
+ * Để `optional` vì `EditorCanvas` còn được dựng trần trong hàng chục bài kiểm;
+ * vắng nó thì góc ô ảnh bìa chỉ còn nút tải tệp, đúng với việc chỗ dựng ấy
+ * thật sự không nối gì.
+ */
+export type HeroActions = {
+  /** Dán một địa chỉ ảnh thay vì tải tệp lên. */
+  link: (url: string, ratio: number | null) => void
+  /**
+   * Mở lại khung cắt cho tấm đang có.
+   *
+   * Vắng khi ảnh bìa là một clip: khung cắt vẽ bằng `background-image` nên clip
+   * không vẽ ra được, và căn tâm một hình đang chạy cũng vô nghĩa. Một cái nút
+   * bấm vào không xảy ra gì còn tệ hơn là không có nút.
+   */
+  reframe?: (ratio: number | null) => void
+  /** Gỡ ảnh bìa, kèm khung hình của clip nếu có. */
+  clear: () => void
+}
 
 type CanvasProps = {
   template: PostTemplate
   post: PostDetail
   module?: Module
   onChange: (patch: EditPatch) => void
-  onHeroDrop: (file: File) => void
+  /** `ratio` là hình dạng thật của ô ảnh bìa, đo lúc bấm nút ở góc ô. */
+  onHeroDrop: (file: File, ratio?: number | null) => void
+  hero?: HeroActions
 }
 
 const REPORT_BLUE = '#6FA8C0'
-const TEMPLATE_LABEL: Record<string, string> = {
-  article: 'Article',
-  cards: 'Cards',
-  report: 'Report',
-  longform: 'Long-form',
-  memo: 'Memo',
-  bitesize: 'Bitesize note',
-}
 
 /**
  * The outer edit screen — fetches the post + modules by id, wires the
@@ -146,7 +180,14 @@ const TEMPLATE_LABEL: Record<string, string> = {
  */
 export function Editor({ postId }: { postId: string }) {
   return (
+    /*
+     * Khung cắt ảnh bọc cả màn, chứ không dựng riêng ở từng chỗ đăng ảnh: chủ
+     * site muốn mọi chỗ đăng ảnh ra cùng một hộp thoại, và một hộp cho cả màn
+     * thì không có cách nào lệch nhau được.
+     */
+    <FramingProvider>
       <EditorContent postId={postId} />
+    </FramingProvider>
   )
 }
 
@@ -156,20 +197,38 @@ function EditorContent({ postId }: { postId: string }) {
   const [post, setPost] = useState<PostDetail | null>(null)
   const [modules, setModules] = useState<Module[]>([])
   /*
-   * Đặt ảnh bìa xong thì mở luôn khung căn.
-   *
-   * Ảnh bìa của một bài không chỉ hiện một chỗ: trang module dạng dải cắt nó
-   * thành 172×130, dạng specimen cắt 3:2. Đặt xong mà không căn thì chủ site
-   * phải tự đi tìm xem nó rơi vào khung nào — nên mở khung căn ngay, bày cả hai
-   * hình cắt, và đóng lại là xong.
-   *
-   * Phải đứng TRÊN chỗ `return` sớm bên dưới. Nó từng đứng dưới, cạnh hàm dùng
-   * nó — đọc thì gọn, chạy thì vỡ: lượt vẽ đầu `post` còn null nên hàm thoát
-   * sớm và chỉ chạy bốn hook; tải xong bài thì lượt sau chạy năm. React đếm
-   * không khớp là ném lỗi và cả màn trắng xoá. Nghĩa là bấm "Sửa" bài nào cũng
-   * trắng, không riêng bài nào.
+   * Phải đứng TRÊN chỗ `return` sớm bên dưới. State của khung căn ảnh từng
+   * đứng dưới, cạnh hàm dùng nó — đọc thì gọn, chạy thì vỡ: lượt vẽ đầu `post`
+   * còn null nên hàm thoát sớm và chỉ chạy bốn hook; tải xong bài thì lượt sau
+   * chạy năm. React đếm không khớp là ném lỗi và cả màn trắng xoá. Nghĩa là
+   * bấm "Sửa" bài nào cũng trắng, không riêng bài nào.
    */
-  const [framing, setFraming] = useState<string | null>(null)
+  const frame = useFraming()
+
+  /**
+   * Khung cắt cho ảnh bìa.
+   *
+   * `ratio` là ô ảnh bìa **trên chính bài đang sửa**, đo từ trang lúc bấm nút ở
+   * góc ô. Trước đây chỗ này ghi cứng 172/130 — hình cắt ở danh sách bài trong
+   * module — nên mở một bài bitesize ra căn ảnh thì hộp thoại bày một khung
+   * chẳng liên quan gì đến ô ảnh đang nhìn: ô ấy lấy hình dạng theo chính tấm
+   * ảnh (`frameOf` trong `Bitesize.tsx`), article thì là một dải dọc rộng
+   * 300px. Luật 15.4 nói khung phải "đúng hình dạng ô trên trang công khai".
+   *
+   * Hai hình cắt của danh sách module xuống làm ô xem trước: ảnh bìa vẫn rơi
+   * vào đó, chỉ là chúng không phải thứ đang được căn. Thả tệp thẳng lên trang
+   * thì không có ô nào để đo, nên lúc ấy mới quay về 172/130.
+   */
+  const frameHero = (url: string, ratio?: number | null) =>
+    frame({
+      url,
+      name: 'Ảnh bìa',
+      ratio: ratio ?? 172 / 130,
+      previews: [
+        { label: 'module dạng dải · 172×130', ratio: 172 / 130 },
+        { label: 'module dạng specimen · 3:2', ratio: 3 / 2 },
+      ],
+    })
 
   /*
    * Lịch sử sửa bài, giữ trong ref chứ không trong state.
@@ -181,7 +240,7 @@ function EditorContent({ postId }: { postId: string }) {
   const history = useRef<History>(emptyHistory)
 
   useEffect(() => {
-    Promise.all([getPost(postId), listModules()]).then(([p, mods]) => {
+    Promise.all([getPost(postId), listModulesCached()]).then(([p, mods]) => {
       setPost(p)
       setModules(mods)
     })
@@ -221,15 +280,13 @@ function EditorContent({ postId }: { postId: string }) {
   // `post` via the updater function's `prev`, never via a captured `post`
   // from the render that created the closure.
   /** The cover, set from the button in the header or by dropping on the page. */
-  async function setHero(file: File) {
+  async function setHero(file: File, ratio?: number | null) {
     const { url } = await uploadImage(file)
+    // Lưu trước rồi mới căn: người dùng bấm Huỷ thì ảnh vẫn ở lại, huỷ là huỷ
+    // việc căn chứ không phải huỷ tấm ảnh vừa tải lên. `frameHero` tự bỏ qua
+    // clip — căn tâm chẳng có nghĩa gì với một hình đang chạy.
     saveHero(url)
-    /*
-     * Khung căn ảnh vẽ tệp ra bằng `background-image`, mà clip thì không vẽ ra
-     * được kiểu ấy: mở nó cho một clip là bày ba ô trắng trơn. Và căn tâm ảnh
-     * cũng chẳng có nghĩa gì với một hình đang chạy.
-     */
-    if (!looksLikeVideo(file)) setFraming(url)
+    saveHero(await frameHero(url, ratio))
   }
 
   function saveHero(url: string) {
@@ -264,16 +321,6 @@ function EditorContent({ postId }: { postId: string }) {
       void updatePost(postId, { body } as unknown as Parameters<typeof updatePost>[1])
       return { ...prev, body: body as unknown as PostDetail['body'] }
     })
-  }
-
-  /** Ảnh của ô phụ — cùng đường tải lên với ảnh bìa, chỉ khác chỗ cất. */
-  async function setSub(file: File) {
-    const { url } = await uploadImage(file)
-    saveSub(url)
-  }
-
-  function saveSub(url: string) {
-    writeBody({ subImage: url })
   }
 
   /**
@@ -339,67 +386,42 @@ function EditorContent({ postId }: { postId: string }) {
    *
    * `getBody` trả về MẢNG — nó viết cho template cất thân bài thành một dãy
    * khối, và với body dạng đối tượng thì nó trả mảng rỗng chứ không báo gì.
-   * Bitesize cất một đối tượng, nên đi qua đó là `subImage` và `poster` luôn
-   * rỗng: ô xem trước không bao giờ hiện, mà cũng chẳng có lỗi nào để lần ra.
+   * Bitesize cất một đối tượng, nên đi qua đó là `poster` luôn rỗng và không
+   * có lỗi nào để lần ra.
    */
-  const body = (post.body ?? {}) as { subImage?: string; poster?: string }
+  const body = (post.body ?? {}) as { poster?: string }
   const heroIsClip = Boolean(post.hero_image_url && looksLikeVideo(post.hero_image_url))
 
-  /*
-   * Bài này có những chỗ đặt ảnh nào.
+  /**
+   * Ba việc của ảnh bìa mà `PlateImageUpload` không tự làm được.
    *
-   * Mọi template đều có ảnh bìa. Clip thì có thêm một dòng ảnh đại diện. Riêng
-   * bitesize có một ô ảnh trong thân bài. Template khác cất ảnh thân bài trong
-   * từng khối nội dung nên chúng đặt ngay tại chỗ, không qua thanh này.
+   * Thanh "ảnh bìa: tải ảnh lên – đặt link – đặt vào khung – xoá" ở đầu khung
+   * sửa đã bỏ: mọi ô ảnh nay có nút ngay ở góc ô, nên một hàng chữ ở trên đầu
+   * nói về một ô ở giữa trang là thứ phải đối chiếu chứ không phải thứ để
+   * dùng. Chủ site: *"bỏ cái phần này đi vì giờ ảnh như nào là có nút hết
+   * rồi"*.
+   *
+   * Nhưng ba việc của nó thì không bỏ được, nên chúng đi xuống đây:
+   * ảnh bìa cất ở cột riêng `hero_image_url` chứ không trong `plate_images`,
+   * nó nhận cả clip, và gỡ nó ra thì khung hình tự động của clip cũng mất chỗ
+   * bám.
    */
-  const mediaSlots: MediaSlotSpec[] = [
-    {
-      key: 'hero',
-      label: 'ảnh bìa',
-      url: post.hero_image_url,
-      accept: 'image/*,video/*',
-      onPick: (f) => void setHero(f),
-      onLink: (url) => {
-        saveHero(url)
-        if (!looksLikeVideo(url)) setFraming(url)
-      },
-      extra:
-        post.hero_image_url && !heroIsClip
-          ? { label: 'đặt vào khung', onClick: () => setFraming(post.hero_image_url) }
-          : undefined,
-      /*
-       * Ô xem trước thay cho dòng "thumbnail" từng có ở đây.
-       *
-       * Chủ site: "opt thumbnail t đang băn khoăn là vì sao cần? thật ra trong
-       * phần tải ảnh bìa lên thì nên có 1 khung preview là ảnh bìa đó ra
-       * thumbnail trông như thế nào thui là ok". Đúng: thumbnail không phải
-       * thứ phải KHAI, nó là thứ cần NHÌN. Clip vẫn lấy khung hình tự động như
-       * cũ, chỉ là không bày ra thành một dòng phải điền nữa.
-       */
-      preview: heroIsClip ? body.poster ?? null : post.hero_image_url,
-      onClear: post.hero_image_url
-        ? () => {
-            applyPatch({ hero_image_url: '' } as EditPatch)
-            // Khung hình của clip cũ không còn chỗ bám vào nữa.
-            if (body.poster) writeBody({ poster: null })
-          }
-        : undefined,
+  const heroActions: HeroActions = {
+    link: (url, ratio) => {
+      saveHero(url)
+      void frameHero(url, ratio).then(saveHero)
     },
-    ...(template === 'bitesize'
-      ? [
-          {
-            key: 'sub',
-            label: 'ảnh body 1',
-            url: body.subImage ?? null,
-            accept: 'image/*',
-            onPick: (f: File) => void setSub(f),
-            onLink: (url: string) => saveSub(url),
-            preview: body.subImage ?? null,
-            onClear: body.subImage ? () => writeBody({ subImage: null }) : undefined,
-          } satisfies MediaSlotSpec,
-        ]
-      : []),
-  ]
+    reframe: heroIsClip
+      ? undefined
+      : (ratio) => {
+          if (post.hero_image_url) void frameHero(post.hero_image_url, ratio).then(saveHero)
+        },
+    clear: () => {
+      applyPatch({ hero_image_url: '' } as EditPatch)
+      // Khung hình của clip cũ không còn chỗ bám vào nữa.
+      if (body.poster) writeBody({ poster: null })
+    },
+  }
 
   return (
     <div style={{ padding: '32px 40px' }}>
@@ -434,23 +456,6 @@ function EditorContent({ postId }: { postId: string }) {
             ))}
           </select>
         )}
-        {framing && (
-          <FocusPicker
-            url={framing}
-            name="Ảnh bìa · hiện ở danh sách bài trong module"
-            /* Khung kéo lấy hình cắt hẹp hơn — căn vừa nó thì hình kia luôn vừa. */
-            ratio={172 / 130}
-            previews={[
-              { label: 'module dạng dải · 172×130', ratio: 172 / 130 },
-              { label: 'module dạng specimen · 3:2', ratio: 3 / 2 },
-            ]}
-            onCancel={() => setFraming(null)}
-            onSave={(url) => {
-              saveHero(url)
-              setFraming(null)
-            }}
-          />
-        )}
         {/*
           * The colour a post wears stays changeable after it exists — it is
           * decided when the post is made, and the first draft is exactly when
@@ -467,21 +472,13 @@ function EditorContent({ postId }: { postId: string }) {
         </span>
       </div>
 
-      {/*
-        * Thanh đặt ảnh: mỗi chỗ đặt một dòng.
-        *
-        * Trước đây tất cả nằm chung một hàng với ô chọn template, nên thêm một
-        * chỗ đặt ảnh là hàng ấy dài thêm và chữ trôi đi đâu không rõ. Xuống
-        * dòng thì đọc ra ngay bài này có mấy chỗ đặt ảnh và chỗ nào đã có gì.
-        */}
-      <MediaBar slots={mediaSlots} />
-
       <EditorCanvas
         template={template}
         post={post}
         module={activeModule}
         onChange={applyPatch}
         onHeroDrop={setHero}
+        hero={heroActions}
       />
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 20, maxWidth: 1320 }}>
         <span style={{ fontSize: 11, color: ink.muted }}>Tự lưu khi rời khỏi ô soạn · trạng thái hiện tại: {post.status}</span>
@@ -519,14 +516,8 @@ function EditorContent({ postId }: { postId: string }) {
 // import paths.
 // ---------------------------------------------------------------------------
 
-export function EditorCanvas({ template, post, module, onChange, onHeroDrop }: CanvasProps) {
+export function EditorCanvas({ template, post, module, onChange, onHeroDrop, hero }: CanvasProps) {
   return (
-    /*
-      The cover used to have a drop strip of its own above the canvas, so the
-      picture appeared twice: once in a box that was not the page, and again
-      below where the page actually puts it. Now it appears where it appears,
-      and the page itself takes the drop.
-    */
     <div
       onDragOver={(e) => e.preventDefault()}
       onDrop={(e) => {
@@ -537,7 +528,41 @@ export function EditorCanvas({ template, post, module, onChange, onHeroDrop }: C
       style={{ maxWidth: 1320 }}
     >
       <EditorStyles />
+
+      {/*
+        Ô trang bìa: một băng ngang trên đầu, GIỐNG NHAU ở cả sáu khuôn.
+
+        Một dải thả ảnh ở chỗ này từng bị bỏ đi vì ảnh hiện hai lần — một lần
+        trong một cái hộp không phải trang, một lần ở đúng chỗ trang đặt nó —
+        và chủ site nhắc lại đúng điều ấy: *"hiện 1 chỗ thôi chứ?"*. Nên lần
+        này ô ảnh bìa mà template vẽ **không vẽ ảnh nữa trong màn sửa**: nó
+        đứng đó giữ chỗ, còn tấm ảnh chỉ nằm ở băng này.
+
+        Nghĩa là khung sửa cố ý không còn giống hệt trang thật ở đúng một chỗ.
+        Chủ site chốt như vậy: *"trong màn sửa thì nó hiển thị thế để có chỗ
+        đẩy ảnh lên và quy chuẩn thôi, còn nó như nào thì phải click xem
+        trước"*. Đổi lại, sáu khuôn có cùng một chỗ đặt ảnh bìa, và `cards`,
+        `report`, `longform` — ba khuôn không vẽ ô ảnh bìa nào — lần đầu có
+        đường đặt ảnh bìa ngay trên trang sửa.
+      */}
+      {hero && (
+        <CoverBand
+          imageUrl={post.hero_image_url}
+          onPick={onHeroDrop}
+          onLink={hero.link}
+          onReframe={hero.reframe}
+          onClear={hero.clear}
+        />
+      )}
+
       <div style={{ border: `1px solid ${paper.rule}`, overflow: 'hidden', background: paper.white }}>
+        {/*
+          `onHeroDrop` đi tiếp xuống ba khuôn có ô ảnh bìa vẽ sẵn trên trang.
+          Ảnh bìa không phải một địa chỉ đơn thuần: đính vào thì còn phải đo
+          khung hình để bitesize tự đổi dàn trang, lấy poster nếu là clip, và
+          mở khung cắt nếu là ảnh — nên nút ở góc ô gọi đúng đường ấy thay vì
+          tự ghi `hero_image_url`.
+        */}
         {template === 'cards' ? (
           <CardsEditor post={post} module={module} onChange={onChange} />
         ) : template === 'report' ? (
@@ -621,7 +646,7 @@ function EditorStyles() {
       .awc-grip:active{ cursor: grabbing; }
       .awc-grip-tip{ position: absolute; top: calc(100% + 6px); left: 0; white-space: nowrap; background: #23211A; color: #FDFBF2; font-family: 'Be Vietnam Pro', system-ui, sans-serif; font-size: 11px; letter-spacing: .01em; padding: 5px 9px; opacity: 0; pointer-events: none; transition: opacity .12s; z-index: 5; }
       .awc-grip:hover .awc-grip-tip, .awc-grip:focus-visible .awc-grip-tip{ opacity: 1; }
-      .awc-dropline{ height: 2px; margin: 6px 0; }
+      .awc-dropline{ height: 2px; margin: 6px 0; background: #5A4632; }
 
       /* the notes column */
       .awc-note-head{ font-family: 'Be Vietnam Pro', system-ui, sans-serif; font-size: 9.5px; font-weight: 500; letter-spacing: .16em; text-transform: uppercase; margin-bottom: 8px; }
@@ -1131,123 +1156,40 @@ function EditableField({
 }
 
 /**
- * Một chỗ đặt ảnh trong thanh: tên, rồi hai lối đưa ảnh vào.
+ * Ghi ảnh cho **một** ô ảnh cố định mà không làm mất những ô khác.
  *
- * Tải lên và dán link là hai lối cho cùng một việc — một tấm ảnh đã nằm sẵn ở
- * đâu đó trên mạng thì không phải tải về rồi tải lên lại.
+ * `plate_images` là một cột jsonb, và PATCH ghi đè cả giá trị của cột chứ
+ * không trộn — gửi lên mỗi `{ primary: … }` là hai ô kia biến mất. Nên bản đồ
+ * cũ phải đi cùng, mỗi lần.
+ *
+ * `null` là gỡ ảnh ra. Không xoá hẳn khoá đi: một khoá còn đó với giá trị rỗng
+ * đọc ra vẫn là "ô này chưa có ảnh", và `plateImage` trả `null` cho cả hai.
  */
-export type MediaSlotSpec = {
-  key: string
-  label: string
-  url: string | null
-  accept: string
-  onPick: (file: File) => void
-  onLink: (url: string) => void
-  /** Việc thêm chỉ chỗ này mới có — ví dụ căn khung cho ảnh bìa. */
-  extra?: { label: string; onClick: () => void }
-  /** Ảnh để bày ô xem trước hình cắt; không có thì không bày ô nào. */
-  preview?: string | null
-  /** Gỡ ảnh ra khỏi chỗ này; chỉ có khi đang có ảnh. */
-  onClear?: () => void
+/** Tên ba ô ảnh của article, đúng chữ hiện trên chính ô ấy khi nó còn trống. */
+const ARTICLE_PLATE_NAME: Record<string, string> = {
+  primary: 'Ảnh chính',
+  secondary: 'Ảnh phụ',
+  detail: 'Chi tiết · ô vuông ở cột phải',
 }
 
-const slotLinkStyle: CSSProperties = {
-  fontFamily: 'inherit',
-  fontSize: 12,
-  color: ink.green,
-  background: 'none',
-  border: 'none',
-  padding: 0,
-  cursor: 'pointer',
+/**
+ * Bài như khung sửa vẽ nó: không có ảnh bìa.
+ *
+ * Ảnh bìa đặt ở băng "trang bìa" trên đầu khung sửa, nên ô ảnh bìa mà template
+ * vẽ đứng đó giữ chỗ chứ không vẽ lại tấm ảnh ấy — chủ site: *"hiện 1 chỗ thôi
+ * chứ?"*. Đây là chỗ DUY NHẤT khung sửa cố ý khác trang thật, và cách biết nó
+ * thật sự trông ra sao là bấm "xem trước".
+ *
+ * Bỏ địa chỉ chứ không bỏ hình dạng: dàn trang của bitesize ăn theo `body.media`
+ * với `body.portrait` (xem `frameOf`), không ăn theo `hero_image_url`, nên ô ảnh
+ * giữ đúng khổ nó sẽ có.
+ */
+function withoutHero(post: PostDetail): PostDetail {
+  return { ...post, hero_image_url: null }
 }
 
-function MediaSlot({ slot }: { slot: MediaSlotSpec }) {
-  const inputRef = useRef<HTMLInputElement>(null)
-  const [linking, setLinking] = useState(false)
-  return (
-    <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, fontSize: 12, color: ink.muted, flexWrap: 'wrap' }}>
-      <span style={{ minWidth: 84, color: slot.url ? ink.strong : ink.muted }}>{slot.label}:</span>
-      <button onClick={() => inputRef.current?.click()} style={slotLinkStyle}>
-        tải ảnh lên
-      </button>
-      <span style={{ color: ink.faint }}>–</span>
-      <button onClick={() => setLinking((v) => !v)} style={slotLinkStyle}>
-        đặt link
-      </button>
-      {slot.extra && (
-        <>
-          <span style={{ color: ink.faint }}>–</span>
-          <button onClick={slot.extra.onClick} style={slotLinkStyle}>
-            {slot.extra.label}
-          </button>
-        </>
-      )}
-      {/* Đặt được thì phải gỡ được. Chỉ hiện khi đang có gì để gỡ. */}
-      {slot.onClear && (
-        <>
-          <span style={{ color: ink.faint }}>–</span>
-          <button onClick={slot.onClear} style={{ ...slotLinkStyle, color: '#C25C7C' }}>
-            xoá
-          </button>
-        </>
-      )}
-      {slot.preview ? (
-        <span
-          title="hình cắt dùng ở danh sách bài — 172×130"
-          style={{
-            width: 46,
-            height: 35,
-            flex: 'none',
-            border: `1px solid ${paper.rule}`,
-            ...coverStyle(slot.preview),
-          }}
-        />
-      ) : null}
-      {linking && (
-        <input
-          autoFocus
-          placeholder={`dán link ${slot.label} rồi Enter`}
-          onKeyDown={(e) => {
-            if (e.key === 'Escape') return setLinking(false)
-            if (e.key !== 'Enter') return
-            const v = (e.target as HTMLInputElement).value.trim()
-            setLinking(false)
-            if (v) slot.onLink(v)
-          }}
-          onBlur={() => setLinking(false)}
-          style={{
-            fontFamily: 'inherit',
-            fontSize: 12,
-            padding: '3px 8px',
-            border: `1px solid ${paper.rule}`,
-            background: paper.white,
-            minWidth: 260,
-          }}
-        />
-      )}
-      <input
-        ref={inputRef}
-        type="file"
-        accept={slot.accept}
-        style={{ display: 'none' }}
-        onChange={(e) => {
-          const file = e.target.files?.[0]
-          e.target.value = ''
-          if (file) slot.onPick(file)
-        }}
-      />
-    </div>
-  )
-}
-
-function MediaBar({ slots }: { slots: MediaSlotSpec[] }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
-      {slots.map((slot) => (
-        <MediaSlot key={slot.key} slot={slot} />
-      ))}
-    </div>
-  )
+function platePatch(post: PostDetail, key: string, url: string | null): EditPatch {
+  return { plate_images: { ...(post.plate_images ?? {}), [key]: url } }
 }
 
 // ---------------------------------------------------------------------------
@@ -1255,10 +1197,18 @@ function MediaBar({ slots }: { slots: MediaSlotSpec[] }) {
 // so what's on screen while editing is exactly the public render.
 // ---------------------------------------------------------------------------
 
-function ArticleEditor({ post, module, onChange }: { post: PostDetail; module?: Module; onChange: (patch: EditPatch) => void }) {
+function ArticleEditor({
+  post,
+  module,
+  onChange,
+}: {
+  post: PostDetail
+  module?: Module
+  onChange: (patch: EditPatch) => void
+}) {
   // Same adapter as the public journal, so the canvas is edited against what
   // will actually ship.
-  const data = toArticleData(post, module?.title ?? post.module_id, [], -1, module)
+  const data = toArticleData(withoutHero(post), module?.title ?? post.module_id, [], -1, module)
   const sections = getBody<SectionData>(post)
   const further_reading = post.further_reading ?? []
   /*
@@ -1332,6 +1282,43 @@ function ArticleEditor({ post, module, onChange }: { post: PostDetail; module?: 
         />
       )}
       renderFurtherReadingItem={(item, i) => <EditableField value={item} onCommit={(v) => updateFurtherReading(i, v)} />}
+      /*
+       * Nút tải ảnh ở góc từng ô ảnh.
+       *
+       * Article có nhiều ô ảnh cố định nhất trong sáu khuôn — hero, cặp ô mở
+       * đầu, ô vuông ở cột phải, cộng một ô cho mỗi phần có hình — và ba ô ở
+       * giữa xưa nay không có chỗ nào đặt ảnh vào cả.
+       *
+       * Trừ `hero`: ảnh bìa nay đặt ở băng "trang bìa" trên đầu khung sửa, một
+       * chỗ đặt cho cả sáu khuôn, nên ô hero ở đây không có nút và không vẽ
+       * ảnh.
+       */
+      renderPlateAction={(slot) => {
+        if (slot.key === 'hero') return null
+        // `fig-3` là ô ảnh của phần thứ ba; ảnh của nó nằm trong `body`, cạnh
+        // chú thích và ghi chú bên lề của chính phần ấy.
+        const at = slot.key.startsWith('fig-') ? Number(slot.key.slice(4)) : NaN
+        if (Number.isInteger(at)) {
+          const setFigImage = (imageUrl: string | null) =>
+            updateSection(at, { fig: { ...(sections[at]?.fig as FigureData), imageUrl } })
+          return (
+            <PlateImageUpload
+              imageUrl={slot.imageUrl}
+              name={`Ảnh của phần ${at + 1}`}
+              onUrl={(url) => setFigImage(url)}
+              onClear={() => setFigImage(null)}
+            />
+          )
+        }
+        return (
+          <PlateImageUpload
+            imageUrl={slot.imageUrl}
+            name={ARTICLE_PLATE_NAME[slot.key] ?? 'Ô ảnh của khuôn bài'}
+            onUrl={(url) => onChange(platePatch(post, slot.key, url))}
+            onClear={() => onChange(platePatch(post, slot.key, null))}
+          />
+        )
+      }}
       wrapSection={(section, i) => {
         /*
          * Mọi phần liền nhau nhập vào **một** ô duy nhất, để bôi đen đi được
@@ -1351,6 +1338,10 @@ function ArticleEditor({ post, module, onChange }: { post: PostDetail; module?: 
               onInsertAfterLine={(lineIndex, t) => {
                 setSections(insertAt(sections, run.at[0] + lineIndex + 1, blankReportBlock(t) as never))
                 setMenuAt(null)
+              }}
+              drop={{
+                active: drag.from !== null,
+                onDrop: (lineIndex) => drag.drop(run.at[0] + lineIndex),
               }}
               onBackspaceAtStart={() => {
                 const before = run.at[0] - 1
@@ -1484,10 +1475,37 @@ function LongformEditor({
     formula: 'công thức', note: 'ghi chú',
   }
 
+  /**
+   * Ảnh cho một khung ảnh, kể cả khung nằm trong một hộp ghi chú.
+   *
+   * `fig-12` là khung của khối thứ 12; `fig-12-3` là khung con thứ 3 bên trong
+   * hộp ghi chú ở khối 12. Khung ảnh của long-form đến từ bản xuất Notion, nên
+   * `src` của nó xưa nay chỉ đọc — bài mất ảnh thì khung trắng nằm đó.
+   */
+  const setFigSrc = (key: string, src: string | null) => {
+    const [, outer, inner] = key.split('-')
+    const i = Number(outer)
+    if (!Number.isInteger(i)) return
+    if (inner === undefined) return at(i, (b) => ({ ...b, src: src ?? undefined }))
+    const j = Number(inner)
+    at(i, (b) => ({
+      ...b,
+      items: (b.items ?? []).map((c, k) => (k === j ? { ...c, src: src ?? undefined } : c)),
+    }))
+  }
+
   return (
     <PostRenderer
       template="longform"
       post={toLongformData(post, module)}
+      renderPlateAction={(slot) => (
+        <PlateImageUpload
+          imageUrl={slot.imageUrl}
+          name="Khung ảnh trong bài dài"
+          onUrl={(url) => setFigSrc(slot.key, url)}
+          onClear={() => setFigSrc(slot.key, null)}
+        />
+      )}
       wrapBlock={(drawn, i, kind) => {
         /*
          * Mọi khối chữ liền nhau nhập vào **một** ô duy nhất.
@@ -1510,6 +1528,10 @@ function LongformEditor({
               onInsertAfterLine={(lineIndex, t) => {
                 write(insertAt(blocks, run.at[0] + lineIndex + 1, blankReportBlock(t) as never))
                 setMenuAt(null)
+              }}
+              drop={{
+                active: drag.from !== null,
+                onDrop: (lineIndex) => drag.drop(run.at[0] + lineIndex),
               }}
               onBackspaceAtStart={() => {
                 const before = run.at[0] - 1
@@ -1716,18 +1738,24 @@ function StoredBlockFields({
 }
 
 /**
- * Một dải chữ, kèm cái máng `+` **bám theo dòng con trỏ đang ở**.
+ * Một dải chữ: cái máng `+` bám con trỏ soạn, và cả dải nhận thả khối.
  *
- * Chủ site: *"cái [+] ấy tôi muốn nó đi theo con trỏ chuột chứ giờ cái button
- * [+] chỉ hiển thị ở hàng bên trên thôi"*.
+ * **Máng `+`.** Trước đây một khối là một dòng, nên cái máng ghim ở đỉnh khối
+ * cũng chính là đỉnh dòng. Từ khi mấy khối chữ liền nhau gộp vào **một** ô,
+ * một dải dài mấy chục dòng vẫn chỉ có một cái máng nằm chết ở dòng đầu. Bản
+ * vá đầu cho nó chạy theo `onMouseMove`, và chủ site bắt đúng chỗ sai: *"nút
+ * [+] đang đi theo trỏ chuột thay vì vị trí của trỏ editor là cái [|]"*. Nay
+ * nó đo con trỏ soạn — chuột đưa đi đâu thì đưa, chỗ chèn vẫn là chỗ đang gõ.
  *
- * Trước đây một khối là một dòng, nên cái máng ghim ở đỉnh khối cũng chính là
- * đỉnh dòng. Từ khi mấy khối chữ liền nhau gộp vào **một** ô, một dải dài mấy
- * chục dòng vẫn chỉ có một cái máng nằm chết ở dòng đầu — muốn chèn vào giữa
- * bài thì không có chỗ nào để bấm.
+ * **Chỗ thả.** Ảnh và bảng có tay nắm từ lâu, nhưng chỉ khối khác mới nhận
+ * thả, nên trong một bài "chữ – ảnh – chữ" nhấc cái ảnh lên là không có điểm
+ * rơi nào và nó về chỗ cũ. Dải chữ nay nhận thả, với một vạch rơi chạy theo
+ * chuột tới đúng dòng đang hover.
  *
- * Nên chỗ này đo: con trỏ đang ở trên dòng nào trong ô, rồi dời cái máng xuống
- * đúng dòng ấy. Chèn thì chèn vào **sau** dòng đó, không phải đầu dải.
+ * Chữ **không** vì thế mà thành khối: nó vẫn là một dòng chảy, không có tay
+ * nắm, không cắt theo đoạn. Chủ site: *"chữ không có khối, không tách
+ * paragraph, tất cả là long form edit như lark/markdown/ghost"*. Cái đi lại
+ * được là ảnh, bảng, trích dẫn — dải chữ chỉ cho chúng một chỗ để hạ cánh.
  */
 function LiveRun({
   text,
@@ -1735,6 +1763,7 @@ function LiveRun({
   onToggleMenu,
   onCommit,
   onInsertAfterLine,
+  drop,
   onBackspaceAtStart,
   onDeleteAtEnd,
 }: {
@@ -1744,33 +1773,113 @@ function LiveRun({
   onCommit: (markdown: string) => void
   /** `line` là dòng thứ mấy trong dải, đếm từ 0. */
   onInsertAfterLine: (line: number, type: string) => void
+  /** Nhận khối đang được kéo. Vắng thì dải này không phải chỗ hạ cánh. */
+  drop?: { active: boolean; onDrop: (line: number) => void }
 } & LiveEdges) {
   const host = useRef<HTMLDivElement>(null)
-  /** Dòng con trỏ đang ở, và nó nằm cách đỉnh dải bao nhiêu. */
+  /** Dòng con trỏ soạn đang ở, và nó nằm cách đỉnh dải bao nhiêu. */
   const [line, setLine] = useState<{ index: number; top: number }>({ index: 0, top: 0 })
+  /** Dòng chuột đang trỏ tới trong lúc kéo; `null` là không có ai đang kéo. */
+  const [over, setOver] = useState<{ index: number; top: number } | null>(null)
+
+  /**
+   * Dòng nào của dải nằm gần độ cao `clientY` nhất.
+   *
+   * Đo bằng hình chữ nhật thật của từng dòng, không chia đều chiều cao dải:
+   * tiêu đề, đoạn văn và danh sách cao khác nhau, nên chia đều là lệch ngay
+   * từ dòng thứ hai.
+   *
+   * **Gần nhất**, không phải *trúng*. Giữa hai dòng có khoảng cách, dải có
+   * đệm ở hai đầu, và con trỏ kéo thì hay rơi đúng vào mấy chỗ ấy — trả về
+   * rỗng ở đó nghĩa là thả xong không có gì xảy ra, đúng cái lỗi đang sửa.
+   * Kẹp về dòng gần nhất thì mọi điểm trong dải đều là một điểm hạ cánh.
+   */
+  const lineAtY = (clientY: number) => {
+    const box = host.current
+    const input = box?.querySelector('.awc-live-input')
+    if (!box || !input) return null
+    const top = box.getBoundingClientRect().top
+    const lines = Array.from(input.children) as HTMLElement[]
+    if (lines.length === 0) return null
+    const y = Number.isFinite(clientY) ? clientY : top
+    let best = 0
+    let gap = Infinity
+    for (let i = 0; i < lines.length; i++) {
+      const r = lines[i].getBoundingClientRect()
+      const from = y < r.top ? r.top - y : y > r.bottom ? y - r.bottom : 0
+      if (from < gap) {
+        best = i
+        gap = from
+      }
+      if (gap === 0) break
+    }
+    return { index: best, top: Math.round(lines[best].getBoundingClientRect().top - top) }
+  }
 
   /*
-   * Đo bằng hình chữ nhật thật của từng dòng, không tính theo chiều cao trung
-   * bình: tiêu đề, đoạn văn và danh sách cao khác nhau, nên chia đều là lệch
-   * ngay từ dòng thứ hai.
+   * Con trỏ soạn đang ở dòng nào.
+   *
+   * Đi từ nút neo của vùng chọn lên tới đứa con trực tiếp của ô nhập — mỗi
+   * đứa con ấy là một dòng — rồi lấy thứ tự của nó. Không đo bằng toạ độ:
+   * `getBoundingClientRect` của một vùng chọn rỗng trả về số 0 ở vài trình
+   * duyệt, còn cây DOM thì luôn nói đúng dòng.
    */
-  const follow = (e: { clientY: number }) => {
+  const followCaret = useCallback(() => {
     const box = host.current
     const input = box?.querySelector('.awc-live-input')
     if (!box || !input) return
-    const lines = Array.from(input.children) as HTMLElement[]
-    const top = box.getBoundingClientRect().top
-    for (let i = 0; i < lines.length; i++) {
-      const r = lines[i].getBoundingClientRect()
-      if (e.clientY >= r.top && e.clientY <= r.bottom) {
-        setLine({ index: i, top: Math.round(r.top - top) })
-        return
-      }
-    }
-  }
+    const anchor = window.getSelection()?.anchorNode
+    if (!anchor || !input.contains(anchor)) return
+    let node: Node | null = anchor
+    while (node && node.parentNode !== input) node = node.parentNode
+    if (!(node instanceof HTMLElement)) return
+    const index = Array.prototype.indexOf.call(input.children, node)
+    if (index < 0) return
+    setLine({ index, top: Math.round(node.getBoundingClientRect().top - box.getBoundingClientRect().top) })
+  }, [])
+
+  useEffect(() => {
+    // `selectionchange` là sự kiện của cả tài liệu, không của một ô — đó là
+    // đường duy nhất nghe được con trỏ đi lại bằng phím mũi tên lẫn bằng chuột.
+    document.addEventListener('selectionchange', followCaret)
+    return () => document.removeEventListener('selectionchange', followCaret)
+  }, [followCaret])
+
+  // Chữ đổi thì các dòng xê dịch, mà con trỏ không đi đâu cả nên
+  // `selectionchange` không bắn. Đo lại sau mỗi lần vẽ có chữ mới.
+  useLayoutEffect(followCaret, [text, followCaret])
 
   return (
-    <div className="awc-rep-block" ref={host} onMouseMove={follow}>
+    <div
+      className="awc-rep-block"
+      ref={host}
+      onDragOver={
+        drop?.active
+          ? (e) => {
+              e.preventDefault()
+              const at = lineAtY(e.clientY)
+              if (at) setOver(at)
+            }
+          : undefined
+      }
+      onDragLeave={drop?.active ? () => setOver(null) : undefined}
+      onDrop={
+        drop?.active
+          ? (e) => {
+              e.preventDefault()
+              const at = lineAtY(e.clientY) ?? over
+              setOver(null)
+              if (at) drop.onDrop(at.index)
+            }
+          : undefined
+      }
+    >
+      {over && drop?.active && (
+        <div
+          className="awc-dropline"
+          style={{ position: 'absolute', left: 122, right: 0, top: over.top, margin: 0 }}
+        />
+      )}
       <div className="awc-gutter" style={{ top: line.top }}>
         <InsertPlus
           open={menuOpen}
@@ -1861,6 +1970,10 @@ function useElementBody({
            * Không có hai móc này thì xoá ngược tới chúng là cụt đường, và
            * cách duy nhất còn lại là với tay ra chuột.
            */
+          drop={{
+            active: drag.from !== null,
+            onDrop: (lineIndex) => drag.drop(run.at[0] + lineIndex),
+          }}
           onBackspaceAtStart={() => {
             const before = run.at[0] - 1
             if (before < 0) return false
@@ -2042,7 +2155,7 @@ function BitesizeEditor({
       </div>
       <PostRenderer
         template="bitesize"
-        post={toBitesizeData(post, { mod: module })}
+        post={toBitesizeData(withoutHero(post), { mod: module })}
         renderTitle={(title) => (
           <InlineField value={title} placeholder="Tiêu đề" onCommit={(v) => onChange({ en: v })} />
         )}
@@ -2055,6 +2168,20 @@ function BitesizeEditor({
         renderSub={(sub) => (
           <InlineField value={sub} placeholder="Chữ trong ô ảnh phụ" onCommit={(v) => write({ sub: v })} />
         )}
+        /*
+         * Chỉ ô ảnh phụ có nút. Ô phương tiện là ảnh bìa, mà ảnh bìa nay đặt ở
+         * băng "trang bìa" trên đầu khung sửa — một chỗ đặt cho cả sáu khuôn.
+         */
+        renderPlateAction={(slot) =>
+          slot.key === 'sub' ? (
+            <PlateImageUpload
+              imageUrl={slot.imageUrl}
+              name="Ảnh body 1 · ô dọc cạnh dòng chữ"
+              onUrl={(url) => write({ subImage: url })}
+              onClear={() => write({ subImage: null })}
+            />
+          ) : null
+        }
         wrapElement={wrapElement}
         renderAfterElements={renderAfterElements}
       />
@@ -2072,7 +2199,7 @@ function MemoEditor({
   onChange: (patch: EditPatch) => void
 }) {
   const palette = paletteFrom(post.theme_color ?? module?.accent ?? REPORT_BLUE, post.theme_color ? undefined : module?.on_color)
-  const data = toMemoData(post, module)
+  const data = toMemoData(withoutHero(post), module)
   const elements = flatElements(post.body as { sections?: never[]; elements?: unknown[] }) as ReportBlock[]
 
   /** Một dòng thông số, sửa tại chỗ; phần còn lại của thân bài giữ nguyên. */
@@ -2628,19 +2755,41 @@ function ReportEditor({
               <Fragment key={run.kind === 'text' ? `t${run.at[0]}` : `b${run.at}`}>
                 <div style={{ gridColumn: 1, gridRow: ri + 1, minWidth: 0 }}>
                   {run.kind === 'text' ? (
-                    <div className="awc-rep-block">
-                      <div className="awc-gutter">
-                        <InsertPlus
-                          open={menuAt === run.at[0]}
-                          onToggle={() => setMenuAt(menuAt === run.at[0] ? null : run.at[0])}
-                          onInsert={(t) => insertBlock(run.at[1], t)}
-                        />
-                      </div>
-                      <LiveText
-                        text={run.text}
-                        onCommit={(md) => setBlocks(writeRun(blocks, run.at, md))}
-                      />
-                    </div>
+                    /*
+                     * Report là khuôn cuối còn dựng dải chữ bằng tay, và nó
+                     * thiếu đúng ba thứ năm khuôn kia đã có: máng `+` bám con
+                     * trỏ, chỗ thả khối, và hai móc xoá xuyên qua khối. Chủ
+                     * site báo cái thứ ba: *"delete keyboard cứ tới các khối
+                     * là dừng"* — đúng, ở report thì dừng thật.
+                     */
+                    <LiveRun
+                      text={run.text}
+                      menuOpen={menuAt === run.at[0]}
+                      onToggleMenu={() => setMenuAt(menuAt === run.at[0] ? null : run.at[0])}
+                      onCommit={(md) => setBlocks(writeRun(blocks, run.at, md))}
+                      onInsertAfterLine={(lineIndex, t) => insertBlock(run.at[0] + lineIndex, t)}
+                      drop={{
+                        active: dragFrom !== null,
+                        onDrop: (lineIndex) => drop(run.at[0] + lineIndex),
+                      }}
+                      /*
+                       * Xoá qua `requestRemove`, không xoá thẳng: khối bị nuốt
+                       * có thể đang mang ghi chú cạnh bài, và nó phải hỏi chỗ
+                       * để chữ ấy đi — y như bấm Delete trên tay nắm.
+                       */
+                      onBackspaceAtStart={() => {
+                        const before = run.at[0] - 1
+                        if (before < 0) return false
+                        requestRemove(before)
+                        return true
+                      }}
+                      onDeleteAtEnd={() => {
+                        const after = run.at[1] + 1
+                        if (after >= blocks.length) return false
+                        requestRemove(after)
+                        return true
+                      }}
+                    />
                   ) : (
                     <div
                       onDragOver={(e) => {
@@ -3639,12 +3788,19 @@ function ImageBlockEditor({
 }) {
   const [uploading, setUploading] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+  const dropRef = useRef<HTMLDivElement>(null)
+  const frame = useFraming()
 
   async function handleFile(file: File) {
     setUploading(true)
     try {
+      // Ô thả ảnh chính là khối ảnh, nên hình dạng của nó là hình dạng khung
+      // cắt — đo tại chỗ thay vì ghi cứng một tỉ lệ sẽ lệch khi cột đổi rộng.
+      const box = dropRef.current?.getBoundingClientRect()
+      const ratio = box && box.height > 0 ? box.width / box.height : 16 / 9
       const { url } = await uploadImage(file)
       onChange({ imageUrl: url })
+      onChange({ imageUrl: await frame({ url, name: 'Khối ảnh trong thân bài', ratio }) })
     } finally {
       setUploading(false)
     }
@@ -3653,6 +3809,7 @@ function ImageBlockEditor({
   return (
     <div>
       <div
+        ref={dropRef}
         className="awc-image-drop"
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => {
@@ -3663,9 +3820,7 @@ function ImageBlockEditor({
         onClick={() => inputRef.current?.click()}
         style={{
           height: 160,
-          background: imageUrl ? undefined : palette.tint,
-          backgroundImage: imageUrl ? `url(${imageUrl})` : undefined,
-          backgroundSize: 'cover',
+          ...fillStyle(imageUrl, palette.tint),
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',

@@ -9,7 +9,10 @@ import {
   type PostSummary,
   type StatusAction,
 } from '../lib/apiClient'
-import { ink, paper } from '../../design/tokens'
+import { ink, paper, sans } from '../../design/tokens'
+import { Button } from '../../design/Button'
+import { IconPlus } from '../../design/icons'
+import { useToast } from '../../design/Toaster'
 import { useNav } from '../../lib/nav'
 
 const TABS: (PostStatus | 'all')[] = ['all', 'draft', 'published', 'archived', 'deleted']
@@ -51,21 +54,30 @@ export function PostsPanel({
   onChanged?: () => void
 }) {
   const nav = useNav()
+  const toast = useToast()
   const [filter, setFilter] = useState<PostStatus | 'all'>('all')
   const [posts, setPosts] = useState<PostSummary[]>([])
   // Counts come from an unfiltered fetch so the stat row stays accurate no
   // matter which filter is active.
   const [allPosts, setAllPosts] = useState<PostSummary[]>([])
-  const [error, setError] = useState<string | null>(null)
+  /*
+   * Only whether the last load failed, not the message. The message is a toast
+   * now — an error drawn inside the list pushed the rows down, and a save that
+   * worked said nothing at all. What the flag is still needed for is the empty
+   * state below: "Chưa có bài nào" is a lie when the truth is that the fetch
+   * never came back.
+   */
+  const [failed, setFailed] = useState(false)
 
   const load = useCallback(async () => {
     try {
       setPosts(await listPosts(filter))
-      setError(null)
+      setFailed(false)
     } catch (e) {
-      setError((e as Error).message)
+      setFailed(true)
+      toast.fromError(e)
     }
-  }, [filter])
+  }, [filter, toast])
 
   const loadCounts = useCallback(async () => {
     try {
@@ -89,13 +101,14 @@ export function PostsPanel({
       await Promise.all([load(), loadCounts()])
       onChanged?.()
     } catch (e) {
-      setError((e as Error).message)
+      toast.fromError(e)
     }
   }
 
   /**
-   * Ghim, ngay tại danh sách. Bài ghim dẫn đầu module của nó, nên đổi một bài
-   * là đổi thứ tự cả module — nạp lại danh sách sau khi ghi.
+   * Ghim, ngay tại danh sách. Bài ghim dẫn đầu module của nó ngoài site, và
+   * dẫn đầu chính danh sách này trong quản trị — nên đổi một bài là đổi thứ
+   * tự, nạp lại danh sách sau khi ghi.
    */
   async function handlePin(id: string, pinned: boolean) {
     try {
@@ -103,7 +116,7 @@ export function PostsPanel({
       await load()
       onChanged?.()
     } catch (e) {
-      setError((e as Error).message)
+      toast.fromError(e)
     }
   }
 
@@ -129,9 +142,19 @@ export function PostsPanel({
       onChanged?.()
       nav.editPost(created)
     } catch (e) {
-      setError((e as Error).message)
+      toast.fromError(e)
     }
   }
+
+  /*
+   * Ghim đưa bài lên đầu danh sách.
+   *
+   * Máy chủ trả về theo `updated_at` giảm dần và không biết gì về ghim: ghim
+   * vốn chỉ nói về thứ tự trong module khi đọc ngoài site. Chủ site muốn nó
+   * nói cả ở đây, nên xếp lại tại chỗ. `sort` của JavaScript ổn định, nên các
+   * bài không ghim giữ nguyên thứ tự máy chủ đã chọn, chỉ nhóm ghim nhấc lên.
+   */
+  const ordered = [...posts].sort((a, b) => Number(b.pinned) - Number(a.pinned))
 
   const stats = [
     { n: allPosts.length, label: 'tổng' },
@@ -140,100 +163,126 @@ export function PostsPanel({
   ]
 
   return (
-    <div>
+    /*
+     * Danh sách căn giữa, có trần bề rộng. Trước đây nó chạy hết bề ngang cửa
+     * sổ, nên trên màn rộng tiêu đề và cụm nút cuối dòng cách nhau cả gang tay
+     * và mắt phải đi hết chiều ngang mới nối được hai đầu của cùng một bài.
+     */
+    <div style={{ maxWidth: 940, margin: '0 auto' }}>
+      {/*
+        Counts, then the filter row with the one action that starts something.
+        All three used to share a single wrapping flex row, so on a narrow
+        window "+ Bài mới" wrapped down under the filters and read as a sixth
+        filter.
+      */}
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 24, paddingBottom: 14 }}>
+        {stats.map((s) => (
+          <div key={s.label}>
+            <b style={{ fontSize: 19, display: 'block', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+              {s.n}
+            </b>
+            <span
+              style={{
+                fontFamily: sans,
+                fontSize: 9,
+                textTransform: 'uppercase',
+                letterSpacing: '.14em',
+                color: ink.faint,
+              }}
+            >
+              {s.label}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {/*
+        Sticky: the list runs well past one screen, and the filter you are on
+        plus the one button that starts a post are exactly what you want while
+        scrolling it.
+      */}
       <div
         style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 20,
           display: 'flex',
           alignItems: 'center',
+          gap: 16,
+          background: paper.cream,
           borderBottom: `1px solid ${paper.rule}`,
           marginBottom: 4,
           flexWrap: 'wrap',
         }}
       >
-        {TABS.map((t) => (
-          <button
-            key={t}
-            data-testid={`tab-${t}`}
-            onClick={() => setFilter(t)}
-            aria-pressed={filter === t}
-            style={{
-              fontSize: 11.5,
-              padding: '14px 4px',
-              marginRight: 26,
-              color: filter === t ? ink.base : ink.muted,
-              fontWeight: filter === t ? 500 : 400,
-              background: 'none',
-              border: 'none',
-              borderBottom: `2px solid ${filter === t ? ink.green : 'transparent'}`,
-              cursor: 'pointer',
-            }}
-          >
-            {TAB_LABELS[t]}
-          </button>
-        ))}
-
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 22 }}>
-          {stats.map((s) => (
-            <div key={s.label} style={{ textAlign: 'right' }}>
-              <b style={{ fontSize: 15, display: 'block', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
-                {s.n}
-              </b>
-              <span
-                style={{
-                  fontSize: 9,
-                  textTransform: 'uppercase',
-                  letterSpacing: '.14em',
-                  color: ink.faint,
-                }}
-              >
-                {s.label}
-              </span>
-            </div>
+        {/*
+          Filters stay underlined text rather than becoming bordered buttons.
+          The screen already has a row of pills above it for the three places
+          you can stand; a second row of identical pills would say those two
+          rows are the same kind of choice, and they are not.
+        */}
+        <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+          {TABS.map((t) => (
+            <button
+              key={t}
+              type="button"
+              className="ab-filter"
+              data-testid={`tab-${t}`}
+              onClick={() => setFilter(t)}
+              aria-pressed={filter === t}
+              style={{
+                fontFamily: sans,
+                fontSize: 11.5,
+                padding: '13px 4px',
+                marginRight: 26,
+                color: filter === t ? ink.base : ink.muted,
+                fontWeight: filter === t ? 500 : 400,
+                background: 'none',
+                border: 'none',
+                borderBottom: `2px solid ${filter === t ? ink.green : 'transparent'}`,
+                cursor: 'pointer',
+              }}
+            >
+              {TAB_LABELS[t]}
+            </button>
           ))}
-          {/*
-            "+ Ghi chú" wrote a row into `notes`, a second table Ghi 01 reads
-            alongside its posts. It was a second way to start writing that
-            skipped the tag, the template and the title — and a note filed under
-            Ghi 01 is a post filed under Ghi 01, which the form below already
-            does. The table stays; nothing new is written into it.
-          */}
-          <button
-            onClick={() => nav.newPost()}
-            style={{
-              fontSize: 11.5,
-              letterSpacing: '.08em',
-              textTransform: 'uppercase',
-              border: 'none',
-              cursor: 'pointer',
-              background: ink.green,
-              color: '#fff',
-              padding: '9px 16px',
-              borderRadius: 4,
-            }}
-          >
-            + Bài mới
-          </button>
+        </div>
+
+        {/*
+          "+ Ghi chú" wrote a row into `notes`, a second table Ghi 01 reads
+          alongside its posts. It was a second way to start writing that
+          skipped the tag, the template and the title — and a note filed under
+          Ghi 01 is a post filed under Ghi 01, which the form below already
+          does. The table stays; nothing new is written into it.
+        */}
+        <div style={{ marginLeft: 'auto', paddingBottom: 8 }}>
+          <Button level="primary" onClick={() => nav.newPost()} icon={<IconPlus size={16} />}>
+            Bài mới
+          </Button>
         </div>
       </div>
 
-      {error && (
-        <div style={{ color: '#8E1E42', fontSize: 12.5, padding: '10px 0' }}>{error}</div>
-      )}
+      {/*
+        Thẻ rời nhau, không còn là các dòng dính liền ngăn bằng một nét kẻ.
+        Khoảng hở là của danh sách chứ không phải của thẻ: thẻ tự đặt lề dưới
+        thì thẻ cuối cùng luôn thừa ra một khoảng không ai cần.
+      */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 10 }}>
+        {ordered.map((p) => (
+          <PostCard
+            key={p.id}
+            post={p}
+            onAction={handleAction}
+            onEdit={(id) => nav.editPost(id)}
+            onCopy={handleCopy}
+            onPin={handlePin}
+          />
+        ))}
+      </div>
 
-      {posts.map((p) => (
-        <PostCard
-          key={p.id}
-          post={p}
-          onAction={handleAction}
-          onEdit={(id) => nav.editPost(id)}
-          onCopy={handleCopy}
-          onPin={handlePin}
-        />
-      ))}
-
-      {posts.length === 0 && !error && (
+      {ordered.length === 0 && (
         <div style={{ color: ink.faint, fontSize: 12.5, padding: '40px 0', textAlign: 'center' }}>
-          Chưa có bài nào.
+          {failed ? 'Không tải được danh sách bài.' : 'Chưa có bài nào.'}
         </div>
       )}
     </div>

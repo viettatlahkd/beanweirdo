@@ -19,8 +19,18 @@
  */
 import { bodyToMarkdown, markdownToBlocks, type ReportBlock } from 'post-renderer'
 
-/** Khối nào markdown viết ra rồi đọc lại được mà không mất gì. */
-const FLOWING = new Set(['paragraph', 'heading', 'list', 'quote'])
+/**
+ * Khối nào là **chữ**, tức nhập chung một ô với đoạn văn bên cạnh.
+ *
+ * Trích dẫn từng nằm trong đây: markdown viết nó ra được (`> `) nên gộp vào
+ * dải chữ là gộp được. Nhưng chủ site đòi kéo nó: *"quote cũng phải được di
+ * chuyển chứ"* — mà thứ nằm trong dải chữ thì không có tay nắm, vì dải chữ là
+ * một dòng chảy chứ không phải một chuỗi khối.
+ *
+ * Nên trích dẫn ra đứng riêng. Gõ `> ` vẫn tạo ra nó như cũ; chỉ khác là lúc
+ * ghi lại, nó tách khỏi dải thành một khối có tay nắm, đúng như ảnh và bảng.
+ */
+const FLOWING = new Set(['paragraph', 'heading', 'list'])
 
 export type Run =
   /** Một dải chữ liền, gộp từ các khối `at[0]`…`at[1]`. */

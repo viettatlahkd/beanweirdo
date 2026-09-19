@@ -4,6 +4,7 @@ import { ModulesProvider } from './data/useModules'
 import { PostAddressProvider, usePostAddresses } from './data/usePostAddresses'
 import { SiteCopyProvider, useSiteCopy } from './data/useSiteCopy'
 import { ink, layout, paper, sans } from './design/tokens'
+import { ToastProvider } from './design/Toaster'
 import { AuthGate, AuthProvider } from './lib/auth'
 import { useIsMobile } from './lib/useIsMobile'
 import { AREA_HOME, isPrivate, screenAllowed } from './lib/area'
@@ -20,7 +21,7 @@ import {
   type Variant,
 } from './lib/nav'
 import { Editor } from './admin/screens/Editor'
-import { NewPostWizard } from './admin/screens/NewPostWizard'
+import { NewPostDialog } from './admin/components/NewPostDialog'
 import { Preview } from './admin/screens/Preview'
 import { Archive } from './screens/Archive'
 import { Article } from './screens/Article'
@@ -28,7 +29,6 @@ import { Cms } from './screens/Cms'
 import { Hours } from './screens/Hours'
 import { IndexScreen } from './screens/IndexScreen'
 import { Landing } from './screens/Landing'
-import { Logic } from './screens/Logic'
 import { ModuleScreen } from './screens/ModuleScreen'
 import { Notes } from './screens/Notes'
 
@@ -62,6 +62,13 @@ export function App() {
 
   return (
     <SettingsContext.Provider value={settings}>
+      {/*
+        One place the whole app reports from. Every screen used to hold its own
+        error in state and draw it its own way, and a save that worked said
+        nothing at all — which matters most on Sửa nội dung, where the fields
+        write themselves on blur.
+      */}
+      <ToastProvider>
       <AuthProvider>
         <SiteCopyProvider>
           <RouteWordsSync onAdopt={onWords} />
@@ -72,6 +79,7 @@ export function App() {
           </ModulesProvider>
         </SiteCopyProvider>
       </AuthProvider>
+      </ToastProvider>
     </SettingsContext.Provider>
   )
 }
@@ -101,6 +109,14 @@ function Routed({ where, go }: { where: Where; go: (next: Where) => void }) {
   const area = where.area
   const posts = usePostAddresses()
   const [variant, setVariant] = useState<Variant>('A')
+  /*
+   * Bắt đầu một bài là một hộp thoại, không phải một trang.
+   *
+   * Nên nó là state chứ không phải một địa chỉ: `/ad-post/create` đã bỏ. Hai
+   * chỗ gọi `nav.newPost()` — danh sách bài và hàng module trong tab Cấu hình
+   * — không đổi gì, chúng mở hộp thoại ngay trên màn đang đứng.
+   */
+  const [newPostOpen, setNewPostOpen] = useState(false)
 
   const at = useCallback((next: Omit<Where, 'area'>) => go({ ...next, area }), [go, area])
 
@@ -135,10 +151,9 @@ function Routed({ where, go }: { where: Where; go: (next: Where) => void }) {
       goHours: () => at({ screen: 'hours' }),
       goNotes: () => at({ screen: 'notes' }),
       goCms: (tab?: CmsTab) => at({ screen: 'cms', tab }),
-      goLogic: () => at({ screen: 'logic' }),
       openModule,
       openArticle,
-      newPost: () => at({ screen: 'postNew' }),
+      newPost: () => setNewPostOpen(true),
       editPost,
       previewPost,
       toggleVariant: () => {
@@ -169,8 +184,6 @@ function Routed({ where, go }: { where: Where; go: (next: Where) => void }) {
       {shown === 'article' && <Article />}
       {shown === 'archive' && <Archive />}
       {shown === 'cms' && <Cms />}
-      {shown === 'logic' && <Logic />}
-      {shown === 'postNew' && <NewPostWizard />}
       {shown === 'postEdit' && postId && <Editor postId={postId} />}
       {shown === 'postPreview' && postId && <Preview postId={postId} />}
     </div>
@@ -192,6 +205,16 @@ function Routed({ where, go }: { where: Where; go: (next: Where) => void }) {
           <AuthGate>
             <Sidebar />
             {body}
+            {/* Bên trong AuthGate: nó ghi vào database, nên nó chỉ tồn tại ở
+                nơi đã đăng nhập, y như trước khi nó còn là một trang. */}
+            <NewPostDialog
+              open={newPostOpen}
+              onClose={() => setNewPostOpen(false)}
+              onCreated={(id) => {
+                setNewPostOpen(false)
+                editPost(id)
+              }}
+            />
           </AuthGate>
         ) : (
           <>

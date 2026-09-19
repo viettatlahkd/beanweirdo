@@ -41,6 +41,25 @@ describe('applyCorsHeaders', () => {
     expect(headers['Access-Control-Allow-Origin']).toBe('https://admin.example.com')
     expect(headers['Access-Control-Allow-Headers']).toContain('Authorization')
     expect(headers['Access-Control-Allow-Methods']).toContain('GET')
+    /*
+     * PUT từng bị bỏ quên, và hai endpoint dùng nó — `PUT /api/modules`,
+     * `PUT /api/posts`, cả hai là đổi thứ tự — chết hẳn trên trình duyệt:
+     * preflight trả về danh sách không có PUT nên request không bao giờ rời
+     * khỏi máy, máy chủ không thấy lỗi nào để mà báo.
+     */
+    expect(headers['Access-Control-Allow-Methods']).toContain('PUT')
+  })
+
+  /*
+   * Without a Max-Age the browser preflights again every five seconds, and
+   * because every admin call carries `Authorization` — which is not
+   * CORS-safelisted — that is every call, GETs included. Two round trips per
+   * click instead of one, which is what made the admin feel slow.
+   */
+  it('lets the browser cache the preflight, so one click is one round trip', () => {
+    const { req, res, headers } = mockReqRes('GET')
+    applyCorsHeaders(req, res)
+    expect(headers['Access-Control-Max-Age']).toBe('86400')
   })
 })
 

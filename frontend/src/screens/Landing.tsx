@@ -3,10 +3,11 @@ import { splitAesc } from '../content/site'
 import { landingModules, useModules } from '../data/useModules'
 import type { ModuleImageFields } from '../admin/moduleForm'
 import { coverStyle } from '../lib/imageFocus'
-import type { PostRow } from '../data/usePublishedPosts'
+import { groupByModule } from '../lib/postGroups'
 import { usePublishedPosts } from '../data/usePublishedPosts'
 import { useSiteCopy } from '../data/useSiteCopy'
 import { garden, ink, layout, paper, prose, sans, serif, wrapTitle } from '../design/tokens'
+import type { ModuleLayout } from '../content/layouts'
 import { Hover } from '../lib/Hover'
 import { Rise } from '../lib/Rise'
 import { useNav } from '../lib/nav'
@@ -73,17 +74,6 @@ const bandGrid = (columns: string, rows: string, mob: boolean): CSSProperties =>
   ...(mob ? { marginLeft: -layout.padMobile, marginRight: -layout.padMobile } : null),
 })
 
-/** Groups posts by `module_id`, preserving each module's `sort_order`. */
-function groupByModule(posts: PostRow[]): Map<string, PostRow[]> {
-  const map = new Map<string, PostRow[]>()
-  for (const p of posts) {
-    const list = map.get(p.module_id)
-    if (list) list.push(p)
-    else map.set(p.module_id, [p])
-  }
-  return map
-}
-
 /**
  * Each module gets its own image arrangement, and every tile breaks its grid
  * cell by a different amount — the band's top and bottom edges are deliberately
@@ -112,7 +102,9 @@ export function ImageBand({ m }: { m: ModuleImageFields }) {
    */
   const mm = (desktop: string, mobile: string) => (mob ? mobile : desktop)
 
-  if (m.layout === 'band') {
+  const band = BAND_OF[m.layout as ModuleLayout] ?? 'sequence'
+
+  if (band === 'band') {
     return (
       <div style={bandGrid(mob ? 'minmax(0,1.6fr) minmax(0,1fr)' : 'minmax(0,1.9fr) minmax(0,1fr) 30px', '1.5fr 1fr', mob)}>
         <Rise
@@ -176,7 +168,7 @@ export function ImageBand({ m }: { m: ModuleImageFields }) {
     )
   }
 
-  if (m.layout === 'specimen') {
+  if (band === 'specimen') {
     return (
       <div style={bandGrid('minmax(0,1.7fr) minmax(0,1fr)', '1fr 1.4fr', mob)}>
         <Rise
@@ -259,6 +251,26 @@ export function ImageBand({ m }: { m: ModuleImageFields }) {
       </Rise>
     </div>
   )
+}
+
+/**
+ * Which of the three bands above a layout draws.
+ *
+ * The blocks are a chain of `if`s rather than a component map because they
+ * share `mm` and their cell margins are deliberately uneven — see the note on
+ * `ImageBand`. A chain falls through silently, so before this record a fourth
+ * layout would simply have drawn as `sequence`, on the homepage, without a
+ * word from anyone.
+ *
+ * `Record<ModuleLayout, …>` is the guard: add a row to `content/layouts.ts`
+ * and the compiler stops here until someone decides what the homepage does
+ * with it. Which is the point of the whole registry — a new layout should
+ * make the compiler ask the questions, not make the site answer them wrongly.
+ */
+const BAND_OF: Record<ModuleLayout, 'band' | 'specimen' | 'sequence'> = {
+  band: 'band',
+  specimen: 'specimen',
+  sequence: 'sequence',
 }
 
 /**

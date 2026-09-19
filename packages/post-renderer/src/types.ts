@@ -258,10 +258,11 @@ export type LongformPostData = {
 // Unlike the other templates this one belongs to Ghi 01, not to a module.
 // ---------------------------------------------------------------------------
 
-/** A span inside a memo line; `em` is the design's amber emphasis. */
+/** A span inside a memo line; `em` nghiêng và `b` đậm, cùng màu nhấn của bài. */
 export type MemoRun = {
   t: string
   em?: boolean
+  b?: boolean
   /** a value worth pausing on — drawn with a hairline under it, not a colour */
   u?: boolean
 }

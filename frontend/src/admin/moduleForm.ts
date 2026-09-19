@@ -1,4 +1,5 @@
 import { pageSlotCount } from '../lib/modulePageImages'
+import { layoutSpec } from '../content/layouts'
 
 /**
  * The image columns, described structurally so both shapes of the module row
@@ -113,16 +114,9 @@ function modulePageImages(layout: string): ImageGroup {
     columns: 'module-page',
     label: 'Ảnh trên trang module',
     slots,
-    names: NAMES_BY_LAYOUT[layout] ?? slots.map((n) => `Ảnh ${n}`),
+    names: layoutSpec(layout).pageImageNames,
     preview: ['module-page'],
   }
-}
-
-/** The design names these cells; the editor should call them the same thing. */
-const NAMES_BY_LAYOUT: Record<string, readonly string[]> = {
-  band: ['Ảnh hero'],
-  specimen: ['Ảnh lớn', 'Ảnh giữa', 'Ảnh dưới trái', 'Ảnh dưới phải'],
-  sequence: ['01 — nhân xanh', '02 — vàng', '03 — first crack', '04 — phát triển'],
 }
 
 /** Ghi 01 closes with two images — a small one, then a larger one. */

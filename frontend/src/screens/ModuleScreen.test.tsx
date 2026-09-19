@@ -15,7 +15,13 @@ vi.mock('../lib/nav', () => ({
 }))
 
 const useModules = vi.fn()
-vi.mock('../data/useModules', () => ({ useModules: (...args: unknown[]) => useModules(...args) }))
+// Chỉ thay mỗi cái hook. `indexModules` là hàm lọc thuần, và ModuleScreen gọi
+// nó để biết module nào được phép liệt kê — giả nốt nó thì bài test không còn
+// kiểm thứ nó định kiểm.
+vi.mock('../data/useModules', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../data/useModules')>()),
+  useModules: (...args: unknown[]) => useModules(...args),
+}))
 
 const usePublishedPosts = vi.fn()
 vi.mock('../data/usePublishedPosts', () => ({
@@ -90,6 +96,48 @@ describe('ModuleScreen', () => {
     await userEvent.click(screen.getByText('Senses of Flavors'))
     // The second argument records the door the reader came through — see `Origin`.
     expect(openArticle).toHaveBeenCalledWith('post-1', 'module')
+  })
+
+  it('lists the modules filed inside a branch, and opens one on click', async () => {
+    // Trước bản này, mở một nhánh chỉ chạy truy vấn bài viết của riêng nó —
+    // không có bài nào — nên nhánh chứa cả site hiện ra như một trang rỗng.
+    const openModule = vi.fn()
+    useNav.mockReturnValue({ moduleId: 'bean', goHome, openArticle, openModule })
+    useSettings.mockReturnValue({ showPlates: true })
+    useModules.mockReturnValue({
+      data: [
+        { ...sensory, id: 'bean', title: 'bean weirdo' },
+        { ...sensory, id: 'roasting', title: 'Roasting', parent_id: 'bean', sort_order: 2 },
+      ],
+      loading: false,
+      error: null,
+    })
+    usePublishedPosts.mockReturnValue({ data: [], loading: false, error: null })
+
+    render(<ModuleScreen />)
+
+    expect(await screen.findByText('Roasting')).toBeInTheDocument()
+    await userEvent.click(screen.getByText('Roasting'))
+    expect(openModule).toHaveBeenCalledWith('roasting')
+  })
+
+  it('leaves a private branch off the page above it', async () => {
+    useNav.mockReturnValue({ moduleId: 'bean', goHome, openArticle, openModule: vi.fn() })
+    useSettings.mockReturnValue({ showPlates: true })
+    useModules.mockReturnValue({
+      data: [
+        { ...sensory, id: 'bean', title: 'bean weirdo', visibility: 'public' },
+        { ...sensory, id: 'nhap', title: 'Nháp', parent_id: 'bean', visibility: 'private' },
+      ],
+      loading: false,
+      error: null,
+    })
+    usePublishedPosts.mockReturnValue({ data: [], loading: false, error: null })
+
+    render(<ModuleScreen />)
+
+    expect(await screen.findByText('bean weirdo')).toBeInTheDocument()
+    expect(screen.queryByText('Nháp')).not.toBeInTheDocument()
   })
 
   it('shows a loading state while modules are still resolving', () => {

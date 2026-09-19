@@ -12,6 +12,8 @@ import { garden, ink, paper, prose, sans, serif, wrapTitle } from '../design/tok
 import { Hover } from '../lib/Hover'
 import { rowPad, useNav, useSettings } from '../lib/nav'
 import { openPost } from '../lib/openPost'
+import { groupByModule } from '../lib/postGroups'
+import { ancestorsOf, buildTree, flattenTree } from '../lib/contentTree'
 import { openModule } from '../lib/moduleTarget'
 import { useIsMobile } from '../lib/useIsMobile'
 
@@ -51,17 +53,6 @@ function usePlates() {
     caption: captions[i],
     fill: photos[i] ? coverStyle(photos[i]) : { background: p.bg },
   }))
-}
-
-/** Groups posts by `module_id`, preserving each module's `sort_order`. */
-function groupByModule(posts: PostRow[]): Map<string, PostRow[]> {
-  const map = new Map<string, PostRow[]>()
-  for (const p of posts) {
-    const list = map.get(p.module_id)
-    if (list) list.push(p)
-    else map.set(p.module_id, [p])
-  }
-  return map
 }
 
 type ModulesProps = { modules: ModuleRow[]; postsByModule: Map<string, PostRow[]> }
@@ -146,10 +137,23 @@ function Ledger({ modules, postsByModule }: ModulesProps) {
         </div>
       )}
 
-      {modules.map((m) => {
+      {/*
+        Depth-first, and each level in from the one above it. A section that
+        sits inside another has to read as inside it; listing every module at
+        the same size in one flat run is what made the contents page a list of
+        modules rather than a table of contents.
+      */}
+      {flattenTree(buildTree(modules)).map(({ row: m, depth }) => {
         const entries = postsByModule.get(m.id) ?? []
         return (
-          <div key={m.id} style={{ padding: mob ? '34px 20px 6px' : '44px 56px 8px', maxWidth: 1240 }}>
+          <div
+            key={m.id}
+            style={{
+              padding: mob ? '34px 20px 6px' : '44px 56px 8px',
+              paddingLeft: (mob ? 20 : 56) + depth * (mob ? 14 : 28),
+              maxWidth: 1240,
+            }}
+          >
             <div
               style={{
                 display: 'flex',
@@ -165,7 +169,9 @@ function Ledger({ modules, postsByModule }: ModulesProps) {
                 onClick={() => openModule(nav, m)}
                 style={{
                   fontFamily: serif,
-                  fontSize: mob ? 34 : 44,
+                  // Smaller each level in, with a floor: the indent alone stops
+                  // reading as hierarchy once a title wraps.
+                  fontSize: Math.max(mob ? 22 : 26, (mob ? 34 : 44) - depth * (mob ? 5 : 8)),
                   lineHeight: 1,
                   letterSpacing: '-.028em',
                   margin: 0,
@@ -310,8 +316,15 @@ function Columns({ modules, postsByModule }: ModulesProps) {
           gap: 0,
         }}
       >
-        {modules.map((m) => {
+        {/*
+          Three equal tiles is the point of this variant, so a nested module
+          keeps its own tile rather than shrinking inside its parent's. What
+          says where it belongs is the line above its name; the order is
+          depth-first, so it sits right after the module holding it.
+        */}
+        {flattenTree(buildTree(modules)).map(({ row: m, depth }) => {
           const entries = postsByModule.get(m.id) ?? []
+          const holder = depth > 0 ? ancestorsOf(modules, m.id).at(-1)?.title : undefined
           return (
             <div
               key={m.id}
@@ -327,7 +340,7 @@ function Columns({ modules, postsByModule }: ModulesProps) {
                   marginBottom: 10,
                 }}
               >
-                {m.concept}
+                {holder ? `trong ${holder} · ${m.concept}` : m.concept}
               </div>
               <h2
           lang="en"

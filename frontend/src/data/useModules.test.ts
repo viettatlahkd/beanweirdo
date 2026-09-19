@@ -96,3 +96,32 @@ describe('module surfaces', () => {
     expect(landingModules([mod('sensory', undefined as never, undefined as never, 1)])).toHaveLength(1)
   })
 })
+
+describe('trang chủ and the tree', () => {
+  const mod = (id: string, parent_id: string | null = null, sort_order = 1) =>
+    ({ id, kind: 'normal', visibility: 'public', parent_id, sort_order }) as never
+
+  it('is unchanged while nothing has been filed inside anything', () => {
+    const flat = [mod('sensory', null, 1), mod('biochem', null, 2), mod('roasting', null, 3)]
+    expect(landingModules(flat).map((m) => m.id)).toEqual(['sensory', 'biochem', 'roasting'])
+  })
+
+  it('shows only the branches once the tree has a second level', () => {
+    // Roasting is introduced by bean weirdo's own page. Listing it on the
+    // front page as well puts the same thing there twice, under two headings.
+    const tree = [mod('bean', null, 1), mod('roasting', 'bean', 2), mod('biochem', 'bean', 3)]
+    expect(landingModules(tree).map((m) => m.id)).toEqual(['bean'])
+  })
+
+  it('keeps a module whose parent it cannot see, rather than losing it', () => {
+    // A private branch is filtered out before this runs. Its children must not
+    // disappear with it — an unreachable module reads as a deleted one.
+    const orphaned = [mod('roasting', 'rieng-tu', 1), mod('ghi', null, 2)]
+    expect(landingModules(orphaned).map((m) => m.id)).toEqual(['roasting', 'ghi'])
+  })
+
+  it('reads a module row from before the migration, which has no such column', () => {
+    const old = [{ id: 'sensory', kind: 'normal', visibility: 'public', sort_order: 1 }] as never[]
+    expect(landingModules(old)).toHaveLength(1)
+  })
+})

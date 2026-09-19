@@ -11,7 +11,7 @@ import { LinkNode } from '@lexical/link'
 import { ListItemNode, ListNode } from '@lexical/list'
 import { $convertFromMarkdownString, $convertToMarkdownString } from '@lexical/markdown'
 import { HeadingNode, QuoteNode } from '@lexical/rich-text'
-import { $createParagraphNode, $createTextNode, $getRoot, createEditor, TextNode } from 'lexical'
+import { $createParagraphNode, $createTextNode, $getRoot, createEditor } from 'lexical'
 import { SITE_TRANSFORMERS, unescapeSite } from './liveMarkdown'
 
 const NODES = [HeadingNode, QuoteNode, ListNode, ListItemNode, LinkNode, CodeNode, CodeHighlightNode]
@@ -43,15 +43,20 @@ describe('phương ngữ markdown của site trong mặt soạn', () => {
     expect(roundTrip('chữ _số đo_ chữ')).toBe('chữ _số đo_ chữ')
   })
 
-  it('cả ba cách viết chữ nhấn đều về một mối', () => {
-    for (const written of ['chữ *nhấn* chữ', 'chữ **nhấn** chữ', 'chữ __nhấn__ chữ']) {
-      // `runs.ts` đọc cả ba là `em`, nên ghi ra bằng cách nào cũng đúng nghĩa.
-      expect(roundTrip(written)).toBe('chữ **nhấn** chữ')
-    }
+  it('đậm và nghiêng là hai dấu rời nhau, không gộp về một', () => {
+    // Trước 2026-09-19 cả ba đều ghi ra `**`: site chỉ có một mức nhấn. Chủ
+    // site tách đôi, nên mỗi dấu phải giữ đúng nghĩa của nó qua một vòng.
+    expect(roundTrip('chữ *nghiêng* chữ')).toBe('chữ *nghiêng* chữ')
+    expect(roundTrip('chữ **đậm** chữ')).toBe('chữ **đậm** chữ')
+    expect(roundTrip('chữ ***cả hai*** chữ')).toBe('chữ ***cả hai*** chữ')
+  })
+
+  it('`__x__` vẫn là đậm, vì nơi khác viết đậm như vậy', () => {
+    expect(roundTrip('chữ __đậm__ chữ')).toBe('chữ **đậm** chữ')
   })
 
   it('số đo và chữ nhấn chồng nhau thì giữ cả hai', () => {
-    expect(roundTrip('chữ *_cả hai_* chữ')).toBe('chữ **_cả hai_** chữ')
+    expect(roundTrip('chữ **_cả hai_** chữ')).toBe('chữ **_cả hai_** chữ')
   })
 
   it('gạch dưới giữa chữ không phải là số đo', () => {
@@ -82,7 +87,7 @@ describe('phương ngữ markdown của site trong mặt soạn', () => {
   it('sửa đi sửa lại không đẻ thêm dấu gạch chéo', () => {
     // Lexical thoát `_` thành `\_` lúc ghi, rồi lần sau thoát nốt dấu `\`.
     // Không gỡ thì mỗi lần mở bài ra là số gạch chéo nhân đôi.
-    let text = 'tên_file_dài và *nhấn*'
+    let text = 'tên_file_dài và **nhấn**'
     for (let i = 0; i < 3; i++) text = roundTrip(text)
     expect(text).toBe('tên_file_dài và **nhấn**')
     expect(text).not.toContain('\\')
@@ -96,15 +101,15 @@ describe('unescapeSite', () => {
   })
 })
 
-describe('một mức nhấn', () => {
-  it('chữ nghiêng đổi thành chữ nhấn ngay tại gốc', () => {
-    // `Cmd+I` và HTML dán vào đều đặt được `italic`, thứ không có chỗ ghi ra.
+describe('hai mức nhấn', () => {
+  it('chữ nghiêng ở lại nghiêng, không bị đổi thành đậm', () => {
+    /*
+     * `OneEmphasis` trong `LiveText` từng đổi mọi `italic` thành `bold` ngay
+     * tại gốc, vì `italic` không có chỗ ghi ra và sẽ biến mất lúc rời ô. Nay
+     * nó có chỗ ghi (`*x*`), nên phép đổi ấy bỏ đi — và đây là bài kiểm rằng
+     * nó đã bỏ thật.
+     */
     const ed = editor()
-    ed.registerNodeTransform(TextNode, (node) => {
-      if (!node.hasFormat('italic')) return
-      node.toggleFormat('italic')
-      if (!node.hasFormat('bold')) node.toggleFormat('bold')
-    })
     ed.update(
       () => {
         const node = $createTextNode('nghiêng')
@@ -115,8 +120,9 @@ describe('một mức nhấn', () => {
     )
     ed.getEditorState().read(() => {
       const node = $getRoot().getAllTextNodes()[0]
-      expect(node.hasFormat('italic')).toBe(false)
-      expect(node.hasFormat('bold')).toBe(true)
+      expect(node.hasFormat('italic')).toBe(true)
+      expect(node.hasFormat('bold')).toBe(false)
+      expect(unescapeSite($convertToMarkdownString(SITE_TRANSFORMERS))).toBe('*nghiêng*')
     })
   })
 })

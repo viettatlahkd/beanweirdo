@@ -1,5 +1,3 @@
-import { readFileSync } from 'node:fs'
-import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   toArticleData,
@@ -39,18 +37,6 @@ const post = {
 const mod = { title: 'sensory', accent: '#F2A0A5', on_color: '#3B2A2B' }
 
 describe('one shape, one adapter', () => {
-  it('the API answers in the database\'s own field names', () => {
-    // If someone reintroduces the renaming, the two doors stop matching and a
-    // second adapter becomes necessary again. Catch it at the source.
-    const src = readFileSync(join(__dirname, '../../../backend/lib/posts.ts'), 'utf8')
-    const summary = /export interface PostSummary \{([\s\S]*?)\n\}/.exec(src)?.[1] ?? ''
-    const detail = /export interface PostDetail extends PostSummary \{([\s\S]*?)\n\}/.exec(src)?.[1] ?? ''
-    const fields = [...`${summary}\n${detail}`.matchAll(/^\s{2}(\w+)[?]?:/gm)].map((m) => m[1])
-
-    expect(fields.length).toBeGreaterThan(15)
-    expect(fields.filter((f) => /[A-Z]/.test(f))).toEqual([])
-  })
-
   const cases = {
     cards: () => toCardsData(post, mod),
     report: () => toReportData(post, mod),

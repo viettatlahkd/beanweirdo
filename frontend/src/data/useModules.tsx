@@ -1,7 +1,12 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { rootsOf } from '../lib/contentTree'
+import { watchModules } from './modulesChanged'
+import { byBandThenOrder } from '../lib/moduleOrder'
+export { byBandThenOrder } from '../lib/moduleOrder'
+import type { ModuleLayout } from '../content/layouts'
+export type { ModuleLayout }
 import { supabase } from '../lib/supabaseClient'
 
-export type ModuleLayout = 'band' | 'specimen' | 'sequence'
 
 /** A row from the public `modules` table — see backend/supabase/migrations/0001 and 0007. */
 export type ModuleRow = {
@@ -40,6 +45,16 @@ export type ModuleRow = {
   page_shot4: string
   sort_order: number
   /**
+   * The module this one sits inside; null at the top level — see migration
+   * 0025 and `lib/contentTree.ts`.
+   *
+   * Optional rather than `string | null` because a database that has not run
+   * 0025 yet answers without the column at all, and every screen still has to
+   * draw. Nothing reads this field directly: ask `contentTree` instead, so the
+   * rules about missing parents and cycles live in one place.
+   */
+  parent_id?: string | null
+  /**
    * 'normal' — a reading module, one of the gallery on the homepage.
    * 'special' — extended content that already has a page of its own (Ghi 01,
    * Ghi 02). Still a module, and still listed — see `visibility` for what
@@ -66,11 +81,23 @@ function useModulesQuery(enabled: boolean): UseModulesResult {
   const [data, setData] = useState<ModuleRow[]>([])
   const [loading, setLoading] = useState(enabled)
   const [error, setError] = useState<string | null>(null)
+  const [epoch, setEpoch] = useState(0)
+
+  // Khu quản trị ghi module qua một API khác hẳn đường đọc này, nên không có
+  // gì báo cho nó biết thứ tự vừa đổi. Nghe `modulesChanged` là chỗ duy nhất
+  // nối hai đường lại.
+  useEffect(() => {
+    if (!enabled) return
+    return watchModules(() => setEpoch((n) => n + 1))
+  }, [enabled])
 
   useEffect(() => {
     if (!enabled) return
     let cancelled = false
-    setLoading(true)
+    // Chỉ lần đầu mới bật `loading`. Lượt hỏi lại chạy ngay trước mắt người
+    // đang nhìn thanh bên, mà xoá trắng danh sách một nhịp thì trông như hỏng
+    // chứ không như vừa cập nhật.
+    if (epoch === 0) setLoading(true)
 
     supabase
       .from('modules')
@@ -91,7 +118,7 @@ function useModulesQuery(enabled: boolean): UseModulesResult {
     return () => {
       cancelled = true
     }
-  }, [enabled])
+  }, [enabled, epoch])
 
   return { data, loading, error }
 }
@@ -138,23 +165,19 @@ export function useModules(): UseModulesResult {
 /** Anything a signed-out reader may see listed. */
 const isPublic = (m: ModuleRow) => m.visibility !== 'private'
 
-/**
- * Normal modules always sort above special ones; inside each band the order is
- * whatever the CMS set. Sorting on `sort_order` alone would let a renumbered
- * reading module fall below the journals.
- */
-const byBandThenOrder = (a: ModuleRow, b: ModuleRow) => {
-  const band = Number(a.kind === 'special') - Number(b.kind === 'special')
-  return band !== 0 ? band : a.sort_order - b.sort_order
-}
 
 /**
  * Trang chủ — the gallery of reading modules, one full-bleed colour block
  * each. Special modules are left out because they are not reading modules,
  * not because they are hidden.
+ *
+ * Only the top level of the tree: a module filed inside another one is
+ * introduced by its parent's page, and showing it here as well would put the
+ * same thing on the front page twice under two different headings. While every
+ * `parent_id` is null this is the whole list, which is what it was before.
  */
 export const landingModules = (modules: ModuleRow[]) =>
-  modules.filter((m) => m.kind !== 'special' && isPublic(m)).sort(byBandThenOrder)
+  rootsOf(modules.filter((m) => m.kind !== 'special' && isPublic(m))).sort(byBandThenOrder)
 
 /** Mục lục — everything public, the journals included, in sidebar order. */
 export const indexModules = (modules: ModuleRow[]) =>

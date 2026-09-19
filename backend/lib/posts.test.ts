@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { computeStatusTransition, InvalidStatusTransitionError, toPostDetail, toPostSummary, type PostRow } from './posts.js'
+import { computeStatusTransition, firstImageIn, InvalidStatusTransitionError, toPostDetail, toPostSummary, type PostRow } from './posts.js'
 
 function row(overrides: Partial<PostRow> = {}): PostRow {
   return {
@@ -22,6 +22,7 @@ function row(overrides: Partial<PostRow> = {}): PostRow {
     status: 'draft',
     template: 'article',
     hero_image_url: null,
+    thumbnail_url: null,
     published_at: null,
     deleted_at: null,
     previous_status: null,
@@ -106,33 +107,49 @@ describe('computeStatusTransition', () => {
   })
 })
 
-describe('toPostSummary — thumbnail', () => {
-  const row = (hero: string | null, body: unknown) =>
-    toPostSummary({
-      id: 'p1', module_id: 'biochem', n: '05', en: 'Lipid', vi: 'mô tả',
-      kind: 'note', date_label: '2025.12', slug: null, body, hero_caption: null,
-      lead: null, pull_quote: null, further_reading: null, sort_order: 5,
-      created_at: 'x', status: 'published', template: 'longform',
-      hero_image_url: hero, published_at: null, deleted_at: null,
-      previous_status: null, updated_at: 'x',
-    } as never)
-
-  it('prefers the cover when the post has one', () => {
-    expect(row('/hero.png', [{ k: 'fig', src: '/inside.png' }]).thumbnail_url).toBe('/hero.png')
-  })
-
-  it('falls back to the first picture inside the post', () => {
+describe('firstImageIn', () => {
+  /*
+   * Cái này chạy lúc **ghi** bài, không phải lúc đọc danh sách. Kết quả của nó
+   * nằm trong cột `posts.thumbnail_url`; trước đây nó chạy trên đường trả về,
+   * và đó là lý do câu select phải kéo cả `body` theo.
+   */
+  it('finds the first picture inside the post', () => {
     // A long-form piece carries its figures in `body`; without this the listing
     // shows a blank swatch for an article full of images.
-    expect(row(null, [{ k: 'p' }, { k: 'fig', src: '/first.png' }]).thumbnail_url).toBe('/first.png')
+    expect(firstImageIn([{ k: 'p' }, { k: 'fig', src: '/first.png' }])).toBe('/first.png')
   })
 
   it('reaches into a nested block', () => {
-    expect(row(null, [{ k: 'aside', items: [{ k: 'fig', src: '/nested.png' }] }]).thumbnail_url).toBe('/nested.png')
+    expect(firstImageIn([{ k: 'aside', items: [{ k: 'fig', src: '/nested.png' }] }])).toBe('/nested.png')
+  })
+
+  it('takes imageUrl where a template uses that name instead', () => {
+    expect(firstImageIn([{ k: 'card', imageUrl: '/card.png' }])).toBe('/card.png')
+  })
+
+  it('is null when there is no picture, and when there is no body', () => {
+    expect(firstImageIn([{ n: '01', title: 'Apple' }])).toBeNull()
+    expect(firstImageIn(null)).toBeNull()
+  })
+})
+
+describe('toPostSummary — thumbnail', () => {
+  const summaryOf = (hero: string | null, stored: string | null) =>
+    toPostSummary(row({ hero_image_url: hero, thumbnail_url: stored }))
+
+  it('prefers the cover when the post has one', () => {
+    expect(summaryOf('/hero.png', '/inside.png').thumbnail_url).toBe('/hero.png')
+  })
+
+  /*
+   * Chỉ nửa sau được lưu. Ghép ở đây chứ không gộp vào cột, để cột chỉ phụ
+   * thuộc vào `body` — một đầu vào thì chỉ có một lúc phải tính lại.
+   */
+  it('falls back to the picture stored from the body', () => {
+    expect(summaryOf(null, '/inside.png').thumbnail_url).toBe('/inside.png')
   })
 
   it('is null when the post has no picture at all', () => {
-    expect(row(null, [{ n: '01', title: 'Apple' }]).thumbnail_url).toBeNull()
-    expect(row(null, null).thumbnail_url).toBeNull()
+    expect(summaryOf(null, null).thumbnail_url).toBeNull()
   })
 })

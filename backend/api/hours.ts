@@ -100,19 +100,18 @@ async function handleCreateKind(req: VercelRequest, res: VercelResponse): Promis
     return
   }
 
-  res.status(200).json(await bothSystems())
+  res.status(200).json({ name: name.trim(), system })
 }
 
-/** Both tag systems as they now stand — the answer every kinds route gives. */
-async function bothSystems(): Promise<{ kinds: string[]; projects: string[] }> {
-  const supabase = getSupabase()
-  const { data } = await supabase.from('activity_kinds').select('*').order('sort_order', { ascending: true })
-  const rows = (data ?? []) as ActivityKindRow[]
-  return {
-    kinds: rows.filter((k) => k.system === 'task').map((k) => k.name),
-    projects: rows.filter((k) => k.system === 'project').map((k) => k.name),
-  }
-}
+/*
+ * Ba route tag xưa nay kết thúc bằng một lượt đọc lại cả bảng `activity_kinds`
+ * để trả về hai danh sách đầy đủ. Lượt ấy bỏ đi được: người gọi vừa nói cho máy
+ * chủ biết nó muốn gì, và `useHours` đã tự cập nhật danh sách của nó trước khi
+ * gửi — `addTag`, `rawRename`, `removeTag` đều đặt state trước rồi mới gọi. Đọc
+ * lại chỉ để ghi đè một giá trị y hệt.
+ *
+ * Nên mỗi route nay trả về đúng thứ nó vừa làm. `bothSystems` không còn ai gọi.
+ */
 
 /** `{ system, name }` off the query string, or null with the 400 already sent. */
 function tagTarget(req: VercelRequest, res: VercelResponse): { name: string; system: TagSystem } | null {
@@ -146,7 +145,7 @@ async function handleRenameKind(req: VercelRequest, res: VercelResponse): Promis
     return
   }
   if (next === target.name) {
-    res.status(200).json(await bothSystems())
+    res.status(200).json({ name: next, system: target.system })
     return
   }
 
@@ -181,7 +180,7 @@ async function handleRenameKind(req: VercelRequest, res: VercelResponse): Promis
     return
   }
 
-  res.status(200).json(await bothSystems())
+  res.status(200).json({ name: next, system: target.system })
 }
 
 /** `[{ to, ids }]` off a body, validated. Returns null with the 400 sent. */
@@ -217,16 +216,19 @@ async function applyMoves(
   moves: Array<{ to: string | null; ids: string[] }>,
 ): Promise<string | null> {
   const supabase = getSupabase()
-  for (const move of moves) {
-    // `kind` is NOT NULL — "no tag" for a task is the unclassified bucket.
-    const value = move.to === null && column === 'kind' ? UNCLASSIFIED : move.to
-    const { error } = await supabase
-      .from('hour_logs')
-      .update({ [column]: value })
-      .in('id', move.ids)
-    if (error) return error.message
-  }
-  return null
+  // One statement per move, but all of them in flight at once: the moves name
+  // disjoint sets of ids, so nothing here depends on the order they land in.
+  const writes = await Promise.all(
+    moves.map((move) => {
+      // `kind` is NOT NULL — "no tag" for a task is the unclassified bucket.
+      const value = move.to === null && column === 'kind' ? UNCLASSIFIED : move.to
+      return supabase
+        .from('hour_logs')
+        .update({ [column]: value })
+        .in('id', move.ids)
+    }),
+  )
+  return writes.find((w) => w.error)?.error?.message ?? null
 }
 
 /**
@@ -293,7 +295,7 @@ async function handleDeleteKind(req: VercelRequest, res: VercelResponse): Promis
     return
   }
 
-  res.status(200).json({ ...(await bothSystems()), affected })
+  res.status(200).json({ affected })
 }
 
 /**

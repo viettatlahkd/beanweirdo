@@ -368,7 +368,10 @@ export function Notes() {
     [ghi01?.feature_cells],
   )
   // Posts filed under Ghi 01 — the memo lives here, as a post like any other.
-  const { data: filed, loading, error } = usePublishedPosts({ moduleId: 'ghi01' })
+  // `withBody` bật ở đúng màn này: bài filed dưới Ghi 01 mở ra **ngay tại chỗ**
+  // (xem `OpenedPost`), nên danh sách phải cầm sẵn nội dung. Mọi màn khác dẫn
+  // sang trang riêng của bài, và trang ấy tự đọc bằng `usePost`.
+  const { data: filed, loading, error } = usePublishedPosts({ moduleId: 'ghi01', withBody: true })
   const { tags } = useTags()
   // Tag là chữ chủ site tự đặt, nên không còn là bốn giá trị đóng nữa.
   const [noteFilter, setNoteFilter] = useState<string>('tất cả')
