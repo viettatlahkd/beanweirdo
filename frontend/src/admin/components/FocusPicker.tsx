@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import { readFocus, stripFocus, withFocus, type Focus } from '../../lib/imageFocus'
 import { ink, paper, sans, serif } from '../../design/tokens'
-import { Hover } from '../../lib/Hover'
+import { Button } from '../../design/Button'
+import { radius } from '../../design/controls'
 
 const backdrop: CSSProperties = {
   position: 'fixed',
   inset: 0,
-  background: 'rgba(24,22,17,.62)',
+  background: 'rgba(18,16,12,.78)',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
@@ -16,9 +17,17 @@ const backdrop: CSSProperties = {
 
 const card: CSSProperties = {
   background: paper.cream,
-  border: `1px solid ${paper.rule}`,
+  /*
+   * `ink.border` chứ không phải `paper.rule`: `paper.rule` là gạch chia trong
+   * một trang giấy, nhạt nhất trong bộ — đúng cái chủ site gọi là "nhạt nhạt".
+   * Viền của mọi control khu quản trị dùng `ink.border`, và một hộp thoại là
+   * một control chứ không phải một trang.
+   */
+  border: `1px solid ${ink.border}`,
+  outline: 'none',
+  borderRadius: radius,
   padding: 22,
-  maxWidth: 640,
+  maxWidth: 680,
   width: '100%',
   maxHeight: '100%',
   overflowY: 'auto',
@@ -39,25 +48,13 @@ const sub: CSSProperties = {
   color: ink.faint,
 }
 
-const button = (primary: boolean): CSSProperties => ({
-  fontFamily: sans,
-  fontSize: 10,
-  letterSpacing: '.16em',
-  textTransform: 'uppercase',
-  padding: '9px 18px',
-  cursor: 'pointer',
-  border: primary ? `1px solid ${ink.base}` : `1px solid ${paper.rule}`,
-  background: primary ? ink.base : 'transparent',
-  color: primary ? paper.cream : ink.soft,
-})
-
 /**
- * Snap the photo to an edge of its frame, or to the middle of it.
+ * Snap the frame to an edge of the photo, or to the middle of it.
  *
  * Dragging is for the in-between; most of the time what someone wants is the
  * top of a portrait or the left of a panorama, and hunting for the edge by hand
- * is worse than saying "that edge". Only the axis with something to reveal is
- * offered — a photo that fits its frame across cannot be aligned across.
+ * is worse than saying "that edge". Only the axis with something to choose is
+ * offered — a photo the same shape as its frame has nothing to leave out.
  */
 function AlignRow({
   axis,
@@ -86,7 +83,7 @@ function AlignRow({
       : [
           { at: 0, title: 'Sát trên', d: 'M3 4h14M10 17V8M6.5 11.5L10 8l3.5 3.5' },
           { at: 50, title: 'Giữa dọc', d: 'M3 10h14M10 3v4M10 17v-4' },
-          { at: 100, title: 'Sát dưới', d: 'M3 16h14M10 3v9M6.5 8.5L10 12l3.5-3.5' },
+          { at: 100, title: 'Sát dưới', d: 'M3 16h14M10 3v9M6.5 8.5L10 12l-3.5-3.5' },
         ]
 
   return (
@@ -108,8 +105,9 @@ function AlignRow({
               width: 30,
               height: 28,
               padding: 0,
+              borderRadius: radius,
               cursor: enabled ? 'pointer' : 'default',
-              border: `1px solid ${on ? ink.base : paper.rule}`,
+              border: `1px solid ${on ? ink.base : ink.border}`,
               background: on ? paper.hover : 'transparent',
               color: on ? ink.base : ink.soft,
             }}
@@ -124,16 +122,45 @@ function AlignRow({
   )
 }
 
+/** Rule-of-thirds, drawn inside the frame. Two lines each way, hairline. */
+function Thirds() {
+  const line: CSSProperties = { position: 'absolute', background: 'rgba(255,255,255,.55)' }
+  return (
+    <>
+      {[33.333, 66.667].map((p) => (
+        <div key={`v${p}`} style={{ ...line, top: 0, bottom: 0, left: `${p}%`, width: 1 }} />
+      ))}
+      {[33.333, 66.667].map((p) => (
+        <div key={`h${p}`} style={{ ...line, left: 0, right: 0, top: `${p}%`, height: 1 }} />
+      ))}
+    </>
+  )
+}
+
 /**
- * Place a photo inside the frame it will fill.
+ * Choose which part of a photo a fixed cell keeps.
  *
- * The frame is the cell's real shape, measured from the layout rather than
- * guessed, and the photo fills it the same way it will on the page. Dragging
- * moves the photo behind the frame, which is exactly what a focal point does —
- * so what the admin arranges here is what the page draws.
+ * The old version of this showed the photo already cropped: the frame was the
+ * whole picture you could see, and you dragged the photo behind it. That hides
+ * the one thing the decision is about — what is being left out. So now the
+ * *whole* photo is on screen, dimmed, and the bright rectangle over it is the
+ * part the cell will keep. Drag the rectangle, or snap it to an edge.
  *
- * Only an axis that actually overflows can move. A photo wider than its frame
- * pans sideways and stays put vertically, because there is nothing to reveal.
+ * The rectangle can only travel along the axis the photo has spare, because a
+ * cell is filled edge to edge: a photo wider than its cell slides sideways and
+ * is pinned top and bottom, and there is nothing to decide on that axis.
+ *
+ * What comes out is a focal point, not a crop — one `#focus=x,y` on the URL,
+ * which every frame the photo lands in reads the same way. That is why the
+ * other frames are drawn alongside: a cover photo is cut 172×130 in one module
+ * and 3:2 in another, and a point that works in one can behead the subject in
+ * the other.
+ *
+ * Zoom is deliberately absent. A zoom would have to be stored per frame and
+ * applied by every cell that draws the photo, and the cells draw it as a
+ * background — `background-size: cover` cannot express "cover, then a bit
+ * closer" without knowing each cell's shape. That is a bigger change than this
+ * one and does not belong in the dialog that only places the photo.
  */
 export function FocusPicker({
   url,
@@ -148,7 +175,7 @@ export function FocusPicker({
   ratio: number
   name: string
   /**
-   * Những khung khác cùng tấm ảnh này sẽ rơi vào, bày cạnh khung kéo.
+   * Những khung khác cùng tấm ảnh này sẽ rơi vào, bày cạnh khung chính.
    *
    * Ảnh bìa của một bài không chỉ hiện một chỗ: trang module dạng dải cắt nó
    * thành 172×130, dạng specimen cắt 3:2. Căn xong ở một khung mà chỗ kia mất
@@ -161,7 +188,8 @@ export function FocusPicker({
 }) {
   const [focus, setFocus] = useState<Focus>(() => readFocus(url))
   const [natural, setNatural] = useState<{ w: number; h: number } | null>(null)
-  const frame = useRef<HTMLDivElement>(null)
+  const stage = useRef<HTMLDivElement>(null)
+  const box = useRef<HTMLDivElement>(null)
   const drag = useRef<{ x: number; y: number; from: Focus } | null>(null)
 
   useEffect(() => {
@@ -178,42 +206,70 @@ export function FocusPicker({
     return () => window.removeEventListener('keydown', esc)
   }, [onCancel])
 
-  /**
-   * How much of the photo hangs outside the frame, per axis, as a fraction of
-   * the frame. Nothing hanging out means nothing to pan — a focal point on that
-   * axis would move the photo not at all, so the axis is held still.
+  /*
+   * Khoá cuộn trang phía sau, và trả lại đúng giá trị cũ chứ không đặt về ''.
+   * Màn sửa có thể đang tự khoá cuộn vì việc khác; ghi đè bằng '' là cướp mất
+   * trạng thái của nó.
+   */
+  useEffect(() => {
+    const was = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = was
+    }
+  }, [])
+
+  // Bàn phím phải vào trong hộp, nếu không Esc và Tab vẫn nằm ở trang phía sau.
+  useEffect(() => {
+    box.current?.focus()
+  }, [])
+
+  /*
+   * Until the photo has loaded its own shape is unknown, so assume it matches
+   * the cell: the frame then covers everything and nothing moves, which is the
+   * honest picture of "there is nothing to decide yet" rather than a guess that
+   * jumps when the real number arrives.
    */
   const photoRatio = natural ? natural.w / natural.h : ratio
   const panX = photoRatio > ratio
   const panY = photoRatio < ratio
+  const movable = panX || panY
+
+  /*
+   * The frame is the biggest rectangle of the cell's shape that fits inside the
+   * photo, measured as a percentage of the photo so the numbers hold at any
+   * size the dialog happens to be. The axis that comes out at 100% is the one
+   * with no slack, and it is exactly the axis that cannot be panned.
+   */
+  const frameW = panX ? (ratio / photoRatio) * 100 : 100
+  const frameH = panY ? (photoRatio / ratio) * 100 : 100
+  const frameLeft = ((100 - frameW) * focus.x) / 100
+  const frameTop = ((100 - frameH) * focus.y) / 100
 
   const move = useCallback(
     (clientX: number, clientY: number) => {
-      const el = frame.current
+      const el = stage.current
       const start = drag.current
       if (!el || !start) return
       const box = el.getBoundingClientRect()
 
       /*
-       * A photo filling its frame hangs over on one axis. Sliding the focal
-       * point from 0% to 100% walks the photo across exactly that overhang, so
-       * a pixel of drag is worth `100 / overhang` percent — which makes the
-       * photo travel with the pointer instead of racing ahead of it.
+       * The frame walks across the photo's spare width as the focal point goes
+       * 0 → 100, so a pixel of drag is worth `100 / spare` percent and the
+       * frame keeps up with the pointer instead of racing ahead of it.
        */
-      const shownW = panY ? box.width : box.height * photoRatio
-      const shownH = panX ? box.height : box.width / photoRatio
-      const overX = Math.max(1, shownW - box.width)
-      const overY = Math.max(1, shownH - box.height)
+      const spareX = Math.max(1, (box.width * (100 - frameW)) / 100)
+      const spareY = Math.max(1, (box.height * (100 - frameH)) / 100)
 
-      // Dragging right should reveal what is off to the left, so the sign flips.
-      const dx = panX ? ((start.x - clientX) / overX) * 100 : 0
-      const dy = panY ? ((start.y - clientY) / overY) * 100 : 0
+      // The frame follows the pointer, so no sign flip: this is not the photo.
+      const dx = panX ? ((clientX - start.x) / spareX) * 100 : 0
+      const dy = panY ? ((clientY - start.y) / spareY) * 100 : 0
       setFocus({
         x: Math.max(0, Math.min(100, start.from.x + dx)),
         y: Math.max(0, Math.min(100, start.from.y + dy)),
       })
     },
-    [panX, panY, photoRatio],
+    [panX, panY, frameW, frameH],
   )
 
   useEffect(() => {
@@ -230,34 +286,79 @@ export function FocusPicker({
     }
   })
 
-  const movable = panX || panY
+  function grab(e: { clientX: number; clientY: number }) {
+    if (!movable) return
+    drag.current = { x: e.clientX, y: e.clientY, from: focus }
+    // A fresh object so the effect above re-runs and the listeners go on.
+    setFocus({ ...focus })
+  }
 
   return (
     <div style={backdrop} onPointerDown={(e) => e.target === e.currentTarget && onCancel()}>
-      <div style={card} onPointerDown={(e) => e.stopPropagation()}>
+      <div
+        ref={box}
+        role="dialog"
+        aria-modal="true"
+        aria-label={name}
+        tabIndex={-1}
+        style={card}
+        /*
+         * `pointerdown` chứ không phải `click`: bôi đen chữ trong hộp rồi thả
+         * chuột ra ngoài cũng đếm là một `click` trên nền, và như vậy là đóng
+         * mất hộp đang dùng.
+         */
+        onPointerDown={(e) => e.stopPropagation()}
+      >
         <div style={sub}>{name}</div>
-        <div style={title}>Đặt ảnh vào khung</div>
+        <div style={title}>Chọn phần ảnh giữ lại</div>
 
+        {/*
+          The stage is the photo and nothing else: it takes the photo's own
+          shape, so every pixel inside it is picture and the maths below can
+          treat the box and the photo as the same rectangle.
+        */}
         <div
-          ref={frame}
-          onPointerDown={(e) => {
-            if (!movable) return
-            drag.current = { x: e.clientX, y: e.clientY, from: focus }
-            setFocus({ ...focus })
-          }}
+          ref={stage}
+          data-testid="focus-stage"
+          onPointerDown={grab}
           style={{
-            marginTop: 16,
-            aspectRatio: String(ratio),
-            width: '100%',
-            border: `1px solid ${paper.rule}`,
+            position: 'relative',
+            margin: '16px auto 0',
+            aspectRatio: String(photoRatio),
+            maxWidth: '100%',
+            maxHeight: '52vh',
+            borderRadius: radius,
+            overflow: 'hidden',
+            backgroundColor: ink.base,
             backgroundImage: `url(${stripFocus(url)})`,
-            backgroundSize: 'cover',
+            backgroundSize: 'contain',
             backgroundRepeat: 'no-repeat',
-            backgroundPosition: `${focus.x}% ${focus.y}%`,
-            cursor: movable ? 'grab' : 'default',
+            backgroundPosition: 'center',
             touchAction: 'none',
+            cursor: movable ? 'grab' : 'default',
           }}
-        />
+        >
+          <div
+            data-testid="focus-frame"
+            style={{
+              position: 'absolute',
+              left: `${frameLeft}%`,
+              top: `${frameTop}%`,
+              width: `${frameW}%`,
+              height: `${frameH}%`,
+              /*
+                One enormous spreadless shadow dims everything outside the
+                frame. Four dimming rectangles would leave hairline seams where
+                they meet, and this cannot: it is one paint.
+              */
+              boxShadow: '0 0 0 9999px rgba(18,16,12,.66)',
+              outline: '1px solid rgba(255,255,255,.9)',
+              outlineOffset: -1,
+            }}
+          >
+            <Thirds />
+          </div>
+        </div>
 
         {previews && previews.length > 0 && (
           <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
@@ -266,7 +367,8 @@ export function FocusPicker({
                 <div
                   style={{
                     aspectRatio: String(p.ratio),
-                    border: `1px solid ${paper.rule}`,
+                    border: `1px solid ${ink.border}`,
+                    borderRadius: radius,
                     backgroundImage: `url(${stripFocus(url)})`,
                     backgroundSize: 'cover',
                     backgroundRepeat: 'no-repeat',
@@ -293,25 +395,15 @@ export function FocusPicker({
               ? `${natural.w}×${natural.h} · khung ${ratio.toFixed(2)}:1`
               : `khung ${ratio.toFixed(2)}:1`}
           </div>
-          <div style={{ display: 'flex', gap: 10 }}>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
             <AlignRow axis="x" value={focus.x} enabled={panX} onPick={(x) => setFocus({ ...focus, x })} />
             <AlignRow axis="y" value={focus.y} enabled={panY} onPick={(y) => setFocus({ ...focus, y })} />
-            <Hover
-              as="button"
-              onClick={onCancel}
-              style={button(false)}
-              hoverStyle={{ borderColor: ink.base, color: ink.base }}
-            >
+            <Button level="ghost" size="sm" onClick={onCancel}>
               Huỷ
-            </Hover>
-            <Hover
-              as="button"
-              onClick={() => onSave(withFocus(url, focus))}
-              style={button(true)}
-              hoverStyle={{ background: ink.green, borderColor: ink.green }}
-            >
+            </Button>
+            <Button level="primary" size="sm" onClick={() => onSave(withFocus(url, focus))}>
               Xong
-            </Hover>
+            </Button>
           </div>
         </div>
       </div>

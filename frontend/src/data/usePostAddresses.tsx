@@ -5,7 +5,7 @@ import { slugsFor, type Addressable } from '../lib/postSlug'
 import { supabase } from '../lib/supabaseClient'
 import type { Area } from '../lib/area'
 
-export type PostAddresses = {
+type PostAddresses = {
   /** The address of a post — its id back, until the book has loaded. */
   slugOf(id: string): string
   /** The post an address names, or null while the book is still loading. */

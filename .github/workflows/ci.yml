@@ -1,0 +1,119 @@
+# Until this existed, a pull request was checked by two Vercel builds and
+# nothing else — and a build succeeding says only that the code compiles.
+# `POST /api/posts` wrote a column that migration 0016 had dropped, so creating
+# any post failed, and it stayed that way because nothing ran the tests.
+#
+# Three jobs, not one. `npm test` used to typecheck all three projects and only
+# then start vitest; run back to back that is 12s + 36s. Split, the wall clock
+# is the slowest job, not the sum.
+#
+# `workflow_dispatch` is here because this repository had zero workflow runs of
+# anything until 2026-09-18 16:35 UTC, and finding that out took opening a pull
+# request. Why it sat idle is not established; what is established is that
+# since then both triggers work, merges by the `claude[bot]` App included (run
+# 2, `event: push` on `main` at 43d5ceb, success). The button is how the next
+# person checks in one click instead of by opening a pull request.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# A new push makes the run in progress pointless, so let it go.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      # `npm ci` and not `npm install`: the lockfile decides, and a run that
+      # quietly resolved different versions would not be testing what ships.
+      - run: npm ci
+      - run: npm run lint
+
+  types:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+
+  # Two shards, not two directory lists. `--shard` splits by file, so a new
+  # test file lands in one of them by itself; a split written as paths would
+  # drop anything added outside those paths, and drop it silently.
+  #
+  # Measured on 128 files: one job 36.7s, two shards 17.8s and 20.5s.
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+    name: test (${{ matrix.shard }}/2)
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run test:unit -- --shard=${{ matrix.shard }}/2
+
+  # Deploy only after the three checks above pass, and only for `main`. Vercel's
+  # own Git integration never produced a deployment for this repository — it is
+  # a fork of viettatlahkd/beanweirdo, and the two Vercel projects watch the
+  # upstream — so these jobs deploy straight from the fork with a token instead.
+  #
+  # `VERCEL_ORG_ID` is deliberately absent: the script derives it from the token
+  # (see .github/scripts/vercel-deploy.sh), so there is one less secret to keep
+  # in sync.
+  deploy-frontend:
+    needs: [lint, types, test]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    # A newer commit's deployment should win, but never by killing a deployment
+    # already in flight — half-deployed is worse than briefly stale.
+    concurrency:
+      group: deploy-frontend
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: .github/scripts/vercel-deploy.sh "$PROJECT_ID" frontend
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_FRONTEND }}
+
+  deploy-backend:
+    needs: [lint, types, test]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: deploy-backend
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: .github/scripts/vercel-deploy.sh "$PROJECT_ID" backend
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_BACKEND }}

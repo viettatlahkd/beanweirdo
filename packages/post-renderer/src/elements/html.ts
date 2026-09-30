@@ -68,11 +68,12 @@ export function htmlToMarkdown(html: string): string {
         return '\n'
       case 'STRONG':
       case 'B':
+        // Từ 2026-09-19 site có đậm và nghiêng rời nhau, nên thẻ nguồn nào về
+        // dấu nấy. Trước đó cả bốn thẻ về chung `**` vì chỉ có một mức nhấn.
+        return inner.trim() === '' ? inner : `**${inner}**`
       case 'EM':
       case 'I':
-        // Design chỉ có **một** mức nhấn, nên đậm và nghiêng về cùng một dấu.
-        // Vẽ hai mức khác nhau ở đây là hứa một thứ template không có.
-        return inner.trim() === '' ? inner : `**${inner}**`
+        return inner.trim() === '' ? inner : `*${inner}*`
       case 'U':
         return inner.trim() === '' ? inner : `_${inner}_`
       case 'A': {

@@ -46,6 +46,11 @@ describe('những thứ đi trọn một vòng', () => {
     expect(back[0]).toMatchObject({ type: 'table', table })
   })
 
+  it('ảnh bấm được giữ cả link đích', () => {
+    const { back } = roundTrip([{ type: 'image', caption: 'cận cảnh', imageUrl: 'https://a.com/x.jpg', href: 'https://b.com/bai' }])
+    expect(back[0]).toMatchObject({ type: 'image', caption: 'cận cảnh', imageUrl: 'https://a.com/x.jpg', href: 'https://b.com/bai' })
+  })
+
   it('ảnh giữ địa chỉ và chú thích', () => {
     const { back } = roundTrip([{ type: 'image', caption: 'cận cảnh', imageUrl: 'https://a.com/x.jpg' }])
     expect(back[0]).toMatchObject({ type: 'image', caption: 'cận cảnh', imageUrl: 'https://a.com/x.jpg' })

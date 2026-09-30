@@ -30,6 +30,27 @@ export const ink = {
   green: '#3E7A4E',
   /** anchor colour: quote block, deep accents */
   moss: '#2B4B33',
+  /**
+   * Viền của mọi control có viền: nút, ô nhập, tab, thẻ, menu.
+   *
+   * Trước đây mỗi cấp một màu — `#b5ae99` cho ghost, `#8c8674` cho secondary,
+   * `#ebe5d3` cho ô nhập — nên cái nhạt nhất gần như biến mất trên nền kem, và
+   * chủ site đọc cả bộ là "nhạt nhạt". Một màu, đủ đậm để thấy, và là nâu chứ
+   * không phải đen: đen là màu của nút primary, viền mà cũng đen thì nút đặc
+   * với nút rỗng trông như nhau.
+   */
+  border: '#5A4632',
+  /**
+   * Destructive ink, and the line that goes with it.
+   *
+   * Both were already in the back office — `#8E1E42` in six places and
+   * `#C25C7C` in nine — written out by hand each time, alongside four more
+   * reds that meant the same thing (`#B3413E`, `#A8443A`, `#773236`,
+   * `#8A3B41`). Naming them is what makes "Xoá" able to look different from
+   * "Sửa", which it did not.
+   */
+  danger: '#8E1E42',
+  dangerLine: '#C25C7C',
 } as const
 
 /** The five garden hues plus their supporting tints. */
@@ -45,41 +66,6 @@ export const garden = {
   leafTint2: '#CFE6C8',
   honeyTint: '#F9EBD2',
   honeyTint2: '#F3DCAE',
-} as const
-
-/** Practice — 01 / Hours runs its own cool grey-green language. */
-export const hoursTheme = {
-  bg: '#E9EBE4',
-  ink: '#212520',
-  muted: '#767C70',
-  soft: '#5E645A',
-  dim: '#8A8F84',
-  card: '#F7F7F2',
-  border: '#D3D6CB',
-  borderSoft: '#C6CABC',
-  track: '#DDE0D6',
-  accent: '#2E8C74',
-  cellIdle: '#F4F4EF',
-  cellDone: '#EAEEE4',
-  cellStrong: '#DDE3D6',
-  chartIdle: '#D3D6CB',
-  chartMid: '#9DBFAF',
-  onInk: '#F1F2EC',
-} as const
-
-/** Practice — 02 / Notes: cold white editorial, four ink colours. */
-export const notesTheme = {
-  bg: '#FCFCFA',
-  ink: '#12120F',
-  body: '#33332C',
-  soft: '#5A5A50',
-  mid: '#4A4A42',
-  muted: '#8A8A80',
-  faint: '#9A9A90',
-  ghost: '#B0B0A6',
-  arcStrong: '#E2E2DC',
-  arcSoft: '#E8E8E2',
-  carmine: '#C0143C',
 } as const
 
 /**

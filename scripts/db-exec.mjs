@@ -21,16 +21,28 @@ const here = dirname(fileURLToPath(import.meta.url))
 const envPath = resolve(here, '../backend/.env.local')
 
 function readEnv(key) {
-  const line = readFileSync(envPath, 'utf8')
-    .split('\n')
-    .find((l) => l.startsWith(key + '='))
+  // Phiên chạy từ xa là bản clone mới: `.env.local` bị gitignore nên không có
+  // ở đó. Thiếu file là chuyện bình thường, không phải lỗi — biến môi trường
+  // mới là đường chính, còn file chỉ là đường phụ cho máy chủ site.
+  let text
+  try {
+    text = readFileSync(envPath, 'utf8')
+  } catch {
+    return null
+  }
+  const line = text.split('\n').find((l) => l.startsWith(key + '='))
   return line ? line.slice(key.length + 1).trim().replace(/^["']|["']$/g, '') : null
 }
 
-const url = process.env.SUPABASE_DB_URL || readEnv('SUPABASE_DB_URL')
+// URL và URI: cùng một chuỗi, và Supabase gọi nó là "Connection string (URI)"
+// ngay trên dashboard — nên nửa số người đặt tên biến theo chữ hiện trên màn
+// hình. Một biến đặt đúng mà script không đọc thì hỏng y như chưa đặt, và lời
+// báo lỗi lại đi nói rằng thiếu thứ đang có.
+const KEYS = ['SUPABASE_DB_URL', 'SUPABASE_DB_URI']
+const url = KEYS.map((k) => process.env[k] || readEnv(k)).find(Boolean)
 if (!url) {
   console.error(
-    'Thiếu SUPABASE_DB_URL trong backend/.env.local.\n' +
+    `Thiếu ${KEYS.join(' hoặc ')} — trong môi trường, hoặc trong backend/.env.local.\n` +
       'Lấy ở Dashboard → Project Settings → Database → Connection string (URI).',
   )
   process.exit(2)

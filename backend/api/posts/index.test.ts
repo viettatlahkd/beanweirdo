@@ -70,6 +70,26 @@ describe('GET /api/posts', () => {
     }
   })
 
+  it('flags posts with edits waiting for Publish', async () => {
+    fromMock
+      .mockReturnValueOnce(queryBuilder({ data: [SAMPLE_ROW, { ...SAMPLE_ROW, id: 'p2' }], error: null }))
+      .mockReturnValueOnce(queryBuilder({ data: [{ post_id: 'p2' }], error: null }))
+    const res = mockRes()
+    await handler(mockReq({ method: 'GET', headers: authHeaders(token), query: {} }), res)
+    expect(fromMock).toHaveBeenNthCalledWith(2, 'post_drafts')
+    expect(res.body.posts.map((p: { has_draft: boolean }) => p.has_draft)).toEqual([false, true])
+  })
+
+  it('still lists posts before migration 0028 has run', async () => {
+    fromMock
+      .mockReturnValueOnce(queryBuilder({ data: [SAMPLE_ROW], error: null }))
+      .mockReturnValueOnce(queryBuilder({ data: null, error: { code: 'PGRST205', message: 'post_drafts not found' } }))
+    const res = mockRes()
+    await handler(mockReq({ method: 'GET', headers: authHeaders(token), query: {} }), res)
+    expect(res.statusCode).toBe(200)
+    expect(res.body.posts[0].has_draft).toBe(false)
+  })
+
   it('rejects an invalid status filter with 400', async () => {
     const req = mockReq({ method: 'GET', headers: authHeaders(token), query: { status: 'bogus' } })
     const res = mockRes()
@@ -203,6 +223,72 @@ describe('POST /api/posts', () => {
   })
 })
 
+describe('POST /api/posts — a tag written along with the post', () => {
+  /*
+   * "Bài mới" từng là hai lượt gọi từ trình duyệt: xin id của tag, rồi mới tạo
+   * bài. Hai lượt là hai preflight và hai lần đánh thức function trước khi màn
+   * soạn kịp mở. Nay nhãn đi kèm bài.
+   */
+  it('derives the tag id from the label and writes both', async () => {
+    const tags = queryBuilder({ data: null, error: null })
+    const insert = queryBuilder({ data: { id: 'new-post' }, error: null })
+    fromMock.mockReturnValueOnce(tags).mockReturnValueOnce(insert)
+
+    const res = mockRes()
+    await handler(
+      mockReq({
+        method: 'POST',
+        headers: authHeaders(signToken()),
+        body: { module_id: 'sensory', kindLabel: 'Ghi chép', en: 'Title', vi: '' },
+      }),
+      res,
+    )
+
+    expect(res.statusCode).toBe(201)
+    expect(tags.upsert).toHaveBeenCalledWith(
+      { id: 'ghi-chep', label: 'Ghi chép' },
+      { onConflict: 'id' },
+    )
+    // Bài đeo chính cái id vừa tính ra, không phải nhãn.
+    expect(insert.insert).toHaveBeenCalledWith(expect.objectContaining({ kind: 'ghi-chep' }))
+  })
+
+  it('still accepts a plain tag id, and then writes no tag', async () => {
+    const insert = queryBuilder({ data: { id: 'new-post' }, error: null })
+    fromMock.mockReturnValue(insert)
+
+    const res = mockRes()
+    await handler(
+      mockReq({
+        method: 'POST',
+        headers: authHeaders(signToken()),
+        body: { module_id: 'sensory', kind: 'essay', en: 'Title', vi: '' },
+      }),
+      res,
+    )
+
+    expect(res.statusCode).toBe(201)
+    expect(insert.insert).toHaveBeenCalledWith(expect.objectContaining({ kind: 'essay' }))
+    expect(fromMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('400s on a label with no letter or number in it', async () => {
+    const res = mockRes()
+    await handler(
+      mockReq({
+        method: 'POST',
+        headers: authHeaders(signToken()),
+        body: { module_id: 'sensory', kindLabel: '!!!', en: 'Title', vi: '' },
+      }),
+      res,
+    )
+
+    expect(res.statusCode).toBe(400)
+    expect(res.body.error).toMatch(/kindLabel/)
+    expect(fromMock).not.toHaveBeenCalled()
+  })
+})
+
 describe('PUT /api/posts', () => {
   it('requires a module_id', async () => {
     const res = mockRes()
@@ -280,7 +366,7 @@ describe('POST /api/posts — starting from a template', () => {
         queryBuilder({
           data: {
             template: 'memo',
-            body: [{ k: 'p', t: 'thân bài' }],
+            body: [{ k: 'p', t: 'thân bài' }, { k: 'fig', src: '/hat-ca-phe.jpg', ar: '1.5' }],
             lead: 'dẫn',
             hero_image_url: '/a.jpg',
             hero_caption: 'chú thích',
@@ -290,6 +376,7 @@ describe('POST /api/posts — starting from a template', () => {
           error: null,
         }),
       )
+      .mockReturnValueOnce(queryBuilder({ data: null, error: null }))
       .mockReturnValueOnce(insert)
 
     await handler(
@@ -303,14 +390,47 @@ describe('POST /api/posts — starting from a template', () => {
 
     const row = insert.insert.mock.calls[0][0] as Record<string, unknown>
     expect(row.template).toBe('memo')
-    expect(row.body).toEqual([{ k: 'p', t: 'thân bài' }])
+    // Text comes across; pictures stay with the original, leaving tinted frames.
+    expect(row.body).toEqual([{ k: 'p', t: 'thân bài' }, { k: 'fig', src: null, ar: '1.5' }])
     expect(row.lead).toBe('dẫn')
-    expect(row.hero_image_url).toBe('/a.jpg')
+    expect(row.hero_image_url).toBeNull()
+    expect(row.hero_caption).toBeNull()
+    expect(row.thumbnail_url).toBeNull()
     // A copy is a draft nobody has published or placed.
     expect(row.sort_order).toBeNull()
     expect(row).not.toHaveProperty('status')
     expect(row).not.toHaveProperty('pinned')
     expect(row).not.toHaveProperty('published_at')
+  })
+
+  it('copies the unpublished edits of a published post, not its live text', async () => {
+    const insert = queryBuilder({ data: { id: 'copy' }, error: null })
+    fromMock
+      .mockReturnValueOnce(
+        queryBuilder({
+          data: { template: 'memo', body: [{ k: 'p', t: 'cũ' }], lead: 'dẫn cũ', pull_quote: 'trích', further_reading: null },
+          error: null,
+        }),
+      )
+      .mockReturnValueOnce(queryBuilder({ data: { data: { body: [{ k: 'p', t: 'mới' }], lead: 'dẫn mới', en: 'Tên mới' } }, error: null }))
+      .mockReturnValueOnce(insert)
+
+    await handler(
+      mockReq({
+        method: 'POST',
+        body: { module_id: 'biochem', kind: 'note', en: 'Bản sao', vi: 'y', fromPostId: 'p1' },
+        headers: authHeaders(signToken()),
+      }),
+      mockRes(),
+    )
+
+    expect(fromMock).toHaveBeenNthCalledWith(2, 'post_drafts')
+    const row = insert.insert.mock.calls[0][0] as Record<string, unknown>
+    expect(row.body).toEqual([{ k: 'p', t: 'mới' }])
+    expect(row.lead).toBe('dẫn mới')
+    expect(row.pull_quote).toBe('trích')
+    // The copy's own title is the one typed in the dialog, never the draft's.
+    expect(row.en).toBe('Bản sao')
   })
 
   it('rejects a post id that does not exist', async () => {
@@ -369,5 +489,71 @@ describe('POST /api/posts — starting from a template', () => {
     )
 
     expect(insert.insert).toHaveBeenCalledWith(expect.objectContaining({ template: 'article', body: null }))
+  })
+})
+
+/*
+ * Cột `thumbnail_url` (xem docs/inbox/qa/2026-09-18-qa-39-thumbnail-url.sql).
+ *
+ * Trước đây danh sách bài kéo cả `body` về chỉ để tìm một tấm ảnh, nên mở
+ * /ad-post là tải toàn bộ nội dung mọi bài. Hai bài kiểm dưới đây khoá đúng
+ * điều ấy lại: câu select không được nhắc tới `body`, và giá trị ảnh phải được
+ * tính lúc **ghi** chứ không phải lúc đọc.
+ */
+describe('GET /api/posts — không kéo body về nữa', () => {
+  it('lấy thumbnail_url, và không hỏi body', async () => {
+    const builder = queryBuilder({ data: [SAMPLE_ROW], error: null })
+    fromMock.mockReturnValue(builder)
+
+    const req = mockReq({ method: 'GET', headers: authHeaders(token), query: {} })
+    const res = mockRes()
+    await handler(req, res)
+    expect(res.statusCode).toBe(200)
+
+    const columns = builder.select.mock.calls[0][0] as string
+    expect(columns).toContain('thumbnail_url')
+    expect(columns).not.toContain('body')
+  })
+})
+
+describe('POST /api/posts — ảnh đại diện tính lúc ghi', () => {
+  function createWith(startingBody: unknown) {
+    const template = queryBuilder({ data: { renderer: 'longform', body: startingBody }, error: null })
+    const insert = queryBuilder({ data: { id: 'new' }, error: null })
+    fromMock.mockReturnValueOnce(template).mockReturnValueOnce(insert)
+    return insert
+  }
+
+  it('lưu tấm ảnh đầu tiên của thân bài mà nó vừa ghi', async () => {
+    // Bài mới dựng từ một bài mẫu có sẵn ảnh bên trong.
+    const insert = createWith([{ k: 'p' }, { k: 'fig', src: '/from-template.png' }])
+
+    const req = mockReq({
+      method: 'POST',
+      headers: authHeaders(token),
+      body: { module_id: 'sensory', kind: 'essay', en: 'Bài mới', vi: '', templateId: 't-1' },
+    })
+    const res = mockRes()
+    await handler(req, res)
+    expect(res.statusCode).toBe(201)
+
+    const written = insert.insert.mock.calls[0][0] as Record<string, unknown>
+    expect(written.thumbnail_url).toBe('/from-template.png')
+  })
+
+  it('để trống khi bài mẫu không có ảnh nào', async () => {
+    const insert = createWith([{ k: 'p', text: 'chữ thôi' }])
+
+    const req = mockReq({
+      method: 'POST',
+      headers: authHeaders(token),
+      body: { module_id: 'sensory', kind: 'essay', en: 'Bài mới', vi: '', templateId: 't-1' },
+    })
+    const res = mockRes()
+    await handler(req, res)
+    expect(res.statusCode).toBe(201)
+
+    const written = insert.insert.mock.calls[0][0] as Record<string, unknown>
+    expect(written.thumbnail_url).toBeNull()
   })
 })

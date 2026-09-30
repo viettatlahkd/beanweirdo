@@ -9,6 +9,15 @@ cần biết. Kiến trúc, specs và nợ tài liệu nằm ở chỗ khác, c�
 npm test        # typecheck cả ba tsconfig, rồi vitest — chạy từ gốc repo
 ```
 
+`npm run lint` chạy cả `knip`: tệp, export hay phụ thuộc không ai dùng làm đỏ
+CI. Code thôi dùng thì xoá, đừng giữ lại "cho chắc". Script chạy tay khai trong
+`knip.json`.
+
+Mọi khối trong menu `+` phải vẽ trong `FlowThing` (`components/RowShell.tsx`) —
+đó là chỗ duy nhất giữ luật Enter / mũi tên / Backspace của thân bài.
+`Editor.contract.test.tsx` đi hết menu ở cả sáu khuôn, nên khối mới thiếu luật
+là test đỏ.
+
 Dev server: `.claude/launch.json`, dùng `backend/scripts/dev-server.mjs` cho API
 và vite cho web. Đừng chạy dev server bằng Bash.
 

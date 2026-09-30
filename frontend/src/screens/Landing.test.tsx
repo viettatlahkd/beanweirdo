@@ -14,8 +14,8 @@ const useModules = vi.fn()
 vi.mock('../data/useModules', () => ({
   useModules: (...args: unknown[]) => useModules(...args),
   // The journals are modules too now; only the reading ones are listed here.
-  landingModules: (ms: { kind?: string; visibility?: string }[]) =>
-    ms.filter((m) => m.kind !== 'special' && m.visibility !== 'private'),
+  landingModules: (ms: { kind?: string; visibility?: string; parent_id?: string | null }[]) =>
+    ms.filter((m) => m.kind !== 'special' && m.visibility !== 'private' && !m.parent_id),
 }))
 
 const usePublishedPosts = vi.fn()
@@ -99,5 +99,42 @@ describe('Landing', () => {
 
     await userEvent.click(screen.getByText('sensory'))
     expect(openModule).toHaveBeenCalledWith('sensory')
+  })
+
+  it('counts and lists the posts of sub-modules under their top-level parent', () => {
+    useNav.mockReturnValue({ openModule, goHome })
+    const cafe: ModuleRow = { ...sensory, id: 'cafe', title: 'Cafe Hihi', concept: 'cafe', parent_id: null }
+    const roast: ModuleRow = { ...sensory, id: 'roast', title: 'Roast', concept: 'roast', parent_id: 'cafe' }
+    const deep: ModuleRow = { ...sensory, id: 'deep', title: 'Deep', concept: 'deep', parent_id: 'roast' }
+    const hidden: ModuleRow = {
+      ...sensory,
+      id: 'hidden',
+      title: 'Hidden',
+      concept: 'hidden',
+      parent_id: 'cafe',
+      visibility: 'private',
+    }
+    useModules.mockReturnValue({ data: [cafe, roast, deep, hidden], loading: false, error: null })
+    // Query order: sort_order restarts in each module, so the newest post is
+    // not first in the list the API returns.
+    usePublishedPosts.mockReturnValue({
+      data: [
+        makePost({ id: 'a', module_id: 'roast', en: 'Old roast', sort_order: 1, published_at: '2026-01-01T00:00:00Z' }),
+        makePost({ id: 'b', module_id: 'deep', en: 'Newest deep', sort_order: 1, published_at: '2026-06-01T00:00:00Z' }),
+        makePost({ id: 'c', module_id: 'roast', en: 'Mid roast', sort_order: 2, published_at: '2026-03-01T00:00:00Z' }),
+        makePost({ id: 'd', module_id: 'hidden', en: 'Private one', published_at: '2026-07-01T00:00:00Z' }),
+      ],
+      loading: false,
+      error: null,
+    })
+
+    render(<Landing />)
+
+    expect(screen.getByText('cafe — 3 bài')).toBeInTheDocument()
+    expect(screen.queryByText('chưa có bài nào')).not.toBeInTheDocument()
+    expect(screen.queryByText('Private one')).not.toBeInTheDocument()
+    const titles = ['Newest deep', 'Mid roast', 'Old roast'].map((t) => screen.getByText(t))
+    expect(titles[0].compareDocumentPosition(titles[1]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(titles[1].compareDocumentPosition(titles[2]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 })

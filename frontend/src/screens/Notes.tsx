@@ -1,11 +1,13 @@
-import { useMemo, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { Breadcrumbs } from '../components/Breadcrumbs'
 import { useSiteCopy } from '../data/useSiteCopy'
 import { noteFilterBar } from '../lib/notesFilter'
 import { useTags } from '../data/useTags'
 import { useIsMobile } from '../lib/useIsMobile'
 import { useNarrow } from '../lib/useNarrow'
+import { BLOCK_SIZE, byTimeNewestFirst, placePosts } from '../lib/notesBlocks'
 import {
+  cellRatio,
   featureCells,
   withOverrides,
   type FeatureCell,
@@ -14,8 +16,6 @@ import {
 import { usePublishedPosts, type PostRow } from '../data/usePublishedPosts'
 import { postDescription } from '../lib/postText'
 import { postThumbnail } from '../lib/postThumb'
-import { buildNotesGrid } from '../lib/notesGrid'
-import { featureMobile, notePlacementMobile } from '../content/notes'
 import { coverStyle } from '../lib/imageFocus'
 import { useModules } from '../data/useModules'
 import { BitesizeCard, PostRenderer } from 'post-renderer'
@@ -104,28 +104,66 @@ function draw(
 }
 
 /**
+ * Mọi bài trong lưới Ghi 01 đứng cùng một khung: cùng bề ngang cột, cùng tỉ lệ
+ * ảnh. Chủ site 2026-09-24: "các bài viết phải cùng size với nhau bất kể
+ * layout". Trước đó mỗi bài lấy một chỗ đặt riêng (span 4 hay 5, lệch trên tới
+ * 150px, ảnh rộng 72–94%) nên thẻ to nhỏ lệch nhau và ảnh trang trí chen vào.
+ */
+const CARD_AR = '4/3'
+
+/**
+ * Ghi 01's block of eight slots, from the owner's sketch of 2026-09-24 and
+ * their rule that followed it: "các row đều sẽ là 2 bài 1 deco" — four rows,
+ * each two posts and one piece of decoration, placed loosely rather than in
+ * line. Two sizes: big (five of twelve columns) for slots 0 and 5, small
+ * (four) for the rest; decoration takes two or three. Within a row nothing
+ * shares a column, so nothing can overlap whatever its height. Which post
+ * goes in which slot is `placePosts`; row r holds slots 2r and 2r+1.
+ *
+ * Each row has a spare grid row under it for an opened post, so a post
+ * unfolds right under its own row and the slots around it do not move. An
+ * empty grid row has no height, so unused spare rows cost nothing.
+ */
+type Spot = { col: string; mt: number; big?: boolean }
+const ROWS: { posts: [Spot, Spot]; deco: Spot }[] = [
+  { posts: [{ col: '1 / span 5', mt: 60, big: true }, { col: '7 / span 4', mt: 0 }], deco: { col: '11 / span 2', mt: 150 } },
+  { posts: [{ col: '5 / span 4', mt: 30 }, { col: '9 / span 4', mt: 160 }], deco: { col: '1 / span 3', mt: 110 } },
+  { posts: [{ col: '2 / span 4', mt: 80 }, { col: '8 / span 5', mt: 0, big: true }], deco: { col: '6 / span 2', mt: 190 } },
+  { posts: [{ col: '1 / span 4', mt: 100 }, { col: '6 / span 4', mt: 20 }], deco: { col: '11 / span 2', mt: 140 } },
+]
+const ROWS_PER_BLOCK = ROWS.length
+/** Space above every row but a block's first, and above every block but the first. */
+const ROW_GAP = 70
+const BLOCK_GAP = 100
+
+/** Where row `r` of `block` sits in the grid; the row after it is its spare. */
+const gridLine = (block: number, r: number) => block * ROWS_PER_BLOCK * 2 + 2 * r + 1
+const rowTop = (block: number, r: number) => (r > 0 ? ROW_GAP : block > 0 ? BLOCK_GAP : 0)
+
+/*
+ * One column on a phone, so the scatter lives in width and left margin
+ * (percent of the column). Four steps, so two posts in a row never share
+ * both — the owner found two same-width cards stacked edge to edge "too
+ * straight". Big slots are wider than any small one.
+ */
+const MOB_POSTS: { w: number; ml: number }[] = [
+  { w: 80, ml: 0 },
+  { w: 70, ml: 28 },
+  { w: 76, ml: 9 },
+  { w: 66, ml: 22 },
+]
+const MOB_BIG = 92
+
+/**
  * Thẻ một bài trong lưới Ghi 01, lúc chưa mở.
  *
  * Bài viết trên template bitesize note vẽ bằng đúng thẻ của template ấy — vệt
- * sáng sau tiêu đề, gạch đầu thẻ nở ra, thân bài cắt hai dòng. Đó là dàn trang
- * chủ site chỉ đích danh là muốn giữ. Bài trên template khác vẫn là thẻ chung:
- * ảnh, một dòng nhãn, tiêu đề, mô tả.
+ * sáng sau tiêu đề, gạch đầu thẻ nở ra, thân bài cắt hai dòng. Bài trên
+ * template khác là thẻ chung: ảnh, một dòng nhãn, tiêu đề, mô tả.
  *
  * Trạng thái rê chuột nằm ở đây chứ không ở trang, vì nó chỉ nói về một thẻ.
  */
-function Collapsed({
-  post,
-  num,
-  aspect,
-  mediaWidth,
-  mob,
-}: {
-  post: PostRow
-  num: string
-  aspect: string
-  mediaWidth: string
-  mob: boolean
-}) {
+function Collapsed({ post, num }: { post: PostRow; num: string }) {
   const [hovered, setHovered] = useState(false)
   if (post.template === 'bitesize') {
     return (
@@ -133,29 +171,36 @@ function Collapsed({
         <BitesizeCard
           post={toBitesizeData(post, { num })}
           hovered={hovered}
-          aspect={aspect}
-          mediaWidth={mediaWidth}
-          mobile={mob}
+          aspect={CARD_AR}
+          mediaWidth="100%"
+          /*
+           * Always the stacked layout. A portrait card otherwise sets its
+           * photo beside the words, which makes it a different shape from its
+           * neighbours — and in a narrow column its title spilled out of the
+           * cell entirely.
+           */
+          mobile
         />
       </div>
     )
   }
+  const thumb = postThumbnail(post)
   return (
     <>
-      {postThumbnail(post) && (
-        <div
-          style={{
-            aspectRatio: aspect,
-            width: mediaWidth,
-            ...coverStyle(postThumbnail(post)!),
-            marginBottom: 18,
-          }}
-        />
-      )}
+      {/* A post without a photo still gets the frame, so every card in a row
+          starts its words at the same height. */}
+      <div
+        style={{
+          aspectRatio: CARD_AR,
+          width: '100%',
+          ...(thumb ? coverStyle(thumb) : { background: '#EFEDE4' }),
+          marginBottom: 18,
+        }}
+      />
       <div style={{ ...label, marginBottom: 10 }}>
         {post.template} · {post.date_label}
       </div>
-      <div style={{ fontFamily: serif, fontSize: 40, lineHeight: 1.06, letterSpacing: '-.035em' }}>{post.en}</div>
+      <div style={{ fontFamily: serif, fontSize: 32, lineHeight: 1.08, letterSpacing: '-.03em' }}>{post.en}</div>
       <div
         style={{
           fontFamily: "'Be Vietnam Pro',sans-serif",
@@ -173,127 +218,106 @@ function Collapsed({
 }
 
 /**
- * Ô bên cạnh có được phép kê lên ngang tầm ô trước nó không.
+ * One piece of Ghi 01's decoration — a photo or the quotation — sitting small
+ * in its own columns of a row (`ROWS`).
  *
- * Luật chủ site: chỗ chồng lớp chỉ được rơi vào ẢNH của bài, không bao giờ
- * rơi vào CHỮ. Margin âm cố định không giữ nổi luật ấy — chiều cao một bài
- * thay đổi theo độ dài tiêu đề, và ô nào đứng liền trước ô nào thì phụ thuộc
- * module có bao nhiêu bài. Ghi 01 mới có một bài: F1 lẽ ra kê cạnh P2 thì
- * hoá ra kê cạnh P1, cả hai cùng dạt trái, 72% + 42% = 114% — ảnh chui thẳng
- * xuống dưới tiêu đề.
- *
- * Nên tính lúc dựng thay vì đặt cứng: chỉ kéo lên khi hai ô đứng KHÁC BÊN và
- * tổng bề rộng còn nằm trong một hàng. Không thoả thì rơi về khoảng cách
- * dương. Bằng cách ấy hai ô không bao giờ chồng lên nhau theo chiều ngang,
- * nên chữ không bao giờ có ảnh ở dưới — bất kể module có mấy bài.
+ * A photo keeps its cell's old proportion (`cellRatio`) because the crop the
+ * owner set in the CMS was cut to it; it is drawn at a fixed small height and
+ * never wider than its three columns. A slot with no photo is a colour block
+ * with the design's placeholder caption, which says nothing to a reader, so
+ * it is left out (see `blockLayout`).
  */
-const pct = (w: string): number | null => {
-  const m = /^(\d+(?:\.\d+)?)%$/.exec(w)
-  return m ? Number(m[1]) : null
-}
-
-export function canTuck(
-  prev: { w: string; side: 'left' | 'right' } | null,
-  self: { w: string; side: 'left' | 'right' },
-): boolean {
-  if (!prev) return false
-  if (prev.side === self.side) return false
-  const a = pct(prev.w)
-  const b = pct(self.w)
-  if (a === null || b === null) return false
-  return a + b <= 100
-}
-
-function FeatureCellView({
-  f,
-  dimmed,
-  mob,
-  prev,
-}: {
-  f: FeatureCell & { img?: string | null }
-  dimmed: boolean
-  mob: boolean
-  prev: { w: string; side: 'left' | 'right' } | null
-}) {
-  const fm = featureMobile[f.n]
-  const tuck = canTuck(prev, fm)
-  /*
-   * `zIndex: 1` ở đây và `2` ở bài — luật chủ site chốt: bài chính luôn nằm
-   * TRÊN ảnh trang trí. Chỗ chồng lớp cũng chỉ được rơi vào ảnh của bài chứ
-   * không rơi vào chữ, nên `mt` âm trong `featureMobile` tính theo chiều cao
-   * ảnh của ô liền trước.
-   */
-  const style: CSSProperties = mob
-    ? {
-        width: fm.w === 'full' ? 'calc(100% + 40px)' : fm.w,
-        alignSelf: fm.side === 'right' ? 'flex-end' : 'flex-start',
-        marginTop: tuck ? fm.mt : fm.mtSafe,
-        marginLeft: fm.w === 'full' || (fm.side === 'left' && fm.bleed) ? -20 : 0,
-        marginRight: fm.side === 'right' && fm.bleed ? -20 : 0,
-        position: 'relative',
-        zIndex: 1,
-        opacity: dimmed ? 0.18 : 1,
-      }
-    : { gridColumn: f.col, marginTop: f.mt, marginLeft: f.ml, position: 'relative', zIndex: 1, opacity: dimmed ? 0.18 : 1 }
-  if (f.kind === 'quote') {
+function DecoItem({ cell, mob }: { cell: Cell; mob: boolean }) {
+  if (cell.kind === 'quote') {
     return (
-      <div style={style}>
-        {/* Hẹp: bỏ vạch trên. Câu trích đã đứng riêng giữa hai khoảng trắng
-            rộng rồi, thêm một vạch nữa là đóng khung một thứ vốn để mở. */}
-        <div style={mob ? undefined : { borderTop: '1px solid #12120F', paddingTop: 20 }}>
-          <div style={{ fontFamily: serif, fontStyle: 'italic', fontSize: mob ? 29 : 36, lineHeight: 1.12, letterSpacing: '-.03em', color: '#12120F' }}>{f.t}</div>
-        </div>
-      </div>
-    )
-  }
-  if (f.kind === 'count') {
-    return (
-      <div style={style}>
-        <div style={mob ? undefined : { borderTop: '1px solid #12120F', paddingTop: 18 }}>
-          <div style={{ fontFamily: serif, fontSize: mob ? 66 : 72, lineHeight: 0.82, letterSpacing: '-.05em' }}>{f.t}</div>
-          <div style={{ fontFamily: "'Be Vietnam Pro',sans-serif", fontSize: 10, letterSpacing: '.2em', textTransform: 'uppercase', color: '#9A9A90', marginTop: 12, lineHeight: 1.6 }}>
-            ghi chép đang hiện
-          </div>
-        </div>
-      </div>
-    )
-  }
-  return (
-    <div style={style}>
       <div
         style={{
-          ...(f.img ? coverStyle(f.img) : { background: f.bg }),
-          /*
-           * Hẹp: tỉ lệ thay cho chiều cao cố định. `h` là 330/268/210px đo cho
-           * một ô rộng `span 3` của lưới 12 cột; ô hẹp chỉ còn 26–46% bề ngang
-           * mà vẫn cao 330 thì thành một cột màu dựng đứng.
-           */
-          ...(mob && fm.ar ? { aspectRatio: fm.ar } : { height: f.h }),
-          display: 'flex',
-          alignItems: 'flex-end',
-          padding: mob ? 12 : 14,
-          paddingLeft: mob ? 12 : f.pl,
+          fontFamily: serif,
+          fontStyle: 'italic',
+          fontSize: mob ? 20 : 22,
+          lineHeight: 1.2,
+          letterSpacing: '-.02em',
+          color: '#12120F',
+          borderTop: '1px solid #12120F',
+          paddingTop: 14,
         }}
       >
-        {f.t ? (
-          <div
-            style={{
-              fontFamily: "'Be Vietnam Pro',sans-serif",
-              fontSize: 9.5,
-              letterSpacing: '.18em',
-              textTransform: 'uppercase',
-              lineHeight: 1.5,
-              color: f.img ? '#FDFBF2' : '#1F3A38',
-              background: f.img ? 'rgba(24,22,17,.55)' : undefined,
-              padding: f.img ? '3px 7px' : undefined,
-            }}
-          >
-            {f.t}
-          </div>
-        ) : null}
+        {cell.t}
       </div>
+    )
+  }
+  const h = mob ? 120 : 170
+  return (
+    <div
+      style={{
+        height: h,
+        width: Math.round(h * cellRatio(cell)),
+        maxWidth: '100%',
+        ...coverStyle(cell.img!),
+        display: 'flex',
+        alignItems: 'flex-end',
+        padding: 8,
+        boxSizing: 'border-box',
+      }}
+    >
+      {cell.t ? (
+        <div
+          style={{
+            fontFamily: "'Be Vietnam Pro',sans-serif",
+            fontSize: 8.5,
+            letterSpacing: '.16em',
+            textTransform: 'uppercase',
+            lineHeight: 1.5,
+            color: '#FDFBF2',
+            background: 'rgba(24,22,17,.55)',
+            padding: '2px 6px',
+          }}
+        >
+          {cell.t}
+        </div>
+      ) : null}
     </div>
   )
+}
+
+type Cell = FeatureCell & { img?: string | null }
+
+/** A cell the owner has filled in under Cấu hình: a photo, or the quotation's words. */
+const configured = (c: Cell) => (c.kind === 'slot' ? !!c.img : !!c.t)
+
+type LayoutItem =
+  | { kind: 'post'; post: PostRow; i: number; block: number; slot: number }
+  | { kind: 'deco'; cell: Cell; block: number; row: number }
+
+/**
+ * Posts in their slots, top block first, each row closed by its decoration —
+ * the order a phone stacks them. A row with no post yet is left out whole,
+ * decoration and all (the owner, 2026-09-24: "row nào mà chưa có bài này thì
+ * ẩn đi"); posts fill a block from the bottom, so a young block shows only
+ * its lower rows.
+ *
+ * The rows shown take the feature cells in F-order, one each: the first row
+ * F1, the next F2, and so on. A cell the owner has not filled in under Cấu
+ * hình leaves its row without decoration — the owner, 2026-09-24: "cái nào
+ * đang chưa có config thì để trống". Rows past the last cell have none. An
+ * earlier version skipped empty cells and cycled the photos, which drew the
+ * one photo set on every row.
+ */
+function blockLayout(posts: readonly PostRow[], cells: readonly Cell[]): LayoutItem[] {
+  const placed = placePosts(posts.length)
+  const blocks = Math.ceil(posts.length / BLOCK_SIZE)
+  const out: LayoutItem[] = []
+  let shown = 0
+  for (let block = 0; block < blocks; block++) {
+    for (let row = 0; row < ROWS_PER_BLOCK; row++) {
+      const here = placed.filter((p) => p.block === block && Math.floor(p.slot / 2) === row)
+      if (!here.length) continue
+      for (const at of here.sort((a, b) => a.slot - b.slot)) out.push({ kind: 'post', post: posts[at.i], ...at })
+      const cell = cells[shown++]
+      if (cell && configured(cell)) out.push({ kind: 'deco', cell, block, row })
+    }
+  }
+  return out
 }
 
 /**
@@ -368,7 +392,10 @@ export function Notes() {
     [ghi01?.feature_cells],
   )
   // Posts filed under Ghi 01 — the memo lives here, as a post like any other.
-  const { data: filed, loading, error } = usePublishedPosts({ moduleId: 'ghi01' })
+  // `withBody` bật ở đúng màn này: bài filed dưới Ghi 01 mở ra **ngay tại chỗ**
+  // (xem `OpenedPost`), nên danh sách phải cầm sẵn nội dung. Mọi màn khác dẫn
+  // sang trang riêng của bài, và trang ấy tự đọc bằng `usePost`.
+  const { data: filed, loading, error } = usePublishedPosts({ moduleId: 'ghi01', withBody: true })
   const { tags } = useTags()
   // Tag là chữ chủ site tự đặt, nên không còn là bốn giá trị đóng nữa.
   const [noteFilter, setNoteFilter] = useState<string>('tất cả')
@@ -381,9 +408,32 @@ export function Notes() {
     setOpenNoteState(v)
   }
 
+  /*
+   * Bring the unfolded post to the reader.
+   *
+   * Opening one reflows the grid: the post widens to nine columns and the
+   * dense flow packs the cells around it somewhere else, so from the second
+   * post on it tended to land below the fold — the reader clicked and saw the
+   * page merely dim. Scroll it to the top of the view once it has been laid
+   * out. `scrollIntoView` rather than `window.scrollTo` because the scroll may
+   * belong to a container, not the window.
+   */
+  useEffect(() => {
+    if (!openNote) return
+    const frame = requestAnimationFrame(() => {
+      const el = document.querySelector<HTMLElement>(`[data-note="${CSS.escape(openNote)}"]`)
+      if (!el) return
+      const still = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+      el.scrollIntoView({ block: 'start', behavior: still ? 'auto' : 'smooth' })
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [openNote])
+
 
   const noteFilters = bar.chips
-  const shownPosts = bar.visiblePosts as typeof filed
+  // Ordered by time alone, so a post keeps its slot — see `byTimeNewestFirst`.
+  const shownPosts = useMemo(() => byTimeNewestFirst(bar.visiblePosts as typeof filed), [bar.visiblePosts])
+  const layout = useMemo(() => blockLayout(shownPosts, drawnCells), [shownPosts, drawnCells])
 
   return (
     <div
@@ -459,108 +509,100 @@ export function Notes() {
       <div
         style={
           mob
-            ? {
-                // Lưới 12 cột thành một dòng chảy: mỗi ô tự mang bề rộng, bên
-                // đứng và khoảng cách dọc của mình (`notePlacementMobile`,
-                // `featureMobile`). Không có `gap` chung — nhịp nén/mở là thứ
-                // giữ cho trang không đọc ra như một cột đều tăm tắp.
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'flex-start',
-                marginTop: 30,
-              }
+            ? { display: 'flex', flexDirection: 'column', gap: 36, marginTop: 30 }
             : {
+                // Twelve columns, so each slot can sit where `ROWS` says and
+                // an opened post can take `2 / span 9` on a row of its own.
                 display: 'grid',
                 gridTemplateColumns: 'repeat(12,minmax(0,1fr))',
-                gap: '64px 40px',
+                columnGap: 40,
+                rowGap: 0,
                 marginTop: 44,
-                gridAutoFlow: 'row dense',
                 alignItems: 'start',
               }
         }
       >
-          {/* A post filed under Ghi 01 unfolds where it sits, the way the
-              statistics panel unfolds on Ghi 02 — the reader stays on the page
-              they were reading. Open, it takes the full width of the grid and
-              everything else steps back. */}
-            {buildNotesGrid(shownPosts, drawnCells).map((cell, gi, cells) => {
-              /*
-               * Hình học hẹp của ô đứng LIỀN TRƯỚC. `FeatureCellView` cần nó để
-               * biết có được kê lên ngang tầm ô ấy không — xem `canTuck`.
-               * Ô nào đứng trước ô nào phụ thuộc module có mấy bài, nên chỉ ở
-               * đây mới biết được, không đặt sẵn trong bảng được.
-               */
-              const before = gi > 0 ? cells[gi - 1] : null
-              const prevGeom = !before
-                ? null
-                : before.kind === 'feature'
-                  ? featureMobile[before.cell.n]
-                  : notePlacementMobile[before.slot % notePlacementMobile.length]
-              const prev = prevGeom ? { w: prevGeom.w, side: prevGeom.side } : null
-
-              if (cell.kind === 'feature') {
-                return (
-                  <FeatureCellView key={`F${cell.cell.n}-${gi}`} f={cell.cell} dimmed={openNote !== null} mob={mob} prev={prev} />
-                )
-              }
-              const p = cell.post
-              const open = openNote === p.id
-              const place = cell.place
-              const pm = notePlacementMobile[cell.slot % notePlacementMobile.length]
+        {/* A post filed under Ghi 01 unfolds where it sits, the way the
+            statistics panel unfolds on Ghi 02 — the reader stays on the page
+            they were reading. Open, it widens on the line under its row and
+            everything else steps back. */}
+        {layout.map((item, n) => {
+          if (item.kind === 'deco') {
+            const spot = ROWS[item.row].deco
             return (
-              <Hover
-                key={p.id}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setOpenNote((prev) => (prev === p.id ? null : p.id))
-                }}
+              <div
+                key={`deco-${item.block}-${item.row}`}
                 style={{
                   ...(mob
                     ? {
-                        width: open ? '100%' : pm.w,
-                        alignSelf: open || pm.side === 'left' ? 'flex-start' : 'flex-end',
-                        marginTop: open ? '40px' : pm.mt,
-                        // Bài luôn nằm trên ảnh trang trí — luật chủ site chốt.
-                        position: 'relative',
-                        zIndex: 2,
+                        width: item.cell.kind === 'quote' ? '80%' : '52%',
+                        alignSelf: item.cell.kind === 'quote' ? 'flex-start' : 'flex-end',
                       }
                     : {
-                        /*
-                         * Bài mở ra KHÔNG chiếm trọn bề ngang.
-                         *
-                         * Chủ site: "bề ngang của bài nó chiếm trọn bề ngang
-                         * trang > trông rất lớn và cộc cằn (...) mục tiêu là
-                         * tạo cảm giác là bài này pop up và là 1 phần của trang
-                         * ghi, thay vì cảm giác như mở hẳn ra trang khác."
-                         *
-                         * Chín trên mười hai cột — ba phần tư — và thụt vào một
-                         * cột ở mép trái. Lưới của trang vẫn nhìn thấy được hai
-                         * bên, nên bài đọc ra là một khối nổi lên TRONG trang
-                         * chứ không phải một trang mới đè lên.
-                         */
-                        gridColumn: open ? '2 / span 9' : place.col,
-                        marginTop: open ? '40px' : place.mt,
+                        gridColumn: spot.col,
+                        gridRow: gridLine(item.block, item.row),
+                        marginTop: spot.mt + rowTop(item.block, item.row),
                       }),
-                  cursor: 'pointer',
-                  opacity: openNote !== null && !open ? 0.18 : 1,
+                  opacity: openNote !== null ? 0.18 : 1,
                   transition: 'opacity .45s ease',
                 }}
-                hoverStyle={{ opacity: 1 }}
               >
-                {open ? (
-                  <OpenedPost post={p} mod={ghi01} />
-                ) : (
-                  <Collapsed
-                    post={p}
-                    num={String(shownPosts.length - shownPosts.indexOf(p)).padStart(2, '0')}
-                    aspect={mob ? pm.ar : place.ar}
-                    mediaWidth={mob ? '100%' : place.mw}
-                    mob={mob}
-                  />
-                )}
-              </Hover>
+                <DecoItem cell={item.cell} mob={mob} />
+              </div>
             )
-          })}
+          }
+          const { post: p, block, slot, i } = item
+          const open = openNote === p.id
+          const r = Math.floor(slot / 2)
+          const spot = ROWS[r].posts[slot % 2]
+          const m = MOB_POSTS[n % MOB_POSTS.length]
+          return (
+            <Hover
+              key={p.id}
+              data-note={p.id}
+              data-slot={slot}
+              onClick={(e) => {
+                e.stopPropagation()
+                setOpenNote((prev) => (prev === p.id ? null : p.id))
+              }}
+              style={{
+                ...(mob
+                  ? {
+                      width: open ? '100%' : `${spot.big ? MOB_BIG : m.w}%`,
+                      marginLeft: open || spot.big ? 0 : `${m.ml}%`,
+                    }
+                  : {
+                      /*
+                       * Bài mở ra KHÔNG chiếm trọn bề ngang.
+                       *
+                       * Chủ site: "bề ngang của bài nó chiếm trọn bề ngang
+                       * trang > trông rất lớn và cộc cằn (...) mục tiêu là
+                       * tạo cảm giác là bài này pop up và là 1 phần của trang
+                       * ghi, thay vì cảm giác như mở hẳn ra trang khác."
+                       *
+                       * Chín trên mười hai cột, thụt vào một cột ở mép trái,
+                       * trên hàng trống ngay dưới hàng của nó.
+                       */
+                      gridColumn: open ? '2 / span 9' : spot.col,
+                      gridRow: gridLine(block, r) + (open ? 1 : 0),
+                      marginTop: open ? 64 : spot.mt + rowTop(block, r),
+                    }),
+                cursor: 'pointer',
+                // Room above the post once it is scrolled to — see the effect on `openNote`.
+                scrollMarginTop: mob ? 16 : 32,
+                opacity: openNote !== null && !open ? 0.18 : 1,
+                transition: 'opacity .45s ease',
+              }}
+              hoverStyle={{ opacity: 1 }}
+            >
+              {open ? (
+                <OpenedPost post={p} mod={ghi01} />
+              ) : (
+                <Collapsed post={p} num={String(shownPosts.length - i).padStart(2, '0')} />
+              )}
+            </Hover>
+          )
+        })}
 
         {!loading && shownPosts.length === 0 && (
           <div

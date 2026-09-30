@@ -21,7 +21,7 @@ import { useEffect, useState } from 'react'
 import { paletteFrom } from 'post-renderer'
 import { ink, paper } from '../../design/tokens'
 
-export type Theme = { id: string; label: string; color: string }
+type Theme = { id: string; label: string; color: string }
 
 const SWATCH = 22
 const HEX = /^#?([0-9a-fA-F]{6})$/

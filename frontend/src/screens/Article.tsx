@@ -15,6 +15,8 @@ import { useModules } from '../data/useModules'
 import { ink, sans } from '../design/tokens'
 import { Breadcrumbs } from '../components/Breadcrumbs'
 import { useNav } from '../lib/nav'
+import { usePostAuthors } from '../data/usePostAuthors'
+import { Byline } from '../components/Byline'
 
 const status = {
   fontFamily: sans,
@@ -53,6 +55,7 @@ export function Article() {
   const effectivePostId = nav.postId ?? fallbackId
 
   const { data: post, loading, error } = usePost(effectivePostId)
+  const authors = usePostAuthors(effectivePostId)
   const siblings = usePublishedPosts({ moduleId: post?.module_id, enabled: Boolean(post?.module_id) })
 
   if (needsFallback && fallback.loading) {
@@ -75,7 +78,15 @@ export function Article() {
   // Every template gets the same trail back. The renderer package knows
   // nothing about routing, so the app hands it the finished element.
   const crumbs = (
-    <Breadcrumbs style={{ opacity: 0.75 }} trailing={postTitle(post)} moduleId={post.module_id} />
+    <>
+      {/* The byline sits close under the trail rather than a full gap below it. */}
+      <Breadcrumbs
+        style={{ opacity: 0.75, ...(authors.length > 0 && { marginBottom: 12 }) }}
+        trailing={postTitle(post)}
+        moduleId={post.module_id}
+      />
+      <Byline authors={authors} />
+    </>
   )
   const moduleTitle = module_?.title ?? post.module_id
 

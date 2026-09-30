@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react'
 import { PostRenderer } from 'post-renderer'
-import { getPost, listModules, type Module, type PostDetail } from '../lib/apiClient'
+import { getPost, type Module, type PostDetail } from '../lib/apiClient'
+import { listModulesCached } from '../lib/lists'
 import { ink, paper } from '../../design/tokens'
 import { Hover } from '../../lib/Hover'
+import type { AuthorRef } from 'api-contract'
+import { Byline } from '../../components/Byline'
 import { useNav } from '../../lib/nav'
 import { resolveTemplate } from '../lib/postData'
 import {
@@ -35,10 +38,12 @@ export function Preview({ postId }: { postId: string }) {
 function PreviewContent({ postId }: { postId: string }) {
   const nav = useNav()
   const [post, setPost] = useState<PostDetail | null>(null)
+  const [authors, setAuthors] = useState<AuthorRef[]>([])
   const [modules, setModules] = useState<Module[]>([])
 
   useEffect(() => {
-    Promise.all([getPost(postId), listModules()]).then(([p, mods]) => {
+    Promise.all([getPost(postId), listModulesCached()]).then(([{ authors: byline, ...p }, mods]) => {
+      setAuthors(byline)
       setPost(p)
       setModules(mods)
     })
@@ -49,6 +54,7 @@ function PreviewContent({ postId }: { postId: string }) {
   const template = resolveTemplate(post)
   const mod = modules.find((m) => m.id === post.module_id)
   const source = post
+  const breadcrumb = <Byline authors={authors} />
 
   return (
     <div style={{ minHeight: '100vh', background: paper.cream, padding: '32px 24px' }}>
@@ -77,18 +83,18 @@ function PreviewContent({ postId }: { postId: string }) {
             Two of the five used to fall through to `article` here, so a memo
             previewed as an essay. */}
         {template === 'cards' ? (
-          <PostRenderer template="cards" post={toCardsData(source, mod)} />
+          <PostRenderer template="cards" breadcrumb={breadcrumb} post={toCardsData(source, mod)} />
         ) : template === 'report' ? (
-          <PostRenderer template="report" post={toReportData(source, mod)} />
+          <PostRenderer template="report" breadcrumb={breadcrumb} post={toReportData(source, mod)} />
         ) : template === 'longform' ? (
-          <PostRenderer template="longform" post={toLongformData(source, mod)} />
+          <PostRenderer template="longform" breadcrumb={breadcrumb} post={toLongformData(source, mod)} />
         ) : template === 'bitesize' ? (
-          <PostRenderer template="bitesize" post={toBitesizeData(source, { mod })} />
+          <PostRenderer template="bitesize" breadcrumb={breadcrumb} post={toBitesizeData(source, { mod })} />
         ) : template === 'memo' ? (
-          <PostRenderer template="memo" post={toMemoData(source, mod)} />
+          <PostRenderer template="memo" breadcrumb={breadcrumb} post={toMemoData(source, mod)} />
         ) : (
           <PostRenderer
-            template="article"
+            template="article" breadcrumb={breadcrumb}
             post={toArticleData(source, mod?.title ?? post.module_id, [], -1, mod)}
           />
         )}

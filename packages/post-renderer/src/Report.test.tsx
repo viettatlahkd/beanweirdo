@@ -81,6 +81,20 @@ describe('Report', () => {
     expect(screen.getByText('Trạm cupping, buổi sáng')).toBeInTheDocument()
   })
 
+  it('an image with a link opens it in a new tab when clicked', () => {
+    const blocks = [{ type: 'image' as const, caption: 'có link', imageUrl: '/a.jpg', href: 'b.com/bai' }]
+    render(<Report post={{ ...post, blocks }} />)
+    const a = screen.getByText('có link').closest('a')!
+    expect(a).toHaveAttribute('href', 'https://b.com/bai')
+    expect(a).toHaveAttribute('target', '_blank')
+  })
+
+  it('never draws a script address as a link', () => {
+    const blocks = [{ type: 'image' as const, caption: 'độc', imageUrl: '/a.jpg', href: 'javascript:alert(1)' }]
+    render(<Report post={{ ...post, blocks }} />)
+    expect(screen.getByText('độc').closest('a')).toBeNull()
+  })
+
   it('uses renderParagraph override for WYSIWYG paragraph editing', () => {
     render(
       <Report

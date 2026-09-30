@@ -1,5 +1,5 @@
 import { useState, type CSSProperties } from 'react'
-import { featureCells, withOverrides, type FeatureOverride } from '../../content/notes'
+import { cellRatio, featureCells, patchOverride, withOverrides, type FeatureOverride } from '../../content/notes'
 import { ink, paper, sans, serif } from '../../design/tokens'
 import { Hover } from '../../lib/Hover'
 import { useSlotSwap } from '../lib/useSlotSwap'
@@ -56,15 +56,12 @@ const cellName: CSSProperties = {
 }
 
 /**
- * Ghi 01's feature cells — F1…F7, the images and words woven between the posts.
+ * Ghi 01's feature cells — the page's decoration: photos and a quotation,
+ * numbered independently of the posts.
  *
- * They carry their own numbering on purpose: F3 is the third *cell*, unrelated
- * to the third post, because the two are different kinds of thing sharing one
- * grid. Only the picture and the words are editable; where a cell sits and how
- * tall it stands belong to `content/notes.ts`, since the batch layout only
- * holds together if the geometry stays put.
- *
- * The count cell has nothing to edit — it prints how many notes are showing.
+ * Only the picture and the words are editable; each photo's proportion belongs
+ * to `content/notes.ts` (`cellRatio`), since the crop is cut to it. A slot with
+ * no photo is not drawn on the page at all.
  */
 export function FeatureCellsEditor({
   overrides,
@@ -79,25 +76,9 @@ export function FeatureCellsEditor({
   const drawn = withOverrides(featureCells, overrides)
   const [placing, setPlacing] = useState<{ n: number; url: string; ratio: number; name: string } | null>(null)
 
-  /**
-   * A feature cell's shape, from the design's own numbers: `col` is a span of
-   * the twelve-column grid the page lays out at 1128px wide, and `h` is a fixed
-   * height. Nothing measures here because nothing moves — the geometry is the
-   * drawing, and the drawing is fixed.
-   */
-  const ratioOf = (col: string, h: string): number => {
-    const span = Number(/span (\d+)/.exec(col)?.[1] ?? 3)
-    const width = ((1128 - 20 * 11) / 12) * span + 20 * (span - 1)
-    const height = Number.parseFloat(h) || 240
-    return width / height
-  }
+  const ratioOf = (col: string, h: string): number => cellRatio({ col, h })
 
-
-  const set = (n: number, patch: Partial<FeatureOverride>) => {
-    const rest = overrides.filter((o) => o.n !== n)
-    const current = overrides.find((o) => o.n === n) ?? { n }
-    onChange([...rest, { ...current, ...patch }].sort((a, b) => a.n - b.n))
-  }
+  const set = (n: number, patch: Partial<FeatureOverride>) => onChange(patchOverride(overrides, n, patch))
 
   const [linking, setLinking] = useState<number | null>(null)
   /*
@@ -116,7 +97,7 @@ export function FeatureCellsEditor({
 
   return (
     <div style={{ marginTop: 22 }}>
-      <div style={groupLabel}>Ảnh feature dọc trang</div>
+      <div style={groupLabel}>Ảnh trang trí</div>
       <div
         style={{
           display: 'grid',
@@ -125,35 +106,6 @@ export function FeatureCellsEditor({
         }}
       >
         {drawn.map((f) => {
-          if (f.kind === 'count') {
-            return (
-              <div key={f.n} style={{ ...rowBox, opacity: 0.6 }}>
-                <div
-                  style={{
-                    width: 72,
-                    height: 45,
-                    border: `1px solid ${paper.rule}`,
-                    background: paper.hover,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontFamily: serif,
-                    fontSize: 22,
-                    color: ink.faint,
-                  }}
-                >
-                  12
-                </div>
-                <div style={{ minWidth: 0 }}>
-                  <div style={cellName}>F{f.n} · số đếm</div>
-                  <div style={{ fontFamily: sans, fontSize: 11.5, color: ink.faint }}>
-                    tự đếm số ghi chép đang hiện
-                  </div>
-                </div>
-              </div>
-            )
-          }
-
           if (f.kind === 'quote') {
             return (
               <div key={f.n} style={rowBox}>
@@ -177,6 +129,7 @@ export function FeatureCellsEditor({
                 <div style={{ minWidth: 0 }}>
                   <div style={cellName}>F{f.n} · câu trích</div>
                   <input
+                    key={f.t}
                     defaultValue={f.t}
                     onBlur={(e) => set(f.n, { t: e.target.value })}
                     placeholder="câu trích"

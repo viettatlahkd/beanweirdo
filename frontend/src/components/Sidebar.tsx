@@ -1,9 +1,10 @@
 import { useState, type CSSProperties, type ReactNode } from 'react'
 import { NAV, type Glyph, type NavItem } from '../content/navItems'
-import type { NavGroup } from '../content/site'
-import { sidebarModules, useModules, type ModuleRow } from '../data/useModules'
+import { SECTION_NAMES, type NavGroup } from '../content/site'
+import { indexModules, useModules, type ModuleRow } from '../data/useModules'
+import { buildTree, flattenTree } from '../lib/contentTree'
+import { countUnder } from '../lib/postGroups'
 import { usePublishedPosts, type PostRow } from '../data/usePublishedPosts'
-import { useSiteCopy } from '../data/useSiteCopy'
 import { layout, paper, sans, serif } from '../design/tokens'
 import { areaOfGroup, goToArea, visibleGroups } from '../lib/area'
 import { useAuth } from '../lib/auth'
@@ -87,8 +88,21 @@ function Mark({ shape }: { shape: Glyph }) {
  * not another shelf of essays — it reads as a module of a different kind
  * before you have read its name (System conventions, group 05).
  */
-function ModuleMark({ m }: { m: ModuleRow }) {
+function ModuleMark({ m, dash }: { m: ModuleRow; dash?: boolean }) {
   const special = m.kind === 'special'
+  /*
+   * A sub-module on the closed rail: a short bar in the module's colour, the
+   * same width as its parent's dot and centred in the same slot, so the rail
+   * reads as dot, dash, dash — parent then children — without an indent.
+   */
+  if (dash)
+    return (
+      <div
+        data-kind={m.kind}
+        data-mark="dash"
+        style={{ width: 10, height: 2, borderRadius: 1, background: m.accent }}
+      />
+    )
   return (
     <div
       data-kind={m.kind}
@@ -107,8 +121,10 @@ function Row({
   label,
   count,
   sub,
+  depth = 0,
   muted,
   hoverBg,
+  collapsed,
   onClick,
 }: {
   glyph: ReactNode
@@ -116,12 +132,36 @@ function Row({
   count?: ReactNode
   /** Template pages sit one level in, marked by a short dash instead of a glyph. */
   sub?: boolean
+  /**
+   * How far inside the table of contents this row sits. 0 is a top-level entry.
+   *
+   * A number rather than the `sub` flag beside it: `sub` says "one level in"
+   * and cannot say "two", which is the same thing that stopped the rest of the
+   * site holding a third level. The indent is per step, so a branch four deep
+   * needs nothing added here.
+   */
+  depth?: number
   muted: string
   hoverBg: string
+  /**
+   * The 64px rail. Only the glyph column shows there, so an indent does not
+   * read as depth — it pushes the child's dot off the column its parent's dot
+   * stands in. Collapsed rows drop the indent and let the glyph say it.
+   */
+  collapsed?: boolean
   onClick: () => void
 }) {
   return (
-    <Hover style={{ ...row, color: muted }} hoverStyle={{ background: hoverBg }} onClick={onClick}>
+    <Hover
+      style={{
+        ...row,
+        color: muted,
+        paddingLeft: 22 + (collapsed ? 0 : depth * 15),
+        transition: 'padding-left .3s cubic-bezier(.4,0,.2,1)',
+      }}
+      hoverStyle={{ background: hoverBg }}
+      onClick={onClick}
+    >
       <div style={glyphSlot}>{sub ? null : glyph}</div>
       <div
         style={{
@@ -194,8 +234,6 @@ function go(nav: Nav, item: NavItem): () => void {
       // Thẳng tới danh sách bài. `/ad` chỉ gọi tên màn mà không gọi tên tab,
       // nên bấm vào đây từng dừng ở một địa chỉ không phải chỗ nào cả.
       return () => nav.goCms('posts')
-    case 'logic':
-      return nav.goLogic
     case 'archive':
       return nav.goArchive
     default:
@@ -217,15 +255,22 @@ export function Sidebar() {
   const mobile = useIsMobile()
   const [drawer, setDrawer] = useState(false)
   const { data: allModules } = useModules()
-  const modules = sidebarModules(allModules)
+  const modules = indexModules(allModules)
   const { data: posts } = usePublishedPosts()
-  const { site } = useSiteCopy()
   const { authed, signOut } = useAuth()
   const dark = nav.screen === 'notes' || nav.screen === 'hours'
   const t = theme(dark)
   const groups = visibleGroups(nav.area, authed)
+  // The mobile drawer is always drawn at full width.
+  const open = mobile || on
 
-  const countFor = (m: ModuleRow) => posts.filter((p: PostRow) => p.module_id === m.id).length
+  /*
+   * The count beside a name covers the whole branch, not just what is filed
+   * directly under it. A heading holding two sub-sections of six posts each
+   * reads as empty otherwise — and "chưa có bài" is a different statement from
+   * "everything here is one level down".
+   */
+  const countFor = (m: ModuleRow) => countUnder(posts as PostRow[], modules, m.id)
 
   const section = (group: NavGroup) => {
     const items = NAV.filter((n) => n.group === group && !n.hiddenFromSidebar)
@@ -233,21 +278,30 @@ export function Sidebar() {
 
     for (const item of items) {
       // The modules sit below "Mục lục" in Public — reading modules first,
-      // then the journals, which is the order `sidebarModules` returns.
+      // then the journals, which is the order `indexModules` returns.
       if (group === 'Public' && item.key === 'notes') {
         // Every module is listed, published or not: the sidebar is the map of
         // what the journal covers, and a module with nothing in it yet is still
         // part of that map. The count beside it tells the truth.
-        for (const m of modules) {
+        /*
+         * Parents before their own children, each carrying how deep it sits.
+         * This used to be a flat loop, which is why the sidebar could show a
+         * list of modules and never a table of contents. Nothing here names a
+         * number of levels, so a branch four deep draws itself.
+         */
+        for (const node of flattenTree(buildTree(modules))) {
+          const m = node.row
           rows.push(
             <Row
               key={`mod-${m.id}`}
               onClick={() => openModule(nav, m)}
               label={m.title}
               count={countFor(m)}
+              depth={node.depth}
+              collapsed={!open}
               muted={t.muted}
               hoverBg={t.hover}
-              glyph={<ModuleMark m={m} />}
+              glyph={<ModuleMark m={m} dash={!open && node.depth > 0} />}
             />,
           )
         }
@@ -291,7 +345,7 @@ export function Sidebar() {
    * thanh trên sẽ cắt mất mép trên của khối. Thanh dưới thì ngón cái với tới dễ
    * hơn đỉnh màn.
    *
-   * Dữ liệu không đổi: vẫn `NAV`, `sidebarModules`, `visibleGroups`, `countFor`
+   * Dữ liệu không đổi: vẫn `NAV`, `indexModules`, `visibleGroups`, `countFor`
    * — chỉ khác cách vẽ.
    */
   const body = (
@@ -311,12 +365,25 @@ export function Sidebar() {
           * Nó là một wordmark chữ nhật nên không ép vào ô 20×20 được — chữ
           * "station" sẽ mất hẳn. Cho nó chiều cao 34px và tự co ngang.
           */}
+        {/*
+          * Closed, the rail is 64px and the logo at 34px tall is 56 wide —
+          * starting at the row's 22px inset it ran 14px under the page. It
+          * shrinks to 27px tall (45 wide) and steps out to a 10px inset, so it
+          * sits whole inside the rail and grows back as the sheet opens.
+          */}
         <img
           src="/logo-bean.png"
           alt="bean station"
           width={56}
           height={34}
-          style={{ height: 34, width: 'auto', flex: 'none', borderRadius: 3 }}
+          style={{
+            height: open ? 34 : 27,
+            width: 'auto',
+            marginLeft: open ? 0 : -12,
+            flex: 'none',
+            borderRadius: 3,
+            transition: 'height .3s cubic-bezier(.4,0,.2,1), margin-left .3s cubic-bezier(.4,0,.2,1)',
+          }}
         />
         <div style={{ fontFamily: serif, fontSize: 23, letterSpacing: '-.01em' }}>
           be
@@ -356,7 +423,7 @@ export function Sidebar() {
       <div style={{ height: 1, background: t.rule, margin: '0 0 20px' }} />
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-        <SectionLabel>{site.sections.Public}</SectionLabel>
+        <SectionLabel>{SECTION_NAMES.Public}</SectionLabel>
         {section('Public')}
       </div>
 
@@ -369,13 +436,13 @@ export function Sidebar() {
         <>
           <div style={{ margin: '16px 0 0' }}>
             <div style={{ height: 1, background: t.rule, marginBottom: 10 }} />
-            <SectionLabel>{site.sections.Practice}</SectionLabel>
+            <SectionLabel>{SECTION_NAMES.Practice}</SectionLabel>
             {section('Practice')}
           </div>
 
           <div style={{ margin: '16px 0 0' }}>
             <div style={{ height: 1, background: t.rule, marginBottom: 10 }} />
-            <SectionLabel>{site.sections.Admin}</SectionLabel>
+            <SectionLabel>{SECTION_NAMES.Admin}</SectionLabel>
             {section('Admin')}
           </div>
 

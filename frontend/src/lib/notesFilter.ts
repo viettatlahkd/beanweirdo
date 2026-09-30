@@ -10,12 +10,12 @@ import { noteColor, noteBlock } from '../content/notes'
  * ghi chép dưới Ghi 01 chính là một bài đăng dưới Ghi 01. Nên thanh này chỉ còn
  * đếm và lọc bài.
  */
-export type NoteFilter = 'tất cả' | string
+type NoteFilter = 'tất cả' | string
 
 /** Bài đăng đủ để xếp vào một tag. */
-export type TaggedPost = { kind?: string | null }
+type TaggedPost = { kind?: string | null }
 
-export type FilterChip = { f: NoteFilter; on: boolean; n: number; color: string; wash: string }
+type FilterChip = { f: NoteFilter; on: boolean; n: number; color: string; wash: string }
 
 /**
  * Màu của một tag.

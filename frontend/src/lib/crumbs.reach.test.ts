@@ -10,7 +10,6 @@ import type { Nav } from './nav'
  * a caption. And `←` from an admin screen left the area entirely, landing on
  * the public journal, which is not one step back from anywhere.
  */
-const SECTIONS = { Public: 'Public', Practice: 'Practice', Admin: 'Admin' } as never
 const MODULES = [{ id: 'sensory', title: 'sensory' }] as never
 
 function navFor(screen: string, area = 'admin'): Nav {
@@ -23,7 +22,6 @@ function navFor(screen: string, area = 'admin'): Nav {
     goHome: vi.fn(),
     goCms: vi.fn(),
     goArt: vi.fn(),
-    goLogic: vi.fn(),
     goArchive: vi.fn(),
     goHours: vi.fn(),
     goNotes: vi.fn(),
@@ -34,7 +32,7 @@ function navFor(screen: string, area = 'admin'): Nav {
   } as unknown as Nav
 }
 
-const ADMIN = ['cms', 'logic', 'archive']
+const ADMIN = ['cms', 'archive']
 const PUBLIC = ['home', 'module', 'notes', 'hours']
 
 describe('every crumb but the last one leads somewhere', () => {
@@ -47,7 +45,7 @@ describe('every crumb but the last one leads somewhere', () => {
   for (const screen of [...ADMIN, ...PUBLIC].filter((s) => s !== 'cms')) {
     it(`${screen}`, () => {
       const nav = navFor(screen, ADMIN.includes(screen) ? 'admin' : 'public')
-      const crumbs = buildCrumbs(nav, MODULES, SECTIONS)
+      const crumbs = buildCrumbs(nav, MODULES)
       expect(crumbs.length).toBeGreaterThan(0)
       crumbs.slice(0, -1).forEach((c) => {
         expect(c.go, `"${c.label}" trên màn ${screen} không đi đâu cả`).toBeTypeOf('function')
@@ -57,14 +55,14 @@ describe('every crumb but the last one leads somewhere', () => {
 
   /* The last crumb is the page being looked at, so it stays put. */
   it('leaves the current page unclickable', () => {
-    const crumbs = buildCrumbs(navFor('cms'), MODULES, SECTIONS)
+    const crumbs = buildCrumbs(navFor('cms'), MODULES)
     expect(crumbs[crumbs.length - 1].go).toBeUndefined()
   })
 })
 
 describe('the back arrow', () => {
   it('stays inside admin instead of leaving for the public journal', () => {
-    for (const screen of ['logic']) {
+    for (const screen of ['archive']) {
       const nav = navFor(screen)
       crumbBack(nav)()
       expect(nav.goCms, `← trên màn ${screen} không về admin`).toHaveBeenCalled()
@@ -87,7 +85,7 @@ describe('the back arrow', () => {
 describe('crumbs — không mẩu nào trỏ về chỗ đang đứng', () => {
   it('leaves Admin and Backend inert on Content management itself', () => {
     const nav = navFor('cms')
-    const trail = buildCrumbs(nav, MODULES, SECTIONS)
+    const trail = buildCrumbs(nav, MODULES)
 
     // Cả ba mẩu đều là Content management theo một nghĩa nào đó, nên không mẩu
     // nào được nhận con trỏ bấm.
@@ -96,10 +94,10 @@ describe('crumbs — không mẩu nào trỏ về chỗ đang đứng', () => {
   })
 
   it('still walks from the other admin screens', () => {
-    // Chỉ Content management mới là chỗ đang đứng; ở Design system thì hai mẩu
-    // đầu vẫn phải đưa về được.
-    for (const screen of ['logic', 'archive']) {
-      const trail = buildCrumbs(navFor(screen), MODULES, SECTIONS)
+    // Chỉ Content management mới là chỗ đang đứng; ở Archive thì hai mẩu đầu
+    // vẫn phải đưa về được.
+    for (const screen of ['archive']) {
+      const trail = buildCrumbs(navFor(screen), MODULES)
       expect(trail.slice(0, -1).every((c) => c.go), screen).toBe(true)
     }
   })

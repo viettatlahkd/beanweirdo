@@ -20,7 +20,7 @@ vi.mock('../lib/supabaseClient', () => ({
   supabase: { from: (...args: unknown[]) => from(...args) },
 }))
 
-const { useModules, landingModules, indexModules, sidebarModules } = await import('./useModules')
+const { useModules, landingModules, indexModules } = await import('./useModules')
 
 describe('useModules', () => {
   it('fetches every module ordered by sort_order, ascending', async () => {
@@ -81,18 +81,53 @@ describe('module surfaces', () => {
   })
 
   it('never lists a private module anywhere', () => {
-    for (const surface of [landingModules, indexModules, sidebarModules]) {
+    for (const surface of [landingModules, indexModules]) {
       expect(surface(all).map((m) => m.id)).not.toContain('ghi02')
     }
   })
 
-  it('puts every reading module above every journal, whatever the CMS numbering', () => {
-    // sensory is numbered 20, well past Ghi 01's band, yet still sorts above it.
-    const ids = sidebarModules(all).map((m) => m.id)
-    expect(ids.indexOf('sensory')).toBeLessThan(ids.indexOf('ghi01'))
+  it('lets a journal sit among the reading modules when the CMS numbers it there', () => {
+    // The owner asked on 2026-09-24 to drag Ghi 01 up among the reading
+    // modules, so the numbering wins over the old journals-last band.
+    const ids = indexModules([...all, mod('ghi01b', 'special', 'public', 5)]).map((m) => m.id)
+    expect(ids.indexOf('ghi01b')).toBeLessThan(ids.indexOf('biochem'))
+  })
+
+  it('breaks a numbering tie the old way, reading module first', () => {
+    const tied = [mod('ghi01', 'special', 'public', 3), mod('sensory', 'normal', 'public', 3)]
+    expect(indexModules(tied).map((m) => m.id)).toEqual(['sensory', 'ghi01'])
   })
 
   it('keeps a module whose kind or visibility has not been set', () => {
     expect(landingModules([mod('sensory', undefined as never, undefined as never, 1)])).toHaveLength(1)
+  })
+})
+
+describe('trang chủ and the tree', () => {
+  const mod = (id: string, parent_id: string | null = null, sort_order = 1) =>
+    ({ id, kind: 'normal', visibility: 'public', parent_id, sort_order }) as never
+
+  it('is unchanged while nothing has been filed inside anything', () => {
+    const flat = [mod('sensory', null, 1), mod('biochem', null, 2), mod('roasting', null, 3)]
+    expect(landingModules(flat).map((m) => m.id)).toEqual(['sensory', 'biochem', 'roasting'])
+  })
+
+  it('shows only the branches once the tree has a second level', () => {
+    // Roasting is introduced by bean weirdo's own page. Listing it on the
+    // front page as well puts the same thing there twice, under two headings.
+    const tree = [mod('bean', null, 1), mod('roasting', 'bean', 2), mod('biochem', 'bean', 3)]
+    expect(landingModules(tree).map((m) => m.id)).toEqual(['bean'])
+  })
+
+  it('keeps a module whose parent it cannot see, rather than losing it', () => {
+    // A private branch is filtered out before this runs. Its children must not
+    // disappear with it — an unreachable module reads as a deleted one.
+    const orphaned = [mod('roasting', 'rieng-tu', 1), mod('ghi', null, 2)]
+    expect(landingModules(orphaned).map((m) => m.id)).toEqual(['roasting', 'ghi'])
+  })
+
+  it('reads a module row from before the migration, which has no such column', () => {
+    const old = [{ id: 'sensory', kind: 'normal', visibility: 'public', sort_order: 1 }] as never[]
+    expect(landingModules(old)).toHaveLength(1)
   })
 })

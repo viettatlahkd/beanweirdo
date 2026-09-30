@@ -85,7 +85,7 @@ export const hashtag = (name: string) => '#' + name
  * a saturated dot. Two systems sitting side by side have to be told apart at a
  * glance, and colour alone won't do it — the shape has to differ too.
  */
-export const PROJECT_PALETTE = [
+const PROJECT_PALETTE = [
   '#102F35',
   '#C25C7C',
   '#3E7A4E',
@@ -106,7 +106,7 @@ export function projectColorMap(projects: string[]): Record<string, string> {
  * Kind colour is assigned by position, not by name, so a newly-typed kind
  * gets a colour for free. Cycles once every 7 kinds.
  */
-export const KIND_PALETTE = [
+const KIND_PALETTE = [
   '#3E7A4E',
   'oklch(0.50 0.135 14)',
   '#8A6420',
@@ -194,7 +194,7 @@ export function dayBefore(i: number, now: Date = new Date()): Date {
  * real name is worse than no quote (System conventions, rule 06). Add new ones
  * to the end; the index wraps, so the rotation just gets longer.
  */
-export const QUOTES: { t: string; w: string }[] = [
+const QUOTES: { t: string; w: string }[] = [
   { t: '“We are what we repeatedly do.”', w: 'Will Durant' },
   { t: '“Small daily improvements are the key to staggering long-term results.”', w: 'Robin Sharma' },
   {
@@ -211,7 +211,7 @@ export const QUOTES: { t: string; w: string }[] = [
 ]
 
 /** Days since the epoch, in local terms — same day ⇒ same quote. */
-export function dayIndex(now: Date = new Date()) {
+function dayIndex(now: Date = new Date()) {
   return Math.floor(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) / 86400000)
 }
 

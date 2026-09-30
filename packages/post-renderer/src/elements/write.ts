@@ -76,7 +76,9 @@ function lines(block: StoredElement): string[] | null {
     case 'image': {
       const src = (block as { imageUrl?: string | null }).imageUrl ?? ''
       const caption = String((block as { caption?: string }).caption ?? '')
-      return [`![${caption}](${src})`]
+      const href = String((block as { href?: string | null }).href ?? '').trim()
+      // Markdown's own linked-image form, so the link survives the block→text→block trip.
+      return [href ? `[![${caption}](${src})](${href})` : `![${caption}](${src})`]
     }
     /*
      * Từ đây xuống là những thứ markdown **không** có ký hiệu.

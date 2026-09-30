@@ -104,6 +104,8 @@ export function pastedToItems(text: string): PastedList | null {
 
 const HEADING = /^(#{1,6})[ \t]+(.*)$/
 const IMAGE = /^!\[([^\]\n]*)\]\(\s*([^()\s]+)\s*\)$/
+/** `[![chú thích](ảnh)](link)` — một tấm ảnh bấm được. */
+const LINKED_IMAGE = /^\[!\[([^\]\n]*)\]\(\s*([^()\s]+)\s*\)\]\(\s*([^()\s]+)\s*\)$/
 const QUOTE = /^>[ \t]?(.*)$/
 /** `---`, `***`, `___` — một vạch ngăn; design không có element nào cho nó. */
 const RULE = /^(-{3,}|\*{3,}|_{3,})$/
@@ -187,6 +189,14 @@ export function markdownToBlocks(text: string): StoredElement[] {
       // Markdown có sáu cấp, design vẽ ba. Cấp sâu hơn về cấp ba chứ không
       // rơi mất — một tiêu đề mất cấp vẫn là một tiêu đề.
       out.push({ type: 'heading', text: heading[2], level: Math.min(3, heading[1].length) })
+      i++
+      continue
+    }
+
+    const linked = LINKED_IMAGE.exec(trimmed)
+    if (linked) {
+      flush()
+      out.push({ type: 'image', caption: linked[1], imageUrl: linked[2], href: linked[3] })
       i++
       continue
     }

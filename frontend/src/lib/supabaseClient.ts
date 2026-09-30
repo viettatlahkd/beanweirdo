@@ -4,7 +4,7 @@ const url = import.meta.env.VITE_SUPABASE_URL as string | undefined
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined
 
 /** False until `frontend/.env.local` is filled in — see `.env.example`. */
-export const supabaseConfigured = Boolean(url && anonKey)
+const supabaseConfigured = Boolean(url && anonKey)
 
 if (!supabaseConfigured) {
   // eslint-disable-next-line no-console

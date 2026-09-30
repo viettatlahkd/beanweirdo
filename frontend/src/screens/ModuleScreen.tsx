@@ -1,16 +1,18 @@
-import type { CSSProperties } from 'react'
-import { displayNumber, postDescription } from '../lib/postText'
+import { useMemo, type CSSProperties } from 'react'
+import { displayNumber } from '../lib/postText'
 import { Breadcrumbs } from '../components/Breadcrumbs'
 import type { ModuleRow } from '../data/useModules'
-import { useModules } from '../data/useModules'
-import type { PostRow } from '../data/usePublishedPosts'
+import { MODULE_LAYOUTS, type ModuleLayout } from '../content/layouts'
+import { indexModules, useModules } from '../data/useModules'
 import { usePublishedPosts } from '../data/usePublishedPosts'
 import { ink, layout, paper, prose, sans, serif, wrapTitle } from '../design/tokens'
 import { pageCaption, pageFill, pageImage } from '../lib/modulePageImages'
 import { Hover } from '../lib/Hover'
+import type { EntryView } from '../lib/moduleEntries'
+import { entriesOf, entryViews } from '../lib/moduleEntries'
+import { openModule } from '../lib/moduleTarget'
 import { useNav, useSettings } from '../lib/nav'
 import { openPost } from '../lib/openPost'
-import { postThumbnail } from '../lib/postThumb'
 import { useIsMobile } from '../lib/useIsMobile'
 import { coverStyle } from '../lib/imageFocus'
 
@@ -35,20 +37,30 @@ const rowHover: CSSProperties = { background: paper.white }
 const statusLabel: CSSProperties = { ...kicker, padding: '120px 56px' }
 
 /** `01`, `02`, `03` — position of the module in the running order. */
-/** Alternate the two tints down a list so consecutive thumbnails differ. */
-type TintedPost = PostRow & { tint: string }
-const withTints = (posts: PostRow[], m: ModuleRow): TintedPost[] =>
-  posts.map((p, i) => ({ ...p, tint: i % 2 === 0 ? m.tint : m.tint2 }))
+
+/**
+ * What the three layouts are handed.
+ *
+ * They used to take `posts` and read a post's fields directly, which is why a
+ * module holding other modules had nowhere to appear: three layouts, three
+ * hand-written post rows, and nothing in any of them able to say "this row is
+ * a section". `EntryView` is that row, decided in `lib/moduleEntries`; here a
+ * layout only decides how it looks. Opening a row is the screen's job for the
+ * same reason — a post opens a post, a branch opens a module page.
+ */
+type LayoutProps = {
+  m: ModuleRow
+  rows: EntryView[]
+  onOpen: (row: EntryView, index: number) => void
+}
 
 /**
  * Band — a colour block across the head, one wide hero, then the contents in
  * two columns with a thumbnail apiece.
  */
-function Band({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
-  const nav = useNav()
+function Band({ m, rows, onOpen }: LayoutProps) {
   const mob = useIsMobile()
   const { showPlates } = useSettings()
-  const entries = withTints(posts, m)
 
   return (
     <div>
@@ -91,10 +103,10 @@ function Band({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
             gap: mob ? 0 : '0 44px',
           }}
         >
-          {entries.map((e, i) => (
+          {rows.map((e, i) => (
             <Hover
               key={e.id}
-              onClick={() => openPost(nav, e)}
+              onClick={() => onOpen(e, i)}
               style={{
                 display: 'flex',
                 gap: 16,
@@ -116,7 +128,7 @@ function Band({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
                    * mà danh sách vẫn cắt giữa. `coverStyle` là chỗ duy nhất
                    * biết đọc nó.
                    */
-                  ...(postThumbnail(e) ? coverStyle(postThumbnail(e)!) : { background: e.tint }),
+                  ...(e.image ? coverStyle(e.image) : { background: e.tint }),
                 }}
               />
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -128,7 +140,7 @@ function Band({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
                     lineHeight: 1.15,
                   }}
                 >
-                  {e.en}
+                  {e.title}
                 </div>
                 <div
                   style={{
@@ -138,12 +150,12 @@ function Band({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
                     margin: '5px 0 8px',
                   }}
                 >
-                  {postDescription(e)}
+                  {e.description}
                 </div>
                 <div style={{ display: 'flex', gap: 12, ...meta }}>
                   <div>{displayNumber(i)}</div>
-                  <div>{e.kind}</div>
-                  <div>{e.date_label}</div>
+                  <div>{e.label}</div>
+                  <div>{e.trailing}</div>
                 </div>
               </div>
             </Hover>
@@ -158,11 +170,9 @@ function Band({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
  * Specimen — the colour block takes the left half, a tray of square plates the
  * right; the contents below sit in a three-column grid like a specimen drawer.
  */
-function Specimen({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
-  const nav = useNav()
+function Specimen({ m, rows, onOpen }: LayoutProps) {
   const mob = useIsMobile()
   const { showPlates } = useSettings()
-  const entries = withTints(posts, m)
 
   return (
     <div>
@@ -219,10 +229,10 @@ function Specimen({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
             borderBottom: `1px solid ${paper.rule}`,
           }}
         >
-          {entries.map((e, i) => (
+          {rows.map((e, i) => (
             <Hover
               key={e.id}
-              onClick={() => openPost(nav, e)}
+              onClick={() => onOpen(e, i)}
               style={{
                 background: paper.cream,
                 padding: mob ? '14px 14px 16px' : '18px 18px 20px',
@@ -251,7 +261,7 @@ function Specimen({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
                     letterSpacing: '.08em',
                   }}
                 >
-                  {e.kind}
+                  {e.label}
                 </div>
               </div>
               {showPlates && (
@@ -259,7 +269,7 @@ function Specimen({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
                   style={{
                     aspectRatio: '3/2',
                     marginBottom: 13,
-                    ...(postThumbnail(e) ? coverStyle(postThumbnail(e)!) : { background: e.tint }),
+                    ...(e.image ? coverStyle(e.image) : { background: e.tint }),
                   }}
                 />
               )}
@@ -272,9 +282,9 @@ function Specimen({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
                   marginBottom: 7,
                 }}
               >
-                {e.en}
+                {e.title}
               </div>
-              <div style={{ fontSize: 13, color: ink.soft, lineHeight: 1.3 }}>{postDescription(e)}</div>
+              <div style={{ fontSize: 13, color: ink.soft, lineHeight: 1.3 }}>{e.description}</div>
               <div
                 style={{
                   marginTop: 'auto',
@@ -284,7 +294,7 @@ function Specimen({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
                   color: ink.faint,
                 }}
               >
-                {e.date_label}
+                {e.trailing}
               </div>
             </Hover>
           ))}
@@ -527,8 +537,7 @@ const roastStrip = [
  * Sequence — an oversized title on the apricot block, the roast strip shifting
  * cream → yellow → earth → cinnamon, then the contents as big numbered rows.
  */
-function Sequence({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
-  const nav = useNav()
+function Sequence({ m, rows, onOpen }: LayoutProps) {
   const mob = useIsMobile()
   const { showPlates } = useSettings()
 
@@ -568,10 +577,10 @@ function Sequence({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
       )}
 
       <div style={{ padding: mob ? '26px 20px 40px' : '34px 56px 120px', maxWidth: 1240 }}>
-        {posts.map((e, i) => (
+        {rows.map((e, i) => (
           <Hover
             key={e.id}
-            onClick={() => openPost(nav, e)}
+            onClick={() => onOpen(e, i)}
             style={{
               display: 'grid',
               // Hẹp: bốn cột thành hai — số lớn bên trái, phần còn lại xếp
@@ -595,13 +604,13 @@ function Sequence({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
                 lineHeight: 1.15,
               }}
             >
-              {e.en}
+              {e.title}
             </div>
-            <div style={{ fontSize: 13.5, color: ink.soft, lineHeight: 1.3 }}>{postDescription(e)}</div>
+            <div style={{ fontSize: 13.5, color: ink.soft, lineHeight: 1.3 }}>{e.description}</div>
             <div style={{ ...meta, textAlign: 'right' }}>
-              {e.kind}
+              {e.label}
               <br />
-              {e.date_label}
+              {e.trailing}
             </div>
           </Hover>
         ))}
@@ -612,13 +621,27 @@ function Sequence({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
 
 /** Picks the layout the module declares — band, specimen or sequence. */
 export function ModuleScreen() {
-  const { moduleId } = useNav()
+  const nav = useNav()
+  const { moduleId } = nav
   const { data: modules, loading: modulesLoading } = useModules()
   const m = modules.find((x) => x.id === moduleId) ?? modules[0]
   const { data: posts, loading: postsLoading } = usePublishedPosts({
     moduleId: m?.id,
     enabled: Boolean(m),
   })
+
+  /*
+   * `m` comes from the unfiltered list so a private module still renders when
+   * its address is typed in, but what is *listed* on the page goes through
+   * `indexModules` — public only, in the site's own order. A private branch
+   * must not be advertised by the page above it.
+   */
+  const listable = useMemo(() => indexModules(modules), [modules])
+  const entries = useMemo(
+    () => (m ? entriesOf(m.id, listable, posts) : []),
+    [m, listable, posts],
+  )
+  const rows = useMemo(() => (m ? entryViews(entries, m) : []), [entries, m])
 
   if (modulesLoading || !m) {
     return <div style={statusLabel}>Đang tải…</div>
@@ -627,7 +650,30 @@ export function ModuleScreen() {
     return <div style={statusLabel}>Đang tải…</div>
   }
 
-  if (m.layout === 'band') return <Band m={m} posts={posts} />
-  if (m.layout === 'specimen') return <Specimen m={m} posts={posts} />
-  return <Sequence m={m} posts={posts} />
+  // Index rather than id: a row knows how it reads, not what opening it means.
+  // `openModule` is the one that knows Ghi 01 has a screen of its own.
+  const onOpen = (_row: EntryView, i: number) => {
+    const e = entries[i]
+    if (!e) return
+    if (e.type === 'module') openModule(nav, e.module)
+    else openPost(nav, e.post)
+  }
+
+  const Layout = LAYOUT_SCREENS[m.layout] ?? LAYOUT_SCREENS[MODULE_LAYOUTS[0].key]
+  return <Layout m={m} rows={rows} onOpen={onOpen} />
+}
+
+/**
+ * Which component draws which layout.
+ *
+ * `Record<ModuleLayout, …>` is the whole point: add a row to
+ * `content/layouts.ts` without adding a component here and the compiler says
+ * so, at the one place that would otherwise fail silently by falling through
+ * to `Sequence`. The old `if / if / return` had no such check — a fourth
+ * layout would simply have drawn as the third.
+ */
+const LAYOUT_SCREENS: Record<ModuleLayout, (p: LayoutProps) => JSX.Element> = {
+  band: Band,
+  specimen: Specimen,
+  sequence: Sequence,
 }

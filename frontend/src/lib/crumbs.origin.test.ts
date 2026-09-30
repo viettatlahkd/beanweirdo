@@ -11,7 +11,6 @@ import type { Nav } from './nav'
  * mở một bài từ Archive dựng ra `Admin › Templates › Tên bài` — một con đường
  * người đọc chưa từng đi qua.
  */
-const SECTIONS = { Public: 'Public', Practice: 'Practice', Admin: 'Admin' } as never
 const MODULES = [{ id: 'sensory', title: 'sensory' }] as never
 
 const navFor = (articleFrom: 'module' | 'admin' | 'archive'): Nav =>
@@ -30,13 +29,13 @@ const navFor = (articleFrom: 'module' | 'admin' | 'archive'): Nav =>
 
 describe('đường dẫn của một bài kể đúng nơi nó được mở ra', () => {
   it('reads as a public trail when the post was opened from a module', () => {
-    const trail = buildCrumbs(navFor('module'), MODULES, SECTIONS, { trailing: 'Bộ từ vựng' })
+    const trail = buildCrumbs(navFor('module'), MODULES, { trailing: 'Bộ từ vựng' })
 
     expect(trail.map((c) => c.label)).toEqual(['Trang chủ', 'Mục lục', 'sensory', 'Bộ từ vựng'])
   })
 
   it('goes back through Archive when that is the door the reader used', () => {
-    const trail = buildCrumbs(navFor('archive'), MODULES, SECTIONS, { trailing: 'Bộ từ vựng' })
+    const trail = buildCrumbs(navFor('archive'), MODULES, { trailing: 'Bộ từ vựng' })
 
     // Không phải Templates: người đọc chưa từng chạm vào màn đó.
     expect(trail.map((c) => c.label)).toEqual(['Admin', 'Archive', 'Bộ từ vựng'])

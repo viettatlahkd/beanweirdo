@@ -50,3 +50,31 @@ describe('mở ra từ markdown thì vẽ đúng ngay lượt đầu', () => {
     expect(screen.getByText('Viết ở đây, hoặc gõ / để chèn')).toBeInTheDocument()
   })
 })
+
+/*
+ * Bài AI Twin lặp phần 4–7 (2026-09-24): chèn một khối giữa dải là mặt soạn
+ * này chỉ còn nửa trước, mà bộ hoàn tác của Lexical vẫn nhớ cả dải cũ. Ctrl+Z
+ * dựng lại cả dải, rời ô là ghi đè — nửa sau thành hai bản. Tái hiện trong
+ * Chromium ở `frontend/src/harness.tsx`; ở đây kiểm đúng mắt xích ấy.
+ */
+describe('chữ đổi từ bên ngoài thì hoàn tác không dựng lại chữ cũ', () => {
+  it('Ctrl+Z sau khi dải bị cắt không đưa nửa đã chuyển đi quay lại', async () => {
+    const { UNDO_COMMAND } = await import('lexical')
+    const { act } = await import('@testing-library/react')
+    const { rerender } = render(<LiveText text={'## Bốn\n\n## Năm'} onCommit={vi.fn()} />)
+    // Một lần sửa trước để bộ hoàn tác có một bản "trước" — giống người đã gõ.
+    rerender(<LiveText text={'## Bốn\n\n## Năm\n\n## Sáu'} onCommit={vi.fn()} />)
+    await act(async () => new Promise((r) => setTimeout(r, 1100)))
+    rerender(<LiveText text={'## Bốn'} onCommit={vi.fn()} />)
+    await act(async () => {})
+    expect(document.querySelectorAll('h2')).toHaveLength(1)
+
+    const root = document.querySelector('.awc-live-input') as HTMLElement & {
+      __lexicalEditor: { dispatchCommand: (c: unknown, p: unknown) => boolean }
+    }
+    await act(async () => {
+      root.__lexicalEditor.dispatchCommand(UNDO_COMMAND, undefined)
+    })
+    expect([...document.querySelectorAll('h2')].map((h) => h.textContent)).toEqual(['Bốn'])
+  })
+})

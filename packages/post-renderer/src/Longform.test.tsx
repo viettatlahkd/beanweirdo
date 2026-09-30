@@ -129,7 +129,7 @@ describe('lùi lề đoạn văn', () => {
         renderText={(text) => <span>{text}</span>}
       />,
     )
-    expect(screen.getByText('phần *đậm*')).toBeInTheDocument()
+    expect(screen.getByText('phần **đậm**')).toBeInTheDocument()
   })
 })
 
@@ -160,5 +160,49 @@ describe('long-form không có tiêu đề nào', () => {
   it('bài có tiêu đề thì không hiện tên bài hai lần', () => {
     render(<Longform post={post} />)
     expect(screen.getAllByText('Lipids in Beans')).toHaveLength(1)
+  })
+})
+
+describe('Longform title spacing', () => {
+  it('keeps 30px between the title block and the first paragraph', () => {
+    render(<Longform post={post} />)
+    expect(screen.getByText('Chất béo, thể chất của nước')).toHaveStyle({ marginBottom: '30px' })
+  })
+
+  it('leaves the gap to a meta line, which brings its own', () => {
+    const withMeta = { ...post, blocks: [post.blocks[0], { k: 'meta' as const, runs: [{ t: 'NOTION — 2026' }] }, ...post.blocks.slice(1)] }
+    render(<Longform post={withMeta} />)
+    expect(screen.getByText('Chất béo, thể chất của nước')).toHaveStyle({ marginBottom: '8px' })
+  })
+
+  it('draws an empty figure as a tinted frame, not a white sheet', () => {
+    const { container } = render(
+      <Longform post={{ ...post, band: { bg: '#7FB87E', fg: '#1F3323' }, blocks: [...post.blocks, { k: 'fig', runs: [] }] }} />,
+    )
+    const frame = Array.from(container.querySelectorAll('div')).find((d) => d.style.aspectRatio === '1.5')
+    expect(frame?.style.background).not.toBe('rgb(255, 255, 255)')
+    expect(frame?.style.background).not.toBe('')
+  })
+})
+
+describe('dấu bị lưu thành chữ trên trang đăng', () => {
+  it('không hiện dấu sao và dấu >, trích dẫn có gạch lề', () => {
+    const { container } = render(
+      <Longform
+        post={{ ...post, blocks: [
+          {
+            k: 'p',
+            runs: [
+              { t: '> *', w: '300', s: 'normal' },
+              { t: 'Câu hỏi lõi:', w: '600', s: 'normal' },
+              { t: '* Thứ gì?', w: '300', s: 'normal' },
+            ],
+          },
+        ] }}
+      />,
+    )
+    const quote = container.querySelector('[data-quote]') as HTMLElement
+    expect(quote.textContent).toBe('Câu hỏi lõi: Thứ gì?')
+    expect(quote.style.borderLeft).toMatch(/2px solid/)
   })
 })

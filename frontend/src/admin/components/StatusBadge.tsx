@@ -12,11 +12,19 @@ const STYLE: Record<PostStatus, { background: string; color: string }> = {
   deleted: { background: garden.petalTint, color: '#8A3B41' },
 }
 
-export function StatusBadge({ status }: { status: PostStatus }) {
-  const s = STYLE[status]
+/*
+ * A published post with edits still waiting for "Đăng thay đổi". Without it
+ * the list says "Đã đăng" for a post whose page no longer matches what the
+ * owner last typed, and nothing tells them to go back and publish.
+ */
+const PENDING = { label: 'Có sửa chưa đăng', background: garden.honeyTint, color: garden.cinnamon }
+
+export function StatusBadge({ status, pending = false }: { status: PostStatus; pending?: boolean }) {
+  const s = status === 'published' && pending ? PENDING : { ...STYLE[status], label: LABEL[status] }
   return (
     <span
       data-testid="status-badge"
+      title={s === PENDING ? 'Bản trên trang vẫn là bản cũ — mở bài và bấm "Đăng thay đổi"' : undefined}
       style={{
         fontFamily: sans,
         fontSize: 9.5,
@@ -30,7 +38,7 @@ export function StatusBadge({ status }: { status: PostStatus }) {
         whiteSpace: 'nowrap',
       }}
     >
-      {LABEL[status]}
+      {s.label}
     </span>
   )
 }

@@ -30,7 +30,11 @@ async function assertColumnExists(table, column) {
   if (!ok) failed = true
 }
 
-for (const col of ['status', 'template', 'hero_image_url', 'published_at', 'deleted_at', 'previous_status', 'updated_at']) {
+// `thumbnail_url` is in POST_SUMMARY_COLUMNS, so if it is missing every request
+// to the admin listing answers 500 — the exact failure the comment on that
+// constant describes. It arrives by DDL run on the dashboard rather than by a
+// migration file, which is precisely why it is worth asserting here.
+for (const col of ['status', 'template', 'hero_image_url', 'thumbnail_url', 'published_at', 'deleted_at', 'previous_status', 'updated_at']) {
   await assertColumnExists('posts', col)
 }
 

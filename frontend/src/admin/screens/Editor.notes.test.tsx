@@ -197,11 +197,15 @@ describe('the blocks a report can hold', () => {
     expect(document.querySelector('.awc-live-input h3')?.textContent).toBe('Tổng quan')
   })
 
-  it('writes the quote mark itself, so nobody types one', () => {
+  it('trích dẫn là khối riêng, có ô nguồn và có tay nắm để kéo', () => {
+    /*
+     * Trích dẫn từng nằm chung dải chữ với đoạn văn, nên nó không có tay nắm.
+     * Chủ site: *"quote cũng phải được di chuyển chứ"* — nên `flows()` thôi
+     * nhận nó, và nó ra đứng riêng như ảnh với bảng. Gõ `> ` vẫn tạo ra nó.
+     */
     draw([{ id: 'b1', type: 'quote', text: 'Vị mỏng ở cuối.', attribution: 'sổ rang' }])
-    // Trích dẫn nay là chữ trong dải: dấu ngoặc kép do template in, còn nguồn
-    // đi kèm dưới dạng một dòng gạch ngang.
     expect(screen.getByText('Vị mỏng ở cuối.')).toBeInTheDocument()
-    expect(screen.getByText(/sổ rang/)).toBeInTheDocument()
+    expect(screen.getByDisplayValue('sổ rang')).toBeInTheDocument()
+    expect(screen.getByLabelText(/Kéo thả để đổi thứ tự/)).toBeInTheDocument()
   })
 })

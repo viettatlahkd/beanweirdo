@@ -3,10 +3,13 @@ import { splitAesc } from '../content/site'
 import { landingModules, useModules } from '../data/useModules'
 import type { ModuleImageFields } from '../admin/moduleForm'
 import { coverStyle } from '../lib/imageFocus'
-import type { PostRow } from '../data/usePublishedPosts'
+import { hasChildren } from '../lib/contentTree'
+import { newestFirst } from '../lib/postOrder'
+import { postsUnder } from '../lib/postGroups'
 import { usePublishedPosts } from '../data/usePublishedPosts'
 import { useSiteCopy } from '../data/useSiteCopy'
 import { garden, ink, layout, paper, prose, sans, serif, wrapTitle } from '../design/tokens'
+import type { ModuleLayout } from '../content/layouts'
 import { Hover } from '../lib/Hover'
 import { Rise } from '../lib/Rise'
 import { useNav } from '../lib/nav'
@@ -73,17 +76,6 @@ const bandGrid = (columns: string, rows: string, mob: boolean): CSSProperties =>
   ...(mob ? { marginLeft: -layout.padMobile, marginRight: -layout.padMobile } : null),
 })
 
-/** Groups posts by `module_id`, preserving each module's `sort_order`. */
-function groupByModule(posts: PostRow[]): Map<string, PostRow[]> {
-  const map = new Map<string, PostRow[]>()
-  for (const p of posts) {
-    const list = map.get(p.module_id)
-    if (list) list.push(p)
-    else map.set(p.module_id, [p])
-  }
-  return map
-}
-
 /**
  * Each module gets its own image arrangement, and every tile breaks its grid
  * cell by a different amount — the band's top and bottom edges are deliberately
@@ -112,7 +104,9 @@ export function ImageBand({ m }: { m: ModuleImageFields }) {
    */
   const mm = (desktop: string, mobile: string) => (mob ? mobile : desktop)
 
-  if (m.layout === 'band') {
+  const band = BAND_OF[m.layout as ModuleLayout] ?? 'sequence'
+
+  if (band === 'band') {
     return (
       <div style={bandGrid(mob ? 'minmax(0,1.6fr) minmax(0,1fr)' : 'minmax(0,1.9fr) minmax(0,1fr) 30px', '1.5fr 1fr', mob)}>
         <Rise
@@ -176,7 +170,7 @@ export function ImageBand({ m }: { m: ModuleImageFields }) {
     )
   }
 
-  if (m.layout === 'specimen') {
+  if (band === 'specimen') {
     return (
       <div style={bandGrid('minmax(0,1.7fr) minmax(0,1fr)', '1fr 1.4fr', mob)}>
         <Rise
@@ -259,6 +253,26 @@ export function ImageBand({ m }: { m: ModuleImageFields }) {
       </Rise>
     </div>
   )
+}
+
+/**
+ * Which of the three bands above a layout draws.
+ *
+ * The blocks are a chain of `if`s rather than a component map because they
+ * share `mm` and their cell margins are deliberately uneven — see the note on
+ * `ImageBand`. A chain falls through silently, so before this record a fourth
+ * layout would simply have drawn as `sequence`, on the homepage, without a
+ * word from anyone.
+ *
+ * `Record<ModuleLayout, …>` is the guard: add a row to `content/layouts.ts`
+ * and the compiler stops here until someone decides what the homepage does
+ * with it. Which is the point of the whole registry — a new layout should
+ * make the compiler ask the questions, not make the site answer them wrongly.
+ */
+const BAND_OF: Record<ModuleLayout, 'band' | 'specimen' | 'sequence'> = {
+  band: 'band',
+  specimen: 'specimen',
+  sequence: 'sequence',
 }
 
 /**
@@ -380,16 +394,46 @@ function PostSplit({ text }: { text: string }) {
 export function Landing() {
   const nav = useNav()
   const { data: allModules } = useModules()
-  const modules = landingModules(allModules)
+  const modules = useMemo(() => landingModules(allModules), [allModules])
   const { data: posts } = usePublishedPosts()
-  const postsByModule = useMemo(() => groupByModule(posts), [posts])
-  const { site } = useSiteCopy()
+  /*
+   * A block on the front page stands for its whole branch. A parent such as
+   * Cafe Hihi usually holds no posts of its own, everything sits in its
+   * sub-modules, so counting only direct posts showed "0 bài" and an empty
+   * "Mới nhất" over a branch full of writing.
+   *
+   * The walk uses public modules only, so a private sub-module's posts do not
+   * surface under a public parent.
+   */
+  const postsByModule = useMemo(() => {
+    const tree = allModules.filter((m) => m.visibility !== 'private')
+    const map = new Map<string, typeof posts>()
+    for (const m of modules) {
+      const under = postsUnder(posts, tree, m.id)
+      // The query's order (pinned, then hand-placed sort_order) is only
+      // meaningful inside one module — sort_order restarts at 1 in each — so a
+      // merged branch is re-read as what the heading says: newest first.
+      map.set(m.id, hasChildren(tree, m.id) ? [...under].sort(newestFirst) : under)
+    }
+    return map
+  }, [allModules, modules, posts])
+  const { site, ready } = useSiteCopy()
   const title = splitAesc(site.lTitle1)
   const mob = useIsMobile()
 
   return (
     <div>
-      <div style={{ padding: mob ? '30px 20px 44px' : '80px 56px 64px', maxWidth: layout.page }}>
+      <div
+        style={{
+          padding: mob ? '30px 20px 44px' : '80px 56px 64px',
+          maxWidth: layout.page,
+          // Every line in this block is editable in the CMS. Until the owner's
+          // copy is known, drawing the shipped defaults means showing a
+          // headline that is then replaced in front of the reader. Hidden, not
+          // unmounted, so the page below does not jump when it appears.
+          visibility: ready === false ? 'hidden' : undefined,
+        }}
+      >
         {/*
           * Nhãn trên cùng ngắt dòng ngay sau dấu gạch ngang.
           *

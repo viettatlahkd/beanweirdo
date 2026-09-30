@@ -108,14 +108,6 @@ export const NAV: NavItem[] = [
     shape: glyph({ w: '9px', h: '11px', bbw: '4px' }),
   },
   {
-    key: 'logic',
-    group: 'Admin',
-    label: 'System conventions',
-    desc: 'quy tắc FE / BE',
-    screen: 'logic',
-    shape: glyph({ w: '8px', h: '8px', tf: 'rotate(45deg)' }),
-  },
-  {
     key: 'archive',
     // Content management already lists every post, under five status filters
     // and with the editing controls attached. Archive shows a subset of the
@@ -132,17 +124,3 @@ export const NAV: NavItem[] = [
 export const navByKey = (key: string): NavItem | undefined => NAV.find((n) => n.key === key)
 
 export const navLabel = (key: string): string => navByKey(key)?.label ?? key
-
-/**
- * System-conventions copy references pages by `[[key]]` so renaming a page in
- * the CMS rewrites every rule that mentions it. Unknown tokens are left alone.
- */
-export function interpolateNav(text: string, sections: Record<NavGroup, string>): string {
-  if (!text.includes('[[')) return text
-  return text.replace(/\[\[([a-zA-Z]+)\]\]/g, (all, key: string) => {
-    if (key === 'secPublic') return sections.Public
-    if (key === 'secPractice') return sections.Practice
-    if (key === 'secAdmin') return sections.Admin
-    return navByKey(key)?.label ?? all
-  })
-}

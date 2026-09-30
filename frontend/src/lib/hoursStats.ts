@@ -1,4 +1,4 @@
-import { KICKOFF, STATS_DAYS, dateStr, dayBefore, todayStr, type LogEntry } from '../content/hours'
+import { KICKOFF, STATS_DAYS, dateStr, dayBefore, type LogEntry } from '../content/hours'
 import { countable } from './subtasks'
 
 export const toMin = (t: string) => {
@@ -14,7 +14,7 @@ export function fmt(m: number) {
   return r ? h + 'h ' + r + 'm' : h + 'h'
 }
 
-export type DayBucket = {
+type DayBucket = {
   ds: string
   d: Date
   /** every log on the day, including undone drafts */
@@ -184,8 +184,6 @@ export function buildAllDays(logs: LogEntry[], now: Date = new Date()): DayBucke
   return all
 }
 
-export const maxMins = (all: DayBucket[]) => Math.max(240, ...all.map((x) => x.mins))
-
 /** Consecutive logged days counting back from today. */
 export function streak(all: DayBucket[]) {
   let n = 0
@@ -194,61 +192,6 @@ export function streak(all: DayBucket[]) {
     else break
   }
   return n
-}
-
-export function chart(all: DayBucket[]) {
-  const m = maxMins(all)
-  return all.map((x) => ({
-    key: x.ds,
-    h: Math.max(2, Math.round((x.mins / m) * 132)) + 'px',
-    c: x.mins >= 180 ? '#3E7A4E' : x.mins ? '#7FB87E' : '#E3E3DB',
-    lab: String(x.d.getDate()).padStart(2, '0'),
-  }))
-}
-
-export function topNames(logs: LogEntry[]) {
-  const totals: Record<string, number> = {}
-  for (const l of logs) if (l.done !== false) totals[l.name] = (totals[l.name] || 0) + l.mins
-  const ranked = Object.keys(totals).sort((a, b) => totals[b] - totals[a])
-  const top = totals[ranked[0]] || 1
-  return ranked.slice(0, 5).map((n, i) => ({
-    n,
-    dur: fmt(totals[n]),
-    rank: String(i + 1).padStart(2, '0'),
-    w: Math.round((totals[n] / top) * 100) + '%',
-  }))
-}
-
-export function byKind(
-  logs: LogEntry[],
-  all: DayBucket[],
-  kindList: string[],
-  kindColor: Record<string, string>,
-) {
-  const spanTotal = all.reduce((a, x) => a + x.mins, 0)
-  return kindList
-    .map((k) => {
-      const m = logs.filter((l) => l.kind === k && l.done !== false).reduce((a, l) => a + l.mins, 0)
-      let ks = 0
-      for (let i = all.length - 1; i >= 0; i--) {
-        if (all[i].ls.some((l) => l.kind === k)) ks++
-        else break
-      }
-      const nd = all.filter((x) => x.ls.some((l) => l.kind === k)).length
-      const pct = spanTotal ? Math.round((m / spanTotal) * 100) : 0
-      return {
-        k,
-        dur: m ? fmt(m) : '—',
-        color: kindColor[k],
-        dim: m ? 1 : 0.35,
-        w: pct + '%',
-        pct: pct + '%',
-        streak: ks ? ks + ' ngày liên tiếp' : 'đứt chuỗi',
-        days: nd + '/' + all.length + ' ngày',
-        _sort: pct,
-      }
-    })
-    .sort((a, b) => b._sort - a._sort)
 }
 
 export function spanStats(all: DayBucket[]) {
@@ -268,10 +211,6 @@ export function spanStats(all: DayBucket[]) {
   }
 }
 
-export function todayLogs(logs: LogEntry[], today: string = todayStr()) {
-  return logs.filter((l) => l.date === today)
-}
-
 // ── The statistics panel ────────────────────────────────────────────────────
 
 /** The row for activities filed under no project at all. */
@@ -281,7 +220,7 @@ const done = (l: LogEntry) => l.done !== false
 const minutes = (ls: LogEntry[]) => ls.filter(done).reduce((a, l) => a + l.mins, 0)
 
 /** Midnight of the Monday on or before `d`. */
-export function weekStart(d: Date): Date {
+function weekStart(d: Date): Date {
   const x = new Date(d.getFullYear(), d.getMonth(), d.getDate())
   // getDay() is 0 for Sunday; the journal's week runs Monday to Sunday.
   x.setDate(x.getDate() - ((x.getDay() + 6) % 7))
@@ -396,7 +335,7 @@ export function usefulRatio(logs: LogEntry[]) {
  *
  * Which project the time went to answers "am I spending too long on this, or
  * not enough on that"; which *kind* of work it was is a secondary reading, so
- * this leads and `byKind` follows. Activities with no project are counted as
+ * this is the only breakdown the panel draws. Activities with no project are counted as
  * their own row rather than dropped, or the percentages would not add up.
  */
 export function byProject(
@@ -470,7 +409,7 @@ export function neglected(
 }
 
 /** One square of the heatmap. */
-export type HeatCell = {
+type HeatCell = {
   ds: string
   mins: number
   /** 0 = a day inside the record with nothing on it, 4 = the heaviest days. */
@@ -498,7 +437,7 @@ export type HeatCell = {
  * left the grid sitting short of the width it had, which reads as an odd
  * number of columns rather than as a span. Fifteen fills the column.
  */
-export const HEAT_WEEKS = 15
+const HEAT_WEEKS = 15
 
 /**
  * An Anki-style grid: one square per day, `weeks` columns of them.

@@ -7,7 +7,8 @@
 import type { ReportBlock } from 'post-renderer'
 import { textToRuns } from 'post-renderer'
 import { describe, expect, it } from 'vitest'
-import { splitForThing, toRuns, writeRun } from './flow'
+import { insertThing, moveIntoRun, toRuns, writeRun } from './flow'
+import { linesThrough, splitAtLine } from './mdBlocks'
 
 const para = (text: string, id: string) => ({ type: 'paragraph', id, text }) as unknown as ReportBlock
 const head = (text: string, id: string) => ({ type: 'heading', id, level: 2, text }) as unknown as ReportBlock
@@ -74,33 +75,73 @@ describe('sửa xong một dải', () => {
 })
 
 describe('chèn một thứ vào giữa dải chữ', () => {
+  /*
+   * Vị trí chèn đo bằng **số dòng có chữ phía trên**, không phải khối thứ
+   * mấy trong kho — xem `mdBlocks.ts`. Nên mấy bài dưới đây đếm theo cái
+   * người viết nhìn thấy.
+   */
   const body = [para('trên\n\ndưới', 'b1')]
 
-  it('cắt ở ranh giới dòng, chữ hai bên thành hai dải', () => {
-    const text = 'trên\n\ndưới'
-    const out = splitForThing(body, [0, 0], text, text.indexOf('dưới'), table('t9'))
-    expect(out.blocks.map((b) => b.type)).toEqual(['paragraph', 'table', 'paragraph'])
-    expect(out.thingAt).toBe(1)
+  it('chèn sau khối con trỏ đang đứng, chữ hai bên thành hai dải', () => {
+    const out = insertThing(body, [0, 0], 'trên\n\ndưới', 1, table('t9'))
+    expect(out.map((b) => b.type)).toEqual(['paragraph', 'table', 'paragraph'])
+    expect((out[0] as unknown as { text: string }).text).toBe('trên')
   })
 
-  it('con trỏ ở đầu thì thứ chèn vào đứng trước hết', () => {
-    const out = splitForThing(body, [0, 0], 'trên', 0, table('t9'))
-    expect(out.blocks.map((b) => b.type)).toEqual(['table', 'paragraph'])
-    expect(out.thingAt).toBe(0)
+  it('con trỏ ở khối cuối thì thứ chèn vào đứng sau hết', () => {
+    const out = insertThing(body, [0, 0], 'trên\n\ndưới', 2, table('t9'))
+    expect(out.map((b) => b.type)).toEqual(['paragraph', 'paragraph', 'table'])
   })
 
-  it('con trỏ ở cuối thì đứng sau hết', () => {
-    const text = 'trên'
-    const out = splitForThing(body, [0, 0], text, text.length, table('t9'))
-    expect(out.blocks.map((b) => b.type)).toEqual(['paragraph', 'table'])
+  it('dải rỗng vẫn chèn được, không sinh đoạn văn trống', () => {
+    const out = insertThing([], [0, -1], '', 0, table('t9'))
+    expect(out.map((b) => b.type)).toEqual(['table'])
   })
 
-  it('không cắt giữa câu — con trỏ giữa dòng thì thứ chèn vào đứng sau cả dòng', () => {
-    // Một cái bảng chen vào giữa một câu là làm gãy câu ấy, mà người viết
-    // không hề ra lệnh cho việc đó.
-    const text = 'một câu dài'
-    const out = splitForThing(body, [0, 0], text, 4, table('t9'))
-    expect(out.blocks.map((b) => b.type)).toEqual(['paragraph', 'table'])
-    expect((out.blocks[0] as unknown as { text: string }).text).toBe('một câu dài')
+  it('thứ chèn vào giữ id mới của nó, không mượn id của đoạn văn', () => {
+    // Ghi chú cạnh bài neo vào `id`. Cấp cho cái bảng cái id của đoạn văn thì
+    // mọi ghi chú của đoạn ấy lặng lẽ nhảy sang bảng.
+    const out = insertThing(body, [0, 0], 'trên\n\ndưới', 1, table('t9'))
+    expect(out[1].id).toBe('t9')
+    expect(out[0].id).toBe('b1')
+  })
+})
+
+describe('cắt theo dòng', () => {
+  it('chèn được vào giữa một đoạn gộp từ nhiều dòng', () => {
+    // Long-form: hai đoạn liền nhau Lexical vẽ thành một khối có ngắt dòng.
+    const [before, after] = splitAtLine('một\nhai\nba', 2)
+    expect(before).toBe('một\nhai')
+    expect(after).toBe('ba')
+  })
+
+  it('đếm dòng theo khối và dòng trong khối trên mặt soạn', () => {
+    // `## a` là khối 0; `- x\n- y` là khối 1 với hai dòng.
+    const text = '## a\n\n- x\n- y\n\nđoạn'
+    expect(linesThrough(text, 0, 0)).toBe(1)
+    expect(linesThrough(text, 1, 0)).toBe(2)
+    expect(linesThrough(text, 1, 1)).toBe(3)
+    expect(linesThrough(text, 2, 0)).toBe(4)
+  })
+
+  it('không cắt vào giữa khối mã', () => {
+    const [before] = splitAtLine('```\nx\ny\n```\nsau', 2)
+    expect(before).toBe('```\nx\ny\n```')
+  })
+})
+
+describe('moveIntoRun', () => {
+  const body = [table('t1'), para('một\n\nhai', 'b1'), table('t2')]
+
+  it('thả cái bảng đầu bài vào giữa hai đoạn', () => {
+    const out = moveIntoRun(body, 0, [1, 1], 'một\n\nhai', 1, insertThing)
+    expect(out.map((b) => b.id ?? b.type)).toEqual(['b1', 't1', expect.anything(), 't2'])
+  })
+
+  it('thả cái bảng cuối bài lên trên dòng đầu', () => {
+    const out = moveIntoRun(body, 2, [1, 1], 'một\n\nhai', 0, insertThing)
+    expect(out[1].id).toBe('t2')
+    expect(out.filter((b) => b.id === 't2')).toHaveLength(1)
+    expect(out[0].id).toBe('t1')
   })
 })

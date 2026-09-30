@@ -11,7 +11,7 @@ export type TableAttrs = {
   table: { columns: string[]; rows: { cells: string[] }[]; widths?: number[] }
 }
 
-export const metrics = registerElement<MetricsAttrs>({
+registerElement<MetricsAttrs>({
   name: 'metrics',
   title: 'Số liệu',
   category: 'data',
@@ -38,7 +38,7 @@ export const metrics = registerElement<MetricsAttrs>({
   ),
 })
 
-export const chart = registerElement<ChartAttrs>({
+registerElement<ChartAttrs>({
   name: 'chart',
   title: 'Biểu đồ',
   category: 'data',
@@ -78,7 +78,7 @@ export const chart = registerElement<ChartAttrs>({
  * the columns is ignored rather than stretched to fit, which would move every
  * boundary the writer had set.
  */
-export function columnWidth(table: TableAttrs['table'], index: number): string {
+function columnWidth(table: TableAttrs['table'], index: number): string {
   const w = table.widths
   if (!w || w.length !== table.columns.length) return `${100 / Math.max(table.columns.length, 1)}%`
   return `${w[index]}%`
@@ -149,7 +149,7 @@ export function TableScroll({
   )
 }
 
-export const table = registerElement<TableAttrs>({
+registerElement<TableAttrs>({
   name: 'table',
   title: 'Bảng',
   category: 'data',

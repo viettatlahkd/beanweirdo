@@ -17,6 +17,7 @@ const saved = vi.fn()
 vi.mock('../lib/apiClient', async (orig) => ({
   ...(await orig<Record<string, unknown>>()),
   getPost: vi.fn(async () => ({
+    authors: [],
     id: 'p1',
     module_id: 'sensory',
     en: 'Tiêu đề',

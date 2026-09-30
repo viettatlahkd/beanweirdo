@@ -18,11 +18,8 @@ const ROUNDTRIP: Where[] = [
   { area: 'practice', screen: 'hours' },
   { area: 'admin', screen: 'cms' },
   { area: 'admin', screen: 'cms', tab: 'posts' },
-  { area: 'admin', screen: 'cms', tab: 'map' },
-  { area: 'admin', screen: 'cms', tab: 'content' },
-  { area: 'admin', screen: 'logic' },
+  { area: 'admin', screen: 'cms', tab: 'config' },
   { area: 'admin', screen: 'archive' },
-  { area: 'admin', screen: 'postNew' },
   { area: 'admin', screen: 'postEdit', slug: 'biochemistry-p260817' },
   { area: 'admin', screen: 'postPreview', slug: 'biochemistry-p260817' },
 ]
@@ -65,18 +62,26 @@ describe('routes — tên trong địa chỉ', () => {
     expect(parsePath('/ad-post/view=ghi-p260818')).toMatchObject({ screen: 'postPreview', slug: 'ghi-p260818' })
   })
 
-  it('lets a new post have no slug yet', () => {
-    // Lúc chọn khung và đặt tên thì bài chưa tồn tại, nên chưa có ngày tạo.
-    expect(toPath({ area: 'admin', screen: 'postNew' })).toBe('/ad-post/create')
-    expect(parsePath('/ad-post/create')).toMatchObject({ screen: 'postNew', slug: undefined })
+  it('đưa địa chỉ tạo bài cũ về danh sách bài', () => {
+    /*
+     * `/ad-post/create` từng là một trang riêng. Nay việc ấy là một hộp thoại
+     * mở ngay trên danh sách, nên địa chỉ đó không còn trỏ vào đâu — và một
+     * bookmark cũ phải rơi vào danh sách bài, chỗ gần nhất với thứ nó từng mở,
+     * chứ không rơi ra trang công khai.
+     */
+    expect(parsePath('/ad-post/create')).toMatchObject({ area: 'admin', screen: 'cms', tab: 'posts' })
   })
 
   it('opens each Content management tab at its own address', () => {
-    for (const p of ['/ad-post', '/ad-sitemap', '/ad-page-content', '/ad']) {
+    for (const p of ['/ad-post', '/ad-config', '/ad-sitemap', '/ad-page-content', '/ad']) {
       expect(parsePath(p).screen, p).toBe('cms')
     }
-    expect(parsePath('/ad-sitemap').tab).toBe('map')
-    expect(parsePath('/ad-page-content').tab).toBe('content')
+    expect(parsePath('/ad-config').tab).toBe('config')
+    expect(toPath({ area: 'admin', screen: 'cms', tab: 'config' })).toBe('/ad-config')
+    // Hai nửa cũ của tab ấy. Không còn được sinh ra, nhưng link đã phát ra rồi
+    // thì vẫn phải mở đúng chỗ — người cầm link không biết chúng đã gộp.
+    expect(parsePath('/ad-sitemap').tab).toBe('config')
+    expect(parsePath('/ad-page-content').tab).toBe('config')
     // `/ad` names the screen and not a tab, so it opens on the first one
     // without rewriting itself to another address on arrival.
     expect(parsePath('/ad').tab).toBeUndefined()

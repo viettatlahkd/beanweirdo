@@ -5,7 +5,7 @@ import { toMin } from './hoursStats'
  * One line of a day: either an ordinary activity, or an activity that was
  * returned to more than once.
  */
-export type ActivityGroup = {
+type ActivityGroup = {
   /** The row that carries the name and both tags. */
   row: LogEntry
   /** Its sittings, earliest first. Empty on an ordinary activity. */

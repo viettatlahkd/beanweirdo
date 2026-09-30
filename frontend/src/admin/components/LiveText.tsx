@@ -27,7 +27,13 @@ import { MarkdownShortcutPlugin } from '@lexical/react/LexicalMarkdownShortcutPl
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin'
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
 import { HeadingNode, QuoteNode } from '@lexical/rich-text'
-import { BLUR_COMMAND, COMMAND_PRIORITY_LOW, TextNode } from 'lexical'
+import {
+  $getRoot,
+  BLUR_COMMAND,
+  CLEAR_HISTORY_COMMAND,
+  COMMAND_PRIORITY_LOW,
+  type LexicalEditor,
+} from 'lexical'
 import { useEffect, useRef } from 'react'
 import { SITE_TRANSFORMERS, unescapeSite } from '../lib/liveMarkdown'
 import { registerLiveKeys, type LiveEdges } from './liveKeys'
@@ -49,7 +55,7 @@ const THEME = {
     nested: { listitem: 'awc-live-li-nested' },
   },
   link: 'awc-live-link',
-  text: { bold: 'awc-live-bold', italic: 'awc-live-bold', underline: 'awc-live-u' },
+  text: { bold: 'awc-live-bold', italic: 'awc-live-em', underline: 'awc-live-u' },
 }
 
 const NODES = [HeadingNode, QuoteNode, ListNode, ListItemNode, LinkNode, CodeNode, CodeHighlightNode]
@@ -80,24 +86,41 @@ function CommitOnBlur({ onCommit }: { onCommit: (markdown: string) => void }) {
 }
 
 /**
- * Design chỉ có một mức nhấn, nên nghiêng cũng là nhấn.
+ * Chữ đổi từ **bên ngoài** thì dựng lại mặt soạn.
  *
- * `Cmd+I` là phím ai cũng thử, và HTML dán từ nơi khác vào thì đầy `<em>`.
- * Cả hai đường đều đặt được format `italic`, thứ `SITE_TRANSFORMERS` không có
- * chỗ ghi ra — nên nó hiện lên màn hình rồi biến mất lúc rời ô. Đổi ngay tại
- * gốc thì cả hai đường cùng về một chỗ, và không đường nào ăn mất chữ.
+ * Lexical đọc `text` đúng **một lần**, lúc dựng (`initialConfig.editorState`).
+ * Chừng nào chữ chỉ đổi do người viết gõ thì thế là đủ — và đến 2026-09-21
+ * thì đúng là thế thật.
+ *
+ * Nhưng nút `+` nay cắt dải chữ làm đôi: chèn một cái bảng vào giữa thì dải
+ * trên còn lại một nửa. React giữ nguyên component (cùng `key`), nên Lexical
+ * không đọc lại và **mặt soạn vẫn bày nguyên cả dải cũ** — trên màn hình là
+ * hai bản của cùng đoạn văn, một ở trên bảng một ở dưới. Đo trong Chrome, xem
+ * `docs/inbox/template/`.
+ *
+ * So bằng chính markdown chứ không bằng một cờ: dựng lại một mặt soạn đang có
+ * con trỏ là làm mất chỗ đang gõ, nên chỉ dựng lại khi chữ thật sự khác.
  */
-function OneEmphasis() {
+function SyncOutside({ text }: { text: string }) {
   const [editor] = useLexicalComposerContext()
-  useEffect(
-    () =>
-      editor.registerNodeTransform(TextNode, (node) => {
-        if (!node.hasFormat('italic')) return
-        node.toggleFormat('italic')
-        if (!node.hasFormat('bold')) node.toggleFormat('bold')
-      }),
-    [editor],
-  )
+  useEffect(() => {
+    let current = ''
+    editor.getEditorState().read(() => {
+      current = unescapeSite($convertToMarkdownString(SITE_TRANSFORMERS))
+    })
+    if (current === text) return
+    editor.update(() => $convertFromMarkdownString(text, SITE_TRANSFORMERS))
+    /*
+     * Chữ đổi từ bên ngoài thì bộ hoàn tác của Lexical phải quên hết.
+     *
+     * Chèn một khối vào giữa dải là cắt dải làm đôi: nửa sau sang một mặt soạn
+     * mới, mặt này chỉ còn nửa trước. Bộ hoàn tác của mặt này vẫn nhớ cả dải
+     * cũ, nên Ctrl+Z ở đây dựng lại nguyên dải — rồi rời ô là ghi nó đè vào
+     * chỗ chỉ còn nửa trước, và nửa sau có hai bản. Đó là bài AI Twin lặp phần
+     * 4–7 (2026-09-24).
+     */
+    editor.dispatchCommand(CLEAR_HISTORY_COMMAND, undefined)
+  }, [editor, text])
   return null
 }
 
@@ -158,10 +181,38 @@ export function LiveText({
         {/* Gõ `- ` ra danh sách thì `Enter`, `Tab` trong danh sách phải chạy theo. */}
         <ListPlugin />
         <HistoryPlugin />
-        <OneEmphasis />
+        <SyncOutside text={text} />
         <LiveKeys edges={{ onBackspaceAtStart, onDeleteAtEnd }} />
         <CommitOnBlur onCommit={onCommit} />
       </div>
     </LexicalComposer>
   )
+}
+
+function editorOf(input: HTMLElement | null | undefined): LexicalEditor | null {
+  return (input as (HTMLElement & { __lexicalEditor?: LexicalEditor }) | null)?.__lexicalEditor ?? null
+}
+
+/** Markdown **đang** nằm trên mặt soạn — kể cả phần chưa ghi vì chưa rời ô. */
+export function liveMarkdown(input: HTMLElement | null | undefined): string | null {
+  const editor = editorOf(input)
+  if (!editor) return null
+  let out = ''
+  editor.getEditorState().read(() => {
+    out = unescapeSite($convertToMarkdownString(SITE_TRANSFORMERS))
+  })
+  return out
+}
+
+/**
+ * Bỏ khối thứ `block` khỏi mặt soạn rồi trả markdown còn lại.
+ *
+ * Dùng cho `/`: dòng `/bảng` người viết vừa gõ là lời gọi menu, không phải
+ * chữ của bài — chèn xong mà nó còn nằm đó là phải xoá tay thêm một lần.
+ */
+export function takeBlock(input: HTMLElement | null | undefined, block: number): string | null {
+  const editor = editorOf(input)
+  if (!editor) return null
+  editor.update(() => $getRoot().getChildAtIndex(block)?.remove(), { discrete: true })
+  return liveMarkdown(input)
 }

@@ -1,9 +1,8 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MetadataStep } from './MetadataStep'
-
-const createTag = vi.fn().mockResolvedValue({ id: 'thi-nghiem', label: 'thí nghiệm' })
+import { forgetAllLists } from '../lib/lists'
 
 vi.mock('../lib/apiClient', () => ({
   listModules: vi.fn().mockResolvedValue([
@@ -18,8 +17,15 @@ vi.mock('../lib/apiClient', () => ({
     { id: 't-article', name: 'Article', renderer: 'article', description: '' },
     { id: 't-longform', name: 'Long-form', renderer: 'longform', description: '' },
   ]),
-  createTag: (label: string) => createTag(label),
 }))
+
+/*
+ * Ba danh sách này đi qua cache dùng chung, mà cache ấy sống ở cấp module — nên
+ * mỗi test phải bắt đầu từ chỗ chưa ai hỏi gì.
+ */
+beforeEach(() => {
+  forgetAllLists()
+})
 
 describe('MetadataStep', () => {
   it('asks for everything a post needs in one form', async () => {
@@ -40,7 +46,7 @@ describe('MetadataStep', () => {
     await waitFor(() =>
       expect(onContinue).toHaveBeenCalledWith({
         module_id: 'roasting',
-        kind: 'note',
+        kindLabel: 'note',
         en: 'Senses of Flavors',
         vi: 'mô tả',
         templateId: 't-longform',
@@ -52,10 +58,15 @@ describe('MetadataStep', () => {
   })
 
   /*
-   * `kind` was four words a programmer picked, fenced by a database constraint.
-   * A tag typed for the first time is written down, so it is offered next time.
+   * Một tag gõ lần đầu vẫn được ghi xuống để lần sau có sẵn — nhưng máy chủ lo
+   * việc ấy, cùng lúc với lúc nó ghi bài. Màn này chỉ chuyển nguyên văn chữ chủ
+   * site gõ. Phần ghi tag có test riêng ở backend/api/posts/index.test.ts
+   * ("derives the tag id from the label and writes both").
+   *
+   * Trước đây chỗ này gọi `createTag` rồi **chờ** nó xong mới sang bước sau:
+   * hai lượt mạng nối tiếp cho một cái nút chỉ để mở màn soạn ra.
    */
-  it('writes down a tag it has not seen before', async () => {
+  it('hands the typed tag through as written, without a call of its own', async () => {
     const onContinue = vi.fn()
     render(<MetadataStep onContinue={onContinue} />)
     await waitFor(() => expect(screen.getByLabelText('Module')).toHaveValue('sensory'))
@@ -65,21 +76,23 @@ describe('MetadataStep', () => {
     await userEvent.type(screen.getByLabelText('Tiêu đề'), 'Bài mới')
     await userEvent.click(screen.getByRole('button', { name: /soạn bài/i }))
 
-    await waitFor(() => expect(createTag).toHaveBeenCalledWith('thí nghiệm'))
+    // Nguyên văn, có dấu — chữ chủ site gõ là thứ được lưu làm nhãn.
     await waitFor(() =>
-      expect(onContinue).toHaveBeenCalledWith(expect.objectContaining({ kind: 'thi-nghiem' })),
+      expect(onContinue).toHaveBeenCalledWith(expect.objectContaining({ kindLabel: 'thí nghiệm' })),
     )
   })
 
-  it('does not write down a tag it already knows', async () => {
-    createTag.mockClear()
-    render(<MetadataStep onContinue={vi.fn()} />)
+  it('passes a tag it already knows through the same way', async () => {
+    const onContinue = vi.fn()
+    render(<MetadataStep onContinue={onContinue} />)
     await waitFor(() => expect(screen.getByLabelText('Tag')).toHaveValue('note'))
 
     await userEvent.type(screen.getByLabelText('Tiêu đề'), 'Bài mới')
     await userEvent.click(screen.getByRole('button', { name: /soạn bài/i }))
 
-    await waitFor(() => expect(createTag).not.toHaveBeenCalled())
+    await waitFor(() =>
+      expect(onContinue).toHaveBeenCalledWith(expect.objectContaining({ kindLabel: 'note' })),
+    )
   })
 
   /* A description is a nicety; a title is what the post is called. */

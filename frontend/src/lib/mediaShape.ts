@@ -11,8 +11,8 @@
  * một khung 4:3 mới.
  */
 
-export type MediaKind = 'img' | 'vid'
-export type MediaShape = { kind: MediaKind; portrait: boolean }
+type MediaKind = 'img' | 'vid'
+type MediaShape = { kind: MediaKind; portrait: boolean }
 
 /** Đuôi tệp của những định dạng clip trình duyệt mở được. */
 const VIDEO_EXT = /\.(mp4|webm|ogv|ogg|mov|m4v|mkv)(?:[?#]|$)/i

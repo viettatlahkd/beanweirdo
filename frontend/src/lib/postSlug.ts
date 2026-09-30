@@ -16,7 +16,7 @@ import { activeWords, type DateOrder, type RouteWords } from './routeWords'
  * later archived — keeps the plain address it earned, because archive is a
  * place readers still reach it through.
  */
-export type SlugParts = {
+type SlugParts = {
   moduleId: string
   /** ISO timestamp from the database. */
   createdAt: string

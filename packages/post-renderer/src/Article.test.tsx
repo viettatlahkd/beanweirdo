@@ -124,3 +124,53 @@ describe('Article', () => {
     expect(screen.getByTestId('fig-override')).toHaveTextContent('A chlorogenic acid molecule diagram')
   })
 })
+
+describe('đậm và nghiêng trong thân bài article', () => {
+  it('vẽ ra định dạng, không để lộ dấu sao', () => {
+    const p = 'thường **đậm** và *nghiêng* và **đậm *cả hai* đậm**'
+    const { container } = render(<Article post={{ ...post, sections: [{ h: 'H', p }] }} />)
+    expect(container.textContent).not.toContain('*')
+    const ems = Array.from(container.querySelectorAll('em')).map((el) => [
+      el.textContent,
+      (el as HTMLElement).style.fontWeight,
+      (el as HTMLElement).style.fontStyle,
+    ])
+    expect(ems).toEqual([
+      ['đậm', '600', 'normal'],
+      ['nghiêng', 'inherit', 'italic'],
+      ['đậm ', '600', 'normal'],
+      ['cả hai', '600', 'italic'],
+      [' đậm', '600', 'normal'],
+    ])
+  })
+})
+
+describe('Article band height', () => {
+  it('draws no lead line when the post has no description', () => {
+    render(<Article post={{ ...post, lead: '' }} />)
+    expect(screen.queryByTestId('article-lead')).toBeNull()
+  })
+
+  it('keeps the lead when there is one', () => {
+    render(<Article post={post} />)
+    expect(screen.getByTestId('article-lead')).toHaveTextContent(post.lead)
+  })
+})
+
+describe('Article: khung ghi chú rỗng', () => {
+  const sand = (c: HTMLElement) =>
+    Array.from(c.querySelectorAll('div')).filter((d) => d.style.background === 'rgb(243, 238, 225)')
+
+  it('draws nothing for an aside nobody has written in', () => {
+    const empty = { type: 'aside', items: [{ type: 'paragraph', text: '' }] }
+    const { container } = render(<Article post={{ ...post, sections: [...post.sections, empty, empty] as never }} />)
+    expect(sand(container)).toHaveLength(0)
+  })
+
+  it('still draws an aside with words in it', () => {
+    const full = { type: 'aside', items: [{ type: 'paragraph', text: 'Ghi chú.' }] }
+    const { container } = render(<Article post={{ ...post, sections: [...post.sections, full] as never }} />)
+    expect(sand(container)).toHaveLength(1)
+    expect(screen.getByText('Ghi chú.')).toBeInTheDocument()
+  })
+})

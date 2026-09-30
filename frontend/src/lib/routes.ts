@@ -36,7 +36,7 @@ export type Where = {
  */
 export const moduleToUrl = (id: string, w: RouteWords = activeWords()) => w.modules[id] ?? id
 
-export function moduleFromUrl(name: string, w: RouteWords = activeWords()): string {
+function moduleFromUrl(name: string, w: RouteWords = activeWords()): string {
   for (const [id, spelt] of Object.entries(w.modules)) if (spelt === name) return id
   return name
 }
@@ -44,45 +44,49 @@ export function moduleFromUrl(name: string, w: RouteWords = activeWords()): stri
 /** The admin screens that live at their own `/ad-…` address. */
 const adminPages = (w: RouteWords): Record<string, Screen> => ({
   [`${w.admin}-${w.adPost}`]: 'cms',
+  [`${w.admin}-${w.adConfig}`]: 'cms',
+  [`${w.admin}-${w.adAuthors}`]: 'cms',
   [`${w.admin}-${w.adSitemap}`]: 'cms',
   [`${w.admin}-${w.adPageContent}`]: 'cms',
-  [`${w.admin}-${w.adConvention}`]: 'logic',
   [`${w.admin}-${w.adArchive}`]: 'archive',
 })
 
-export type CmsTab = 'posts' | 'map' | 'content'
+export type CmsTab = 'posts' | 'authors' | 'config'
 
 /**
  * Which tab of Content management an `/ad-…` address opens on.
  *
  * `/ad` names the screen without naming a tab, and opens on the first one. The
- * three tabs are separate addresses because they are separate places to be —
- * a link to the site map should not open the post list.
+ * two tabs are separate addresses because they are separate places to be — a
+ * link to the settings should not open the post list.
+ *
+ * `/ad-sitemap` and `/ad-page-content` were the two halves that are now one
+ * tab. They still read, because links to them are already out there; only
+ * `/ad-config` is written from here on.
  */
-export const cmsTabs = (w: RouteWords = activeWords()): Record<string, CmsTab> => ({
+const cmsTabs = (w: RouteWords = activeWords()): Record<string, CmsTab> => ({
   [`${w.admin}-${w.adPost}`]: 'posts',
-  [`${w.admin}-${w.adSitemap}`]: 'map',
-  [`${w.admin}-${w.adPageContent}`]: 'content',
+  [`${w.admin}-${w.adConfig}`]: 'config',
+  [`${w.admin}-${w.adAuthors}`]: 'authors',
+  [`${w.admin}-${w.adSitemap}`]: 'config',
+  [`${w.admin}-${w.adPageContent}`]: 'config',
 })
 const pageOfTab = (w: RouteWords): Record<CmsTab, string> => ({
   posts: `${w.admin}-${w.adPost}`,
-  map: `${w.admin}-${w.adSitemap}`,
-  content: `${w.admin}-${w.adPageContent}`,
+  authors: `${w.admin}-${w.adAuthors}`,
+  config: `${w.admin}-${w.adConfig}`,
 })
 
 const screenPage = (w: RouteWords): Partial<Record<Screen, string>> => ({
-  logic: `${w.admin}-${w.adConvention}`,
   archive: `${w.admin}-${w.adArchive}`,
 })
 
 /** `/ad-post/edit=<slug>` and its two siblings. */
 const postActions = (w: RouteWords): Record<string, Screen> => ({
-  [w.create]: 'postNew',
   [w.edit]: 'postEdit',
   [w.view]: 'postPreview',
 })
 const actionOfScreen = (w: RouteWords): Partial<Record<Screen, string>> => ({
-  postNew: w.create,
   postEdit: w.edit,
   postPreview: w.view,
 })
@@ -184,6 +188,3 @@ export function toPath(where: Where, w: RouteWords = activeWords()): string {
       return '/'
   }
 }
-
-/** Whether two places are the same address — used to avoid stacking history. */
-export const samePath = (a: Where, b: Where) => toPath(a) === toPath(b)

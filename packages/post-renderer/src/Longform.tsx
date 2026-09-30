@@ -1,14 +1,16 @@
 import type { ReactNode } from 'react'
 import { createContext, Fragment, useContext, useEffect, useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
+import { cropStyle, stripFocus } from './focus'
 import { ElementList } from './elements'
 import { paletteFrom, type Palette } from './palette'
+import { PlateCorner, plateHost, type PlateAction } from './plates'
 import { sans, serif, wrapTitle } from './tokens'
 import type { LongformBlock, LongformPostData, LongformRun } from './types'
 import { indentOf, normalizeBlocks } from './longformBlocks'
 import { runsToText } from './longformText'
 
-export type LongformProps = LongformEdit & {
+type LongformProps = LongformEdit & {
   /**
    * Bố cục điện thoại. Chỗ gọi quyết định, không phải khuôn tự đo — xem
    * `PostRenderer`.
@@ -130,6 +132,14 @@ export type LongformEdit = {
    * tự vẽ — móc này chỉ bọc, không thay bộ vẽ.
    */
   wrapAsideItem?: (drawn: ReactNode, at: number, sub: number, kind: string) => ReactNode
+  /**
+   * Móc treo nút tải ảnh vào góc một khung ảnh, khoá `fig-<số khối>` — và
+   * `fig-<số khối>-<số khối con>` cho khung nằm trong một hộp ghi chú.
+   *
+   * Khung ảnh của long-form đến từ bản xuất Notion nên `src` của nó xưa nay chỉ
+   * đọc: bài mất ảnh thì khung trắng nằm đó, không đường nào đặt tấm khác vào.
+   */
+  renderPlateAction?: PlateAction
 }
 
 const EditContext = createContext<LongformEdit>({})
@@ -265,7 +275,7 @@ function NoteBody({ runs, at }: { runs?: LongformRun[]; at?: number }) {
 
 /** Blocks nested inside an `aside` — quieter, on its own sand ground. */
 function AsideBlock({ items, palette, at }: { items: LongformBlock[]; palette: Palette; at?: number }) {
-  const { wrapAsideItem } = useContext(EditContext)
+  const { wrapAsideItem, renderPlateAction } = useContext(EditContext)
   /*
    * Mỗi dòng vẽ xong thì đưa qua `wrapAsideItem` trước khi ra màn hình. Khung
    * sửa cần chỗ ấy để gộp mấy dòng chữ liền nhau vào một ô nhập — không có nó
@@ -321,16 +331,25 @@ function AsideBlock({ items, palette, at }: { items: LongformBlock[]; palette: P
             <div
               key={i}
               style={{
+                ...plateHost,
                 margin: '14px 0 16px',
-                background: '#FFFFFF',
-                border: '1px solid #E6DFCB',
+                // Chưa có ảnh thì là khung màu của bài, như ô ảnh ở mọi khuôn khác.
+                background: a.src ? '#FFFFFF' : palette.tint,
+                border: `1px solid ${a.src ? '#E6DFCB' : palette.tint}`,
                 aspectRatio: a.ar ?? '1.5',
-                backgroundImage: a.src ? `url(${a.src})` : undefined,
+                backgroundImage: a.src ? `url(${stripFocus(a.src)})` : undefined,
                 backgroundSize: 'contain',
                 backgroundPosition: 'center',
                 backgroundRepeat: 'no-repeat',
+                // Cắt tay thì khung lấy đúng hình đã cắt thay cho `contain`.
+                ...cropStyle(a.src),
               }}
-            />
+            >
+              <PlateCorner
+                action={at === undefined ? undefined : renderPlateAction}
+                slot={{ key: `fig-${at}-${i}`, imageUrl: a.src ?? null }}
+              />
+            </div>
           )
         if (a.k === 'formula')
           return (
@@ -362,6 +381,9 @@ function AsideBlock({ items, palette, at }: { items: LongformBlock[]; palette: P
   )
 }
 
+/** Tên bài (và phụ đề) ↔ đoạn đầu thân bài. */
+const TITLE_GAP = 30
+
 /**
  * The "longform" template — a piece long enough that reading it needs
  * furniture: headings that fold, an index that follows you down the page.
@@ -378,6 +400,7 @@ export function Longform({
   wrapBlock,
   wrapAsideItem,
   renderAfterBlocks,
+  renderPlateAction,
 }: LongformProps) {
   // Everything this template tints comes from the one colour the post wears.
   const palette = paletteFrom(post.band?.bg ?? LONGFORM_BLUE, post.band?.fg)
@@ -442,7 +465,7 @@ export function Longform({
   const anyFolded = Object.values(folded).some(Boolean)
 
   return (
-    <EditContext.Provider value={{ renderText, wrapAsideItem }}>
+    <EditContext.Provider value={{ renderText, wrapAsideItem, renderPlateAction }}>
     <div
       style={{
         background: '#FCFCFA',
@@ -651,17 +674,17 @@ export function Longform({
             */}
           {!prepared.some((p) => p.block.k === 'h1') && (
             <>
-              <h1 lang="en" style={{ ...wrapTitle, fontFamily: serif, fontWeight: 400, fontSize: 70, lineHeight: 0.94, letterSpacing: '-.03em', color: '#172124', margin: '0 0 8px' }}>
+              <h1 lang="en" style={{ ...wrapTitle, fontFamily: serif, fontWeight: 400, fontSize: 70, lineHeight: 0.94, letterSpacing: '-.03em', color: '#172124', margin: `0 0 ${post.subtitle ? 8 : TITLE_GAP}px` }}>
                 {post.title}
               </h1>
               {post.subtitle && (
-                <div style={{ fontFamily: serif, fontStyle: 'italic', fontSize: 21, lineHeight: 1.3, color: palette.mid, margin: '0 0 30px' }}>
+                <div style={{ fontFamily: serif, fontStyle: 'italic', fontSize: 21, lineHeight: 1.3, color: palette.mid, margin: `0 0 ${TITLE_GAP}px` }}>
                   {post.subtitle}
                 </div>
               )}
             </>
           )}
-          {prepared.map((p) => {
+          {prepared.map((p, n) => {
             const { block: b, selfId, at } = p
             const parentFolded = Boolean(p.ownerH1 && folded[p.ownerH1])
             const hidden = b.k === 'h2' ? false : parentFolded || Boolean(p.ownerH2 && folded[p.ownerH2])
@@ -670,6 +693,13 @@ export function Longform({
             const isFolded = Boolean(folded[selfId]) || (b.k === 'h2' && parentFolded)
             const pad = padOf(b)
             const title = p.h1Index === 0
+            /*
+             * Khoảng dưới khối tên bài. Bản export gốc luôn có một dòng `meta`
+             * ngay dưới tên, và dòng ấy tự mang 26px xuống thân bài; bài nhân
+             * bản hay viết mới thì không có, nên tên bài đứng sát đoạn đầu.
+             * Lấy đúng 30px mà nhánh "không có khối tiêu đề" ở trên đang dùng.
+             */
+            const titleGap = prepared[n + 1]?.block.k === 'meta' ? 8 : TITLE_GAP
 
             const drawn = (
               <>
@@ -691,7 +721,7 @@ export function Longform({
                         color: title ? '#172124' : palette.ink,
                         borderTop: title ? 0 : `2px solid ${palette.ink}`,
                         paddingTop: title ? 0 : 22,
-                        margin: title ? '0 0 8px' : '58px 0 14px',
+                        margin: title ? `0 0 ${post.subtitle ? 8 : titleGap}px` : '58px 0 14px',
                       }}
                     >
                       {selfId && (
@@ -712,7 +742,7 @@ export function Longform({
                       {title ? post.title : <Runs runs={b.runs} at={at} />}
                     </h1>
                     {title && post.subtitle && (
-                      <div style={{ fontFamily: serif, fontStyle: 'italic', fontSize: 24, lineHeight: 1.3, color: palette.mid, margin: '-4px 0 8px' }}>
+                      <div style={{ fontFamily: serif, fontStyle: 'italic', fontSize: 24, lineHeight: 1.3, color: palette.mid, margin: `-4px 0 ${titleGap}px` }}>
                         {post.subtitle}
                       </div>
                     )}
@@ -799,7 +829,13 @@ export function Longform({
                       // phải mấy đoạn văn rời rạc.
                       margin: `0 0 ${indentOf(b) > 0 ? 8 : 14}px`,
                       paddingLeft: pad,
+                      // Trích dẫn: một gạch lề mảnh màu của bài, chữ giữ
+                      // nguyên cỡ — nó vẫn là một đoạn trong mạch bài.
+                      ...(b.quote
+                        ? { borderLeft: `2px solid ${palette.accent}`, paddingLeft: pad + 14, color: '#4A4536' }
+                        : null),
                     }}
+                    data-quote={b.quote ? '' : undefined}
                   >
                     <Runs runs={b.runs} at={at} />
                   </div>
@@ -836,16 +872,26 @@ export function Longform({
                 {b.k === 'fig' && (
                   <div
                     style={{
+                      ...plateHost,
                       margin: '26px 0 30px',
-                      background: '#FFFFFF',
-                      border: '1px solid #EDEBE0',
+                      // Nền trắng chỉ để viền cho ảnh `contain`; ô trống là khung
+                      // màu, không phải một tờ giấy trắng.
+                      background: b.src ? '#FFFFFF' : palette.tint,
+                      border: `1px solid ${b.src ? '#EDEBE0' : palette.tint}`,
                       aspectRatio: b.ar ?? '1.5',
-                      backgroundImage: b.src ? `url(${b.src})` : undefined,
+                      backgroundImage: b.src ? `url(${stripFocus(b.src)})` : undefined,
                       backgroundSize: 'contain',
                       backgroundPosition: 'center',
                       backgroundRepeat: 'no-repeat',
+                      // Cắt tay thì khung lấy đúng hình đã cắt thay cho `contain`.
+                      ...cropStyle(b.src),
                     }}
-                  />
+                  >
+                    <PlateCorner
+                      action={renderPlateAction}
+                      slot={{ key: `fig-${at}`, imageUrl: b.src ?? null }}
+                    />
+                  </div>
                 )}
 
                 {b.k === 'aside' && <AsideBlock palette={palette} items={b.items ?? []} at={at} />}

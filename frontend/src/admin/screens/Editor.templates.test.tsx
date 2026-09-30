@@ -63,6 +63,22 @@ describe('EditorCanvas', () => {
     expect(screen.getAllByDisplayValue('Tiêu đề').length).toBeGreaterThan(0)
   })
 
+  /*
+   * A glossary written outside this screen was live on the site and blank in
+   * the editor: the public page shrugs off a card with no title or with its
+   * groups as one string, the editing fields did not.
+   */
+  it('opens a cards deck the public page accepts, whatever gaps it has', () => {
+    const body = [
+      { n: '01', hue: '#8A6420', groups: 'Roasty', title: 'Rang', sub: 's', tag: 't', parts: [] },
+      { n: '02', hue: '#8A6420', groups: ['Roasty'] },
+    ]
+    render(
+      <EditorCanvas template={'cards' as never} post={{ ...post('cards'), body } as never} onChange={vi.fn()} onHeroDrop={vi.fn()} />,
+    )
+    expect(screen.getAllByDisplayValue('Rang').length).toBeGreaterThan(0)
+  })
+
   it('does not edit a long-form post as an article', () => {
     render(
       <EditorCanvas template={'longform' as never} post={post('longform')} onChange={vi.fn()} onHeroDrop={vi.fn()} />,
@@ -288,5 +304,44 @@ describe('long-form: khối lồng trong aside', () => {
     )
     expect(screen.queryByDisplayValue('Trong khung một')).toBeNull()
     expect(screen.queryByDisplayValue('Trong khung hai')).toBeNull()
+  })
+})
+
+/*
+ * Bài AI Twin: ba khung ghi chú chèn từ menu `+` ở cuối một bài article, mỗi
+ * cái một đoạn rỗng. `ReportBlockFields` không có nhánh cho `aside` nên màn
+ * sửa không vẽ ô nào, và chữ không bao giờ gõ vào được.
+ */
+describe('article: khung ghi chú và công thức chèn từ kho', () => {
+  const withBody = (body: unknown) => ({ ...(post('article') as object), body }) as never
+
+  it('gives an aside a field, and writes what is typed back into its items', async () => {
+    const onChange = vi.fn()
+    render(
+      <EditorCanvas
+        template={'article' as never}
+        post={withBody([{ h: 'Mở', p: 'Chữ.' }, { type: 'aside', items: [{ type: 'paragraph', text: '' }] }])}
+        onChange={onChange}
+        onHeroDrop={vi.fn()}
+      />,
+    )
+    const field = await screen.findByText('ghi chú trong khung')
+    await userEvent.click(field)
+    await userEvent.keyboard('Đoạn một')
+    await userEvent.click(document.body)
+    const body = onChange.mock.calls.map((c) => c[0].body).filter(Boolean).at(-1)
+    expect(body[1]).toEqual({ type: 'aside', items: [{ type: 'paragraph', text: 'Đoạn một' }] })
+  })
+
+  it('gives a formula a field', async () => {
+    render(
+      <EditorCanvas
+        template={'article' as never}
+        post={withBody([{ h: 'Mở', p: 'Chữ.' }, { type: 'formula', text: 'C6H12O6' }])}
+        onChange={vi.fn()}
+        onHeroDrop={vi.fn()}
+      />,
+    )
+    expect(await screen.findByDisplayValue('C6H12O6')).toBeInTheDocument()
   })
 })

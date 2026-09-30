@@ -1,3 +1,4 @@
+import { pageSlotCountOf } from '../content/layouts'
 import { coverStyle } from './imageFocus'
 import type { CSSProperties } from 'react'
 
@@ -19,7 +20,7 @@ import type { CSSProperties } from 'react'
  * keeps the common case — one good photo, both surfaces — a single upload, and
  * it is why adding these columns changed nothing on the site.
  */
-export type PageImageFields = {
+type PageImageFields = {
   layout: string
   img1: string | null
   img2: string | null
@@ -37,16 +38,16 @@ export type PageImageFields = {
   page_shot4: string | null
 }
 
-export type PageSlot = 1 | 2 | 3 | 4
+type PageSlot = 1 | 2 | 3 | 4
 
-/** How many photos this layout's page draws. */
-export function pageSlotCount(layout: string): number {
-  if (layout === 'sequence') return 4
-  // Bốn: ô thứ tư của specimen từng là mảng màu đặc chứ không phải chỗ đặt
-  // ảnh, nên khung sửa chỉ mời ba.
-  if (layout === 'specimen') return 4
-  return 1
-}
+/**
+ * How many photos this layout's page draws.
+ *
+ * The number is no longer written here: it is how many cells
+ * `content/layouts.ts` names for that layout. One fact, one place — a layout
+ * that drew four cells and named three of them was two facts drifting apart.
+ */
+export const pageSlotCount = pageSlotCountOf
 
 export function pageSlots(layout: string): PageSlot[] {
   return ([1, 2, 3, 4] as PageSlot[]).slice(0, pageSlotCount(layout))

@@ -71,7 +71,7 @@ let seq = 0
 /** Unique within a page load, which is all an id has to be here. */
 const newId = () => `s${now().toString(36)}-${seq++}`
 
-export function blankSession(from?: Partial<Session>): Session {
+function blankSession(from?: Partial<Session>): Session {
   return {
     mode: 'up',
     // 30 phút, một mốc có sẵn — mặc định cũ là 1500 giây (25 phút), và vì nó

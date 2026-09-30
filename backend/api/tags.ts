@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { withCors } from '../lib/cors.js'
 import { requireAuth } from '../lib/auth.js'
 import { getSupabase } from '../lib/supabase.js'
+import { slug } from '../lib/tags.js'
 
 /**
  * Tags — what a post is, in the owner's own words.
@@ -26,16 +27,6 @@ import { getSupabase } from '../lib/supabase.js'
  * a tag that vanishes from one and survives in the other is the same split
  * coming back.
  */
-function slug(label: string): string {
-  return label
-    .trim()
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/đ/g, 'd')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')
-}
 
 async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
   if (!requireAuth(req, res)) return
@@ -86,20 +77,6 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
       return
     }
 
-    const { data: existing, error: findError } = await supabase
-      .from('tags')
-      .select('id, label')
-      .eq('id', id)
-      .maybeSingle()
-    if (findError) {
-      res.status(500).json({ error: findError.message })
-      return
-    }
-    if (!existing) {
-      res.status(404).json({ error: `Tag '${id}' not found` })
-      return
-    }
-
     if (req.method === 'PATCH') {
       const label = typeof (req.body ?? {}).label === 'string' ? (req.body as { label: string }).label.trim() : ''
       if (!label) {
@@ -112,13 +89,44 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
        * `id` là thứ `posts.kind` và `notes.k` đang trỏ tới. Đổi nó theo tên mới
        * thì mọi bài và ghi chép đang đeo tag ấy mất chỗ dựa — nên tên hiển thị
        * đổi, còn danh tính thì không.
+       *
+       * Một câu, không hai. Trước đây chỗ này đọc lấy tag ra để biết nó có tồn
+       * tại không rồi mới ghi — nhưng chính câu ghi đã trả lời được: `returning`
+       * không có dòng nào nghĩa là không có tag nào mang `id` ấy.
        */
-      const { error } = await supabase.from('tags').update({ label }).eq('id', id)
+      const { data: renamed, error } = await supabase
+        .from('tags')
+        .update({ label })
+        .eq('id', id)
+        .select('id, label')
+        .maybeSingle()
       if (error) {
         res.status(500).json({ error: error.message })
         return
       }
+      if (!renamed) {
+        res.status(404).json({ error: `Tag '${id}' not found` })
+        return
+      }
       res.status(200).json({ id, label })
+      return
+    }
+
+    /*
+     * Xoá thì vẫn phải đọc trước: `notes.k` trỏ vào **nhãn**, không phải `id`,
+     * nên không biết nhãn hiện tại thì không tìm được ghi chép nào đang đeo nó.
+     */
+    const { data: existing, error: findError } = await supabase
+      .from('tags')
+      .select('id, label')
+      .eq('id', id)
+      .maybeSingle()
+    if (findError) {
+      res.status(500).json({ error: findError.message })
+      return
+    }
+    if (!existing) {
+      res.status(404).json({ error: `Tag '${id}' not found` })
       return
     }
 

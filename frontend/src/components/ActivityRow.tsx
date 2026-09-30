@@ -21,7 +21,7 @@ const chipBase: CSSProperties = {
  * told apart before they're read, and colour alone can't do that when either
  * system may hold any hue — the shape has to carry it.
  */
-export function ProjectChip({ name, color, onClick }: { name: string; color: string; onClick?: () => void }) {
+function ProjectChip({ name, color, onClick }: { name: string; color: string; onClick?: () => void }) {
   return (
     <div
       onClick={onClick}
@@ -33,7 +33,7 @@ export function ProjectChip({ name, color, onClick }: { name: string; color: str
   )
 }
 
-export function TaskChip({ name, color, onClick }: { name: string; color: string; onClick?: () => void }) {
+function TaskChip({ name, color, onClick }: { name: string; color: string; onClick?: () => void }) {
   return (
     <div
       onClick={onClick}
@@ -146,9 +146,9 @@ export const endOf = (log: Pick<LogEntry, 'at' | 'mins'>): string => minToAt(atT
 export const splitHm = (mins: number) => ({ h: Math.floor(mins / 60), m: mins % 60 })
 
 /** The three numbers on a row. Only two are stored; the third is worked out. */
-export type TimeField = 'at' | 'end' | 'mins'
+type TimeField = 'at' | 'end' | 'mins'
 
-export const TIME_ORDER: TimeField[] = ['at', 'end', 'mins']
+const TIME_ORDER: TimeField[] = ['at', 'end', 'mins']
 
 /**
  * Start, end and length, given which two the owner touched last.
@@ -389,7 +389,7 @@ function DurationField({
   )
 }
 
-export type ActivityRowProps = {
+type ActivityRowProps = {
   log: LogEntry
   /** Within the editable window — older days are a closed record. */
   editable: boolean

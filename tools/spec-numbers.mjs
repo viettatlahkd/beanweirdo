@@ -40,25 +40,16 @@ const collisions = Object.entries(
   }, {}),
 ).filter(([, fs]) => fs.length > 1)
 
-const logic = read('frontend/src/content/logic.ts')
 /*
- * A rule is `{ s: <scope>, r: <rule>, e: <example> }`. Matching on `{ s: '`
- * alone also catches the three SCOPE_KEY entries, which is how the count came
- * out as 67 once — the `r:` is what tells a rule from a legend entry.
+ * Bộ luật đánh số (`logic.ts`) bị xoá ngày 2026-09-21, nên luật/nhóm/phần không
+ * còn đếm được từ mã. SPEC.html là chỗ duy nhất còn giữ ba con số ấy.
  */
-const rules = logic.match(/\{ s: '[^']*', r: '/g) ?? []
-const groups = logic.match(/n: '\d+', g: '/g) ?? []
-const parts = logic.match(/p: '[A-Z]', part:/g) ?? []
-
 const tables = [
   ...new Set((read('docs/SPEC.html').match(/\b(posts|modules|notes|hour_logs|activity_kinds|site_settings|templates)\b/g) ?? [])),
 ]
 
 const counted = {
   migration: migrations.length,
-  luật: rules.length,
-  nhóm: groups.length,
-  phần: parts.length,
   bảng: tables.length,
 }
 
@@ -97,19 +88,7 @@ function checkWord(key, v) {
     if (Number(m[1]) !== v) stale.push(`${key}: SPEC ghi ${m[1]}, thật là ${v}`)
   }
 }
-/** SPEC says "quy tắc" where logic.ts says "luật"; both name the same thing. */
-const ALIASES = { luật: ['luật', 'quy tắc'] }
-
-for (const [k, v] of Object.entries(counted)) {
-  for (const k2 of ALIASES[k] ?? [k]) checkWord(k2, v)
-  const digits = [...spec.matchAll(new RegExp(`(\\d+)\\s*(?:</span>\\s*<span[^>]*>)?\\s*${k}`, 'gi'))]
-  for (const m of digits) if (Number(m[1]) !== v) stale.push(`${k}: SPEC ghi ${m[1]}, thật là ${v}`)
-  for (const [n, w] of Object.entries(WORDS)) {
-    if (Number(n) === v) continue
-    const re = new RegExp(`${w}\\s+${k}`, 'i')
-    if (re.test(spec)) stale.push(`${k}: SPEC ghi "${w}", thật là ${v}`)
-  }
-}
+for (const [k, v] of Object.entries(counted)) checkWord(k, v)
 
 /*
  * The four files already sharing 0017 and 0018 have run; renaming them now

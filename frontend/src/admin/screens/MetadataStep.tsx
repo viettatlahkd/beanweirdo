@@ -1,14 +1,7 @@
 import { useEffect, useState } from 'react'
-import {
-  createTag,
-  listModules,
-  listTags,
-  listTemplates,
-  type Module,
-  type Tag,
-  type TemplateSummary,
-} from '../lib/apiClient'
-import { ink, paper } from '../../design/tokens'
+import { type Module, type Tag, type TemplateSummary } from '../lib/apiClient'
+import { listModulesCached, listTagsCached, listTemplatesCached } from '../lib/lists'
+import { ink } from '../../design/tokens'
 import { ThemePicker } from '../components/ThemePicker'
 
 /**
@@ -20,8 +13,11 @@ import { ThemePicker } from '../components/ThemePicker'
  */
 export type Metadata = {
   module_id: string
-  /** The tag, stored in `posts.kind`. Free text since migration 0020. */
-  kind: string
+  /**
+   * Tag đúng như chủ site vừa gõ. Máy chủ tự tính `id` và tự ghi tag xuống
+   * cùng lúc với bài — xem `kindLabel` trong backend/api/posts/index.ts.
+   */
+  kindLabel: string
   en: string
   vi: string
   templateId: string
@@ -51,15 +47,15 @@ export function MetadataStep({ onContinue }: { onContinue: (m: Metadata) => void
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
-    listModules().then((mods) => {
+    listModulesCached().then((mods) => {
       setModules(mods)
       if (mods.length > 0) setModuleId(mods[0].id)
     })
-    listTags().then((ts) => {
+    listTagsCached().then((ts) => {
       setTags(ts)
       if (ts.length > 0) setTag(ts[0].label)
     })
-    listTemplates().then((ts) => {
+    listTemplatesCached().then((ts) => {
       setTemplates(ts)
       if (ts.length > 0) setTemplateId(ts[0].id)
     })
@@ -67,17 +63,20 @@ export function MetadataStep({ onContinue }: { onContinue: (m: Metadata) => void
 
   const canContinue = module_id !== '' && templateId !== '' && en.trim() !== '' && !busy
 
-  /** A tag typed for the first time is written down, so it is there next time. */
-  async function submit() {
+  /*
+   * Một tag gõ lần đầu vẫn được ghi xuống để lần sau có sẵn — nhưng không phải
+   * ở đây nữa.
+   *
+   * Chỗ này từng gọi `createTag` và **chờ** nó xong mới sang bước tạo bài: hai
+   * lượt mạng nối tiếp, mỗi lượt kèm một preflight, cho một cái nút mà việc của
+   * nó chỉ là mở màn soạn ra. Nay nhãn đi kèm bài và máy chủ lo phần còn lại.
+   */
+  function submit() {
     setBusy(true)
     try {
-      const label = tag.trim()
-      const known = tags.find((t) => t.label.toLowerCase() === label.toLowerCase())
-      const saved = known ?? (label ? await createTag(label) : null)
-      if (saved && !known) setTags([...tags, saved])
       onContinue({
         module_id,
-        kind: saved?.id ?? '',
+        kindLabel: tag.trim(),
         en: en.trim(),
         vi: vi.trim(),
         templateId,
@@ -89,7 +88,14 @@ export function MetadataStep({ onContinue }: { onContinue: (m: Metadata) => void
   }
 
   return (
-    <div style={{ maxWidth: 560, background: paper.white, border: `1px solid ${paper.rule}`, borderRadius: 10, padding: 24 }}>
+    /*
+     * Chỉ có các ô, không có khung.
+     *
+     * Trước đây khối này tự vẽ nền trắng, viền và bo góc, vì nó là thứ duy
+     * nhất trên một trang trống. Nay nó nằm trong hộp thoại, và một cái khung
+     * trong một cái khung là hai đường viền cách nhau hai chục pixel.
+     */
+    <div>
       <label htmlFor="module" style={{ ...fieldLabelStyle, marginTop: 0 }}>
         Module
       </label>

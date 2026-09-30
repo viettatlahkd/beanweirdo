@@ -14,7 +14,7 @@ import type { ReportBlock } from 'post-renderer'
 import { textToRuns } from 'post-renderer'
 import { describe, expect, it, vi } from 'vitest'
 import type { PostDetail } from '../lib/apiClient'
-import { EditorCanvas } from './Editor'
+import { EditorCanvas, menuNames } from './Editor'
 
 const head = (text: string, id: string) => ({ type: 'heading', id, level: 2, text }) as unknown as ReportBlock
 const para = (text: string, id: string) => ({ type: 'paragraph', id, text }) as unknown as ReportBlock
@@ -23,7 +23,7 @@ const list = (id: string, ...lines: string[]) =>
 const table = (id: string) =>
   ({ type: 'table', id, table: { columns: ['Ngày'], rows: [{ cells: ['01'] }], widths: [100] } }) as unknown as ReportBlock
 
-function draw(template: 'report' | 'memo' | 'bitesize', body: unknown) {
+function draw(template: 'report' | 'memo' | 'bitesize' | 'article' | 'longform', body: unknown) {
   const onChange = vi.fn()
   render(
     <EditorCanvas
@@ -103,6 +103,31 @@ describe('cả ba màn cùng một lối soạn', () => {
   })
 })
 
+describe('bài chưa có gì trong thân', () => {
+  /*
+   * Bốn khuôn từng vẽ ra **một cái nút `+` và không gì khác** khi thân bài
+   * rỗng, nên bấm vào giữa trang không ra con trỏ và thứ duy nhất gõ được là
+   * dòng tiêu đề. Chủ site: *"longform với bitesize không gõ được mà cứ ở
+   * headlines mãi, click vào không ra con trỏ"*.
+   *
+   * `toRuns([])` vốn đã hứa một dải rỗng để gõ vào — thiếu sót nằm ở chỗ vẽ.
+   * jsdom không dựng `contenteditable` nên bài kiểm này không gõ được chữ
+   * nào; nó kiểm đúng cái đã thiếu: **có** một mặt soạn trên màn.
+   */
+  for (const [template, body] of [
+    ['report', []],
+    ['memo', { subtitle: '', elements: [] }],
+    ['bitesize', { len: 'ngắn', elements: [] }],
+    ['article', []],
+    ['longform', []],
+  ] as const) {
+    it(`${template}: thân rỗng vẫn có một mặt soạn để gõ vào`, () => {
+      draw(template, body)
+      expect(document.querySelectorAll('.awc-live-input')).toHaveLength(1)
+    })
+  }
+})
+
 describe('menu `+` bên máng', () => {
   it('chỉ bày thứ không gõ ra được', async () => {
     const { default: userEvent } = await import('@testing-library/user-event')
@@ -113,5 +138,14 @@ describe('menu `+` bên máng', () => {
     // Tiêu đề, danh sách, trích dẫn là chữ — gõ ra, không chèn.
     expect(screen.queryByRole('button', { name: 'Tiêu đề' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Đoạn văn' })).toBeNull()
+  })
+})
+
+describe('lọc menu chèn', () => {
+  it('gõ không dấu, không cách vẫn ra đúng khối', () => {
+    // `/khoinhan` sau dấu `/` trong dải chữ — không ai bật bộ gõ để gõ lệnh.
+    expect(menuNames('khoinhan', 'things')).toContain('callout')
+    expect(menuNames('bang', 'things')).toContain('table')
+    expect(menuNames('số liệu', 'things')).toContain('metrics')
   })
 })

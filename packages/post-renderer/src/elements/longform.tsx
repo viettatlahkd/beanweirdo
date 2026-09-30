@@ -13,15 +13,14 @@
  * Hình dạng giữ đúng như `Longform.tsx` vẫn vẽ: công thức có vạch bên trái
  * trên nền trắng, khung ghi chú nằm trên nền cát.
  */
-import { ink, sans } from '../tokens'
-import { Inline } from './inline'
+import { sans } from '../tokens'
 import { registerElement, type ElementViewProps } from './registry'
 import { ElementList } from './view'
 
-export type FormulaAttrs = { type: 'formula'; id?: string; text: string }
-export type AsideAttrs = { type: 'aside'; id?: string; items: unknown[] }
+type FormulaAttrs = { type: 'formula'; id?: string; text: string }
+type AsideAttrs = { type: 'aside'; id?: string; items: unknown[] }
 
-export const formula = registerElement<FormulaAttrs>({
+registerElement<FormulaAttrs>({
   name: 'formula',
   title: 'Công thức',
   category: 'data',
@@ -47,7 +46,7 @@ export const formula = registerElement<FormulaAttrs>({
   ),
 })
 
-export const aside = registerElement<AsideAttrs>({
+registerElement<AsideAttrs>({
   name: 'aside',
   title: 'Khung ghi chú',
   category: 'text',
@@ -55,7 +54,13 @@ export const aside = registerElement<AsideAttrs>({
   keywords: ['khung', 'ghi chú', 'aside', 'hộp', 'note', 'bên lề'],
   attributes: { items: { type: 'array', note: 'các khối bên trong khung' } },
   blank: () => ({ type: 'aside', items: [{ type: 'paragraph', text: '' }] }),
-  View: ({ attributes, palette, mobile, testId }: ElementViewProps<AsideAttrs>) => (
+  /*
+   * Khung không có chữ nào thì không vẽ. Chèn từ menu `+` là được ngay một
+   * khung với một đoạn rỗng, và trang từng bày ra những ô nền cát trống
+   * trơn mà người đọc không hiểu từ đâu ra — bài AI Twin có ba ô như thế.
+   */
+  View: ({ attributes, palette, mobile, testId }: ElementViewProps<AsideAttrs>) =>
+    isEmptyAside(attributes.items) ? null : (
     <div
       data-testid={testId}
       style={{ background: '#F3EEE1', padding: '24px 26px 20px', margin: '22px 0 26px' }}
@@ -63,14 +68,13 @@ export const aside = registerElement<AsideAttrs>({
       {/* Khối trong khung là element như mọi chỗ khác — khung chỉ là cái nền. */}
       <ElementList elements={attributes.items} palette={palette} mobile={mobile} />
     </div>
-  ),
+    ),
 })
 
-/** Chữ trơn trong khung, khi chỗ gọi chưa dựng element con. */
-export function AsideLine({ text, accentInk }: { text: string; accentInk: string }) {
-  return (
-    <div style={{ fontFamily: sans, fontWeight: 300, fontSize: 14.5, lineHeight: 1.66, color: ink.strong, margin: '0 0 10px' }}>
-      <Inline text={text} accentInk={accentInk} />
-    </div>
-  )
+/** Mọi khối con là đoạn chữ rỗng — thứ menu `+` vừa chèn mà chưa ai gõ. */
+function isEmptyAside(items: unknown[] | undefined): boolean {
+  return (items ?? []).every((x) => {
+    const el = x as { type?: unknown; text?: unknown } | null
+    return el?.type === 'paragraph' && String(el.text ?? '').trim() === ''
+  })
 }

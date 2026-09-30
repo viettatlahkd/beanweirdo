@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 import { ApiError, clearToken, getToken, listPosts } from '../admin/lib/apiClient'
 import { Login } from '../admin/screens/Login'
 
-export type AuthState = {
+type AuthState = {
   /** True until the stored token has been checked against the API. */
   checking: boolean
   authed: boolean

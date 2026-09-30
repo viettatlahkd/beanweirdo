@@ -4,7 +4,6 @@ import { Breadcrumbs } from '../components/Breadcrumbs'
 import { PostExcerpt } from '../components/PostExcerpt'
 import { useModules } from '../data/useModules'
 import { usePublishedPosts } from '../data/usePublishedPosts'
-import { useSiteCopy } from '../data/useSiteCopy'
 import { ink, layout, paper, sans, serif, wrapTitle } from '../design/tokens'
 import { Hover } from '../lib/Hover'
 import { useNav } from '../lib/nav'
@@ -37,7 +36,6 @@ export function Archive() {
     ascending: false,
     includeArchived: true,
   })
-  const { site } = useSiteCopy()
   const liveCount = posts.filter((p) => p.status === 'published').length
 
   return (
@@ -64,10 +62,10 @@ export function Archive() {
             ...wrapTitle,
           }}
         >
-          {site.archiveTitle}
+          Archive
         </h1>
         <div style={{ fontFamily: sans, fontSize: 11, color: ink.muted, paddingBottom: 8 }}>
-          {liveCount} notes — {site.archiveNote}
+          {liveCount} notes — sắp theo thời gian
           {posts.length > liveCount && ` · ${posts.length - liveCount} lưu trữ`}
         </div>
       </div>

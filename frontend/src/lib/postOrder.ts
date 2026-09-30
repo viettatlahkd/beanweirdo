@@ -15,7 +15,7 @@
  *
  * One comparator, so the two cannot drift again.
  */
-export type Orderable = {
+type Orderable = {
   pinned?: boolean
   sort_order: number | null
   published_at?: string | null
@@ -34,7 +34,7 @@ export type Orderable = {
 }
 
 /** Newest first, and a post with no date at all sorts last rather than first. */
-function newestFirst(a: Orderable, b: Orderable): number {
+export function newestFirst(a: Orderable, b: Orderable): number {
   const at = a.published_at ?? a.created_at ?? ''
   const bt = b.published_at ?? b.created_at ?? ''
   if (at !== bt) {
@@ -50,7 +50,7 @@ function newestFirst(a: Orderable, b: Orderable): number {
   return ad < bd ? 1 : -1
 }
 
-export function comparePosts(a: Orderable, b: Orderable): number {
+function comparePosts(a: Orderable, b: Orderable): number {
   if ((a.pinned ?? false) !== (b.pinned ?? false)) return a.pinned ? -1 : 1
   // A post nobody has placed goes after every post somebody has.
   const ao = a.sort_order ?? Number.POSITIVE_INFINITY

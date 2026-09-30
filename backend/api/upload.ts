@@ -1,34 +1,35 @@
 import { randomUUID } from 'node:crypto'
-import { readFile, unlink } from 'node:fs/promises'
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import formidable, { type File } from 'formidable'
 import { withCors } from '../lib/cors.js'
 import { requireAuth } from '../lib/auth.js'
 import { getSupabase } from '../lib/supabase.js'
 
 const BUCKET = 'post-images'
 
-// Vercel's Node runtime only auto-parses application/json,
-// application/x-www-form-urlencoded and text/plain bodies — multipart/form-data
-// is left as a raw, unconsumed stream on `req`, which is exactly what
-// formidable needs.
-export const config = {
-  api: { bodyParser: false },
-}
-
-function extensionFor(file: File): string {
-  const fromName = file.originalFilename?.match(/\.[a-zA-Z0-9]+$/)?.[0]
-  if (fromName) return fromName.toLowerCase()
-  const fromMime = file.mimetype?.split('/')[1]
-  return fromMime ? `.${fromMime.toLowerCase()}` : ''
-}
-
-async function parseUpload(req: VercelRequest): Promise<File | null> {
-  const form = formidable({ maxFiles: 1, multiples: false })
-  const [, files] = await form.parse(req)
-  const fileField = files.file ?? files.image
-  if (!fileField) return null
-  return Array.isArray(fileField) ? (fileField[0] ?? null) : fileField
+/**
+ * Cấp một vé tải lên, không nhận lấy tệp.
+ *
+ * Trước đây route này nhận cả tệp: formidable ghi ra đĩa tạm, `readFile` nạp
+ * cả vào bộ nhớ, rồi đẩy tiếp sang Supabase Storage. Người dùng phải chờ hết
+ * lượt tải lên Vercel **rồi mới** bắt đầu lượt tải sang Supabase — hai lần thời
+ * gian cho một việc, và lượt thứ hai bắt đầu từ con số không. Với ảnh chụp từ
+ * điện thoại thì đó là phần lớn thời gian chờ khi đính ảnh vào bài.
+ *
+ * Nay máy chủ chỉ ký một vé: `createSignedUploadUrl` không chạm byte nào của
+ * tệp. Trình duyệt cầm vé ấy đẩy thẳng lên Storage. Vé tự nó là giấy phép nên
+ * không cần lộ thêm khoá nào ra client, và `requireAuth` vẫn là thứ quyết định
+ * ai xin được vé.
+ */
+function extensionFor(filename: unknown, contentType: unknown): string {
+  if (typeof filename === 'string') {
+    const fromName = filename.match(/\.[a-zA-Z0-9]+$/)?.[0]
+    if (fromName) return fromName.toLowerCase()
+  }
+  if (typeof contentType === 'string') {
+    const fromMime = contentType.split('/')[1]
+    if (fromMime) return `.${fromMime.toLowerCase()}`
+  }
+  return ''
 }
 
 async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
@@ -39,37 +40,22 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
     return
   }
 
-  let file: File | null
-  try {
-    file = await parseUpload(req)
-  } catch (err) {
-    res.status(400).json({ error: `Failed to parse upload: ${(err as Error).message}` })
-    return
-  }
-
-  if (!file) {
-    res.status(400).json({ error: "No file provided (expected multipart field 'file')" })
-    return
-  }
-
-  const buffer = await readFile(file.filepath)
-  const path = `${randomUUID()}${extensionFor(file)}`
+  const body = (req.body ?? {}) as { filename?: unknown; contentType?: unknown }
+  const path = `${randomUUID()}${extensionFor(body.filename, body.contentType)}`
 
   const supabase = getSupabase()
-  const { error: uploadError } = await supabase.storage.from(BUCKET).upload(path, buffer, {
-    contentType: file.mimetype ?? 'application/octet-stream',
-    upsert: false,
-  })
+  const { data, error } = await supabase.storage.from(BUCKET).createSignedUploadUrl(path)
 
-  await unlink(file.filepath).catch(() => {})
-
-  if (uploadError) {
-    res.status(500).json({ error: uploadError.message })
+  if (error || !data) {
+    res.status(500).json({ error: error?.message ?? 'Could not sign an upload' })
     return
   }
 
-  const { data } = supabase.storage.from(BUCKET).getPublicUrl(path)
-  res.status(200).json({ url: data.publicUrl })
+  // Bucket là public (migration 0004), nên địa chỉ đọc tính ra được ngay — chỗ
+  // gọi cất nó vào bài mà không phải hỏi lại lần nữa sau khi tải xong.
+  const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(path)
+
+  res.status(200).json({ path, token: data.token, url: pub.publicUrl })
 }
 
 export default withCors(handler)

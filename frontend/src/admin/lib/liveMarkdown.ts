@@ -29,12 +29,22 @@ import {
 } from '@lexical/markdown'
 
 /**
- * Nhấn. Site viết `*x*` nhưng đọc được cả ba, nên cả ba cùng về một format —
- * bằng không thì `**x**` dán từ nơi khác vào sẽ hiện ra đúng mấy dấu sao.
+ * Nhấn, hai mức rời nhau, đúng ký hiệu markdown chuẩn.
  *
- * Tag dài đứng trước tag ngắn: `**` phải thử trước `*`, không thì `**x**` đọc
- * thành một dấu sao, `*x*`, rồi một dấu sao nữa.
+ * Trước 2026-09-19 cả ba dấu `*`, `**`, `__` cùng đổ về `bold`: site chỉ có
+ * một mức nhấn, nên `Cmd+B` với `Cmd+I` ra cùng một thứ. Chủ site tách đôi:
+ * *"ctrl B là in đậm thôi không in nghiêng, ctrl I là in nghiêng không in
+ * đậm"*. Cả hai cùng lúc thì là `***x***`, và phím tắt là bấm cả hai — không
+ * có phím thứ ba, y như Notion hay Docs.
+ *
+ * Tag dài đứng trước tag ngắn: `***` phải thử trước `**` trước `*`, không thì
+ * `***x***` đọc thành một dấu sao, `**x**`, rồi một dấu sao nữa.
  */
+const EM_TRIPLE_STAR: TextFormatTransformer = {
+  format: ['bold', 'italic'],
+  tag: '***',
+  type: 'text-format',
+}
 const EM_DOUBLE_STAR: TextFormatTransformer = { format: ['bold'], tag: '**', type: 'text-format' }
 const EM_DOUBLE_SCORE: TextFormatTransformer = {
   format: ['bold'],
@@ -42,7 +52,7 @@ const EM_DOUBLE_SCORE: TextFormatTransformer = {
   tag: '__',
   type: 'text-format',
 }
-const EM_STAR: TextFormatTransformer = { format: ['bold'], tag: '*', type: 'text-format' }
+const EM_STAR: TextFormatTransformer = { format: ['italic'], tag: '*', type: 'text-format' }
 
 /**
  * Số đo. `intraword: false` để `tên_file_dài` không hoá thành gạch chân —
@@ -56,13 +66,13 @@ const DO_SCORE: TextFormatTransformer = {
 }
 
 /**
- * Không có italic, không có gạch ngang, không có tô sáng.
+ * Không có gạch ngang, không có tô sáng.
  *
- * Design chỉ có **một** mức nhấn — `THEME` trong `LiveText` vẽ italic và bold
- * bằng chung một lớp. Để italic ở đây thì nó vẽ giống hệt chữ nhấn mà ghi ra
- * một ký hiệu site không đọc được: giống nhau trên màn hình, khác nhau khi
- * đăng. Còn `~~x~~` và `==x==` thì site không có gì để vẽ, nên để chúng nằm
- * nguyên làm chữ thường là đúng cái người viết nhìn thấy.
+ * `~~x~~` và `==x==` thì site không có gì để vẽ, nên để chúng nằm nguyên làm
+ * chữ thường là đúng cái người viết nhìn thấy. Bỏ đi thì an toàn hơn giữ lại:
+ * một ký hiệu không có transformer nằm nguyên là chữ thường, còn một
+ * transformer không có chỗ ghi thì ăn mất chữ — đúng chuyện đã xảy ra với
+ * italic hồi nó chưa có chỗ ghi ra.
  */
 export const SITE_TRANSFORMERS: Transformer[] = [
   HEADING,
@@ -70,6 +80,7 @@ export const SITE_TRANSFORMERS: Transformer[] = [
   UNORDERED_LIST,
   ORDERED_LIST,
   CODE,
+  EM_TRIPLE_STAR,
   EM_DOUBLE_STAR,
   EM_DOUBLE_SCORE,
   EM_STAR,

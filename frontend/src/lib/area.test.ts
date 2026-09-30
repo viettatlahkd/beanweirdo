@@ -30,7 +30,6 @@ describe('screenAllowed', () => {
     expect(screenAllowed('public', 'cms')).toBe(false)
     expect(screenAllowed('public', 'hours')).toBe(false)
     expect(screenAllowed('public', 'archive')).toBe(false)
-    expect(screenAllowed('public', 'logic')).toBe(false)
     expect(screenAllowed('public', 'postEdit')).toBe(false)
   })
 
@@ -44,7 +43,7 @@ describe('screenAllowed', () => {
     expect(screenAllowed('public', 'module')).toBe(true)
     expect(screenAllowed('practice', 'hours')).toBe(true)
     expect(screenAllowed('admin', 'cms')).toBe(true)
-    expect(screenAllowed('admin', 'postNew')).toBe(true)
+    expect(screenAllowed('admin', 'postEdit')).toBe(true)
   })
 
   it('always allows the screen an area opens on', () => {

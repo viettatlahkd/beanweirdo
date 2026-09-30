@@ -9,7 +9,7 @@ export type MetaAttrs = { type: 'meta'; id?: string; text: string }
 export type QuoteAttrs = { type: 'quote'; id?: string; text: string; attribution?: string }
 export type CalloutAttrs = { type: 'callout'; id?: string; text: string; heading?: string }
 
-export const paragraph = registerElement<ParagraphAttrs>({
+registerElement<ParagraphAttrs>({
   name: 'paragraph',
   title: 'Đoạn văn',
   category: 'text',
@@ -49,7 +49,7 @@ const HEADING: Record<1 | 2 | 3, { size: number; top: number; accented: boolean 
   3: { size: 20, top: 20, accented: true },
 }
 
-export const heading = registerElement<HeadingAttrs>({
+registerElement<HeadingAttrs>({
   name: 'heading',
   title: 'Tiêu đề',
   category: 'text',
@@ -80,7 +80,7 @@ export const heading = registerElement<HeadingAttrs>({
   },
 })
 
-export const meta = registerElement<MetaAttrs>({
+registerElement<MetaAttrs>({
   name: 'meta',
   title: 'Dòng nhãn',
   category: 'text',
@@ -98,7 +98,7 @@ export const meta = registerElement<MetaAttrs>({
   ),
 })
 
-export const quote = registerElement<QuoteAttrs>({
+registerElement<QuoteAttrs>({
   name: 'quote',
   title: 'Trích dẫn',
   category: 'text',
@@ -127,7 +127,7 @@ export const quote = registerElement<QuoteAttrs>({
   ),
 })
 
-export const callout = registerElement<CalloutAttrs>({
+registerElement<CalloutAttrs>({
   name: 'callout',
   title: 'Khối nhấn',
   category: 'text',
