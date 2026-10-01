@@ -41,6 +41,8 @@ async function handleList(req: VercelRequest, res: VercelResponse): Promise<void
 
 interface CreatePostBody {
   module_id?: unknown
+  /** Place on the topic tree (migration 0027). */
+  topic_id?: unknown
   kind?: unknown
   en?: unknown
   vi?: unknown
@@ -122,6 +124,14 @@ async function handleCreate(req: VercelRequest, res: VercelResponse): Promise<vo
     return
   }
 
+  // The post's place on the topic tree (migration 0027). Optional here so
+  // older callers still work; the CMS always sends one.
+  if (body.topic_id != null && typeof body.topic_id !== 'string') {
+    res.status(400).json({ error: 'topic_id must be a string' })
+    return
+  }
+  let topic_id: string | null = typeof body.topic_id === 'string' && body.topic_id ? body.topic_id : null
+
   if (!(POST_TEMPLATES as string[]).includes(template as string)) {
     res.status(400).json({ error: `template must be one of: ${POST_TEMPLATES.join(', ')}` })
     return
@@ -143,7 +153,7 @@ async function handleCreate(req: VercelRequest, res: VercelResponse): Promise<vo
   if (fromPostId) {
     const { data: src, error: srcError } = await supabase
       .from('posts')
-      .select('template, body, lead, hero_image_url, hero_caption, pull_quote, further_reading')
+      .select('template, body, lead, hero_image_url, hero_caption, pull_quote, further_reading, topic_id')
       .eq('id', fromPostId)
       .maybeSingle()
 
@@ -159,6 +169,9 @@ async function handleCreate(req: VercelRequest, res: VercelResponse): Promise<vo
     template = row.template
     startingBody = row.body ?? null
     copied = src as Record<string, unknown>
+    // What a post is about is part of its content, so a copy keeps its topic
+    // unless the caller filed it somewhere else.
+    topic_id = topic_id ?? ((copied.topic_id as string | null) ?? null)
   }
 
   if (templateId) {
@@ -201,6 +214,7 @@ async function handleCreate(req: VercelRequest, res: VercelResponse): Promise<vo
       body: startingBody,
       lead: copied?.lead ?? null,
       theme_color,
+      topic_id,
       hero_image_url: copied?.hero_image_url ?? null,
       hero_caption: copied?.hero_caption ?? null,
       pull_quote: copied?.pull_quote ?? null,
@@ -212,7 +226,7 @@ async function handleCreate(req: VercelRequest, res: VercelResponse): Promise<vo
   if (error) {
     // 23503 = foreign key violation, i.e. module_id doesn't exist.
     if (error.code === '23503') {
-      res.status(400).json({ error: `Module '${module_id}' does not exist` })
+      res.status(400).json({ error: `Module '${module_id}' or topic '${topic_id}' does not exist` })
       return
     }
     res.status(500).json({ error: error.message })

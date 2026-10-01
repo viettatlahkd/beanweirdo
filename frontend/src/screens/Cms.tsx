@@ -39,6 +39,7 @@ import { FeatureCellsEditor } from '../admin/components/FeatureCellsEditor'
 import type { FeatureOverride } from '../content/notes'
 import { ink, paper, sans, serif } from '../design/tokens'
 import { Hover } from '../lib/Hover'
+import { KeywordsPanel, TopicsPanel } from '../admin/components/ContentLayerPanels'
 import { useNav } from '../lib/nav'
 
 const sectionHead: CSSProperties = {
@@ -427,7 +428,7 @@ function TagsPanel() {
           <input
             defaultValue={t.label}
             key={t.label}
-            aria-label={`tên tag ${t.label}`}
+            aria-label={`tên dạng bài ${t.label}`}
             onBlur={(e) => {
               const v = e.target.value.trim()
               if (v && v !== t.label) void run(t.id, () => renameTag(t.id, v))
@@ -457,7 +458,7 @@ function TagsPanel() {
             <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: ink.mid }}>
               {asking.wearing.posts.length + asking.wearing.notes.length} thứ đang đeo — chuyển sang
               <select
-                aria-label="chuyển sang tag"
+                aria-label="chuyển sang dạng bài"
                 defaultValue=""
                 onChange={(e) => {
                   const to = e.target.value
@@ -479,7 +480,7 @@ function TagsPanel() {
       {adding ? (
         <input
           autoFocus
-          placeholder="tên tag mới rồi Enter"
+          placeholder="tên dạng bài mới rồi Enter"
           onKeyDown={(e) => {
             if (e.key === 'Escape') return setAdding(false)
             if (e.key !== 'Enter') return
@@ -496,7 +497,7 @@ function TagsPanel() {
           onClick={() => setAdding(true)}
           style={{ alignSelf: 'flex-start', fontFamily: sans, fontSize: 11, color: ink.green, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
         >
-          + tag mới
+          + dạng bài mới
         </button>
       )}
     </div>
@@ -1033,7 +1034,13 @@ export function Cms() {
             * chỗ. Trước đây bốn dạng ghi viết cứng trong code, muốn đổi một chữ
             * là phải sửa code.
             */}
+          <div style={{ ...sectionHead, margin: '34px 0 18px' }}>Chủ đề</div>
+          <TopicsPanel />
+
           <div style={{ ...sectionHead, margin: '34px 0 18px' }}>Tag</div>
+          <KeywordsPanel />
+
+          <div style={{ ...sectionHead, margin: '34px 0 18px' }}>Dạng bài</div>
           <TagsPanel />
 
           <div style={{ ...sectionHead, margin: '34px 0 18px' }}>Trang Ghi chép</div>

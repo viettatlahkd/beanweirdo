@@ -16,6 +16,10 @@ const saved = vi.fn()
 
 vi.mock('../lib/apiClient', async (orig) => ({
   ...(await orig<Record<string, unknown>>()),
+  // The placement row (migration 0027) loads the content layer's vocabularies.
+  listTopics: vi.fn(async () => []),
+  listKeywords: vi.fn(async () => []),
+  listTags: vi.fn(async () => []),
   getPost: vi.fn(async () => ({
     id: 'p1',
     module_id: 'sensory',

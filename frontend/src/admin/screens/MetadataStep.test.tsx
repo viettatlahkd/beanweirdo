@@ -19,7 +19,17 @@ vi.mock('../lib/apiClient', () => ({
     { id: 't-longform', name: 'Long-form', renderer: 'longform', description: '' },
   ]),
   createTag: (label: string) => createTag(label),
+  listTopics: vi.fn().mockResolvedValue([
+    { id: 'bean-weirdo', parent_id: null, title: 'bean weirdo', sort_order: 1 },
+    { id: 'roasting', parent_id: 'bean-weirdo', title: 'roasting', sort_order: 1 },
+  ]),
 }))
+
+/** Every post is filed on the topic tree before it exists (migration 0027). */
+async function pickTopic(id = 'roasting') {
+  await waitFor(() => expect(screen.getByRole('option', { name: /› roasting/ })).toBeInTheDocument())
+  await userEvent.selectOptions(screen.getByLabelText('Chủ đề'), id)
+}
 
 describe('MetadataStep', () => {
   it('asks for everything a post needs in one form', async () => {
@@ -33,6 +43,7 @@ describe('MetadataStep', () => {
 
     await userEvent.selectOptions(screen.getByLabelText('Module'), 'roasting')
     await userEvent.selectOptions(screen.getByLabelText('Template'), 't-longform')
+    await pickTopic()
     await userEvent.type(screen.getByLabelText('Tiêu đề'), 'Senses of Flavors')
     await userEvent.type(screen.getByLabelText('Mô tả'), 'mô tả')
     await userEvent.click(screen.getByRole('button', { name: /soạn bài/i }))
@@ -40,6 +51,7 @@ describe('MetadataStep', () => {
     await waitFor(() =>
       expect(onContinue).toHaveBeenCalledWith({
         module_id: 'roasting',
+        topic_id: 'roasting',
         kind: 'note',
         en: 'Senses of Flavors',
         vi: 'mô tả',
@@ -60,8 +72,9 @@ describe('MetadataStep', () => {
     render(<MetadataStep onContinue={onContinue} />)
     await waitFor(() => expect(screen.getByLabelText('Module')).toHaveValue('sensory'))
 
-    await userEvent.clear(screen.getByLabelText('Tag'))
-    await userEvent.type(screen.getByLabelText('Tag'), 'thí nghiệm')
+    await userEvent.clear(screen.getByLabelText('Dạng bài'))
+    await userEvent.type(screen.getByLabelText('Dạng bài'), 'thí nghiệm')
+    await pickTopic()
     await userEvent.type(screen.getByLabelText('Tiêu đề'), 'Bài mới')
     await userEvent.click(screen.getByRole('button', { name: /soạn bài/i }))
 
@@ -74,8 +87,9 @@ describe('MetadataStep', () => {
   it('does not write down a tag it already knows', async () => {
     createTag.mockClear()
     render(<MetadataStep onContinue={vi.fn()} />)
-    await waitFor(() => expect(screen.getByLabelText('Tag')).toHaveValue('note'))
+    await waitFor(() => expect(screen.getByLabelText('Dạng bài')).toHaveValue('note'))
 
+    await pickTopic()
     await userEvent.type(screen.getByLabelText('Tiêu đề'), 'Bài mới')
     await userEvent.click(screen.getByRole('button', { name: /soạn bài/i }))
 
@@ -90,6 +104,8 @@ describe('MetadataStep', () => {
     expect(screen.getByRole('button', { name: /soạn bài/i })).toBeDisabled()
     expect(screen.queryByLabelText(/\(EN\)|\(VI\)/)).toBeNull()
 
+    await pickTopic()
+    expect(screen.getByRole('button', { name: /soạn bài/i })).toBeDisabled()
     await userEvent.type(screen.getByLabelText('Tiêu đề'), 'Bài mới')
     expect(screen.getByRole('button', { name: /soạn bài/i })).toBeEnabled()
   })
@@ -101,6 +117,7 @@ describe('MetadataStep — màu bài', () => {
     render(<MetadataStep onContinue={onContinue} />)
     await waitFor(() => expect(screen.getByLabelText('Module')).toHaveValue('sensory'))
 
+    await pickTopic()
     await userEvent.type(screen.getByLabelText('Tiêu đề'), 'Bài mới')
     await userEvent.click(screen.getByRole('button', { name: /soạn bài/i }))
 
@@ -115,6 +132,7 @@ describe('MetadataStep — màu bài', () => {
     // Every swatch is named the same way: whose colour it is, then the code.
     const other = await screen.findByLabelText('Roasting — #8A6420')
     await userEvent.click(other)
+    await pickTopic()
     await userEvent.type(screen.getByLabelText('Tiêu đề'), 'Bài mới')
     await userEvent.click(screen.getByRole('button', { name: /soạn bài/i }))
 
@@ -147,6 +165,7 @@ describe('MetadataStep — mã màu', () => {
 
     expect(screen.getByText('customize — #773236')).toBeInTheDocument()
 
+    await pickTopic()
     await userEvent.type(screen.getByLabelText('Tiêu đề'), 'Bài mới')
     await userEvent.click(screen.getByRole('button', { name: /soạn bài/i }))
     await waitFor(() => expect(onContinue).toHaveBeenCalledWith(expect.objectContaining({ theme_color: '#773236' })))

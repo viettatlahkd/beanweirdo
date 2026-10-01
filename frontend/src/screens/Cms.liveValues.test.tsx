@@ -26,6 +26,9 @@ vi.mock('../admin/lib/apiClient', () => ({
   // Bảng tag nằm cùng tab "Nội dung trang"; không giả lập thì màn không dựng nổi.
   listTags: () => Promise.resolve([]),
   createTag: vi.fn(), renameTag: vi.fn(), deleteTag: vi.fn(),
+  // Cây chủ đề và tag theme cũng nằm ở tab này (migration 0027).
+  listTopics: () => Promise.resolve([]),
+  listKeywords: () => Promise.resolve([]),
   createModule: vi.fn(), deleteModule: vi.fn(), reorderModules: vi.fn(),
   reorderPosts: vi.fn(), updateModule: vi.fn(), updatePost: vi.fn(),
   uploadImage: vi.fn(), transitionStatus: vi.fn(),

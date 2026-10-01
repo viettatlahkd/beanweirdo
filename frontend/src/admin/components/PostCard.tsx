@@ -47,12 +47,15 @@ function thumbColor(id: string) {
 
 export function PostCard({
   post,
+  place,
   onAction,
   onEdit,
   onCopy,
   onPin,
 }: {
   post: PostSummary
+  /** Where the post is filed — its topic, or its module until it has one. */
+  place?: string
   onAction: (id: string, action: StatusAction) => void
   onEdit: (id: string) => void
   /** Start a new draft from this one's content. */
@@ -91,7 +94,7 @@ export function PostCard({
       <div style={{ minWidth: 0 }}>
         <div style={{ fontFamily: serif, fontSize: 16, letterSpacing: '-0.01em', color: ink.base }}>{post.en}</div>
         <div style={{ fontFamily: sans, fontSize: 11, color: ink.muted, marginTop: 3 }}>
-          {post.module_id} · {post.kind} · {post.date_label}
+          {place ?? post.module_id} · {post.kind} · {post.date_label}
         </div>
         <div style={{ fontFamily: sans, fontSize: 12.5, color: ink.soft, marginTop: 5, lineHeight: 1.5 }}>{post.vi}</div>
         <div style={{ fontSize: 11, marginTop: 8 }}>

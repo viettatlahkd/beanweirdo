@@ -39,6 +39,7 @@ const listPosts = vi.fn().mockResolvedValue([
 vi.mock('../lib/apiClient', () => ({
   listPosts: (...args: unknown[]) => listPosts(...args),
   transitionStatus: (...args: unknown[]) => transitionStatus(...args),
+  listTopics: () => Promise.resolve([]),
 }))
 
 const { PostsPanel } = await import('./PostsPanel')

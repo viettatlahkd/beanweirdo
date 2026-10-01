@@ -43,13 +43,21 @@ export type PostSummary = {
   sort_order: number | null
   /** Bài ghim dẫn đầu module của nó. */
   pinned: boolean
+  /** Chỗ trên cây chủ đề (migration 0027); null khi chưa xếp. */
+  topic_id: string | null
+  visibility: PostVisibility
+  /** Địa chỉ đã cố định; null với bài nháp, vốn được gọi bằng địa chỉ suy ra. */
+  slug: string | null
   created_at: string
   updated_at: string
   published_at: string | null
 }
 
+export type PostVisibility = 'public' | 'private'
+
 export type PostDetail = PostSummary & {
-  slug: string
+  /** Tag theme (post_keywords). */
+  keywords: string[]
   body: SectionData[] | null
   hero_caption: string | null
   lead: string | null
@@ -184,6 +192,8 @@ export async function createPost(input: {
   fromPostId?: string
   /** Màu riêng; bỏ trống để bài đi theo màu module. */
   theme_color?: string | null
+  /** Chỗ trên cây chủ đề. */
+  topic_id?: string | null
 }): Promise<{ id: string }> {
   return request<{ id: string }>('/api/posts', { method: 'POST', body: JSON.stringify(input) })
 }
@@ -248,6 +258,16 @@ export async function updatePost(
       /** Vị trí tự chọn; null trả bài về xếp theo ngày đăng. */
       sort_order: number | null
       pinned: boolean
+      topic_id: string | null
+      visibility: PostVisibility
+      template: PostTemplate
+      module_id: string
+      /** Dạng bài. */
+      kind: string
+      /** Địa chỉ mới; địa chỉ cũ được giữ để chuyển tiếp. */
+      slug: string
+      /** Thay cả bộ tag theme. */
+      keywords: string[]
   }>,
 ): Promise<PostDetail> {
   const result = await request<{ post: PostDetail }>(`/api/posts/${id}`, {
@@ -265,10 +285,12 @@ export async function updatePost(
 export async function transitionStatus(
   id: string,
   action: StatusAction,
+  /** Với 'publish': địa chỉ cố định cho bài chưa có — xem usePostAddresses.slugToPublish. */
+  slug?: string,
 ): Promise<PostDetail | { deleted: true }> {
   const result = await request<{ post: PostDetail } | { deleted: true }>(`/api/posts/${id}/status`, {
     method: 'POST',
-    body: JSON.stringify({ action }),
+    body: JSON.stringify(slug ? { action, slug } : { action }),
   })
   return 'deleted' in result ? result : result.post
 }
@@ -518,4 +540,72 @@ export async function updatePortDesign(patch: Record<string, unknown>): Promise<
     body: JSON.stringify(patch),
   })
   return r.design
+}
+
+// ── Tầng nội dung: cây chủ đề và tag theme (migration 0027) ──────────────────
+
+export type Topic = {
+  id: string
+  /** null = subject; còn lại là topic con của subject đó. */
+  parent_id: string | null
+  title: string
+  intro: string
+  accent: string | null
+  on_color: string | null
+  tint: string | null
+  tint2: string | null
+  image_url: string | null
+  sort_order: number
+  visibility: PostVisibility
+  /** Số bài (trừ thùng rác) đang nằm ở nút này. */
+  posts: number
+}
+
+export type Keyword = { id: string; label: string; posts: number }
+
+export async function listTopics(): Promise<Topic[]> {
+  return (await request<{ topics: Topic[] }>('/api/tags?vocab=topics')).topics
+}
+
+export async function createTopic(title: string, parent_id: string | null): Promise<Topic> {
+  const r = await request<{ topic: Topic }>('/api/tags?vocab=topics', { method: 'POST', body: JSON.stringify({ title, parent_id }) })
+  return r.topic
+}
+
+export async function updateTopic(
+  id: string,
+  patch: Partial<Pick<Topic, 'title' | 'intro' | 'parent_id' | 'visibility' | 'accent' | 'on_color' | 'tint' | 'tint2' | 'image_url'>>,
+): Promise<Topic> {
+  const r = await request<{ topic: Topic }>(`/api/tags?vocab=topics&id=${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(patch),
+  })
+  return r.topic
+}
+
+/** Thứ tự mới của một tầng: các id theo thứ tự. */
+export async function reorderTopics(order: string[]): Promise<void> {
+  await request('/api/tags?vocab=topics', { method: 'PUT', body: JSON.stringify({ order }) })
+}
+
+/** Máy chủ từ chối (409) khi nút còn bài hoặc còn topic con. */
+export async function deleteTopic(id: string): Promise<void> {
+  await request(`/api/tags?vocab=topics&id=${encodeURIComponent(id)}`, { method: 'DELETE' })
+}
+
+export async function listKeywords(): Promise<Keyword[]> {
+  return (await request<{ keywords: Keyword[] }>('/api/tags?vocab=keywords')).keywords
+}
+
+export async function createKeyword(label: string): Promise<Keyword> {
+  const k = await request<{ id: string; label: string }>('/api/tags?vocab=keywords', { method: 'POST', body: JSON.stringify({ label }) })
+  return { ...k, posts: 0 }
+}
+
+export async function renameKeyword(id: string, label: string): Promise<void> {
+  await request(`/api/tags?vocab=keywords&id=${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify({ label }) })
+}
+
+export async function deleteKeyword(id: string): Promise<void> {
+  await request(`/api/tags?vocab=keywords&id=${encodeURIComponent(id)}`, { method: 'DELETE' })
 }

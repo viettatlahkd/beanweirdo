@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { withCors } from '../lib/cors.js'
 import { requireAuth } from '../lib/auth.js'
 import { getSupabase } from '../lib/supabase.js'
+import { handleKeywords, handleTopics, slug, vocabOf } from '../lib/vocab.js'
 
 /**
  * Tags — what a post is, in the owner's own words.
@@ -10,6 +11,11 @@ import { getSupabase } from '../lib/supabase.js'
  *   POST   /api/tags            add one
  *   PATCH  /api/tags?id=…       rename one, and everything wearing it
  *   DELETE /api/tags?id=…       remove one, after saying where its things go
+ *
+ *   ?vocab=topics | keywords    the topic tree and theme tags (lib/vocab.ts)
+ *
+ * Since migration 0027 this vocabulary means dạng bài — what form a post
+ * takes — and theme tags live in `keywords` instead.
  *
  * This replaces `kind`, which was four words a programmer picked — note,
  * essay, ref, log — with no way to add a fifth short of editing a database
@@ -26,20 +32,15 @@ import { getSupabase } from '../lib/supabase.js'
  * a tag that vanishes from one and survives in the other is the same split
  * coming back.
  */
-function slug(label: string): string {
-  return label
-    .trim()
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/đ/g, 'd')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')
-}
 
 async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
   if (!requireAuth(req, res)) return
   const supabase = getSupabase()
+
+  // The content layer's two vocabularies live on this endpoint too.
+  const vocab = vocabOf(req)
+  if (vocab === 'topics') return handleTopics(req, res, supabase)
+  if (vocab === 'keywords') return handleKeywords(req, res, supabase)
 
   if (req.method === 'GET') {
     const { data, error } = await supabase

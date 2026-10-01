@@ -42,6 +42,7 @@ import { toPath } from '../../lib/routes'
 import { usePostAddresses } from '../../data/usePostAddresses'
 import { ink, paper, sans, serif } from '../../design/tokens'
 import { ThemePicker } from '../components/ThemePicker'
+import { PostPlacement, type PlacementPatch } from '../components/PostPlacement'
 import { FocusPicker } from '../components/FocusPicker'
 import { blankReportBlock, getBody, ORDERED_LIST, resolveTemplate } from '../lib/postData'
 import {
@@ -117,7 +118,8 @@ export type EditPatch = Partial<{
   hero_image_url: string
   /** Màu riêng của bài; null trả nó về theo màu module. */
   theme_color: string | null
-}>
+}> &
+  PlacementPatch
 
 type CanvasProps = {
   template: PostTemplate
@@ -467,6 +469,22 @@ function EditorContent({ postId }: { postId: string }) {
         </span>
       </div>
 
+      <PostPlacement
+        post={post}
+        modules={modules}
+        derivedSlug={addresses.slugOf(postId)}
+        onPatch={applyPatch}
+        onSlug={async (slug) => {
+          try {
+            const saved = await updatePost(postId, { slug })
+            setPost((prev) => (prev ? { ...prev, slug: saved.slug } : prev))
+            return null
+          } catch (e) {
+            return (e as Error).message
+          }
+        }}
+      />
+
       {/*
         * Thanh đặt ảnh: mỗi chỗ đặt một dòng.
         *
@@ -497,7 +515,7 @@ function EditorContent({ postId }: { postId: string }) {
           </button>
           <button
             onClick={async () => {
-              await transitionStatus(postId, 'publish')
+              await transitionStatus(postId, 'publish', addresses.slugToPublish(postId))
               nav.goCms()
             }}
             className="admin-btn"

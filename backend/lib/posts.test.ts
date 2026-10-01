@@ -10,6 +10,8 @@ function row(overrides: Partial<PostRow> = {}): PostRow {
     kind: 'essay',
     date_label: '2026.08',
     theme_color: null,
+    topic_id: null,
+    visibility: 'public',
     slug: null,
     body: null,
     hero_caption: null,

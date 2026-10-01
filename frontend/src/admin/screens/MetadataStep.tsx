@@ -4,10 +4,13 @@ import {
   listModules,
   listTags,
   listTemplates,
+  listTopics,
   type Module,
   type Tag,
   type TemplateSummary,
+  type Topic,
 } from '../lib/apiClient'
+import { topicOptions } from '../components/PostPlacement'
 import { ink, paper } from '../../design/tokens'
 import { ThemePicker } from '../components/ThemePicker'
 
@@ -20,7 +23,9 @@ import { ThemePicker } from '../components/ThemePicker'
  */
 export type Metadata = {
   module_id: string
-  /** The tag, stored in `posts.kind`. Free text since migration 0020. */
+  /** Chỗ trên cây chủ đề (migration 0027). */
+  topic_id: string
+  /** Dạng bài, stored in `posts.kind` (the `tags` vocabulary). */
   kind: string
   en: string
   vi: string
@@ -43,6 +48,8 @@ export function MetadataStep({ onContinue }: { onContinue: (m: Metadata) => void
   const [tags, setTags] = useState<Tag[]>([])
   const [templates, setTemplates] = useState<TemplateSummary[]>([])
   const [module_id, setModuleId] = useState('')
+  const [topics, setTopics] = useState<Topic[]>([])
+  const [topic_id, setTopicId] = useState('')
   const [tag, setTag] = useState('')
   const [templateId, setTemplateId] = useState('')
   const [en, setEn] = useState('')
@@ -59,13 +66,14 @@ export function MetadataStep({ onContinue }: { onContinue: (m: Metadata) => void
       setTags(ts)
       if (ts.length > 0) setTag(ts[0].label)
     })
+    listTopics().then(setTopics)
     listTemplates().then((ts) => {
       setTemplates(ts)
       if (ts.length > 0) setTemplateId(ts[0].id)
     })
   }, [])
 
-  const canContinue = module_id !== '' && templateId !== '' && en.trim() !== '' && !busy
+  const canContinue = module_id !== '' && topic_id !== '' && templateId !== '' && en.trim() !== '' && !busy
 
   /** A tag typed for the first time is written down, so it is there next time. */
   async function submit() {
@@ -77,6 +85,7 @@ export function MetadataStep({ onContinue }: { onContinue: (m: Metadata) => void
       if (saved && !known) setTags([...tags, saved])
       onContinue({
         module_id,
+        topic_id,
         kind: saved?.id ?? '',
         en: en.trim(),
         vi: vi.trim(),
@@ -117,17 +126,34 @@ export function MetadataStep({ onContinue }: { onContinue: (m: Metadata) => void
         </optgroup>
       </select>
 
+      <label htmlFor="topic" style={fieldLabelStyle}>
+        Chủ đề
+      </label>
+      <select id="topic" aria-label="Chủ đề" value={topic_id} onChange={(e) => setTopicId(e.target.value)} className="admin-field">
+        <option value="">—</option>
+        {topicOptions(topics).map(({ subject, children }) => (
+          <optgroup key={subject.id} label={subject.title}>
+            <option value={subject.id}>{subject.title}</option>
+            {children.map((t) => (
+              <option key={t.id} value={t.id}>
+                {subject.title} › {t.title}
+              </option>
+            ))}
+          </optgroup>
+        ))}
+      </select>
+
       <label htmlFor="tag" style={fieldLabelStyle}>
-        Tag
+        Dạng bài
       </label>
       <input
         id="tag"
-        aria-label="Tag"
+        aria-label="Dạng bài"
         list="tag-list"
         value={tag}
         onChange={(e) => setTag(e.target.value)}
         className="admin-field"
-        placeholder="chọn hoặc gõ tag mới"
+        placeholder="chọn hoặc gõ dạng bài mới"
       />
       <datalist id="tag-list">
         {tags.map((t) => (

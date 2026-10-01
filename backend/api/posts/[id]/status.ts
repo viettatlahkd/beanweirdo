@@ -6,6 +6,7 @@ import {
   computeStatusTransition,
   InvalidStatusTransitionError,
   POST_DETAIL_COLUMNS,
+  SLUG_RE,
   STATUS_ACTIONS,
   toPostDetail,
   type PostRow,
@@ -32,7 +33,14 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
     return
   }
 
-  const body = (req.body ?? {}) as { action?: unknown }
+  /*
+   * `slug` rides along with 'publish': the address the post is published at,
+   * written once and kept from then on (migration 0027). The browser works it
+   * out with the same rules every other address uses (lib/postSlug.ts), which
+   * the server has no copy of; the server only checks its shape and that it
+   * is free.
+   */
+  const body = (req.body ?? {}) as { action?: unknown; slug?: unknown }
   const action = body.action
 
   if (typeof action !== 'string' || !(STATUS_ACTIONS as string[]).includes(action)) {
@@ -44,7 +52,7 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
 
   const { data: current, error: fetchError } = await supabase
     .from('posts')
-    .select('id, status, previous_status')
+    .select('id, status, previous_status, slug')
     .eq('id', id)
     .maybeSingle()
 
@@ -81,12 +89,21 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
     return
   }
 
-  const { data, error } = await supabase
-    .from('posts')
-    .update(transition.patch as Record<string, unknown>)
-    .eq('id', id)
-    .select(POST_DETAIL_COLUMNS)
-    .maybeSingle()
+  const patch = { ...(transition.patch as Record<string, unknown>) }
+  const fresh = typeof body.slug === 'string' && SLUG_RE.test(body.slug) ? body.slug : null
+  // Only a post with no stored address takes one: republishing keeps the
+  // address its readers already have.
+  if (action === 'publish' && fresh && !(current as { slug: string | null }).slug) patch.slug = fresh
+
+  const write = (p: Record<string, unknown>) =>
+    supabase.from('posts').update(p).eq('id', id).select(POST_DETAIL_COLUMNS).maybeSingle()
+  let { data, error } = await write(patch)
+  // The address was taken in the meantime. Publishing still matters more than
+  // the address, so publish without it and let the post keep a derived one.
+  if (error?.code === '23505' && 'slug' in patch) {
+    delete patch.slug
+    ;({ data, error } = await write(patch))
+  }
 
   if (error) {
     res.status(500).json({ error: error.message })

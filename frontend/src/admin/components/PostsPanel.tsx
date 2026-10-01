@@ -3,6 +3,7 @@ import { PostCard } from './PostCard'
 import {
   createPost,
   listPosts,
+  listTopics,
   updatePost,
   transitionStatus,
   type PostStatus,
@@ -11,6 +12,7 @@ import {
 } from '../lib/apiClient'
 import { ink, paper } from '../../design/tokens'
 import { useNav } from '../../lib/nav'
+import { usePostAddresses } from '../../data/usePostAddresses'
 
 const TABS: (PostStatus | 'all')[] = ['all', 'draft', 'published', 'archived', 'deleted']
 // Distinct labels so filter buttons never collide with row-action names
@@ -51,6 +53,14 @@ export function PostsPanel({
   onChanged?: () => void
 }) {
   const nav = useNav()
+  const addresses = usePostAddresses()
+  // A post's place on the topic tree is the line under its title.
+  const [topicTitles, setTopicTitles] = useState<Record<string, string>>({})
+  useEffect(() => {
+    listTopics()
+      .then((ts) => setTopicTitles(Object.fromEntries(ts.map((t) => [t.id, t.title]))))
+      .catch(() => {})
+  }, [])
   const [filter, setFilter] = useState<PostStatus | 'all'>('all')
   const [posts, setPosts] = useState<PostSummary[]>([])
   // Counts come from an unfiltered fetch so the stat row stays accurate no
@@ -85,7 +95,9 @@ export function PostsPanel({
 
   async function handleAction(id: string, action: StatusAction) {
     try {
-      await transitionStatus(id, action)
+      // Publishing fixes the post's address for good (migration 0027).
+      const slug = action === 'publish' ? addresses.slugToPublish(id) : undefined
+      await transitionStatus(id, action, ...(slug ? [slug] : []))
       await Promise.all([load(), loadCounts()])
       onChanged?.()
     } catch (e) {
@@ -122,6 +134,7 @@ export function PostsPanel({
       const { id: created } = await createPost({
         module_id: src.module_id,
         kind: src.kind,
+        topic_id: src.topic_id,
         en: `${src.en} (bản sao)`,
         vi: src.vi || 'Một dòng mô tả',
         fromPostId: id,
@@ -224,6 +237,7 @@ export function PostsPanel({
         <PostCard
           key={p.id}
           post={p}
+          place={(p.topic_id && topicTitles[p.topic_id]) || p.module_id}
           onAction={handleAction}
           onEdit={(id) => nav.editPost(id)}
           onCopy={handleCopy}

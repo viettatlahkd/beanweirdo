@@ -9,7 +9,7 @@ import { useIsMobile } from './lib/useIsMobile'
 import { AREA_HOME, isPrivate, screenAllowed } from './lib/area'
 import { useRoute } from './lib/useRoute'
 import { adoptWords } from './lib/routeWords'
-import type { CmsTab, PortTab, Where } from './lib/routes'
+import { toPath, type CmsTab, type PortTab, type Where } from './lib/routes'
 import {
   NavContext,
   SettingsContext,
@@ -109,6 +109,21 @@ function Routed({ where, go }: { where: Where; go: (next: Where) => void }) {
   const moduleId = where.moduleId ?? FIRST_MODULE
   // The address carries the post's slug; the screens below work in ids.
   const postId = where.slug ? posts.idOf(where.slug) : null
+
+  /*
+   * An address a post used to have still opens it, and the bar is then
+   * straightened to the address it has now — with `replace`, since following
+   * an old link is not a step the reader took.
+   */
+  useEffect(() => {
+    if (!where.slug || !postId || !posts.forwards(where.slug)) return
+    // The old addresses can arrive before the current ones; until the book
+    // knows this post's address there is nothing better to show than the old.
+    const current = posts.slugOf(postId)
+    if (current === postId) return
+    window.history.replaceState({}, '', toPath({ ...where, slug: current }))
+    window.dispatchEvent(new PopStateEvent('popstate'))
+  }, [where, postId, posts])
   const articleFrom: Origin = where.from ?? 'admin'
 
   const openModule = useCallback((id: string) => at({ screen: 'module', moduleId: id }), [at])
