@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { resolvePosts, type Block, type PortPost } from './blocks'
 import { gridArea, imageOf, seriesLayout, storyLayout, type Placed } from './layout'
 import { PF_CSS } from './styles'
-import { cssVars, fontHrefs, type Design } from './tokens'
+import { cssVars, fontFaceCss, fontHrefs, type Design } from './tokens'
 
 /**
  * Renders a port page from its blocks, tokens and real posts.
@@ -30,7 +30,7 @@ export type PortfolioViewProps = {
 }
 
 /** Load the CSS and fonts once for the whole page. */
-function useAssets(library: string[]) {
+function useAssets(library: string[], files: Record<string, string>) {
   useEffect(() => {
     if (!document.getElementById('pf-css')) {
       const el = document.createElement('style')
@@ -38,7 +38,15 @@ function useAssets(library: string[]) {
       el.textContent = PF_CSS
       document.head.appendChild(el)
     }
-    for (const href of fontHrefs(library)) {
+    let faces = document.getElementById('pf-fonts')
+    if (!faces) {
+      faces = document.createElement('style')
+      faces.id = 'pf-fonts'
+      document.head.appendChild(faces)
+    }
+    faces.textContent = fontFaceCss(files)
+    // Uploaded families come from their own file; only the rest are fetched from Google.
+    for (const href of fontHrefs(library.filter((f) => !(f in files)))) {
       if (document.querySelector(`link[data-pf-font="${href}"]`)) continue
       const link = document.createElement('link')
       link.rel = 'stylesheet'
@@ -46,7 +54,7 @@ function useAssets(library: string[]) {
       link.dataset.pfFont = href
       document.head.appendChild(link)
     }
-  }, [library])
+  }, [library, files])
 }
 
 function Img({ url }: { url: string | null | undefined }) {
@@ -62,7 +70,7 @@ const metaOf = (p: PortPost, modules: Record<string, string>) => `${modules[p.mo
 
 export function PortfolioView(props: PortfolioViewProps) {
   const { design, palette, blocks, posts, moduleTitles, postHref, activeId, onPick } = props
-  useAssets(design.fonts.library)
+  useAssets(design.fonts.library, design.fonts.files)
   const [open, setOpen] = useState<PortPost | null>(null)
   const vars = cssVars(design, palette) as CSSProperties
 

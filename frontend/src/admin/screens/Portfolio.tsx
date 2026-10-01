@@ -8,6 +8,7 @@ import {
   getPortfolio,
   updatePortDesign,
   updatePortPage,
+  uploadImage,
   type PortPageRecord,
   type PortStatus,
 } from '../lib/apiClient'
@@ -29,6 +30,7 @@ import {
 } from '../../portfolio/blocks'
 import {
   DEFAULT_DESIGN,
+  familyFromFile,
   resolveDesign,
   type Design,
   type Fluid,
@@ -800,7 +802,9 @@ function DesignTab({
   pages: PortPageRecord[]
 }) {
   const src = usePortSources()
-  const [newFont, setNewFont] = useState('')
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
+  const [fontError, setFontError] = useState<string | null>(null)
   const merge2 = (a: Record<string, unknown>, b: Record<string, unknown>) => {
     const out = { ...a }
     for (const [k, v] of Object.entries(b)) {
@@ -824,6 +828,24 @@ function DesignTab({
       return n
     })
     push({ [group]: null })
+  }
+
+  /** Upload a font file and add it as a family — one file, one family, named after the file. */
+  const addFont = async (file: File | undefined) => {
+    if (!file) return
+    setFontError(null)
+    setUploading(true)
+    try {
+      const { url } = await uploadImage(file)
+      const family = familyFromFile(file.name)
+      put('fonts', 'files', { ...design.fonts.files, [family]: url })
+      if (!design.fonts.library.includes(family)) put('fonts', 'library', [...design.fonts.library, family])
+    } catch (e) {
+      setFontError((e as Error).message)
+    } finally {
+      setUploading(false)
+      if (fileRef.current) fileRef.current.value = ''
+    }
   }
 
   const sample = pages[0]
@@ -901,14 +923,27 @@ function DesignTab({
         </div>
 
         {head('Font', 'fonts')}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+          <button style={{ ...btn, padding: '5px 10px', fontSize: 10 }} disabled={uploading} onClick={() => fileRef.current?.click()}>
+            {uploading ? 'đang tải…' : 'cập nhật'}
+          </button>
+          <input ref={fileRef} type="file" accept=".woff2,.woff,.ttf,.otf" style={{ display: 'none' }} onChange={(e) => addFont(e.target.files?.[0])} />
+          {fontError && <span style={{ color: '#B33', fontFamily: sans, fontSize: 12 }}>{fontError}</span>}
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
           {design.fonts.library.map((f) => (
             <span key={f} style={{ fontFamily: `"${f}"`, fontSize: 15, border: `1px solid ${paper.rule}`, background: paper.white, padding: '4px 8px' }}>
               {f}
               {![design.fonts.display, design.fonts.body, design.fonts.meta].includes(f) && (
                 <button
                   style={{ border: 0, background: 'none', cursor: 'pointer', color: ink.faint, marginLeft: 6 }}
-                  onClick={() => put('fonts', 'library', design.fonts.library.filter((x) => x !== f))}
+                  onClick={() => {
+                    put('fonts', 'library', design.fonts.library.filter((x) => x !== f))
+                    if (f in design.fonts.files) {
+                      const { [f]: _gone, ...rest } = design.fonts.files
+                      put('fonts', 'files', rest)
+                    }
+                  }}
                   aria-label={`bỏ ${f}`}
                 >
                   ×
@@ -916,19 +951,6 @@ function DesignTab({
               )}
             </span>
           ))}
-        </div>
-        <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
-          <input style={small} placeholder="tên trên Google Fonts" value={newFont} onChange={(e) => setNewFont(e.target.value)} />
-          <button
-            style={btn}
-            onClick={() => {
-              const f = newFont.trim()
-              if (f && !design.fonts.library.includes(f)) put('fonts', 'library', [...design.fonts.library, f])
-              setNewFont('')
-            }}
-          >
-            thêm
-          </button>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
           {(['display', 'body', 'meta'] as const).map((r) => (

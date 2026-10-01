@@ -26,7 +26,7 @@ export type Design = {
   palettes: Record<string, Palette>
   signal: { color: string; mark: string }
   /** Google Fonts families loaded, and which family plays which role. */
-  fonts: { library: string[]; display: string; body: string; meta: string }
+  fonts: { library: string[]; display: string; body: string; meta: string; files: Record<string, string> }
   type: Record<TypeRole, TypeStyle>
   space: { s1: number; s2: number; s3: number; s4: number; s5: number; s6: Fluid; s7: Fluid; gut: Fluid; colGap: Fluid; cardGap: Fluid }
   radius: { r1: number; r2: number }
@@ -39,7 +39,7 @@ export const DEFAULT_DESIGN: Design = {
     baen: { name: 'bæn', c500: '#f19ea3', c700: '#b8505a', c900: '#3b2023', mark: '#fbd6d8' },
   },
   signal: { color: '#5c7560', mark: '#dfe8dc' },
-  fonts: { library: ['Fraunces', 'Inter', 'Be Vietnam Pro'], display: 'Fraunces', body: 'Inter', meta: 'Be Vietnam Pro' },
+  fonts: { library: ['Fraunces', 'Inter', 'Be Vietnam Pro'], display: 'Fraunces', body: 'Inter', meta: 'Be Vietnam Pro', files: {} },
   type: {
     d1: { min: 55, max: 89, weight: 400, lh: 1, track: -0.02 },
     d2: { min: 34, max: 55, weight: 400, lh: 1.05, track: -0.015 },
@@ -129,3 +129,23 @@ export function fontHrefs(library: string[]): string[] {
     (f) => `https://fonts.googleapis.com/css2?family=${encodeURIComponent(f).replace(/%20/g, '+')}:wght@300;400;500&display=swap`,
   )
 }
+
+const FORMATS: Record<string, string> = { woff2: 'woff2', woff: 'woff', ttf: 'truetype', otf: 'opentype' }
+
+/**
+ * `@font-face` rules for fonts the owner uploaded. One file is one family; the
+ * weight range is left open so a variable font serves every weight it has.
+ */
+export function fontFaceCss(files: Record<string, string>): string {
+  return Object.entries(files)
+    .map(([family, url]) => {
+      const ext = url.split('?')[0].split('.').pop()?.toLowerCase() ?? ''
+      const format = FORMATS[ext] ? ` format('${FORMATS[ext]}')` : ''
+      return `@font-face{font-family:"${family.replace(/"/g, '')}";src:url("${url}")${format};font-weight:100 900;font-display:swap}`
+    })
+    .join('\n')
+}
+
+/** A family name from an uploaded file: "Lora-Variable.woff2" → "Lora Variable". */
+export const familyFromFile = (name: string) =>
+  name.replace(/\.[a-z0-9]+$/i, '').replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim()
