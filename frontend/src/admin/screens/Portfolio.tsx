@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, 
 import { garden, ink, paper, sans, serif } from '../../design/tokens'
 import { useNav } from '../../lib/nav'
 import { Breadcrumbs } from '../../components/Breadcrumbs'
+import { useRowDrag } from '../lib/useRowDrag'
 import { useTags } from '../../data/useTags'
 import {
   createPortPage,
@@ -319,10 +320,6 @@ function PagesTab({
         src={src}
         onBack={() => setOpenId(null)}
         onSaved={(p) => setPages((ps) => ps.map((x) => (x.id === p.id ? p : x)))}
-        onDeleted={() => {
-          setPages((ps) => ps.filter((x) => x.id !== open.id))
-          setOpenId(null)
-        }}
       />
     )
   }
@@ -422,6 +419,7 @@ function PagesTab({
           page={p}
           onOpen={() => setOpenId(p.id)}
           onSaved={(next) => setPages((ps) => ps.map((x) => (x.id === next.id ? next : x)))}
+          onDeleted={(id) => setPages((ps) => ps.filter((x) => x.id !== id))}
         />
       ))}
     </div>
@@ -466,32 +464,80 @@ function StatusSelect({ value, onChange, pill }: { value: PortStatus; onChange: 
 }
 
 /** One row of the page list: name and status are edited in place, autosaved like everything else (rule 08.3). */
-function PageRow({ page, onOpen, onSaved }: { page: PortPageRecord; onOpen: () => void; onSaved: (p: PortPageRecord) => void }) {
+function PageRow({
+  page,
+  onOpen,
+  onSaved,
+  onDeleted,
+}: {
+  page: PortPageRecord
+  onOpen: () => void
+  onSaved: (p: PortPageRecord) => void
+  onDeleted: (id: string) => void
+}) {
   const [title, setTitle] = useState(page.title)
+  const [hover, setHover] = useState(false)
   const save = useCallback((patch: Record<string, unknown>) => updatePortPage(page.id, patch).then(onSaved), [page.id, onSaved])
   const { push, flush, error } = useDebounced<Record<string, unknown>>(save, (a, b) => ({ ...a, ...b }))
+  const [delError, setDelError] = useState<string | null>(null)
+  const remove = async () => {
+    if (!window.confirm(`Xoá trang “${title}”? Thao tác này không hoàn tác được.`)) return
+    try {
+      await deletePortPage(page.id)
+      onDeleted(page.id)
+    } catch (e) {
+      setDelError((e as Error).message)
+    }
+  }
+  const link = { background: 'none', border: 'none', padding: 0, font: 'inherit' } as const
+  // Row layout and actions follow PostCard: actions sit as small links under
+  // the name, so deleting is a deliberate step on the list, not a control
+  // inside the editor.
   return (
-    <div style={{ borderBottom: `1px solid ${paper.rule}`, padding: '10px 0' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 200px 130px 124px', gap: 18, alignItems: 'center' }}>
-        <input
-          aria-label="Tên trang"
-          value={title}
-          onChange={(e) => {
-            setTitle(e.target.value)
-            if (e.target.value.trim()) push({ title: e.target.value })
-          }}
-          onBlur={flush}
-          style={{ ...boxed, fontFamily: serif, fontSize: 24, background: 'transparent', border: '1px solid transparent', padding: '4px 6px' }}
-          onFocus={(e) => (e.currentTarget.style.borderColor = paper.rule)}
-          onBlurCapture={(e) => (e.currentTarget.style.borderColor = 'transparent')}
-        />
-        <span style={{ fontFamily: sans, fontSize: 12, color: ink.soft }}>/portfolio/{page.slug}</span>
-        <span>
+    <div
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        borderBottom: `1px solid ${paper.rule}`,
+        borderLeft: `3px solid ${hover ? ink.green : 'transparent'}`,
+        background: hover ? paper.hover : 'transparent',
+        padding: '12px 18px 12px 14px',
+      }}
+    >
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 200px 110px', gap: 18, alignItems: 'start' }}>
+        <div style={{ minWidth: 0 }}>
+          <input
+            aria-label="Tên trang"
+            value={title}
+            onChange={(e) => {
+              setTitle(e.target.value)
+              if (e.target.value.trim()) push({ title: e.target.value })
+            }}
+            onBlur={flush}
+            style={{ ...boxed, fontFamily: serif, fontSize: 22, background: 'transparent', border: '1px solid transparent', padding: '2px 6px', marginLeft: -6 }}
+            onFocus={(e) => (e.currentTarget.style.borderColor = paper.rule)}
+            onBlurCapture={(e) => (e.currentTarget.style.borderColor = 'transparent')}
+          />
+          <div style={{ fontFamily: sans, fontSize: 11, marginTop: 6 }}>
+            <button className="admin-link-action" style={link} onClick={onOpen}>
+              Xếp trang
+            </button>
+            {page.status === 'published' && (
+              <a className="admin-link-action" href={`/portfolio/${page.slug}`} target="_blank" rel="noopener noreferrer">
+                Xem trang ↗
+              </a>
+            )}
+            <button className="admin-link-action" style={link} onClick={remove}>
+              Xoá
+            </button>
+          </div>
+        </div>
+        <span style={{ fontFamily: sans, fontSize: 12, color: ink.soft, paddingTop: 8 }}>/portfolio/{page.slug}</span>
+        <span style={{ paddingTop: 6 }}>
           <StatusSelect pill value={page.status} onChange={(status) => save({ status })} />
         </span>
-        <button style={{ ...quiet, padding: '7px 10px', whiteSpace: 'nowrap' }} onClick={onOpen}>xếp trang →</button>
       </div>
-      {error && <div style={{ color: '#B33', fontFamily: sans, fontSize: 12, marginTop: 4 }}>{error}</div>}
+      {(error || delError) && <div style={{ color: '#8E1E42', fontFamily: sans, fontSize: 12, marginTop: 4 }}>{error || delError}</div>}
     </div>
   )
 }
@@ -504,14 +550,12 @@ function Builder({
   src,
   onBack,
   onSaved,
-  onDeleted,
 }: {
   page: PortPageRecord
   design: Design
   src: Sources
   onBack: () => void
   onSaved: (p: PortPageRecord) => void
-  onDeleted: () => void
 }) {
   const [draft, setDraft] = useState({ ...page, blocks: parseBlocks(page.blocks) })
   const [active, setActive] = useState<string | null>(null)
@@ -532,21 +576,14 @@ function Builder({
   const patchBlock = (id: string, patch: Partial<Block>) =>
     setBlocks(draft.blocks.map((b) => (b.id === id ? ({ ...b, ...patch } as Block) : b)))
 
-  const move = (i: number, by: -1 | 1) => {
-    const to = i + by
-    if (to < 0 || to >= draft.blocks.length) return
+  const drag = useRowDrag((from, to) => {
     const next = [...draft.blocks]
-    ;[next[i], next[to]] = [next[to], next[i]]
+    const [moved] = next.splice(from, 1)
+    next.splice(to, 0, moved)
     setBlocks(next)
-  }
+  })
   const setType = (id: string, type: BlockType) =>
     setBlocks(draft.blocks.map((b) => (b.id === id ? convertBlock(b, type, src.moduleIds[0]) : b)))
-
-  const remove = async () => {
-    if (!window.confirm(`Xoá trang “${draft.title}”?`)) return
-    await deletePortPage(page.id)
-    onDeleted()
-  }
 
   // Clicking a block in the preview opens that same block in the left column.
   useEffect(() => {
@@ -589,7 +626,6 @@ function Builder({
               mở trang ↗
             </a>
           )}
-          <button style={{ ...quiet, border: 0, padding: 0, color: '#B33' }} onClick={remove}>xoá trang</button>
           {error && <span style={{ color: '#B33' }}>{error}</span>}
         </div>
 
@@ -598,9 +634,18 @@ function Builder({
           <div
             key={b.id}
             id={`pf-row-${b.id}`}
+            draggable
+            onDragStart={() => drag.setFrom(i)}
+            onDragOver={(e) => {
+              e.preventDefault()
+              drag.setOver(i)
+            }}
+            onDrop={() => drag.drop(i)}
+            onDragEnd={drag.end}
             style={{
               border: `1px solid ${active === b.id ? ink.base : paper.rule}`,
-              background: paper.white,
+              background: drag.over === i && drag.from !== i ? '#EEF5F8' : paper.white,
+              opacity: drag.from === i ? 0.5 : 1,
               marginBottom: 6,
             }}
           >
@@ -608,25 +653,11 @@ function Builder({
               onClick={() => setActive(active === b.id ? null : b.id)}
               style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 10px', cursor: 'pointer', fontFamily: sans, fontSize: 12.5 }}
             >
-              <span style={{ fontFamily: sans, fontSize: 10, color: ink.faint, width: 16 }}>{String(i + 1).padStart(2, '0')}</span>
+              <span style={{ cursor: 'grab', color: ink.faint }} aria-label="Kéo để đổi thứ tự">⋮⋮</span>
               <span style={{ flex: 1 }}>
                 {BLOCK_NAMES[b.type]}
                 <span style={{ color: ink.faint }}>{summary(b, src.moduleTitles)}</span>
               </span>
-              {([-1, 1] as const).map((by) => (
-                <button
-                  key={by}
-                  disabled={i + by < 0 || i + by >= draft.blocks.length}
-                  style={{ border: 0, background: 'none', color: ink.faint, cursor: 'pointer', fontSize: 13, padding: '0 3px', opacity: i + by < 0 || i + by >= draft.blocks.length ? 0.3 : 1 }}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    move(i, by)
-                  }}
-                  aria-label={by < 0 ? 'lên' : 'xuống'}
-                >
-                  {by < 0 ? '↑' : '↓'}
-                </button>
-              ))}
               <button
                 style={{ border: 0, background: 'none', color: ink.faint, cursor: 'pointer', fontSize: 15 }}
                 onClick={(e) => {

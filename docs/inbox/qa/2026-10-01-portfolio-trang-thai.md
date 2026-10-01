@@ -28,9 +28,8 @@
 - **[ĐỔI HÀNH VI]** Trình xếp trang bỏ kéo thả và bỏ hàng nút "+ <loại khối>".
   Sau: một nút "+ thêm khối" (tạo khối Card grid), mỗi khối có ô **Component**
   ở đầu phần chỉnh để chọn loại; đổi loại giữ id, nhãn, nguồn bài, câu mở,
-  đoạn kể (`portfolio/blocks.ts` `convertBlock`). Thứ tự đổi bằng nút ↑ ↓ trên
-  từng khối; khối được đánh số 01, 02… theo thứ tự (`Builder`, `move`,
-  `setType`). `useRowDrag` không còn dùng ở màn này.
+  đoạn kể (`portfolio/blocks.ts` `convertBlock`). Thứ tự vẫn đổi bằng kéo thả
+  qua tay nắm ⋮⋮ (`useRowDrag`; có thử ↑ ↓ rồi bỏ theo yêu cầu chủ site).
 - **[ĐỔI HÀNH VI]** Thêm font: bỏ ô nhập tên Google Fonts, thay bằng nút **Cập nhật**
   tải file `.woff2/.woff/.ttf/.otf` lên (qua `/api/upload`, bucket `post-images`).
   Tên họ lấy theo tên file (`familyFromFile`); font nạp bằng `@font-face`
@@ -48,6 +47,9 @@
   liệu viết lại bằng tiếng Việt chuẩn.
 - **[ĐỔI HÀNH VI]** Thanh chia kéo được giữa hai nửa màn, ở cả màn xếp trang và
   tab Design system; độ rộng nhớ trong localStorage (`useSplit`).
+- **[ĐỔI HÀNH VI]** Xoá trang chuyển từ màn xếp trang ra danh sách: mỗi dòng có
+  hàng thao tác "Xếp trang · Xem trang ↗ (khi đã đăng) · Xoá" theo đúng kiểu
+  `PostCard`; xoá luôn hỏi lại. Màn xếp trang không còn nút xoá. `PageRow`.
 
 ## Đụng dữ liệu
 
@@ -64,6 +66,7 @@
   font (không đổi code endpoint — endpoint vốn không giới hạn loại file).
 - Kiểm tải font: một file `.woff2` thử lên `post-images` rồi đã xoá; design trả
   về `{}`.
+- Kiểm xoá trang: tạo một trang trống `trang` rồi xoá bằng hàng thao tác.
 
 ## Đụng luật
 
