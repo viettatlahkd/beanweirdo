@@ -10,13 +10,16 @@ import {
   getPortfolio,
   updatePortDesign,
   updatePortPage,
+  updateSite,
+  getSite,
   uploadImage,
   type PortPageRecord,
   type PortStatus,
 } from '../lib/apiClient'
 import { PortfolioView } from '../../portfolio/PortfolioView'
 import docHtml from '../../portfolio/design-doc.html?raw'
-import { postHref, usePortSources } from '../../portfolio/data'
+import { buildChrome, postHref, usePortSources } from '../../portfolio/data'
+import { navLinks, resolveContent, type Feature, type LinkItem, type NavOverride, type PortContent } from '../../portfolio/content'
 import {
   BLOCK_NAMES,
   BLOCK_ORDER,
@@ -190,8 +193,9 @@ function useSplit(key: string, initial: number, side: 'left' | 'right', min = 28
 }
 
 const TABS = [
-  { k: 'pages', t: 'Trang port' },
-  { k: 'design', t: 'Design system' },
+  { k: 'pages', t: 'Quản lý port' },
+  { k: 'content', t: 'Nội dung trang' },
+  { k: 'design', t: 'Cài đặt hiển thị' },
 ] as const
 
 // ── screen ──────────────────────────────────────────────────────────────────
@@ -201,14 +205,16 @@ export function Portfolio() {
   const tab = nav.portTab
   const [pages, setPages] = useState<PortPageRecord[]>([])
   const [stored, setStored] = useState<Record<string, unknown>>({})
+  const [contentStored, setContentStored] = useState<Record<string, unknown>>({})
   const [loaded, setLoaded] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    getPortfolio().then(
-      (r) => {
+    Promise.all([getPortfolio(), getSite()]).then(
+      ([r, site]) => {
         setPages(r.pages)
         setStored(r.design)
+        setContentStored(((site as Record<string, unknown>).portfolio as Record<string, unknown>) ?? {})
         setLoaded(true)
       },
       (e: Error) => setError(e.message),
@@ -216,6 +222,7 @@ export function Portfolio() {
   }, [])
 
   const design = useMemo(() => resolveDesign(stored), [stored])
+  const content = useMemo(() => resolveContent(contentStored), [contentStored])
 
   return (
     <div style={{ background: paper.cream, color: ink.base, minHeight: '100vh' }}>
@@ -262,8 +269,10 @@ export function Portfolio() {
       {loaded &&
         (tab === 'design' ? (
           <DesignTab stored={stored} setStored={setStored} design={design} />
+        ) : tab === 'content' ? (
+          <ContentTab content={content} setStored={setContentStored} pages={pages} />
         ) : (
-          <PagesTab pages={pages} setPages={setPages} design={design} />
+          <PagesTab pages={pages} setPages={setPages} design={design} content={content} />
         ))}
     </div>
   )
@@ -281,10 +290,12 @@ function PagesTab({
   pages,
   setPages,
   design,
+  content,
 }: {
   pages: PortPageRecord[]
   setPages: (f: (p: PortPageRecord[]) => PortPageRecord[]) => void
   design: Design
+  content: PortContent
 }) {
   const [openId, setOpenId] = useState<string | null>(null)
   const [filter, setFilter] = useState<'all' | PortStatus>('all')
@@ -318,6 +329,8 @@ function PagesTab({
         page={open}
         design={design}
         src={src}
+        content={content}
+        pages={pages}
         onBack={() => setOpenId(null)}
         onSaved={(p) => setPages((ps) => ps.map((x) => (x.id === p.id ? p : x)))}
       />
@@ -548,12 +561,16 @@ function Builder({
   page,
   design,
   src,
+  content,
+  pages,
   onBack,
   onSaved,
 }: {
   page: PortPageRecord
   design: Design
   src: Sources
+  content: PortContent
+  pages: PortPageRecord[]
   onBack: () => void
   onSaved: (p: PortPageRecord) => void
 }) {
@@ -708,6 +725,7 @@ function Builder({
           postHref={postHref}
           activeId={active}
           onPick={setActive}
+          chrome={buildChrome(content, pages.map((p) => (p.id === draft.id ? { ...p, title: draft.title, slug: draft.slug, status: draft.status } : p)), `page:${draft.id}`)}
         />
       </div>
     </div>
@@ -951,7 +969,266 @@ function BlockFields({
   }
 }
 
-// ── tab 2: design system ────────────────────────────────────────────────────
+// ── tab 2: fixed content (header, footer, main page, about) ────────────────
+
+/** An image slot: the URL, a thumbnail, and an upload button. */
+function ImageField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  const ref = useRef<HTMLInputElement>(null)
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+  const upload = async (f: File | undefined) => {
+    if (!f) return
+    setBusy(true)
+    setErr(null)
+    try {
+      onChange((await uploadImage(f)).url)
+    } catch (e) {
+      setErr((e as Error).message)
+    } finally {
+      setBusy(false)
+      if (ref.current) ref.current.value = ''
+    }
+  }
+  return (
+    <Field label={label}>
+      <div style={{ display: 'grid', gridTemplateColumns: '56px minmax(0,1fr) auto', gap: 8, alignItems: 'center' }}>
+        <div style={{ width: 56, height: 56, background: value ? `center/cover no-repeat url("${value.split('#')[0]}")` : paper.rule, border: `1px solid ${paper.rule}` }} />
+        <input style={small} value={value} placeholder="URL ảnh" onChange={(e) => onChange(e.target.value)} />
+        <button style={{ ...btn, padding: '6px 10px', fontSize: 10 }} disabled={busy} onClick={() => ref.current?.click()}>
+          {busy ? 'Đang tải…' : 'Tải ảnh'}
+        </button>
+        <input ref={ref} type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => upload(e.target.files?.[0])} />
+      </div>
+      {err && <div style={{ color: '#8E1E42', fontFamily: sans, fontSize: 12, marginTop: 4 }}>{err}</div>}
+    </Field>
+  )
+}
+
+const two: CSSProperties = { display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: '0 22px' }
+const rowBox: CSSProperties = { border: `1px solid ${paper.rule}`, background: paper.white, padding: '8px 10px', marginBottom: 6 }
+
+/**
+ * Portfolio › Nội dung trang — the content every port page shares, edited the
+ * way Content management edits site copy: grouped fields, autosaved (rule 08.3).
+ * Each group is saved whole under `site_settings.data.portfolio.<group>`.
+ */
+function ContentTab({
+  content,
+  setStored,
+  pages,
+}: {
+  content: PortContent
+  setStored: (f: (s: Record<string, unknown>) => Record<string, unknown>) => void
+  pages: PortPageRecord[]
+}) {
+  const save = useCallback((patch: Record<string, unknown>) => updateSite({ portfolio: patch } as never), [])
+  const { push, error } = useDebounced<Record<string, unknown>>(save, (a, b) => ({ ...a, ...b }))
+  const setGroup = <K extends keyof PortContent>(group: K, value: PortContent[K]) => {
+    setStored((s) => ({ ...s, [group]: value }))
+    push({ [group]: value })
+  }
+  const { header, footer, home, about } = content
+  const word = 'portfolio'
+  const published = pages.filter((p) => p.status === 'published')
+
+  // Header links: the automatic list with the owner's overrides applied.
+  const links = navLinks(content, pages, word)
+  const saveLinks = (list: typeof links) =>
+    setGroup('header', { ...header, links: list.map((l): NavOverride => ({ key: l.key, label: l.label, hidden: l.hidden })) })
+  const linkDrag = useRowDrag((from, to) => {
+    const next = [...links]
+    const [m] = next.splice(from, 1)
+    next.splice(to, 0, m)
+    saveLinks(next)
+  })
+
+  // Featured pages: what the owner chose, or every published page before any choice.
+  const features: Feature[] = home.features.length
+    ? home.features.filter((f) => published.some((p) => p.id === f.pageId))
+    : published.map((p) => ({ pageId: p.id, label: '', intro: '', image: '' }))
+  const saveFeatures = (list: Feature[]) => setGroup('home', { ...home, features: list })
+  const featDrag = useRowDrag((from, to) => {
+    const next = [...features]
+    const [m] = next.splice(from, 1)
+    next.splice(to, 0, m)
+    saveFeatures(next)
+  })
+  const notFeatured = published.filter((p) => !features.some((f) => f.pageId === p.id))
+
+  const view = (href: string) => (
+    <a href={href} target="_blank" rel="noopener noreferrer" style={{ fontFamily: sans, fontSize: 10, letterSpacing: '.14em', textTransform: 'uppercase', color: ink.faint }}>
+      Xem trang ↗
+    </a>
+  )
+  const head = (t: string, href?: string) => (
+    <div style={{ ...sectionHead, display: 'flex', justifyContent: 'space-between' }}>
+      <span>{t}</span>
+      {href && view(href)}
+    </div>
+  )
+  const text = (label: string, value: string, set: (v: string) => void, area = false) => (
+    <Field label={label}>
+      {area ? (
+        <textarea style={{ ...boxed, minHeight: 70, resize: 'vertical' }} value={value} onChange={(e) => set(e.target.value)} />
+      ) : (
+        <input style={boxed} value={value} onChange={(e) => set(e.target.value)} />
+      )}
+    </Field>
+  )
+  const grip = <span style={{ cursor: 'grab', color: ink.faint }} aria-label="Kéo để đổi thứ tự">⋮⋮</span>
+  const dragProps = (d: ReturnType<typeof useRowDrag>, i: number) => ({
+    draggable: true,
+    onDragStart: () => d.setFrom(i),
+    onDragOver: (e: React.DragEvent) => {
+      e.preventDefault()
+      d.setOver(i)
+    },
+    onDrop: () => d.drop(i),
+    onDragEnd: d.end,
+  })
+
+  return (
+    <div style={{ padding: '34px 56px 130px', maxWidth: 1080 }}>
+      {error && <div style={{ color: '#8E1E42', fontFamily: sans, fontSize: 12.5, marginBottom: 12 }}>{error}</div>}
+
+      {head('Header')}
+      <div style={two}>
+        {text('Chữ thương hiệu', header.brand, (v) => setGroup('header', { ...header, brand: v }))}
+        {text('Chữ bên phải', header.right, (v) => setGroup('header', { ...header, right: v }))}
+      </div>
+      <div style={fieldLabel}>Link trên thanh</div>
+      {links.map((l, i) => (
+        <div key={l.key} {...dragProps(linkDrag, i)} style={{ ...rowBox, display: 'grid', gridTemplateColumns: '20px minmax(0,1fr) 200px 80px', gap: 10, alignItems: 'center', opacity: linkDrag.from === i ? 0.5 : 1 }}>
+          {grip}
+          <input
+            style={small}
+            value={l.label}
+            onChange={(e) => saveLinks(links.map((x) => (x.key === l.key ? { ...x, label: e.target.value } : x)))}
+          />
+          <span style={{ fontFamily: sans, fontSize: 12, color: ink.soft }}>{l.href}</span>
+          <label style={{ fontFamily: sans, fontSize: 12, display: 'flex', gap: 6, alignItems: 'center' }}>
+            <input type="checkbox" checked={!l.hidden} onChange={() => saveLinks(links.map((x) => (x.key === l.key ? { ...x, hidden: !x.hidden } : x)))} />
+            Hiện
+          </label>
+        </div>
+      ))}
+
+      {head('Footer')}
+      <div style={two}>
+        {text('Chữ bên trái', footer.left, (v) => setGroup('footer', { ...footer, left: v }))}
+        {text('Chữ bên phải', footer.right, (v) => setGroup('footer', { ...footer, right: v }))}
+      </div>
+
+      {head('Trang tổng', `/${word}`)}
+      <div style={two}>
+        {text('Tiêu đề', home.title, (v) => setGroup('home', { ...home, title: v }))}
+        {text('Giới thiệu', home.intro, (v) => setGroup('home', { ...home, intro: v }), true)}
+      </div>
+      <div style={fieldLabel}>Trang giới thiệu</div>
+      {features.map((f, i) => {
+        const page = published.find((p) => p.id === f.pageId)
+        const set = (patch: Partial<Feature>) => saveFeatures(features.map((x, j) => (j === i ? { ...x, ...patch } : x)))
+        return (
+          <div key={f.pageId} {...dragProps(featDrag, i)} style={{ ...rowBox, opacity: featDrag.from === i ? 0.5 : 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, fontFamily: sans, fontSize: 13 }}>
+              {grip}
+              <span style={{ fontFamily: serif, fontSize: 18, flex: 1 }}>{page?.title}</span>
+              <button style={{ border: 0, background: 'none', color: ink.faint, cursor: 'pointer', fontSize: 15 }} aria-label="Bỏ khỏi trang tổng" onClick={() => saveFeatures(features.filter((_, j) => j !== i))}>
+                ×
+              </button>
+            </div>
+            <div style={two}>
+              {text('Nhãn', f.label, (v) => set({ label: v }))}
+              {text('Mô tả ngắn', f.intro, (v) => set({ intro: v }))}
+            </div>
+            <ImageField label="Ảnh" value={f.image} onChange={(v) => set({ image: v })} />
+          </div>
+        )
+      })}
+      {notFeatured.length > 0 && (
+        <select
+          style={{ ...small, width: 'auto', marginTop: 4 }}
+          value=""
+          onChange={(e) => e.target.value && saveFeatures([...features, { pageId: e.target.value, label: '', intro: '', image: '' }])}
+        >
+          <option value="">+ Thêm trang</option>
+          {notFeatured.map((p) => (
+            <option key={p.id} value={p.id}>{p.title}</option>
+          ))}
+        </select>
+      )}
+
+      {head('About', `/${word}/about`)}
+      {text('Đoạn chữ phủ ảnh', about.text, (v) => setGroup('about', { ...about, text: v }), true)}
+      <div style={fieldLabel}>Nhãn trên ảnh</div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,minmax(0,1fr))', gap: 8, marginBottom: 12 }}>
+        {[0, 1, 2, 3].map((i) => (
+          <input
+            key={i}
+            style={small}
+            value={about.tags[i] ?? ''}
+            onChange={(e) => {
+              const tags = [0, 1, 2, 3].map((j) => (j === i ? e.target.value : about.tags[j] ?? ''))
+              setGroup('about', { ...about, tags })
+            }}
+          />
+        ))}
+      </div>
+      <div style={fieldLabel}>Ký tên</div>
+      {about.signs.map((sg, i) => (
+        <div key={i} style={{ display: 'grid', gridTemplateColumns: '70px minmax(0,1fr) 24px', gap: 8, marginBottom: 6, alignItems: 'center' }}>
+          <label style={{ fontFamily: sans, fontSize: 12, display: 'flex', gap: 6, alignItems: 'center' }}>
+            <input type="radio" name="about-sign" checked={about.signUse === i} onChange={() => setGroup('about', { ...about, signUse: i })} />
+            Dùng
+          </label>
+          <input
+            style={small}
+            value={sg}
+            onChange={(e) => setGroup('about', { ...about, signs: about.signs.map((x, j) => (j === i ? e.target.value : x)) })}
+          />
+          <button
+            style={{ border: 0, background: 'none', color: ink.faint, cursor: 'pointer', fontSize: 15 }}
+            aria-label="Xoá ký tên"
+            onClick={() => {
+              const signs = about.signs.filter((_, j) => j !== i)
+              // Keep pointing at the same signature when one above it is removed.
+              const signUse = about.signUse > i ? about.signUse - 1 : about.signUse === i ? 0 : about.signUse
+              setGroup('about', { ...about, signs, signUse })
+            }}
+          >
+            ×
+          </button>
+        </div>
+      ))}
+      <button style={{ ...quiet, marginTop: 4, marginBottom: 12 }} onClick={() => setGroup('about', { ...about, signs: [...about.signs, ''] })}>
+        + Thêm ký tên
+      </button>
+      <div style={two}>
+        <ImageField label="Ảnh hẹp" value={about.imageLeft} onChange={(v) => setGroup('about', { ...about, imageLeft: v })} />
+        <ImageField label="Ảnh chính" value={about.imageRight} onChange={(v) => setGroup('about', { ...about, imageRight: v })} />
+      </div>
+      <div style={fieldLabel}>Liên hệ</div>
+      {about.reach.map((l, i) => {
+        const set = (patch: Partial<LinkItem>) =>
+          setGroup('about', { ...about, reach: about.reach.map((x, j) => (j === i ? { ...x, ...patch } : x)) })
+        return (
+          <div key={i} style={{ display: 'grid', gridTemplateColumns: '140px minmax(0,1fr) 24px', gap: 8, marginBottom: 6, alignItems: 'center' }}>
+            <input style={small} value={l.label} placeholder="Nhãn" onChange={(e) => set({ label: e.target.value })} />
+            <input style={small} value={l.url} placeholder="Link" onChange={(e) => set({ url: e.target.value })} />
+            <button style={{ border: 0, background: 'none', color: ink.faint, cursor: 'pointer', fontSize: 15 }} aria-label="Xoá link" onClick={() => setGroup('about', { ...about, reach: about.reach.filter((_, j) => j !== i) })}>
+              ×
+            </button>
+          </div>
+        )
+      })}
+      <button style={{ ...quiet, marginTop: 4 }} onClick={() => setGroup('about', { ...about, reach: [...about.reach, { label: '', url: '' }] })}>
+        + Thêm link
+      </button>
+    </div>
+  )
+}
+
+// ── tab 3: design system ────────────────────────────────────────────────────
 
 const ROLE_NAMES: Record<TypeRole, string> = {
   d1: 'Tiêu đề lớn 1',

@@ -32,7 +32,10 @@ export const PF_CSS = `
 .pf .rail .lbl{color:var(--acc-700)}
 .pf .sec{padding-bottom:var(--s-6)}
 
-.pf .topbar{display:grid;grid-template-columns:1fr auto;align-items:center;gap:var(--s-4);padding:var(--s-3) var(--gut);font:var(--t-label)}
+.pf .topbar{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:var(--s-4);padding:var(--s-3) var(--gut);font:var(--t-label)}
+.pf .topbar .nav{display:flex;gap:var(--s-4);flex-wrap:wrap;justify-content:center}
+.pf .topbar .nav a{color:var(--ink-2)}
+.pf .topbar .nav a[aria-current]{color:var(--ink)}
 .pf .topbar .brand{font:400 21px/1 var(--f-display)}
 .pf .topbar .r{text-align:right;color:var(--ink-2)}
 .pf .footer{display:flex;justify-content:space-between;padding:var(--s-5) var(--gut) var(--s-3);font:var(--t-label);color:var(--ink-2)}
@@ -122,6 +125,20 @@ export const PF_CSS = `
 .pf-pop .foot{display:flex;justify-content:flex-end;margin-top:auto;padding-top:var(--s-3)}
 .pf-pop .close{position:absolute;right:var(--s-2);top:2px;color:var(--ink-3);font-size:18px}
 
+.pf .lbl.acc{color:var(--acc-700)}
+.pf .home-card .d2{margin-top:2px}
+.pf .home-card .body{color:var(--ink-2)}
+.pf .stage{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,3fr);column-gap:var(--col-gap);padding-right:var(--gut);align-items:stretch}
+.pf .stage .strip .ph{height:100%;border-top-left-radius:0;border-bottom-left-radius:0}
+.pf .stage .frame{position:relative}
+.pf .stage .frame .ph{aspect-ratio:1.618}
+.pf .over.ctx{inset:var(--s-5);justify-content:space-between;color:var(--signal);text-shadow:none}
+.pf .over .top{display:flex;justify-content:space-between;font:var(--t-label)}
+.pf .over .sign{font:var(--t-label)}
+.pf .stage-under{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,3fr);column-gap:var(--col-gap);padding:var(--s-5) var(--gut) var(--s-6)}
+.pf .stage-under .links{grid-column:2}
+.pf .stage-under .links .lbl{color:var(--signal)}
+
 @container (max-width:760px){
   .pf .rg{grid-template-columns:1fr}.pf .rg>.rail,.pf .rg>.main{grid-column:1}.pf .rg>.rail{margin-bottom:var(--s-3)}
   .pf .cards,.pf .cards.two{grid-template-columns:repeat(2,1fr)}
@@ -132,5 +149,7 @@ export const PF_CSS = `
   .pf .open-ab .d-last,.pf .open-ab .c-last,.pf .open-ab .c-rail{display:none}
   .pf .open-c{--big:calc((100cqw - var(--gut) - var(--col-gap)) / 2)}
   .pf .over p{display:none}
+  .pf .topbar{grid-template-columns:auto 1fr}.pf .topbar .r{display:none}.pf .topbar .nav{justify-content:flex-end}
+  .pf .stage{grid-template-columns:.4fr 1fr}.pf .stage .frame .ph{aspect-ratio:.8}.pf .stage-under{grid-template-columns:1fr}.pf .stage-under .links{grid-column:1}
 }
 `

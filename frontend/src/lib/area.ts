@@ -43,7 +43,7 @@ export const AREA_HOME: Record<Area, string> = {
  * real post opened from a module, under `admin` the blank sample (see `Origin`).
  */
 const AREA_SCREENS: Record<Area, readonly string[]> = {
-  public: ['landing', 'home', 'module', 'notes', 'article', 'portfolioPage'],
+  public: ['landing', 'home', 'module', 'notes', 'article', 'portfolioPage', 'portfolioHome', 'portfolioAbout'],
   practice: ['hours'],
   admin: [
     'portfolio',

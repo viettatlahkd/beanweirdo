@@ -29,7 +29,7 @@ import { Hours } from './screens/Hours'
 import { IndexScreen } from './screens/IndexScreen'
 import { Landing } from './screens/Landing'
 import { Logic } from './screens/Logic'
-import { PortfolioPage } from './screens/PortfolioPage'
+import { PortfolioAbout, PortfolioHome, PortfolioPage } from './screens/PortfolioPage'
 import { Portfolio } from './admin/screens/Portfolio'
 import { ModuleScreen } from './screens/ModuleScreen'
 import { Notes } from './screens/Notes'
@@ -161,10 +161,12 @@ function Routed({ where, go }: { where: Where; go: (next: Where) => void }) {
 
   // The public port page is full width: it has its own topbar and footer, so it
   // skips the site's left rail.
-  if (shown === 'portfolioPage') {
+  if (shown === 'portfolioPage' || shown === 'portfolioHome' || shown === 'portfolioAbout') {
     return (
       <NavContext.Provider value={nav}>
-        <PortfolioPage />
+        {shown === 'portfolioPage' && <PortfolioPage />}
+        {shown === 'portfolioHome' && <PortfolioHome />}
+        {shown === 'portfolioAbout' && <PortfolioAbout />}
       </NavContext.Provider>
     )
   }

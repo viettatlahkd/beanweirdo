@@ -69,6 +69,8 @@ export function pageColumns(body: PageInput): Record<string, unknown> | string {
   const out: Record<string, unknown> = {}
   if ('slug' in body) {
     if (typeof body.slug !== 'string' || !SLUG.test(body.slug)) return 'slug chỉ gồm chữ thường, số và gạch nối'
+    // /portfolio/about is the about page, so no port page may take that address.
+    if (body.slug === 'about') return 'slug about đã dành cho trang About'
     out.slug = body.slug
   }
   if ('title' in body) {

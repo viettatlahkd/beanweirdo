@@ -16,6 +16,9 @@ export type Screen =
   | 'portfolio'
   /** Public port page, /portfolio/<slug>. */
   | 'portfolioPage'
+  /** /portfolio — the main page, and /portfolio/about. */
+  | 'portfolioHome'
+  | 'portfolioAbout'
   | 'cards'
   | 'report'
   // The post-authoring flow, reached from Content management's first tab.

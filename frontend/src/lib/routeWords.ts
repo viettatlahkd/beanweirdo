@@ -28,6 +28,7 @@ export type RouteWords = {
   adArchive: string
   /** Portfolio's two tabs: `/ad-portfolio`, `/ad-portfolio-design`. */
   adPortfolio: string
+  adPortContent: string
   adPortDesign: string
   /** Ba động từ soạn bài: `/ad-post/edit=<slug>`. */
   create: string
@@ -56,6 +57,7 @@ export const DEFAULT_WORDS: RouteWords = {
   adConvention: 'convention',
   adArchive: 'archive',
   adPortfolio: 'portfolio',
+  adPortContent: 'portfolio-content',
   adPortDesign: 'portfolio-design',
   create: 'create',
   edit: 'edit',
@@ -77,13 +79,14 @@ export const WORD_LABELS: Record<Exclude<keyof RouteWords, 'dateOrder' | 'module
   notes: 'Ghi 01',
   practice: 'Nhật ký',
   portfolio: 'Portfolio',
-  adPost: 'Tạo bài đăng',
+  adPost: 'Quản lý bài',
   adSitemap: 'Sơ đồ trang',
-  adPageContent: 'Sửa nội dung',
+  adPageContent: 'Nội dung trang',
   adConvention: 'System conventions',
   adArchive: 'Archive',
-  adPortfolio: 'Trang port',
-  adPortDesign: 'Design system',
+  adPortfolio: 'Portfolio · Quản lý port',
+  adPortContent: 'Portfolio · Nội dung trang',
+  adPortDesign: 'Portfolio · Cài đặt hiển thị',
   create: 'Tạo bài',
   edit: 'Sửa bài',
   view: 'Xem trước',
@@ -113,7 +116,7 @@ const MUST_DIFFER: (keyof RouteWords)[][] = [
   // Đoạn đầu địa chỉ: mọi trang công khai và khu quản trị nằm cùng một chỗ.
   ['admin', 'post', 'module', 'index', 'notes', 'practice', 'portfolio'],
   // Bảy trang con đứng cùng một chỗ, ngay sau `ad-`.
-  ['adPost', 'adSitemap', 'adPageContent', 'adConvention', 'adArchive', 'adPortfolio', 'adPortDesign'],
+  ['adPost', 'adSitemap', 'adPageContent', 'adConvention', 'adArchive', 'adPortfolio', 'adPortContent', 'adPortDesign'],
   // Ba động từ đứng cùng một chỗ, ngay sau `/ad-post/`.
   ['create', 'edit', 'view'],
 ]

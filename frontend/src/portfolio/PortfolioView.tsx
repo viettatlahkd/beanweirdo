@@ -4,6 +4,7 @@ import { resolvePosts, type Block, type PortPost } from './blocks'
 import { gridArea, imageOf, seriesLayout, storyLayout, type Placed } from './layout'
 import { PF_CSS } from './styles'
 import { cssVars, fontFaceCss, fontHrefs, type Design } from './tokens'
+import { aboutSign, type NavLink, type PortContent } from './content'
 
 /**
  * Renders a port page from its blocks, tokens and real posts.
@@ -22,8 +23,8 @@ export type PortfolioViewProps = {
   moduleTitles: Record<string, string>
   /** The address for reading a post. */
   postHref: (p: PortPost) => string
-  /** Text on the left of the topbar. */
-  brand?: string
+  /** Header and footer content (Portfolio › Nội dung trang). Without it the page shows a bare default. */
+  chrome?: Chrome
   /** The block selected in the page arranger — lightly outlined so it is easy to spot. */
   activeId?: string | null
   onPick?: (id: string) => void
@@ -68,9 +69,49 @@ function Img({ url }: { url: string | null | undefined }) {
 
 const metaOf = (p: PortPost, modules: Record<string, string>) => `${modules[p.module_id] ?? p.module_id} · ${p.date_label}`
 
+/** What the shared header and footer show. */
+export type Chrome = { content: PortContent; links: NavLink[]; current?: string }
+
+const FALLBACK_CHROME = (title: string): Chrome => ({
+  content: {
+    header: { brand: 'bæn.', right: title, links: [] },
+    footer: { left: 'bæn.', right: title },
+    home: { title: '', intro: '', features: [] },
+    about: { text: '', tags: [], signs: [], signUse: 0, imageLeft: '', imageRight: '', reach: [] },
+  },
+  links: [],
+})
+
+/** 06.1 Header and 06.17 Footer around a page body — every portfolio page wears them. */
+export function PortFrame({ design, palette, chrome, children }: { design: Design; palette: string; chrome: Chrome; children: ReactNode }) {
+  useAssets(design.fonts.library, design.fonts.files)
+  const vars = cssVars(design, palette) as CSSProperties
+  const { header, footer } = chrome.content
+  const links = chrome.links.filter((l) => !l.hidden)
+  return (
+    <div className="pf" style={vars}>
+      <header className="topbar">
+        <a className="brand" href={links[0]?.href ?? '#'}>{header.brand}</a>
+        <nav className="nav">
+          {links.map((l) => (
+            <a key={l.key} href={l.href} aria-current={l.key === chrome.current ? 'page' : undefined}>
+              <span className="mk">{l.label}</span>
+            </a>
+          ))}
+        </nav>
+        <span className="r">{header.right}</span>
+      </header>
+      {children}
+      <footer className="footer">
+        <span>{footer.left}</span>
+        <span>{footer.right}</span>
+      </footer>
+    </div>
+  )
+}
+
 export function PortfolioView(props: PortfolioViewProps) {
   const { design, palette, blocks, posts, moduleTitles, postHref, activeId, onPick } = props
-  useAssets(design.fonts.library, design.fonts.files)
   const [open, setOpen] = useState<PortPost | null>(null)
   const vars = cssVars(design, palette) as CSSProperties
 
@@ -289,11 +330,7 @@ export function PortfolioView(props: PortfolioViewProps) {
   }
 
   return (
-    <div className="pf" style={vars}>
-      <header className="topbar">
-        <span className="brand">{props.brand ?? 'bæn.'}</span>
-        <span className="r">{props.title}</span>
-      </header>
+    <PortFrame design={design} palette={palette} chrome={props.chrome ?? FALLBACK_CHROME(props.title)}>
       {blocks.map((b) => (
         <div
           key={b.id}
@@ -304,18 +341,120 @@ export function PortfolioView(props: PortfolioViewProps) {
           {render(b)}
         </div>
       ))}
-      <footer className="footer">
-        <span>{props.brand ?? 'bæn.'} {new Date().getFullYear()}</span>
-        <span>{props.title}</span>
-      </footer>
       {open &&
         createPortal(
           <Summary post={open} vars={vars} moduleTitles={moduleTitles} href={postHref(open)} onClose={() => setOpen(null)} />,
           document.body,
         )}
-    </div>
+    </PortFrame>
   )
 }
+
+/** A port page as the main page lists it. */
+export type HomeCard = { href: string; title: string; label: string; intro: string; image: string; palette: string }
+
+/** /portfolio — 06.2 Hero, then each featured port page as a two-column Card grid (06.4). */
+export function PortHome({ design, chrome, cards }: { design: Design; chrome: Chrome; cards: HomeCard[] }) {
+  const { home } = chrome.content
+  const first = Object.keys(design.palettes)[0] ?? 'biz'
+  return (
+    <PortFrame design={design} palette={first} chrome={chrome}>
+      <section className="rg hero">
+        <div className="rail" />
+        <div className="main">
+          <h1 className="d1">{home.title}</h1>
+          {home.intro && <p className="body">{home.intro}</p>}
+        </div>
+      </section>
+      <section className="rg sec">
+        <div className="rail" />
+        <div className="main">
+          <div className="cards two">
+            {cards.map((c) => (
+              // Each card wears its own page's palette, so the main page previews where it leads.
+              <a key={c.href} className="card home-card" href={c.href} style={cssVars(design, c.palette) as CSSProperties}>
+                <Img url={c.image || null} />
+                <span className="lbl acc">{c.label}</span>
+                <h2 className="d2">
+                  <span className="mk">{c.title}</span>
+                </h2>
+                {c.intro && <p className="body">{c.intro}</p>}
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
+    </PortFrame>
+  )
+}
+
+/** /portfolio/about — 06.12 About hero and 06.11 Link list. */
+export function PortAbout({ design, chrome, posts }: { design: Design; chrome: Chrome; posts: LinkItemOut[] }) {
+  const { about } = chrome.content
+  const first = Object.keys(design.palettes)[0] ?? 'biz'
+  const reach = about.reach.filter((l) => l.url)
+  return (
+    <PortFrame design={design} palette={first} chrome={chrome}>
+      <section className="rg" style={{ paddingTop: 'var(--s-6)', paddingBottom: 'var(--s-5)' }}>
+        <div className="rail" />
+        <div className="main">
+          <span className="lbl" style={{ color: 'var(--signal)' }}>about</span>
+        </div>
+      </section>
+      <div className="stage">
+        <div className="strip">
+          <Img url={about.imageLeft || null} />
+        </div>
+        <div className="frame">
+          <Img url={about.imageRight || null} />
+          <div className="over ctx">
+            <div className="top">
+              {about.tags.filter(Boolean).map((t, i) => (
+                <span key={i}>{t}</span>
+              ))}
+            </div>
+            {about.text && <p>{about.text}</p>}
+            <span className="sign">{aboutSign(about)}</span>
+          </div>
+        </div>
+      </div>
+      <div className="stage-under">
+        <div className="links">
+          {reach.length > 0 && (
+            <div>
+              <span className="lbl">reach</span>
+              <ul>
+                {reach.map((l) => (
+                  <li key={l.label}>
+                    <a href={l.url} target="_blank" rel="noopener noreferrer">
+                      <span className="mk">{l.label}</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {posts.length > 0 && (
+            <div>
+              <span className="lbl">post</span>
+              <ul>
+                {posts.map((l) => (
+                  <li key={l.url}>
+                    <a href={l.url}>
+                      <span className="mk">{l.label}</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      </div>
+    </PortFrame>
+  )
+}
+
+export type LinkItemOut = { label: string; url: string }
 
 function Fib({ places, list, onOpen, tall }: { places: Placed[]; list: PortPost[]; onOpen: (p: PortPost) => void; tall?: boolean }) {
   return (

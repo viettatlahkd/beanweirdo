@@ -23,7 +23,7 @@ vi.mock('../admin/lib/apiClient', () => ({
   listPosts: () => Promise.resolve([]),
   listTemplates: () => Promise.resolve([]),
   updateSite: (p: unknown) => Promise.resolve(p),
-  // Bảng tag nằm cùng tab "Sửa nội dung"; không giả lập thì màn không dựng nổi.
+  // Bảng tag nằm cùng tab "Nội dung trang"; không giả lập thì màn không dựng nổi.
   listTags: () => Promise.resolve([]),
   createTag: vi.fn(), renameTag: vi.fn(), deleteTag: vi.fn(),
   createModule: vi.fn(), deleteModule: vi.fn(), reorderModules: vi.fn(),
@@ -32,7 +32,7 @@ vi.mock('../admin/lib/apiClient', () => ({
 }))
 /*
  * Tab nằm trong địa chỉ, nên `nav` phải nhớ được tab vừa bấm — một object đứng
- * yên thì bấm sang "Sửa nội dung" không đi tới đâu. `useNav` là hook, nên nó
+ * yên thì bấm sang "Nội dung trang" không đi tới đâu. `useNav` là hook, nên nó
  * giữ state ngay trong màn đang gọi nó.
  */
 vi.mock('../lib/nav', async () => {
@@ -53,13 +53,13 @@ describe('CMS hiện nội dung thật', () => {
     const daLuu = 'Ba mạch chính: cảm quan, lý–hoá–sinh, rang.'
     expect(daLuu).not.toBe(SITE_DEFAULTS.blurb)
     // Giữ mạng lại: biểu mẫu phải vẽ ra *trước* khi nội dung về, đúng như khi
-    // mở thẳng tab "Sửa nội dung" trên một đường truyền chậm. Nếu ô chỉ đọc giá
+    // mở thẳng tab "Nội dung trang" trên một đường truyền chậm. Nếu ô chỉ đọc giá
     // trị một lần lúc vẽ, nó đứng mãi ở chữ mặc định.
     let traVe: (v: unknown) => void = () => {}
     getSite.mockReturnValue(new Promise((r) => (traVe = r)))
 
     render(<Cms />)
-    ;(await screen.findByText(/sửa nội dung/i)).click()
+    ;(await screen.findByText(/^nội dung trang$/i)).click()
     // Ô đã có mặt, mang chữ mặc định, trong lúc mạng còn đang chờ.
     await waitFor(() => expect(screen.queryByDisplayValue(SITE_DEFAULTS.blurb)).not.toBeNull())
 

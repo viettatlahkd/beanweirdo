@@ -121,9 +121,9 @@ function countLabel(id: string, live: number): string {
 
 /** The three tabs, named once so the site map and the tab bar cannot drift. */
 const TABS = [
-  { k: 'posts', t: 'Tạo bài đăng' },
+  { k: 'posts', t: 'Quản lý bài' },
   { k: 'map', t: 'Sơ đồ trang' },
-  { k: 'content', t: 'Sửa nội dung' },
+  { k: 'content', t: 'Nội dung trang' },
 ] as const
 
 /** One page on the site map, and what it holds. */

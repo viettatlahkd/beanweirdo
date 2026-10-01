@@ -50,6 +50,35 @@
 - **[ĐỔI HÀNH VI]** Xoá trang chuyển từ màn xếp trang ra danh sách: mỗi dòng có
   hàng thao tác "Xếp trang · Xem trang ↗ (khi đã đăng) · Xoá" theo đúng kiểu
   `PostCard`; xoá luôn hỏi lại. Màn xếp trang không còn nút xoá. `PageRow`.
+- **[ĐỔI HÀNH VI]** Tab mới **Nội dung trang** ở Portfolio (`/ad-portfolio-content`,
+  `routeWords` khoá `adPortContent`), sửa nội dung cố định của mọi trang port,
+  tự lưu 700ms như tab "Nội dung trang" của Content management:
+  Header (chữ thương hiệu, chữ bên phải, link trên thanh), Footer (hai chữ),
+  Trang tổng (tiêu đề, giới thiệu, danh sách trang giới thiệu), About (đoạn chữ
+  phủ ảnh, bốn nhãn, ký tên, hai ảnh, link liên hệ).
+  `admin/screens/Portfolio.tsx` (`ContentTab`, `ImageField`), `portfolio/content.ts`.
+- **[ĐỔI HÀNH VI]** Link trên header **tự động + sửa được**: mặc định là trang tổng,
+  mọi trang đã đăng, rồi about. Chủ site đổi tên, ẩn, kéo thả thứ tự. Trang đăng
+  sau tự thêm vào cuối; trang thôi đăng tự rơi khỏi thanh. `content.ts` (`navLinks`).
+- **[ĐỔI HÀNH VI]** About giữ **nhiều ký tên**, chọn một cái để dùng (ô "Dùng");
+  xoá mất cái đang dùng thì trang hiện cái đầu tiên. `content.ts` (`aboutSign`).
+- **[ĐỔI HÀNH VI]** Hai địa chỉ công khai mới, toàn màn hình không sidebar:
+  `/portfolio` (trang tổng: Hero + Card grid các trang đã đăng, mỗi thẻ mang bảng
+  màu của trang đó) và `/portfolio/about`. Trước: `/portfolio` không có gì.
+  `screens/PortfolioPage.tsx` (`PortfolioHome`, `PortfolioAbout`),
+  `PortfolioView.tsx` (`PortFrame`, `PortHome`, `PortAbout`), `lib/routes.ts`.
+- **[ĐỔI HÀNH VI]** Trang port công khai và bản xem trước trong trình xếp trang
+  dùng chung header/footer lấy từ nội dung trên (`PortfolioView` prop `chrome`,
+  `data.ts` `usePortChrome`, `buildChrome`).
+- **[ĐỔI HÀNH VI]** Slug `about` bị từ chối khi tạo/sửa trang port
+  (`backend/api/portfolio.ts`, `pageColumns`) vì đã dành cho trang About.
+- **[ĐỔI HÀNH VI]** Đổi tên tab:
+  - Portfolio: "Quản lý port · Nội dung trang · Cài đặt hiển thị"
+    (trước: "Trang port · Design system").
+  - Content management: "Quản lý bài · Sơ đồ trang · Nội dung trang"
+    (trước: "Tạo bài đăng · Sơ đồ trang · Sửa nội dung")
+    (`screens/Cms.tsx` `TABS`; nhãn `routeWords` của `adPost`, `adPageContent`
+    đổi theo; test `Cms.liveValues.test.tsx` tìm tab bằng tên mới).
 
 ## Đụng dữ liệu
 
@@ -67,6 +96,12 @@
 - Kiểm tải font: một file `.woff2` thử lên `post-images` rồi đã xoá; design trả
   về `{}`.
 - Kiểm xoá trang: tạo một trang trống `trang` rồi xoá bằng hàng thao tác.
+- **`site_settings.data.portfolio`** (khoá mới trong jsonb sẵn có, không migration):
+  ghi qua `PATCH /api/site`; đọc công khai bằng anon key cùng `portfolio_pages`.
+  Chỉ lưu nhóm chủ site đã sửa; còn lại lấy `DEFAULT_CONTENT`.
+- Kiểm tab Nội dung trang **không ghi dữ liệu thật**: chặn `fetch` không-GET ngay
+  trong trang, chỉ đọc payload (thêm ký tên → `signs` 2 phần tử; chọn cái thứ hai
+  → `signUse: 1`). `site_settings` không đổi.
 
 ## Đụng luật
 
@@ -75,6 +110,9 @@
   — cùng tình trạng đã báo ở ghi chú PR #108.
 
 ## Đề xuất luật
+
+- Slug `about` là địa chỉ dành riêng của portfolio.
+- `SPEC.html`: thêm `/portfolio`, `/portfolio/about`, `/ad-portfolio-content`, khoá `site_settings.data.portfolio`, và tên tab mới của cả hai màn.
 
 - Trang port có ba trạng thái: nháp · đã đăng · lưu trữ. Chỉ "đã đăng" hiện
   công khai. "Lưu trữ" dành cho trang giữ làm mẫu tham khảo, không phải trang
