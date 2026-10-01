@@ -159,8 +159,8 @@ function Routed({ where, go }: { where: Where; go: (next: Where) => void }) {
   const shown: Screen = screenAllowed(area, where.screen) ? where.screen : (AREA_HOME[area] as Screen)
   const mobile = useIsMobile()
 
-  // Trang port công khai đầy bề ngang: có topbar và footer riêng, không mặc
-  // thanh trái của site.
+  // The public port page is full width: it has its own topbar and footer, so it
+  // skips the site's left rail.
   if (shown === 'portfolioPage') {
     return (
       <NavContext.Provider value={nav}>

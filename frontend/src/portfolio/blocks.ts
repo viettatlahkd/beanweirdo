@@ -1,9 +1,10 @@
 /**
- * Khối của trang port — mỗi khối là một component của design system (06.x).
+ * Blocks of a port page — each block is one design-system component (06.x).
  *
- * Khối không chứa bài. Nó chứa *cách lấy bài* (`Source`), nên một bài mới đăng
- * vào đúng module hay đúng tag tự hiện vào trang port mà không ai phải sửa lại.
- * Topbar (06.1) và footer (06.17) không phải khối: mọi trang đều có.
+ * A block holds no posts. It holds *how to fetch posts* (`Source`), so a new
+ * post published to the right module or tag shows up on the port page without
+ * anyone editing it. The topbar (06.1) and footer (06.17) are not blocks:
+ * every page has them.
  */
 
 export type Source =
@@ -16,19 +17,19 @@ export type Source =
 export type SourceMode = Source['mode']
 
 export type Block =
-  /** 06.2 đầu trang nhánh. Rỗng thì lấy tiêu đề và intro của trang. */
+  /** 06.2 branch page header. When empty, falls back to the page's title and intro. */
   | { id: string; type: 'head'; title: string; intro: string }
-  /** 06.3 mở đầu — A, B (ba ảnh) hoặc C (hai ảnh đối xứng). */
+  /** 06.3 opener — A, B (three images) or C (two symmetric images). */
   | { id: string; type: 'opening'; variant: 'A' | 'B' | 'C'; text: string; source: Source }
-  /** 06.4 thẻ bài, lưới 3 ô hoặc 2 ô. */
+  /** 06.4 post cards, in a 3- or 2-column grid. */
   | { id: string; type: 'cards'; label: string; cols: 2 | 3; source: Source }
-  /** 06.5 slider — có mũi tên, hoặc tự chạy sang trái / sang phải. */
+  /** 06.5 slider — with arrows, or auto-scrolling left / right. */
   | { id: string; type: 'slider'; label: string; motion: 'arrow' | 'left' | 'right'; source: Source }
-  /** 06.6 khối series: danh sách đánh số + hai ảnh trong ô fibonacci. */
+  /** 06.6 series block: a numbered list + two images in fibonacci cells. */
   | { id: string; type: 'series'; label: string; source: Source }
-  /** 06.7 khối kể chuyện: một câu mở, đoạn kể, hai ảnh dọc trục hoành. */
+  /** 06.7 story block: an opening line, a narrative paragraph, two images along the horizontal axis. */
   | { id: string; type: 'story'; label: string; head: string; text: string; side: 'right' | 'left'; source: Source }
-  /** 06.10 khối about. */
+  /** 06.10 about block. */
   | { id: string; type: 'about'; head: string; text: string; image: string; links: { label: string; url: string }[] }
 
 export type BlockType = Block['type']
@@ -45,7 +46,7 @@ export const BLOCK_NAMES: Record<BlockType, string> = {
 
 export const BLOCK_ORDER: BlockType[] = ['head', 'opening', 'cards', 'slider', 'series', 'story', 'about']
 
-/** Bài thật — các cột Portfolio cần từ `posts`. */
+/** A real post — the columns Portfolio needs from `posts`. */
 export type PortPost = {
   id: string
   module_id: string
@@ -63,7 +64,7 @@ export type PortPost = {
 const newestFirst = (a: PortPost, b: PortPost) =>
   (b.published_at ?? b.date_label).localeCompare(a.published_at ?? a.date_label)
 
-/** Bài một khối hiện ra, theo đúng thứ tự hiển thị. Chỉ bài đã đăng. */
+/** The posts a block shows, in display order. Published posts only. */
 export function resolvePosts(source: Source, posts: PortPost[]): PortPost[] {
   switch (source.mode) {
     case 'pick': {
@@ -84,7 +85,7 @@ export function resolvePosts(source: Source, posts: PortPost[]): PortPost[] {
 let seq = 0
 export const blockId = () => `b${Date.now().toString(36)}${(seq++).toString(36)}`
 
-/** Một khối mới với giá trị khởi đầu hợp lý. */
+/** A new block with sensible starting values. */
 export function newBlock(type: BlockType, firstModule = ''): Block {
   const id = blockId()
   const mod: Source = firstModule ? { mode: 'module', moduleId: firstModule, limit: 3 } : { mode: 'latest', limit: 3 }
@@ -109,8 +110,9 @@ export function newBlock(type: BlockType, firstModule = ''): Block {
 export type PresetKey = 'bibi' | 'bibe' | 'blank'
 
 /**
- * Hai mẫu cơ sở, dựng từ đúng hai order đã duyệt, và trang trống. Module lấy
- * theo thứ tự trong cơ sở dữ liệu, nên mẫu chạy được với bất kỳ bộ module nào.
+ * Two base presets, built from exactly the two approved orders, plus a blank
+ * page. Modules are taken in database order, so the presets work with any set
+ * of modules.
  */
 export function preset(key: PresetKey, moduleIds: string[]): Block[] {
   const m = (i: number) => moduleIds[i % Math.max(moduleIds.length, 1)] ?? ''
@@ -142,7 +144,7 @@ export function preset(key: PresetKey, moduleIds: string[]): Block[] {
   return [newBlock('head')]
 }
 
-/** Đọc mảng khối từ cơ sở dữ liệu; bỏ qua thứ không nhận ra thay vì vỡ trang. */
+/** Read the block array from the database; skip anything unrecognised instead of breaking the page. */
 export function parseBlocks(raw: unknown): Block[] {
   if (!Array.isArray(raw)) return []
   return raw.filter(

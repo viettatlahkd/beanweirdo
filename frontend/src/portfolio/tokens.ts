@@ -1,17 +1,18 @@
 /**
- * Design system của Portfolio — phần chủ site chỉnh được.
+ * Portfolio's design system — the part the site owner can edit.
  *
- * Giá trị mặc định là design system v0.9 đã chốt. Bản lưu trong
- * `portfolio_design.data` (migration 0025) chỉ chứa những gì chủ site đổi;
- * `resolveDesign` gộp nó lên mặc định, nên xoá một ô là trả nó về như cũ.
+ * Defaults are the signed-off design system v0.9. What is saved in
+ * `portfolio_design.data` (migration 0025) holds only what the owner changed;
+ * `resolveDesign` merges it over the defaults, so clearing a field restores it.
  *
- * Luật bố cục (lưới rail 1 : main 3, tỉ lệ φ, ô fibonacci, trục hoành…) không
- * nằm ở đây: đó là logic của component, viết thẳng trong `layout.ts`.
+ * Layout rules (rail 1 : main 3 grid, the φ ratio, fibonacci cells, the
+ * horizontal axis…) do not live here: they are component logic, hard-coded in
+ * `layout.ts`.
  */
 
 export type Palette = { name: string; c500: string; c700: string; c900: string; mark: string }
 
-/** Một cỡ chữ. `min` khác `max` thì cỡ co giãn theo bề ngang trang. */
+/** One type size. When `min` differs from `max` the size scales with page width. */
 export type TypeStyle = { min: number; max: number; weight: number; lh: number; track: number }
 
 export type FontRole = 'display' | 'body' | 'meta'
@@ -24,7 +25,7 @@ export type Design = {
   colors: { paper: string; ink: string; ink2: string; ink3: string; line: string; ph: string }
   palettes: Record<string, Palette>
   signal: { color: string; mark: string }
-  /** Các họ chữ Google Fonts đã nạp, và họ nào giữ vai nào. */
+  /** Google Fonts families loaded, and which family plays which role. */
   fonts: { library: string[]; display: string; body: string; meta: string }
   type: Record<TypeRole, TypeStyle>
   space: { s1: number; s2: number; s3: number; s4: number; s5: number; s6: Fluid; s7: Fluid; gut: Fluid; colGap: Fluid; cardGap: Fluid }
@@ -57,7 +58,7 @@ export const DEFAULT_DESIGN: Design = {
   radius: { r1: 2, r2: 3 },
 }
 
-/** Vai chữ nào dùng họ nào. */
+/** Which font family each type role uses. */
 export const TYPE_FONT: Record<TypeRole, FontRole> = {
   d1: 'display', d2: 'display', head: 'display', title: 'display',
   body: 'body', read: 'body', label: 'meta', meta: 'meta',
@@ -65,7 +66,7 @@ export const TYPE_FONT: Record<TypeRole, FontRole> = {
 
 const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
 
-/** Gộp bản lưu lên mặc định, sâu tới tận lá. Mảng thay nguyên. */
+/** Merge the saved copy over the defaults down to the leaves. Arrays are replaced whole. */
 function deepMerge<T>(base: T, over: unknown): T {
   if (!isObj(base) || !isObj(over)) return (over === undefined ? base : (over as T))
   const out: Record<string, unknown> = { ...(base as Record<string, unknown>) }
@@ -81,16 +82,16 @@ export function resolveDesign(stored: unknown): Design {
 }
 
 /**
- * Cỡ co giãn: từ `min` ở trang hẹp tới `max` ở trang 1280px. Đo theo bề ngang
- * khung (`cqw`), không theo cửa sổ, để bản xem trước thu nhỏ trong admin vẽ
- * đúng như trang thật.
+ * Fluid size: from `min` on a narrow page up to `max` at 1280px. Measured
+ * against the container width (`cqw`), not the viewport, so the scaled-down
+ * preview in admin renders exactly like the real page.
  */
 export const fluid = ({ min, max }: Fluid) =>
   min === max ? `${min}px` : `clamp(${min}px, ${((max / 1280) * 100).toFixed(3)}cqw, ${max}px)`
 
 const family = (name: string, fallback: string) => `"${name}", ${fallback}`
 
-/** Toàn bộ token thành biến CSS cho gốc `.pf`. */
+/** Every token as a CSS variable on the `.pf` root. */
 export function cssVars(d: Design, paletteKey: string): Record<string, string> {
   const p = d.palettes[paletteKey] ?? Object.values(d.palettes)[0] ?? DEFAULT_DESIGN.palettes.biz
   const fam: Record<FontRole, string> = {
@@ -118,8 +119,9 @@ export function cssVars(d: Design, paletteKey: string): Record<string, string> {
 }
 
 /**
- * Mỗi họ một link Google Fonts. Gộp chung thì một họ thiếu nét 300 làm hỏng
- * cả link và kéo mọi họ khác hỏng theo; tách ra thì họ nào sai chỉ họ đó.
+ * One Google Fonts link per family. In a combined link, one family missing the
+ * 300 weight breaks the whole link and takes every other family down with it;
+ * kept separate, a bad family only breaks itself.
  */
 export function fontHrefs(library: string[]): string[] {
   const fams = [...new Set(library.map((f) => f.trim()).filter(Boolean))]

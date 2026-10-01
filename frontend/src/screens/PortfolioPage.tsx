@@ -3,10 +3,10 @@ import { PortfolioView } from '../portfolio/PortfolioView'
 import { postHref, usePortSources, usePublicPort } from '../portfolio/data'
 
 /**
- * /portfolio/<slug> — một trang port đã đăng.
+ * /portfolio/<slug> — one published port page.
  *
- * Đầy bề ngang, không có thanh trái của site: port có topbar và footer riêng
- * (06.1, 06.17).
+ * Full width, without the site's left rail: a port page has its own topbar and
+ * footer (06.1, 06.17).
  */
 export function PortfolioPage() {
   const nav = useNav()

@@ -12,9 +12,9 @@ export type Screen =
   | 'notes'
   | 'cms'
   | 'logic'
-  /** Admin › Portfolio — trang port và design system. */
+  /** Admin › Portfolio — port pages and the design system. */
   | 'portfolio'
-  /** Trang port công khai, /portfolio/<slug>. */
+  /** Public port page, /portfolio/<slug>. */
   | 'portfolioPage'
   | 'cards'
   | 'report'
@@ -59,7 +59,7 @@ export type Nav = {
   cmsTab: CmsTab
   /** Which tab of Portfolio is open. */
   portTab: PortTab
-  /** Slug của trang port công khai đang mở. */
+  /** Slug of the public port page currently open. */
   slug: string | null
   goLanding(): void
   goHome(): void

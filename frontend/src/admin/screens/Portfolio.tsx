@@ -35,7 +35,7 @@ import {
   type TypeStyle,
 } from '../../portfolio/tokens'
 
-// ── chung ───────────────────────────────────────────────────────────────────
+// ── shared ──────────────────────────────────────────────────────────────────
 
 const sectionHead: CSSProperties = {
   fontFamily: sans,
@@ -90,7 +90,7 @@ function Field({ label, children }: { label: ReactNode; children: ReactNode }) {
   )
 }
 
-/** Lưu sau khi ngừng gõ 700ms, gộp mọi thay đổi trong lúc chờ — như CMS (luật 08). */
+/** Save 700ms after typing stops, batching every change made while waiting — like the CMS (rule 08). */
 function useDebounced<T>(save: (v: T) => Promise<unknown>, merge: (a: T, b: T) => T) {
   const pending = useRef<T | null>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -119,7 +119,7 @@ const TABS = [
   { k: 'design', t: 'Design system' },
 ] as const
 
-// ── màn ─────────────────────────────────────────────────────────────────────
+// ── screen ──────────────────────────────────────────────────────────────────
 
 export function Portfolio() {
   const nav = useNav()
@@ -181,7 +181,7 @@ export function Portfolio() {
   )
 }
 
-// ── tab 1: trang port ───────────────────────────────────────────────────────
+// ── tab 1: port pages ───────────────────────────────────────────────────────
 
 function uniqueSlug(base: string, pages: PortPageRecord[]) {
   const taken = new Set(pages.map((p) => p.slug))
@@ -320,7 +320,7 @@ function Builder({
     onDeleted()
   }
 
-  // Bấm một khối ở bản xem trước thì mở đúng khối ấy ở cột trái.
+  // Clicking a block in the preview opens that same block in the left column.
   useEffect(() => {
     if (!active) return
     document.getElementById(`pf-row-${active}`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
@@ -761,7 +761,7 @@ function DesignTab({
   const save = useCallback((p: Record<string, unknown>) => updatePortDesign(p), [])
   const { push, error } = useDebounced<Record<string, unknown>>(save, merge2)
 
-  /** Đổi một lá ở tầng hai: `colors.paper`, `type.d1`, `palettes.biz`… */
+  /** Change one second-level leaf: `colors.paper`, `type.d1`, `palettes.biz`… */
   const put = (group: keyof Design, key: string, value: unknown) => {
     const patch = { [group]: { [key]: value } }
     setStored((s) => merge2(s, patch))

@@ -1,12 +1,13 @@
 /**
- * Luật bố cục của Portfolio — viết thẳng trong code, chủ site không chỉnh.
+ * Portfolio's layout rules — hard-coded, not editable by the site owner.
  *
- * Mọi ảnh của khối series nằm trong một hình chữ nhật fibonacci 13 × 8, chia
- * thành các ô vuông 8 · 5 · 3 · 2 · 1 · 1. Ảnh to luôn đặt vào ô 8 hoặc 5, ảnh
- * nhỏ vào một ô nhỏ hơn, nên tỉ lệ cạnh hai ảnh luôn là số fibonacci.
+ * Every image of a series block sits inside a 13 × 8 fibonacci rectangle split
+ * into squares 8 · 5 · 3 · 2 · 1 · 1. The large image always takes cell 8 or 5
+ * and the small one a smaller cell, so the ratio of the two images' sides is
+ * always a fibonacci ratio.
  */
 
-/** Ô vuông trong khung 13 × 8, hướng gốc: [cột, hàng, cạnh]. */
+/** Squares in the 13 × 8 frame, base orientation: [column, row, side]. */
 export const CELLS = {
   '8': [1, 1, 8],
   '5': [9, 1, 5],
@@ -18,17 +19,17 @@ export const CELLS = {
 
 export type CellKey = keyof typeof CELLS
 
-/** 0 gốc · 1 lật ngang · 2 lật dọc · 3 lật cả hai. */
+/** 0 base · 1 flip horizontally · 2 flip vertically · 3 flip both. */
 const ORIENT = [0, 3, 1, 2] as const
 const PAIRS: [CellKey, CellKey][] = [['8', '3'], ['5', '2'], ['8', '2'], ['5', '3'], ['8', '5']]
 
 export type Placed = { col: number; row: number; size: number }
 
 /**
- * Khối series thứ `i` trên trang — 06.6.
+ * The `i`-th series block on the page — 06.6.
  *
- * Hướng xoay vòng qua 4 hướng, cặp ô xoay vòng qua 5 cặp: hai khối đứng cạnh
- * nhau không bao giờ trùng bố cục, và tổng cộng có 20 biến thể.
+ * Orientation cycles through 4 values and the cell pair through 5 pairs, so
+ * two adjacent blocks never share a layout, and there are 20 variants in all.
  */
 export function seriesLayout(i: number): [Placed, Placed] {
   const flip = ORIENT[i % 4]
@@ -44,12 +45,14 @@ export function seriesLayout(i: number): [Placed, Placed] {
 const STORY_SMALL: CellKey[] = ['3', '5', '2']
 
 /**
- * Khối kể chuyện thứ `i` — 06.7.
+ * The `i`-th story block — 06.7.
  *
- * Khung đứng 8 × 13 (khung 13 × 8 xoay 90°) với một trục hoành ở điểm cắt vàng,
- * giữa hàng 8 và 9. Ảnh to luôn là ô 8 trên trục; ảnh nhỏ luôn dưới trục,
- * xoay vòng ô 3 → 5 → 2. Chỉ lật ngang. Ảnh nhỏ nghiêng về phía chữ (gương):
- * các khối xen kẽ trái phải đối xứng qua giữa trang.
+ * A portrait 8 × 13 frame (the 13 × 8 frame rotated 90°) with a horizontal
+ * axis at the golden cut, between rows 8 and 9. The large image is always
+ * cell 8 above the axis; the small one is always below it, cycling cells
+ * 3 → 5 → 2. Only horizontal flips. The small image leans toward the text
+ * (mirrored), so blocks alternating left and right stay symmetric about the
+ * page's centre.
  */
 export function storyLayout(i: number, imageLeft: boolean): [Placed, Placed] {
   const small = STORY_SMALL[i % 3]
@@ -66,12 +69,13 @@ export function storyLayout(i: number, imageLeft: boolean): [Placed, Placed] {
   return [at('8', mirror), at(small, mirror)]
 }
 
-/** Vị trí lưới CSS của một ô. */
+/** CSS grid placement of a cell. */
 export const gridArea = (p: Placed) => `${p.row} / ${p.col} / span ${p.size} / span ${p.size}`
 
 /**
- * Điểm canh ảnh lưu kèm URL (`…jpg#focus=50,25`), như ảnh bìa bài viết đang
- * lưu. Trả về URL sạch và `object-position`.
+ * The focal point is stored on the URL (`…jpg#focus=50,25`), the same way post
+ * cover images already store it. Returns the clean URL and an
+ * `object-position`.
  */
 export function imageOf(url: string | null | undefined): { src: string; position?: string } | null {
   if (!url) return null

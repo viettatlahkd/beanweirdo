@@ -56,7 +56,7 @@ const adminPages = (w: RouteWords): Record<string, Screen> => ({
 
 export type CmsTab = 'posts' | 'map' | 'content'
 
-/** Portfolio có hai tab: trang port (tạo, xếp trang) và design system. */
+/** Portfolio has two tabs: port pages (create, arrange) and the design system. */
 export type PortTab = 'pages' | 'design'
 const portTabs = (w: RouteWords): Record<string, PortTab> => ({
   [`${w.admin}-${w.adPortfolio}`]: 'pages',

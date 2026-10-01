@@ -6,10 +6,10 @@ import { PF_CSS } from './styles'
 import { cssVars, fontHrefs, type Design } from './tokens'
 
 /**
- * Vẽ một trang port từ khối, token và bài thật.
+ * Renders a port page from its blocks, tokens and real posts.
  *
- * Cùng một component cho trang công khai và bản xem trước trong admin — thứ
- * chủ site thấy khi xếp trang là đúng thứ người đọc sẽ thấy.
+ * The same component serves the public page and the admin preview, so what the
+ * site owner sees while arranging a page is exactly what readers will see.
  */
 export type PortfolioViewProps = {
   title: string
@@ -18,18 +18,18 @@ export type PortfolioViewProps = {
   blocks: Block[]
   design: Design
   posts: PortPost[]
-  /** Tên module, để khối series ghi tên khi chưa đặt nhãn riêng. */
+  /** Module names, so a series block can show one when it has no label of its own. */
   moduleTitles: Record<string, string>
-  /** Địa chỉ đọc một bài. */
+  /** The address for reading a post. */
   postHref: (p: PortPost) => string
-  /** Chữ trái topbar. */
+  /** Text on the left of the topbar. */
   brand?: string
-  /** Khối đang chọn trong trình xếp trang — được viền nhẹ để dễ nhận. */
+  /** The block selected in the page arranger — lightly outlined so it is easy to spot. */
   activeId?: string | null
   onPick?: (id: string) => void
 }
 
-/** Nạp CSS và font một lần cho cả trang. */
+/** Load the CSS and fonts once for the whole page. */
 function useAssets(library: string[]) {
   useEffect(() => {
     if (!document.getElementById('pf-css')) {
@@ -363,7 +363,7 @@ function Slider({
       </section>
     )
   }
-  // Tự chạy: dải lặp hai lần để vòng chạy liền mạch; bản sao bị ẩn khỏi trình đọc màn hình.
+  // Auto-scroll: the strip is repeated twice so the loop is seamless; the copy is hidden from screen readers.
   return (
     <section className="sec">
       {(block.label || null) && head}

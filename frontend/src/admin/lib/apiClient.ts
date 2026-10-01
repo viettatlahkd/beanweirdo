@@ -486,7 +486,7 @@ export type PortPageInput = {
 
 export type PortPageRecord = Required<PortPageInput> & { id: string; updatedAt: string }
 
-/** GET /api/portfolio — mọi trang port (kể cả nháp) và token design đã lưu. */
+/** GET /api/portfolio — every port page (drafts included) and the saved design tokens. */
 export async function getPortfolio(): Promise<{ pages: PortPageRecord[]; design: Record<string, unknown> }> {
   return request<{ pages: PortPageRecord[]; design: Record<string, unknown> }>('/api/portfolio')
 }
@@ -508,7 +508,7 @@ export async function deletePortPage(id: string): Promise<void> {
   await request(`/api/portfolio?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
 }
 
-/** PATCH /api/portfolio?part=design — gộp sâu một tầng; `null` trả một khoá về mặc định. */
+/** PATCH /api/portfolio?part=design — merges one level deep; `null` resets a key to its default. */
 export async function updatePortDesign(patch: Record<string, unknown>): Promise<Record<string, unknown>> {
   const r = await request<{ design: Record<string, unknown> }>('/api/portfolio?part=design', {
     method: 'PATCH',

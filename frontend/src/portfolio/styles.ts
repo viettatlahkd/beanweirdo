@@ -1,9 +1,10 @@
 /**
- * CSS của mọi component Portfolio, gói trong gốc `.pf`.
+ * CSS for every Portfolio component, scoped under the `.pf` root.
  *
- * Gốc là một container: cỡ co giãn đo theo bề ngang khung (`cqw`), nên bản xem
- * trước nằm trong nửa màn admin vẽ đúng như trang công khai đầy bề ngang.
- * Biến CSS do `cssVars` (tokens.ts) đặt lên gốc.
+ * The root is a container: fluid sizes are measured against its width (`cqw`),
+ * so the preview sitting in half of the admin screen renders exactly like the
+ * full-width public page. The CSS variables are set on the root by `cssVars`
+ * (tokens.ts).
  */
 export const PF_CSS = `
 .pf{container-type:inline-size;background:var(--paper);color:var(--ink);font:var(--t-body);-webkit-font-smoothing:antialiased;min-height:100%}

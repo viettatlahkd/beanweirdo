@@ -18,7 +18,7 @@ export type RouteWords = {
   index: string
   notes: string
   practice: string
-  /** Trang port công khai: `/portfolio/<slug>`. */
+  /** Public port page: `/portfolio/<slug>`. */
   portfolio: string
   /** Bảy trang con của khu quản trị — phần đứng sau `ad-`. */
   adPost: string
@@ -26,7 +26,7 @@ export type RouteWords = {
   adPageContent: string
   adConvention: string
   adArchive: string
-  /** Hai tab của Portfolio: `/ad-portfolio`, `/ad-portfolio-design`. */
+  /** Portfolio's two tabs: `/ad-portfolio`, `/ad-portfolio-design`. */
   adPortfolio: string
   adPortDesign: string
   /** Ba động từ soạn bài: `/ad-post/edit=<slug>`. */

@@ -31,10 +31,10 @@ export const toPortPost = (p: PostRow): PortPost => ({
   published_at: p.published_at,
 })
 
-/** Địa chỉ công khai của một bài — đúng như mọi chỗ khác trên site. */
+/** A post's public address — the same as everywhere else on the site. */
 export const postHref = (p: PortPost) => (p.slug ? toPath({ area: 'public', screen: 'article', slug: p.slug }) : '#')
 
-/** Bài đã đăng và tên module — thứ mọi khối cần để vẽ. */
+/** Published posts and module names — what every block needs to render. */
 export function usePortSources(): { posts: PortPost[]; moduleTitles: Record<string, string>; moduleIds: string[]; loading: boolean } {
   const posts = usePublishedPosts()
   const modules = useModules()
@@ -50,8 +50,9 @@ export function usePortSources(): { posts: PortPost[]; moduleTitles: Record<stri
 }
 
 /**
- * Một trang port công khai, đọc thẳng bằng anon key. RLS (0025) chỉ trả trang
- * đã đăng, nên nháp gõ đúng địa chỉ vẫn ra "không có".
+ * One public port page, read directly with the anon key. RLS (0025) only
+ * returns published pages, so a draft still comes back as "not found" even
+ * when its exact address is typed in.
  */
 export function usePublicPort(slug: string | null): { page: PortPage | null; design: Design; loading: boolean } {
   const [page, setPage] = useState<PortPage | null>(null)

@@ -4,19 +4,19 @@ import { requireAuth } from '../lib/auth.js'
 import { getSupabase } from '../lib/supabase.js'
 
 /**
- * Portfolio — trang port và design system của nó (migration 0025).
+ * Portfolio — port pages and their design system (migration 0025).
  *
- *   GET    /api/portfolio                 mọi trang (kể cả nháp) + token design
- *   POST   /api/portfolio                 tạo một trang
- *   PATCH  /api/portfolio?id=…            sửa một trang
- *   DELETE /api/portfolio?id=…            xoá một trang
- *   PATCH  /api/portfolio?part=design     gộp token vào design system
+ *   GET    /api/portfolio                 every page (drafts included) + design tokens
+ *   POST   /api/portfolio                 create a page
+ *   PATCH  /api/portfolio?id=…            edit a page
+ *   DELETE /api/portfolio?id=…            delete a page
+ *   PATCH  /api/portfolio?part=design     merge tokens into the design system
  *
- * Một file cho cả hai bảng: dự án đang ở đúng trần 12 hàm serverless của gói
- * Vercel, nên thêm một file nữa là không deploy được.
+ * One file for both tables: the project sits exactly at the Vercel plan's cap
+ * of 12 serverless functions, so one more file would fail to deploy.
  *
- * Trang công khai không đi qua đây — nó đọc thẳng hai bảng bằng anon key,
- * RLS chỉ cho thấy trang đã đăng.
+ * The public page does not go through here — it reads both tables directly
+ * with the anon key, and RLS only exposes published pages.
  */
 
 const DESIGN_ROW = true
@@ -61,8 +61,9 @@ export function toPage(row: PortfolioPageRow) {
 }
 
 /**
- * Đọc body thành cột. Trả về chuỗi lỗi nếu một trường sai kiểu; chỉ những
- * trường có mặt mới được kiểm, nên PATCH gửi một trường vẫn hợp lệ.
+ * Map the body to columns, or return an error string if a field has the wrong
+ * type. Only fields that are present get checked, so a PATCH carrying a single
+ * field is still valid.
  */
 export function pageColumns(body: PageInput): Record<string, unknown> | string {
   const out: Record<string, unknown> = {}
@@ -140,8 +141,8 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
       res.status(500).json({ error: readError.message })
       return
     }
-    // Gộp sâu một tầng như /api/site: sửa một màu trong `colors` không xoá các
-    // màu còn lại. `null` trả một khoá về mặc định.
+    // Merge one level deep like /api/site: editing one colour in `colors` must
+    // not wipe the others. `null` resets a key to its default.
     const merged: Record<string, unknown> = { ...((current?.data as Record<string, unknown>) ?? {}) }
     for (const [key, value] of Object.entries(patch as Record<string, unknown>)) {
       if (value && typeof value === 'object' && !Array.isArray(value)) {
