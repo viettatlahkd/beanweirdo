@@ -25,6 +25,8 @@ export type Where = {
   templateId?: string
   /** Which tab of Content management is open. */
   tab?: CmsTab
+  /** Which tab of Portfolio is open. */
+  portTab?: PortTab
   /** Which door an article was opened through — see `Origin`. */
   from?: Origin
 }
@@ -48,9 +50,18 @@ const adminPages = (w: RouteWords): Record<string, Screen> => ({
   [`${w.admin}-${w.adPageContent}`]: 'cms',
   [`${w.admin}-${w.adConvention}`]: 'logic',
   [`${w.admin}-${w.adArchive}`]: 'archive',
+  [`${w.admin}-${w.adPortfolio}`]: 'portfolio',
+  [`${w.admin}-${w.adPortDesign}`]: 'portfolio',
 })
 
 export type CmsTab = 'posts' | 'map' | 'content'
+
+/** Portfolio có hai tab: trang port (tạo, xếp trang) và design system. */
+export type PortTab = 'pages' | 'design'
+const portTabs = (w: RouteWords): Record<string, PortTab> => ({
+  [`${w.admin}-${w.adPortfolio}`]: 'pages',
+  [`${w.admin}-${w.adPortDesign}`]: 'design',
+})
 
 /**
  * Which tab of Content management an `/ad-…` address opens on.
@@ -132,6 +143,7 @@ function readPath(pathname: string, search: string, w: RouteWords): Where | null
       if (screen) return { area: 'admin', screen, slug: slug || undefined }
     }
     const screen = adminPages(w)[head]
+    if (screen === 'portfolio') return { area: 'admin', screen, portTab: portTabs(w)[head] }
     if (screen) return { area: 'admin', screen, tab: cmsTabs(w)[head] }
     return { area: 'admin', screen: 'cms' }
   }
@@ -139,6 +151,7 @@ function readPath(pathname: string, search: string, w: RouteWords): Where | null
   // ── public ───────────────────────────────────────────────────────────────
   if (head === w.index) return { area: 'public', screen: 'home' }
   if (head === w.notes) return { area: 'public', screen: 'notes' }
+  if (head === w.portfolio && seg[1]) return { area: 'public', screen: 'portfolioPage', slug: seg[1] }
   if (head === w.module && seg[1]) {
     return { area: 'public', screen: 'module', moduleId: moduleFromUrl(seg[1], w) }
   }
@@ -163,6 +176,8 @@ export function toPath(where: Where, w: RouteWords = activeWords()): string {
     if (action) return where.slug ? `${adPost}/${action}=${where.slug}` : `${adPost}/${action}`
     if (where.screen === 'article') return where.slug ? `/${w.post}/${where.slug}?from=admin` : adHome
     if (where.screen === 'cms') return where.tab ? `/${pageOfTab(w)[where.tab]}` : adHome
+    if (where.screen === 'portfolio')
+      return `/${w.admin}-${where.portTab === 'design' ? w.adPortDesign : w.adPortfolio}`
     const page = screenPage(w)[where.screen]
     return page ? `/${page}` : adHome
   }
@@ -172,6 +187,8 @@ export function toPath(where: Where, w: RouteWords = activeWords()): string {
       return `/${w.index}`
     case 'notes':
       return `/${w.notes}`
+    case 'portfolioPage':
+      return where.slug ? `/${w.portfolio}/${where.slug}` : '/'
     case 'module':
       return where.moduleId ? `/${w.module}/${moduleToUrl(where.moduleId, w)}` : '/'
     case 'article':

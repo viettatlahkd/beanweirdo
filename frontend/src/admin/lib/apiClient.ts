@@ -471,3 +471,48 @@ export async function updateTemplate(
   })
   return result.template
 }
+
+// ── Portfolio ───────────────────────────────────────────────────────────────
+
+export type PortPageInput = {
+  slug: string
+  title: string
+  intro?: string
+  palette?: string
+  blocks?: unknown[]
+  status?: 'draft' | 'published'
+  sortOrder?: number
+}
+
+export type PortPageRecord = Required<PortPageInput> & { id: string; updatedAt: string }
+
+/** GET /api/portfolio — mọi trang port (kể cả nháp) và token design đã lưu. */
+export async function getPortfolio(): Promise<{ pages: PortPageRecord[]; design: Record<string, unknown> }> {
+  return request<{ pages: PortPageRecord[]; design: Record<string, unknown> }>('/api/portfolio')
+}
+
+export async function createPortPage(input: PortPageInput): Promise<PortPageRecord> {
+  const r = await request<{ page: PortPageRecord }>('/api/portfolio', { method: 'POST', body: JSON.stringify(input) })
+  return r.page
+}
+
+export async function updatePortPage(id: string, patch: Partial<PortPageInput>): Promise<PortPageRecord> {
+  const r = await request<{ page: PortPageRecord }>(`/api/portfolio?id=${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(patch),
+  })
+  return r.page
+}
+
+export async function deletePortPage(id: string): Promise<void> {
+  await request(`/api/portfolio?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
+}
+
+/** PATCH /api/portfolio?part=design — gộp sâu một tầng; `null` trả một khoá về mặc định. */
+export async function updatePortDesign(patch: Record<string, unknown>): Promise<Record<string, unknown>> {
+  const r = await request<{ design: Record<string, unknown> }>('/api/portfolio?part=design', {
+    method: 'PATCH',
+    body: JSON.stringify(patch),
+  })
+  return r.design
+}

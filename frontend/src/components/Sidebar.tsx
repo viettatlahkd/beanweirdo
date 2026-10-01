@@ -194,6 +194,8 @@ function go(nav: Nav, item: NavItem): () => void {
       // Thẳng tới danh sách bài. `/ad` chỉ gọi tên màn mà không gọi tên tab,
       // nên bấm vào đây từng dừng ở một địa chỉ không phải chỗ nào cả.
       return () => nav.goCms('posts')
+    case 'portfolio':
+      return () => nav.goPortfolio('pages')
     case 'logic':
       return nav.goLogic
     case 'archive':
