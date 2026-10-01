@@ -21,7 +21,7 @@ import { getSupabase } from '../lib/supabase.js'
 
 const DESIGN_ROW = true
 const SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/
-const STATUSES = ['draft', 'published'] as const
+const STATUSES = ['draft', 'published', 'archived'] as const
 
 type PageInput = {
   slug?: unknown
@@ -40,7 +40,7 @@ export type PortfolioPageRow = {
   intro: string
   palette: string
   blocks: unknown[]
-  status: 'draft' | 'published'
+  status: 'draft' | 'published' | 'archived'
   sort_order: number
   created_at: string
   updated_at: string
@@ -88,7 +88,7 @@ export function pageColumns(body: PageInput): Record<string, unknown> | string {
     out.blocks = body.blocks
   }
   if ('status' in body) {
-    if (!STATUSES.includes(body.status as (typeof STATUSES)[number])) return 'status là draft hoặc published'
+    if (!STATUSES.includes(body.status as (typeof STATUSES)[number])) return 'status là draft, published hoặc archived'
     out.status = body.status
   }
   if ('sortOrder' in body) {

@@ -13,7 +13,7 @@ export type PortPage = {
   intro: string
   palette: string
   blocks: Block[]
-  status: 'draft' | 'published'
+  status: 'draft' | 'published' | 'archived'
   sortOrder: number
 }
 
@@ -77,7 +77,7 @@ export function usePublicPort(slug: string | null): { page: PortPage | null; des
               intro: String(row.intro ?? ''),
               palette: String(row.palette ?? 'biz'),
               blocks: parseBlocks(row.blocks),
-              status: row.status === 'published' ? 'published' : 'draft',
+              status: row.status === 'published' || row.status === 'archived' ? row.status : 'draft',
               sortOrder: Number(row.sort_order ?? 0),
             }
           : null,

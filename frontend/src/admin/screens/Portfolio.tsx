@@ -9,6 +9,7 @@ import {
   updatePortDesign,
   updatePortPage,
   type PortPageRecord,
+  type PortStatus,
 } from '../lib/apiClient'
 import { useRowDrag } from '../lib/useRowDrag'
 import { PortfolioView } from '../../portfolio/PortfolioView'
@@ -239,7 +240,7 @@ function PagesTab({
   }
 
   return (
-    <div style={{ padding: '30px 56px 80px', maxWidth: 980 }}>
+    <div style={{ padding: '30px 56px 80px', maxWidth: 1100 }}>
       <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
         <button style={btn} onClick={() => create('bibi')}>+ từ bibi</button>
         <button style={btn} onClick={() => create('bibe')}>+ từ bibe</button>
@@ -248,26 +249,67 @@ function PagesTab({
       {error && <div style={{ color: '#B33', fontFamily: sans, fontSize: 13, marginBottom: 12 }}>{error}</div>}
       <div style={sectionHead}>{pages.length} trang</div>
       {pages.map((p) => (
-        <div
+        <PageRow
           key={p.id}
-          onClick={() => setOpenId(p.id)}
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'minmax(0,1fr) 220px 90px',
-            gap: 22,
-            alignItems: 'baseline',
-            padding: '14px 0',
-            borderBottom: `1px solid ${paper.rule}`,
-            cursor: 'pointer',
-          }}
-        >
-          <span style={{ fontFamily: serif, fontSize: 24 }}>{p.title}</span>
-          <span style={{ fontFamily: sans, fontSize: 12, color: ink.soft }}>/portfolio/{p.slug}</span>
-          <span style={{ fontFamily: sans, fontSize: 10, letterSpacing: '.14em', textTransform: 'uppercase', color: p.status === 'published' ? ink.green : ink.faint }}>
-            {p.status === 'published' ? 'đã đăng' : 'nháp'}
-          </span>
-        </div>
+          page={p}
+          onOpen={() => setOpenId(p.id)}
+          onSaved={(next) => setPages((ps) => ps.map((x) => (x.id === next.id ? next : x)))}
+        />
       ))}
+    </div>
+  )
+}
+
+const STATUS_NAMES: Record<PortStatus, string> = {
+  draft: 'nháp',
+  published: 'đã đăng',
+  archived: 'lưu trữ',
+}
+const STATUS_COLORS: Record<PortStatus, string> = {
+  draft: ink.soft,
+  published: ink.green,
+  archived: ink.faint,
+}
+
+function StatusSelect({ value, onChange, style }: { value: PortStatus; onChange: (s: PortStatus) => void; style?: CSSProperties }) {
+  return (
+    <select style={{ ...boxed, ...style }} value={value} onChange={(e) => onChange(e.target.value as PortStatus)}>
+      {(Object.keys(STATUS_NAMES) as PortStatus[]).map((k) => (
+        <option key={k} value={k}>{STATUS_NAMES[k]}</option>
+      ))}
+    </select>
+  )
+}
+
+/** One row of the page list: name and status are edited in place, autosaved like everything else (rule 08.3). */
+function PageRow({ page, onOpen, onSaved }: { page: PortPageRecord; onOpen: () => void; onSaved: (p: PortPageRecord) => void }) {
+  const [title, setTitle] = useState(page.title)
+  const save = useCallback((patch: Record<string, unknown>) => updatePortPage(page.id, patch).then(onSaved), [page.id, onSaved])
+  const { push, flush, error } = useDebounced<Record<string, unknown>>(save, (a, b) => ({ ...a, ...b }))
+  return (
+    <div style={{ borderBottom: `1px solid ${paper.rule}`, padding: '10px 0' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 200px 130px 110px', gap: 18, alignItems: 'center' }}>
+        <input
+          aria-label="Tên trang"
+          value={title}
+          onChange={(e) => {
+            setTitle(e.target.value)
+            if (e.target.value.trim()) push({ title: e.target.value })
+          }}
+          onBlur={flush}
+          style={{ ...boxed, fontFamily: serif, fontSize: 24, background: 'transparent', border: '1px solid transparent', padding: '4px 6px' }}
+          onFocus={(e) => (e.currentTarget.style.borderColor = paper.rule)}
+          onBlurCapture={(e) => (e.currentTarget.style.borderColor = 'transparent')}
+        />
+        <span style={{ fontFamily: sans, fontSize: 12, color: ink.soft }}>/portfolio/{page.slug}</span>
+        <StatusSelect
+          value={page.status}
+          onChange={(status) => save({ status })}
+          style={{ fontSize: 11, letterSpacing: '.12em', textTransform: 'uppercase', color: STATUS_COLORS[page.status], padding: '6px 8px' }}
+        />
+        <button style={{ ...quiet, padding: '7px 10px' }} onClick={onOpen}>xếp trang →</button>
+      </div>
+      {error && <div style={{ color: '#B33', fontFamily: sans, fontSize: 12, marginTop: 4 }}>{error}</div>}
     </div>
   )
 }
@@ -352,10 +394,7 @@ function Builder({
             </select>
           </Field>
           <Field label="Trạng thái">
-            <select style={boxed} value={draft.status} onChange={(e) => set({ status: e.target.value as 'draft' | 'published' })}>
-              <option value="draft">nháp</option>
-              <option value="published">đã đăng</option>
-            </select>
+            <StatusSelect value={draft.status} onChange={(status) => set({ status })} />
           </Field>
         </div>
         <div style={{ display: 'flex', gap: 14, alignItems: 'center', fontFamily: sans, fontSize: 12 }}>

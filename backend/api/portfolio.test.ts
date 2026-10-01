@@ -155,7 +155,8 @@ describe('/api/portfolio', () => {
 describe('pageColumns', () => {
   it('maps sortOrder and checks status', () => {
     expect(pageColumns({ sortOrder: 3 })).toEqual({ sort_order: 3 })
-    expect(pageColumns({ status: 'archived' })).toBeTypeOf('string')
+    expect(pageColumns({ status: 'archived' })).toEqual({ status: 'archived' })
+    expect(pageColumns({ status: 'deleted' })).toBeTypeOf('string')
     expect(pageColumns({ blocks: {} })).toBeTypeOf('string')
   })
 })

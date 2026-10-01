@@ -474,13 +474,16 @@ export async function updateTemplate(
 
 // ── Portfolio ───────────────────────────────────────────────────────────────
 
+/** Portfolio page lifecycle — see migrations 0025 and 0026. */
+export type PortStatus = 'draft' | 'published' | 'archived'
+
 export type PortPageInput = {
   slug: string
   title: string
   intro?: string
   palette?: string
   blocks?: unknown[]
-  status?: 'draft' | 'published'
+  status?: PortStatus
   sortOrder?: number
 }
 
