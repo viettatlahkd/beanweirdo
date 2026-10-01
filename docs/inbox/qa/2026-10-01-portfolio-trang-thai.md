@@ -1,7 +1,7 @@
 # Portfolio — trạng thái lưu trữ, sửa tên và trạng thái ngay trên danh sách
 
 - Nhánh: `feature/portfolio-status` (cắt từ `origin/main` 5e327db, sau PR #108)
-- PR: chưa mở
+- PR: #109
 - Migration `0026_portfolio_archived.sql` **đã chạy** trên database hosted (chủ site chạy bằng SQL Editor, 2026-10-01).
 
 ## Đã sửa
