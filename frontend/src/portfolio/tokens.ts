@@ -149,3 +149,42 @@ export function fontFaceCss(files: Record<string, string>): string {
 /** A family name from an uploaded file: "Lora-Variable.woff2" → "Lora Variable". */
 export const familyFromFile = (name: string) =>
   name.replace(/\.[a-z0-9]+$/i, '').replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim()
+
+/**
+ * The same tokens, spelled with the variable names of the design system
+ * document (design-doc.html), so the admin can drive that page live. The
+ * document keeps two palettes, biz and bæn; any further palette has no slot
+ * there and is only seen on the port pages themselves.
+ */
+export function docVars(d: Design): Record<string, string> {
+  const fam = { display: `"${d.fonts.display}", Georgia, serif`, body: `"${d.fonts.body}", system-ui, sans-serif`, meta: `"${d.fonts.meta}", system-ui, sans-serif` }
+  const v: Record<string, string> = {
+    '--paper': d.colors.paper, '--ink': d.colors.ink, '--ink-2': d.colors.ink2, '--ink-3': d.colors.ink3,
+    '--line': d.colors.line, '--ph': d.colors.ph,
+    '--signal': d.signal.color, '--signal-mark': d.signal.mark,
+    '--f-display': fam.display, '--f-body': fam.body, '--f-meta': fam.meta,
+    '--s-1': `${d.space.s1}px`, '--s-2': `${d.space.s2}px`, '--s-3': `${d.space.s3}px`,
+    '--s-4': `${d.space.s4}px`, '--s-5': `${d.space.s5}px`,
+    '--s-6': fluid(d.space.s6), '--s-7': fluid(d.space.s7),
+    '--gut': fluid(d.space.gut), '--col-gap': fluid(d.space.colGap), '--card-gap': fluid(d.space.cardGap),
+    '--r-1': `${d.radius.r1}px`, '--r-2': `${d.radius.r2}px`,
+  }
+  for (const [key, prefix] of [['biz', 'biz'], ['baen', 'baen']] as const) {
+    const p = d.palettes[key]
+    if (!p) continue
+    v[`--${prefix}-500`] = p.c500
+    v[`--${prefix}-700`] = p.c700
+    v[`--${prefix}-900`] = p.c900
+    v[`--${prefix}-mark`] = p.mark
+  }
+  const docName: Record<TypeRole, string> = {
+    d1: 'display-1', d2: 'display-2', head: 'head', title: 'title', body: 'body', read: 'read', label: 'label', meta: 'meta',
+  }
+  const sizeName: Partial<Record<TypeRole, string>> = { d1: 'd1', d2: 'd2', head: 'head', title: 'title', body: 'body', read: 'read', label: 'label', meta: 'meta' }
+  for (const [role, t] of Object.entries(d.type) as [TypeRole, TypeStyle][]) {
+    const size = fluid(t)
+    v[`--t-${docName[role]}`] = `${t.weight} ${size}/${t.lh} ${fam[TYPE_FONT[role]]}`
+    if (sizeName[role]) v[`--sz-${sizeName[role]}`] = size
+  }
+  return v
+}

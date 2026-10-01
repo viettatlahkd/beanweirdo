@@ -14,6 +14,7 @@ import {
   type PortStatus,
 } from '../lib/apiClient'
 import { PortfolioView } from '../../portfolio/PortfolioView'
+import docHtml from '../../portfolio/design-doc.html?raw'
 import { postHref, usePortSources } from '../../portfolio/data'
 import {
   BLOCK_NAMES,
@@ -31,7 +32,10 @@ import {
 } from '../../portfolio/blocks'
 import {
   DEFAULT_DESIGN,
+  docVars,
   familyFromFile,
+  fontFaceCss,
+  fontHrefs,
   resolveDesign,
   type Design,
   type Fluid,
@@ -191,7 +195,7 @@ export function Portfolio() {
       )}
       {loaded &&
         (tab === 'design' ? (
-          <DesignTab stored={stored} setStored={setStored} design={design} pages={pages} />
+          <DesignTab stored={stored} setStored={setStored} design={design} />
         ) : (
           <PagesTab pages={pages} setPages={setPages} design={design} />
         ))}
@@ -852,23 +856,45 @@ function BlockFields({
 // ── tab 2: design system ────────────────────────────────────────────────────
 
 const ROLE_NAMES: Record<TypeRole, string> = {
-  d1: 'cỡ 1 · tiêu đề trang',
-  d2: 'cỡ 2 · câu lớn',
-  head: 'cỡ 3 · tiêu đề phụ',
-  title: 'cỡ 4 · tiêu đề thẻ',
-  body: 'cỡ 5 · đoạn văn',
-  read: 'cỡ 5b · bài đọc dài',
-  label: 'cỡ 6 · nhãn',
-  meta: 'cỡ 7 · số, ngày',
+  d1: 'Tiêu đề lớn 1',
+  d2: 'Tiêu đề lớn 2',
+  head: 'Tiêu đề',
+  title: 'Tiêu đề thẻ',
+  body: 'Nội dung',
+  read: 'Nội dung dài',
+  label: 'Nhãn',
+  meta: 'Chú thích',
 }
 
 const COLOR_NAMES: Record<keyof Design['colors'], string> = {
-  paper: 'Nền',
-  ink: 'Chữ',
-  ink2: 'Chữ phụ',
-  ink3: 'Meta',
-  line: 'Đường kẻ',
-  ph: 'Ô ảnh trống',
+  paper: 'Màu nền',
+  ink: 'Màu chữ',
+  ink2: 'Màu chữ phụ',
+  ink3: 'Màu chữ mờ',
+  line: 'Màu viền',
+  ph: 'Màu khung ảnh',
+}
+
+const PALETTE_NAMES: Record<Exclude<keyof Palette, 'name'>, string> = {
+  c500: 'Màu nền khối',
+  c700: 'Màu nhấn',
+  c900: 'Chữ trên nền khối',
+  mark: 'Màu đánh dấu',
+}
+
+const FONT_ROLE_NAMES = { display: 'Font tiêu đề', body: 'Font nội dung', meta: 'Font giao diện' } as const
+
+const SPACE_NAMES: Record<keyof Design['space'], string> = {
+  s1: 'Bậc 1',
+  s2: 'Bậc 2',
+  s3: 'Bậc 3',
+  s4: 'Bậc 4',
+  s5: 'Bậc 5',
+  s6: 'Khoảng cách khối',
+  s7: 'Khoảng cách đầu trang',
+  gut: 'Lề trang',
+  colGap: 'Khoảng cách cột',
+  cardGap: 'Khoảng cách thẻ',
 }
 
 const HEX = /^#[0-9a-fA-F]{6}$/
@@ -879,7 +905,7 @@ function Color({ label, value, onChange }: { label: string; value: string; onCha
   return (
     <Field label={label}>
       <div style={{ display: 'flex', gap: 6 }}>
-        <input type="color" value={HEX.test(value) ? value : '#000000'} onChange={(e) => onChange(e.target.value)} style={{ width: 34, height: 32, padding: 0, border: `1px solid ${paper.rule}` }} />
+        <input type="color" aria-label={label} value={HEX.test(value) ? value : '#000000'} onChange={(e) => onChange(e.target.value)} style={{ width: 34, height: 32, padding: 0, border: `1px solid ${paper.rule}` }} />
         <input
           style={small}
           value={text}
@@ -900,19 +926,22 @@ function Num({ label, value, onChange, step = 1 }: { label?: string; value: numb
   return label ? <Field label={label}>{input}</Field> : input
 }
 
+/**
+ * The design system document on the left, the token controls on the right.
+ * Every change is saved as the default for all port pages and pushed into the
+ * document at once, so the owner tunes against the reference itself.
+ */
 function DesignTab({
   stored,
   setStored,
   design,
-  pages,
 }: {
   stored: Record<string, unknown>
   setStored: (f: (s: Record<string, unknown>) => Record<string, unknown>) => void
   design: Design
-  pages: PortPageRecord[]
 }) {
-  const src = usePortSources()
   const fileRef = useRef<HTMLInputElement>(null)
+  const frameRef = useRef<HTMLIFrameElement>(null)
   const [uploading, setUploading] = useState(false)
   const [fontError, setFontError] = useState<string | null>(null)
   const merge2 = (a: Record<string, unknown>, b: Record<string, unknown>) => {
@@ -940,6 +969,27 @@ function DesignTab({
     push({ [group]: null })
   }
 
+  // Keep the embedded document in step with the tokens: on load, and on every change.
+  const sendTokens = useCallback(() => {
+    frameRef.current?.contentWindow?.postMessage(
+      {
+        type: 'pf-tokens',
+        vars: docVars(design),
+        faces: fontFaceCss(design.fonts.files),
+        links: fontHrefs(design.fonts.library.filter((f) => !(f in design.fonts.files))),
+      },
+      '*',
+    )
+  }, [design])
+  useEffect(() => {
+    sendTokens()
+    const onReady = (e: MessageEvent) => {
+      if (e.source === frameRef.current?.contentWindow && e.data?.type === 'pf-doc-ready') sendTokens()
+    }
+    window.addEventListener('message', onReady)
+    return () => window.removeEventListener('message', onReady)
+  }, [sendTokens])
+
   /** Upload a font file and add it as a family — one file, one family, named after the file. */
   const addFont = async (file: File | undefined) => {
     if (!file) return
@@ -958,34 +1008,30 @@ function DesignTab({
     }
   }
 
-  const sample = pages[0]
-  const sampleBlocks = useMemo(() => (sample ? parseBlocks(sample.blocks) : preset('bibi', src.moduleIds)), [sample, src.moduleIds])
   const head = (t: string, group: keyof Design) => (
     <div style={{ ...sectionHead, display: 'flex', justifyContent: 'space-between' }}>
       <span>{t}</span>
       {group in stored && (
-        <button style={{ border: 0, background: 'none', cursor: 'pointer', fontFamily: sans, fontSize: 10, letterSpacing: '.14em', color: ink.faint }} onClick={() => reset(group)}>
-          MẶC ĐỊNH
+        <button style={{ border: 0, background: 'none', cursor: 'pointer', fontFamily: sans, fontSize: 10, letterSpacing: '.14em', textTransform: 'uppercase', color: ink.faint }} onClick={() => reset(group)}>
+          Mặc định
         </button>
       )}
     </div>
   )
-
-  const fl = (g: 'space', k: keyof Design['space']) => {
-    const v = design.space[k] as Fluid
-    return (
-      <div key={k} style={{ display: 'grid', gridTemplateColumns: '70px 1fr 1fr', gap: 8, alignItems: 'center', marginBottom: 6 }}>
-        <span style={{ fontFamily: sans, fontSize: 12 }}>{k}</span>
-        <Num value={v.min} onChange={(n) => put(g, k, { ...v, min: n })} />
-        <Num value={v.max} onChange={(n) => put(g, k, { ...v, max: n })} />
-      </div>
-    )
-  }
+  const sub = (t: string) => <div style={{ ...fieldLabel, marginTop: 14 }}>{t}</div>
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(380px, 460px) minmax(0,1fr)', alignItems: 'start' }}>
-      <div style={{ padding: '6px 22px 80px 56px', height: 'calc(100vh - 160px)', overflowY: 'auto', position: 'sticky', top: 0 }}>
-        {error && <div style={{ color: '#B33', fontFamily: sans, fontSize: 13, marginTop: 12 }}>{error}</div>}
+    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(360px, 420px)', alignItems: 'start' }}>
+      <iframe
+        ref={frameRef}
+        title="Design system"
+        srcDoc={docHtml}
+        onLoad={sendTokens}
+        style={{ width: '100%', height: 'calc(100vh - 220px)', border: 0, borderRight: `1px solid ${paper.rule}`, background: paper.white, display: 'block', position: 'sticky', top: 0 }}
+      />
+
+      <div style={{ padding: '6px 56px 80px 26px', height: 'calc(100vh - 220px)', overflowY: 'auto', position: 'sticky', top: 0 }}>
+        {error && <div style={{ color: '#8E1E42', fontFamily: sans, fontSize: 12.5, marginTop: 12 }}>{error}</div>}
 
         {head('Màu', 'colors')}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 12px' }}>
@@ -994,24 +1040,19 @@ function DesignTab({
           ))}
         </div>
 
-        {head('Bảng màu nhánh', 'palettes')}
+        {head('Bảng màu', 'palettes')}
         {Object.entries(design.palettes).map(([key, p]) => (
           <div key={key} style={{ marginBottom: 14 }}>
-            <Field label={`Tên · ${key}`}>
+            <Field label="Tên">
               <input style={small} value={p.name} onChange={(e) => put('palettes', key, { ...p, name: e.target.value })} />
             </Field>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 12px' }}>
-              {(['c500', 'c700', 'c900', 'mark'] as (keyof Palette)[]).filter((x) => x !== 'name').map((c) => (
-                <Color
-                  key={c}
-                  label={{ c500: '500 · dải nền', c700: '700 · chữ nhấn', c900: '900 · chữ trên dải', mark: 'mark · bút hili', name: '' }[c]}
-                  value={p[c]}
-                  onChange={(v) => put('palettes', key, { ...p, [c]: v })}
-                />
+              {(Object.keys(PALETTE_NAMES) as (keyof typeof PALETTE_NAMES)[]).map((c) => (
+                <Color key={c} label={PALETTE_NAMES[c]} value={p[c]} onChange={(v) => put('palettes', key, { ...p, [c]: v })} />
               ))}
             </div>
             {!(key in DEFAULT_DESIGN.palettes) && (
-              <button style={{ ...quiet, border: 0, padding: 0, color: '#B33' }} onClick={() => put('palettes', key, null)}>bỏ bảng màu</button>
+              <button style={{ ...quiet, border: 0, padding: 0, color: '#8E1E42' }} onClick={() => put('palettes', key, null)}>Xoá bảng màu</button>
             )}
           </div>
         ))}
@@ -1020,27 +1061,27 @@ function DesignTab({
           onClick={() => {
             let n = Object.keys(design.palettes).length + 1
             while (`p${n}` in design.palettes) n++
-            put('palettes', `p${n}`, { ...DEFAULT_DESIGN.palettes.biz, name: `p${n}` })
+            put('palettes', `p${n}`, { ...DEFAULT_DESIGN.palettes.biz, name: `Bảng màu ${n}` })
           }}
         >
-          + bảng màu
+          + Thêm bảng màu
         </button>
 
         {head('Màu ngữ cảnh', 'signal')}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 12px' }}>
-          <Color label="Chữ đè" value={design.signal.color} onChange={(v) => put('signal', 'color', v)} />
-          <Color label="Bút hili" value={design.signal.mark} onChange={(v) => put('signal', 'mark', v)} />
+          <Color label="Màu chữ phủ ảnh" value={design.signal.color} onChange={(v) => put('signal', 'color', v)} />
+          <Color label="Màu đánh dấu" value={design.signal.mark} onChange={(v) => put('signal', 'mark', v)} />
         </div>
 
-        {head('Font', 'fonts')}
+        {head('Kiểu chữ', 'fonts')}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
           <button style={{ ...btn, padding: '5px 10px', fontSize: 10 }} disabled={uploading} onClick={() => fileRef.current?.click()}>
-            {uploading ? 'đang tải…' : 'cập nhật'}
+            {uploading ? 'Đang tải…' : 'Cập nhật'}
           </button>
           <input ref={fileRef} type="file" accept=".woff2,.woff,.ttf,.otf" style={{ display: 'none' }} onChange={(e) => addFont(e.target.files?.[0])} />
-          {fontError && <span style={{ color: '#B33', fontFamily: sans, fontSize: 12 }}>{fontError}</span>}
+          {fontError && <span style={{ color: '#8E1E42', fontFamily: sans, fontSize: 12 }}>{fontError}</span>}
         </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 6 }}>
           {design.fonts.library.map((f) => (
             <span key={f} style={{ fontFamily: `"${f}"`, fontSize: 15, border: `1px solid ${paper.rule}`, background: paper.white, padding: '4px 8px' }}>
               {f}
@@ -1054,7 +1095,7 @@ function DesignTab({
                       put('fonts', 'files', rest)
                     }
                   }}
-                  aria-label={`bỏ ${f}`}
+                  aria-label={`Xoá ${f}`}
                 >
                   ×
                 </button>
@@ -1062,9 +1103,9 @@ function DesignTab({
             </span>
           ))}
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginTop: 8 }}>
           {(['display', 'body', 'meta'] as const).map((r) => (
-            <Field key={r} label={{ display: 'Tiêu đề · cỡ 1–4', body: 'Chữ đọc · cỡ 5', meta: 'Nhãn, số · cỡ 6–7' }[r]}>
+            <Field key={r} label={FONT_ROLE_NAMES[r]}>
               <select style={small} value={design.fonts[r]} onChange={(e) => put('fonts', r, e.target.value)}>
                 {design.fonts.library.map((f) => (
                   <option key={f} value={f}>{f}</option>
@@ -1075,14 +1116,14 @@ function DesignTab({
         </div>
 
         {head('Cỡ chữ', 'type')}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 52px 52px 56px 52px 58px', gap: 6, ...fieldLabel }}>
-          <span>vai</span><span>nhỏ</span><span>lớn</span><span>nét</span><span>dòng</span><span>khoảng</span>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 48px 48px 56px 50px 54px', gap: 6, ...fieldLabel, letterSpacing: '.08em' }}>
+          <span /><span>Nhỏ nhất</span><span>Lớn nhất</span><span>Độ đậm</span><span>Giãn dòng</span><span>Giãn chữ</span>
         </div>
         {(Object.keys(ROLE_NAMES) as TypeRole[]).map((r) => {
           const t = design.type[r]
           const setT = (patch: Partial<TypeStyle>) => put('type', r, { ...t, ...patch })
           return (
-            <div key={r} style={{ display: 'grid', gridTemplateColumns: '1fr 52px 52px 56px 52px 58px', gap: 6, alignItems: 'center', marginBottom: 6 }}>
+            <div key={r} style={{ display: 'grid', gridTemplateColumns: '1fr 48px 48px 56px 50px 54px', gap: 6, alignItems: 'center', marginBottom: 6 }}>
               <span style={{ fontFamily: sans, fontSize: 12 }}>{ROLE_NAMES[r]}</span>
               <Num value={t.min} onChange={(n) => setT({ min: n })} />
               <Num value={t.max} onChange={(n) => setT({ max: n })} />
@@ -1098,34 +1139,31 @@ function DesignTab({
         })}
 
         {head('Khoảng cách', 'space')}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 6, marginBottom: 10 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 6, marginBottom: 6 }}>
           {(['s1', 's2', 's3', 's4', 's5'] as const).map((k) => (
-            <Num key={k} label={k} value={design.space[k]} onChange={(n) => put('space', k, n)} />
+            <Num key={k} label={SPACE_NAMES[k]} value={design.space[k]} onChange={(n) => put('space', k, n)} />
           ))}
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '70px 1fr 1fr', gap: 8, ...fieldLabel }}>
-          <span /><span>nhỏ</span><span>lớn</span>
+        {sub('Co giãn theo bề ngang trang')}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 70px 70px', gap: 8, ...fieldLabel, letterSpacing: '.08em' }}>
+          <span /><span>Nhỏ nhất</span><span>Lớn nhất</span>
         </div>
-        {(['s6', 's7', 'gut', 'colGap', 'cardGap'] as const).map((k) => fl('space', k))}
+        {(['s6', 's7', 'gut', 'colGap', 'cardGap'] as const).map((k) => {
+          const v = design.space[k] as Fluid
+          return (
+            <div key={k} style={{ display: 'grid', gridTemplateColumns: '1fr 70px 70px', gap: 8, alignItems: 'center', marginBottom: 6 }}>
+              <span style={{ fontFamily: sans, fontSize: 12 }}>{SPACE_NAMES[k]}</span>
+              <Num value={v.min} onChange={(n) => put('space', k, { ...v, min: n })} />
+              <Num value={v.max} onChange={(n) => put('space', k, { ...v, max: n })} />
+            </div>
+          )
+        })}
 
         {head('Bo góc', 'radius')}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          <Num label="Nhỏ · tag, nút" value={design.radius.r1} onChange={(n) => put('radius', 'r1', n)} />
-          <Num label="Lớn · ảnh, khung" value={design.radius.r2} onChange={(n) => put('radius', 'r2', n)} />
+          <Num label="Bo góc nhỏ" value={design.radius.r1} onChange={(n) => put('radius', 'r1', n)} />
+          <Num label="Bo góc lớn" value={design.radius.r2} onChange={(n) => put('radius', 'r2', n)} />
         </div>
-      </div>
-
-      <div style={{ borderLeft: `1px solid ${paper.rule}`, height: 'calc(100vh - 160px)', overflowY: 'auto', position: 'sticky', top: 0 }}>
-        <PortfolioView
-          title={sample?.title ?? 'bibi'}
-          intro={sample?.intro ?? ''}
-          palette={sample?.palette ?? 'biz'}
-          blocks={sampleBlocks}
-          design={design}
-          posts={src.posts}
-          moduleTitles={src.moduleTitles}
-          postHref={postHref}
-        />
       </div>
     </div>
   )
