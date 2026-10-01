@@ -15,7 +15,11 @@ export type NoteFilter = 'tất cả' | string
 /** Bài đăng đủ để xếp vào một tag. */
 export type TaggedPost = { kind?: string | null }
 
-export type FilterChip = { f: NoteFilter; on: boolean; n: number; color: string; wash: string }
+/**
+ * `f` is the tag id — what `posts.kind` stores and what the filter compares.
+ * `label` is what the chip shows; ids are slugs and read badly on the page.
+ */
+export type FilterChip = { f: NoteFilter; label: string; on: boolean; n: number; color: string; wash: string }
 
 /**
  * Màu của một tag.
@@ -43,7 +47,7 @@ export function tagWash(label: string): string {
 
 export function noteFilterBar(
   posts: readonly TaggedPost[],
-  tags: readonly { label: string }[],
+  tags: readonly { id: string; label: string }[],
   active: NoteFilter,
 ): { visiblePosts: readonly TaggedPost[]; chips: FilterChip[] } {
   const wears = (tag: string) => posts.filter((p) => p.kind === tag).length
@@ -54,18 +58,22 @@ export function noteFilterBar(
    * Bộ từ vựng dùng chung cho cả trang, nên nó chứa cả tag của những bài không
    * nằm ở đây. Bày hết thì thanh lọc thành một hàng chip số không kéo dài.
    */
-  const used = tags.map((t) => t.label).filter((label) => wears(label) > 0)
+  const used = tags.filter((t) => wears(t.id) > 0)
 
   return {
     visiblePosts: active === 'tất cả' ? posts : posts.filter((p) => p.kind === active),
-    chips: (['tất cả', ...used] as NoteFilter[]).map((f) => {
-      return {
-        f,
-        on: f === active,
-        n: f === 'tất cả' ? posts.length : wears(f),
-        color: f === 'tất cả' ? '#172124' : tagColor(f),
-        wash: f === 'tất cả' ? '#EFEDE4' : tagWash(f),
-      }
-    }),
+    chips: [
+      { f: 'tất cả', label: 'tất cả', on: active === 'tất cả', n: posts.length, color: '#172124', wash: '#EFEDE4' },
+      // Colour stays keyed by label: the design's inks in `noteColor` are
+      // written against labels, and the garden pick is seeded by the label.
+      ...used.map((t) => ({
+        f: t.id,
+        label: t.label,
+        on: t.id === active,
+        n: wears(t.id),
+        color: tagColor(t.label),
+        wash: tagWash(t.label),
+      })),
+    ],
   }
 }

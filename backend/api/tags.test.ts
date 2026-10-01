@@ -84,6 +84,17 @@ describe('xoá tag', () => {
     expect((res.body as { wearing: { posts: string[] } }).wearing.posts).toEqual(['p1'])
   })
 
+  it('từ chối to: null khi còn thứ đeo, trước khi ghi gì', async () => {
+    // posts.kind và notes.k đều NOT NULL — ghi null là lỗi 500 giữa chừng.
+    const { del } = withWearers([{ id: 'p1' }], [])
+    const res = mockRes()
+    await handler(mockReq({ method: 'DELETE', query: { id: 'note' }, body: { to: null }, ...auth() }), res)
+    expect(res.statusCode).toBe(400)
+    expect(fromMock).toHaveBeenCalledTimes(3)
+    expect(del.update).not.toHaveBeenCalled()
+    expect(del.delete).not.toHaveBeenCalled()
+  })
+
   it('xoá thẳng khi không còn gì đeo', async () => {
     withWearers([], [])
     const res = mockRes()

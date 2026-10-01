@@ -460,13 +460,14 @@ function TagsPanel() {
                 aria-label="chuyển sang tag"
                 defaultValue=""
                 onChange={(e) => {
-                  const to = e.target.value === '' ? null : e.target.value
+                  const to = e.target.value
                   setAsking(null)
                   void run(t.id, () => deleteTag(t.id, to))
                 }}
                 style={{ ...boxed, width: 'auto', padding: '3px 6px', fontSize: 11.5 }}
               >
-                <option value="">(bỏ trống)</option>
+                {/* No "leave empty": posts.kind and notes.k are NOT NULL, the server refuses it. */}
+                <option value="" disabled>—</option>
                 {tags.filter((o) => o.id !== t.id).map((o) => (
                   <option key={o.id} value={o.id}>{o.label}</option>
                 ))}

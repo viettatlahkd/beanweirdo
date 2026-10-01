@@ -18,7 +18,7 @@ import {
 } from '../lib/apiClient'
 import { PortfolioView } from '../../portfolio/PortfolioView'
 import docHtml from '../../portfolio/design-doc.html?raw'
-import { buildChrome, postHref, usePortSources } from '../../portfolio/data'
+import { buildChrome, usePortSources, usePostHref } from '../../portfolio/data'
 import { navLinks, resolveContent, type Feature, type LinkItem, type NavOverride, type PortContent } from '../../portfolio/content'
 import {
   BLOCK_NAMES,
@@ -578,6 +578,7 @@ function Builder({
   const [active, setActive] = useState<string | null>(null)
   const split = useSplit('builder', 420, 'left')
   const { tags } = useTags()
+  const postHref = usePostHref()
 
   const save = useCallback(
     (patch: Record<string, unknown>) => updatePortPage(page.id, patch).then(onSaved),

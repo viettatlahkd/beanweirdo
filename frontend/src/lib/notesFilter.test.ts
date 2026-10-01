@@ -10,8 +10,14 @@ import { noteFilterBar, tagColor } from './notesFilter'
  * — một ghi chép dưới Ghi 01 chính là một bài đăng dưới Ghi 01. Nên thanh này
  * chỉ còn đếm và lọc bài.
  */
-const tags = [{ label: 'quan sát' }, { label: 'video' }, { label: 'essay' }, { label: 'log' }]
-const posts = [{ kind: 'video' }, { kind: 'video' }, { kind: 'essay' }, { kind: 'quan sát' }]
+// `posts.kind` lưu id của tag (slug), không lưu tên hiển thị.
+const tags = [
+  { id: 'quan-sat', label: 'quan sát' },
+  { id: 'video', label: 'video' },
+  { id: 'essay', label: 'essay' },
+  { id: 'log', label: 'log' },
+]
+const posts = [{ kind: 'video' }, { kind: 'video' }, { kind: 'essay' }, { kind: 'quan-sat' }]
 
 describe('thanh lọc trang Ghi chép', () => {
   it('mỗi chip đếm số bài mang tag ấy', () => {
@@ -30,7 +36,18 @@ describe('thanh lọc trang Ghi chép', () => {
     // Bộ từ vựng dùng chung cho cả trang, nên nó chứa cả tag của bài không nằm
     // ở đây. Bày hết thì thanh lọc thành một hàng chip số không kéo dài.
     const { chips } = noteFilterBar(posts, tags, 'tất cả')
-    expect(chips.map((c) => c.f)).toEqual(['tất cả', 'quan sát', 'video', 'essay'])
+    expect(chips.map((c) => c.f)).toEqual(['tất cả', 'quan-sat', 'video', 'essay'])
+  })
+
+  it('lọc theo id, chip vẫn hiện tên — kể cả khi tên khác id', () => {
+    // Trước đây thanh lọc so `kind` với tên hiển thị, nên tag "quan sát"
+    // (id `quan-sat`) không bao giờ có chip và không lọc được bài nào.
+    const { chips } = noteFilterBar(posts, tags, 'tất cả')
+    const chip = chips.find((c) => c.f === 'quan-sat')
+    expect(chip?.label).toBe('quan sát')
+    expect(chip?.n).toBe(1)
+    expect(chip?.color).toBe(tagColor('quan sát'))
+    expect(noteFilterBar(posts, tags, 'quan-sat').visiblePosts).toEqual([{ kind: 'quan-sat' }])
   })
 
   it('tag mới cũng có màu, và luôn là một màu', () => {

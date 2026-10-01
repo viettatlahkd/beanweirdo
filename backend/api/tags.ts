@@ -151,6 +151,16 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
         res.status(400).json({ error: 'to is required while posts or notes still wear this tag', wearing })
         return
       }
+      /*
+       * `to: null` cannot be honoured: `posts.kind` and `notes.k` are both
+       * NOT NULL (migration 0001; later migrations only dropped their CHECKs),
+       * so the update below would fail halfway with a 500. Refuse before any
+       * write, and hand back `wearing` so the caller can ask for a replacement.
+       */
+      if (to === null) {
+        res.status(400).json({ error: 'posts and notes cannot be left without a tag; pass a replacement in to', wearing })
+        return
+      }
       const moves = []
       if (wearing.posts.length > 0) moves.push(supabase.from('posts').update({ kind: to }).eq('kind', id))
       if (wearing.notes.length > 0) moves.push(supabase.from('notes').update({ k: to }).eq('k', existing.label))

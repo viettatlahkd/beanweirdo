@@ -1,6 +1,6 @@
 import { useNav } from '../lib/nav'
 import { PortAbout, PortHome, PortfolioView } from '../portfolio/PortfolioView'
-import { buildChrome, homeCards, postHref, usePortChrome, usePortSources, usePublicPort } from '../portfolio/data'
+import { buildChrome, homeCards, usePortChrome, usePostHref, usePortSources, usePublicPort } from '../portfolio/data'
 import { activeWords } from '../lib/routeWords'
 
 /**
@@ -17,6 +17,7 @@ export function PortfolioPage() {
   const { page, design, loading } = usePublicPort(nav.slug)
   const chrome = usePortChrome()
   const src = usePortSources()
+  const postHref = usePostHref()
 
   if (loading || chrome.loading) return null
   if (!page) return <NotFound />

@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { usePublishedPosts, type PostRow } from '../data/usePublishedPosts'
 import { useModules } from '../data/useModules'
+import { usePostAddresses } from '../data/usePostAddresses'
 import { toPath } from '../lib/routes'
 import { parseBlocks, type Block, type PortPost } from './blocks'
 import { resolveDesign, type Design } from './tokens'
@@ -34,8 +35,17 @@ export const toPortPost = (p: PostRow): PortPost => ({
   published_at: p.published_at,
 })
 
-/** A post's public address — the same as everywhere else on the site. */
-export const postHref = (p: PortPost) => (p.slug ? toPath({ area: 'public', screen: 'article', slug: p.slug }) : '#')
+/**
+ * A post's public address — the same as everywhere else on the site.
+ *
+ * `posts.slug` is only set when the owner types one by hand, so reading it
+ * directly sent almost every portfolio link to '#'. The address book already
+ * derives every post's slug (and honours a hand-typed one), so ask it.
+ */
+export function usePostHref(): (p: PortPost) => string {
+  const { slugOf } = usePostAddresses()
+  return useCallback((p: PortPost) => toPath({ area: 'public', screen: 'article', slug: slugOf(p.id) }), [slugOf])
+}
 
 /** Published posts and module names — what every block needs to render. */
 export function usePortSources(): { posts: PortPost[]; moduleTitles: Record<string, string>; moduleIds: string[]; loading: boolean } {

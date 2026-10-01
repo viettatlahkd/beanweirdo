@@ -2,6 +2,7 @@ import type { ModuleRow } from '../data/useModules'
 import { navLabel } from '../content/navItems'
 import type { NavGroup } from '../content/site'
 import { goToArea } from './area'
+import { openModule } from './moduleTarget'
 import type { Nav } from './nav'
 
 export type Crumb = {
@@ -64,10 +65,15 @@ export function buildCrumbs(
   const atCms = nav.screen === 'cms'
   const admin: Crumb = atCms ? { label: sections.Admin } : { label: sections.Admin, go: nav.goCms }
   const backend: Crumb = atCms ? { label: 'Backend' } : { label: 'Backend', go: nav.goCms }
-  const mod = (id: string): Crumb => ({
-    label: modules.find((m) => m.id === id)?.title ?? id,
-    go: toPublic('landing', () => nav.openModule(id)),
-  })
+  // Through moduleTarget: Ghi 01 and Ghi 02 have their own screens, and the
+  // generic module page is a second, wrong door into them.
+  const mod = (id: string): Crumb => {
+    const row = modules.find((m) => m.id === id)
+    return {
+      label: row?.title ?? id,
+      go: toPublic('landing', () => (row ? openModule(nav, row) : nav.openModule(id))),
+    }
+  }
 
   switch (nav.screen) {
     case 'home':
@@ -110,7 +116,7 @@ export function buildCrumbs(
  * From a private area the step back leads out to the public journal, which is
  * a different entry point rather than a different screen.
  */
-export function crumbBack(nav: Nav, moduleId?: string, parentGo?: () => void): () => void {
+export function crumbBack(nav: Nav, moduleId?: string, parentGo?: () => void, modules: readonly ModuleRow[] = []): () => void {
   /*
    * A screen holding a layer of its own owns the first step back: from an open
    * template, one step is the list, and only the step after that leaves for
@@ -135,7 +141,11 @@ export function crumbBack(nav: Nav, moduleId?: string, parentGo?: () => void): (
     case 'article':
       // Back goes to the module this post is actually filed under. It used to
       // go to 'biochem' whatever you were reading.
-      if (nav.articleFrom === 'module') return () => nav.openModule(moduleId ?? nav.moduleId)
+      if (nav.articleFrom === 'module') {
+        const id = moduleId ?? nav.moduleId
+        const row = modules.find((m) => m.id === id)
+        return () => (row ? openModule(nav, row) : nav.openModule(id))
+      }
       if (nav.articleFrom === 'archive') return nav.goArchive
       return out
     case 'archive':

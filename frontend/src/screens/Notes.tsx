@@ -450,7 +450,7 @@ export function Notes() {
             style={{ ...label, cursor: 'pointer', display: 'flex', gap: 7, alignItems: 'baseline', transition: 'color .3s ease' }}
             hoverStyle={{ color: '#B65A3C' }}
           >
-            <div>{f.f}</div>
+            <div>{f.label}</div>
             <div style={{ fontFamily: serif, fontStyle: 'italic', letterSpacing: 0, fontSize: 12, opacity: 0.6 }}>{f.n}</div>
           </Hover>
         ))}
