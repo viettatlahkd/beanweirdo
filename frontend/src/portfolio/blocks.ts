@@ -35,13 +35,24 @@ export type Block =
 export type BlockType = Block['type']
 
 export const BLOCK_NAMES: Record<BlockType, string> = {
-  head: '06.2 đầu trang',
-  opening: '06.3 mở đầu',
-  cards: '06.4 thẻ bài',
-  slider: '06.5 slider',
-  series: '06.6 khối series',
-  story: '06.7 kể chuyện',
-  about: '06.10 khối about',
+  head: 'Hero',
+  opening: 'Gallery',
+  cards: 'Card grid',
+  slider: 'Carousel',
+  series: 'Series',
+  story: 'Story',
+  about: 'About',
+}
+
+/** Where each block lives in the design system document, so the two can be cross-read. */
+export const BLOCK_DS: Record<BlockType, string> = {
+  head: '06.2',
+  opening: '06.3',
+  cards: '06.4',
+  slider: '06.5',
+  series: '06.6',
+  story: '06.7',
+  about: '06.10',
 }
 
 export const BLOCK_ORDER: BlockType[] = ['head', 'opening', 'cards', 'slider', 'series', 'story', 'about']

@@ -15,6 +15,7 @@ import { useRowDrag } from '../lib/useRowDrag'
 import { PortfolioView } from '../../portfolio/PortfolioView'
 import { postHref, usePortSources } from '../../portfolio/data'
 import {
+  BLOCK_DS,
   BLOCK_NAMES,
   BLOCK_ORDER,
   newBlock,
@@ -434,7 +435,7 @@ function Builder({
               <span style={{ cursor: 'grab', color: ink.faint }}>⋮⋮</span>
               <span style={{ flex: 1 }}>
                 {BLOCK_NAMES[b.type]}
-                <span style={{ color: ink.faint }}>{summary(b, src.moduleTitles)}</span>
+                <span style={{ color: ink.faint }}> · {BLOCK_DS[b.type]}{summary(b, src.moduleTitles)}</span>
               </span>
               <button
                 style={{ border: 0, background: 'none', color: ink.faint, cursor: 'pointer', fontSize: 15 }}
@@ -492,7 +493,7 @@ function Builder({
 function summary(b: Block, modules: Record<string, string>): string {
   const label = 'label' in b && b.label ? b.label : ''
   const s = 'source' in b ? sourceText(b.source, modules) : ''
-  const extra = b.type === 'opening' ? b.variant : b.type === 'slider' ? b.motion : b.type === 'cards' ? `${b.cols} ô` : ''
+  const extra = b.type === 'opening' ? b.variant : b.type === 'slider' ? { arrow: 'mũi tên', left: 'tự chạy trái', right: 'tự chạy phải' }[b.motion] : b.type === 'cards' ? `${b.cols} ô` : ''
   return [label, extra, s].filter(Boolean).map((x) => ` · ${x}`).join('')
 }
 
