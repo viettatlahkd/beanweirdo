@@ -123,7 +123,8 @@ export function preset(key: PresetKey, moduleIds: string[]): Block[] {
     return [
       newBlock('head'),
       { id: blockId(), type: 'slider', label: 'featuring', motion: 'left', source: { mode: 'latest', limit: 8 } },
-      { id: blockId(), type: 'slider', label: '', motion: 'right', source: { mode: 'pinned', limit: 8 } },
+      // The second strip pulls from a module rather than pinned posts: the site may have pinned nothing yet.
+      { id: blockId(), type: 'slider', label: '', motion: 'right', source: { mode: 'module', moduleId: m(0), limit: 8 } },
       series(0),
       story(1),
       { id: blockId(), type: 'slider', label: '', motion: 'arrow', source: { mode: 'latest', limit: 8 } },
