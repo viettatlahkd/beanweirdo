@@ -1,7 +1,7 @@
 # Portfolio — mục admin mới, trang port và design system
 
 - Nhánh: `feature/portfolio` (cắt từ `origin/main` d46f9c2)
-- PR: chưa mở
+- PR: #108
 - Migration `0025_portfolio.sql` **đã chạy** trên database hosted (chủ site chạy bằng SQL Editor, 2026-10-01).
 
 ## Đã sửa
