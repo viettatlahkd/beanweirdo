@@ -288,7 +288,7 @@ function PageRow({ page, onOpen, onSaved }: { page: PortPageRecord; onOpen: () =
   const { push, flush, error } = useDebounced<Record<string, unknown>>(save, (a, b) => ({ ...a, ...b }))
   return (
     <div style={{ borderBottom: `1px solid ${paper.rule}`, padding: '10px 0' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 200px 130px 110px', gap: 18, alignItems: 'center' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 200px 130px 124px', gap: 18, alignItems: 'center' }}>
         <input
           aria-label="Tên trang"
           value={title}
@@ -307,7 +307,7 @@ function PageRow({ page, onOpen, onSaved }: { page: PortPageRecord; onOpen: () =
           onChange={(status) => save({ status })}
           style={{ fontSize: 11, letterSpacing: '.12em', textTransform: 'uppercase', color: STATUS_COLORS[page.status], padding: '6px 8px' }}
         />
-        <button style={{ ...quiet, padding: '7px 10px' }} onClick={onOpen}>xếp trang →</button>
+        <button style={{ ...quiet, padding: '7px 10px', whiteSpace: 'nowrap' }} onClick={onOpen}>xếp trang →</button>
       </div>
       {error && <div style={{ color: '#B33', fontFamily: sans, fontSize: 12, marginTop: 4 }}>{error}</div>}
     </div>
