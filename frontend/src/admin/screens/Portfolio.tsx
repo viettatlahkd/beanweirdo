@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
-import { ink, paper, sans, serif } from '../../design/tokens'
+import { garden, ink, paper, sans, serif } from '../../design/tokens'
 import { useNav } from '../../lib/nav'
+import { Breadcrumbs } from '../../components/Breadcrumbs'
 import { useTags } from '../../data/useTags'
 import {
   createPortPage,
@@ -148,10 +149,21 @@ export function Portfolio() {
 
   return (
     <div style={{ background: paper.cream, color: ink.base, minHeight: '100vh' }}>
-      <div style={{ background: '#DDEBF0', color: '#0E2C38', padding: '44px 56px 0' }}>
-        <h1 style={{ fontFamily: serif, fontWeight: 400, fontSize: 70, lineHeight: 1, letterSpacing: '-.04em', margin: 0 }}>
-          Portfolio
-        </h1>
+      <div style={{ background: '#DDEBF0', color: '#0E2C38', padding: '44px 56px 30px' }}>
+        <Breadcrumbs style={{ opacity: 0.75 }} />
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 44, flexWrap: 'wrap' }}>
+          <div>
+            <h1 style={{ fontFamily: serif, fontWeight: 400, fontSize: 70, lineHeight: 1, letterSpacing: '-.04em', margin: 0 }}>
+              Portfolio
+            </h1>
+            <div style={{ fontFamily: sans, fontWeight: 300, fontSize: 13.5, lineHeight: 1.5, marginTop: 10, maxWidth: 430, opacity: 0.85 }}>
+              Trang portfolio và hệ thiết kế dùng chung cho mọi trang.
+            </div>
+          </div>
+          <div style={{ fontFamily: sans, fontSize: 11, letterSpacing: '.14em', textTransform: 'uppercase', opacity: 0.7, paddingBottom: 8 }}>
+            {pages.length} trang · {pages.filter((p) => p.status === 'published').length} đã đăng
+          </div>
+        </div>
         <div style={{ display: 'flex', gap: 4, marginTop: 26 }}>
           {TABS.map((x) => (
             <div
@@ -174,7 +186,9 @@ export function Portfolio() {
           ))}
         </div>
       </div>
-      {error && <div style={{ padding: '14px 56px', color: '#B33', fontFamily: sans, fontSize: 13 }}>{error}</div>}
+      {error && (
+        <div style={{ background: '#FBE7E5', color: '#8E1E42', fontFamily: sans, fontSize: 12.5, padding: '10px 56px' }}>{error}</div>
+      )}
       {loaded &&
         (tab === 'design' ? (
           <DesignTab stored={stored} setStored={setStored} design={design} pages={pages} />
@@ -203,6 +217,8 @@ function PagesTab({
   design: Design
 }) {
   const [openId, setOpenId] = useState<string | null>(null)
+  const [filter, setFilter] = useState<'all' | PortStatus>('all')
+  const [menu, setMenu] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const src = usePortSources()
   const open = pages.find((p) => p.id === openId) ?? null
@@ -242,16 +258,96 @@ function PagesTab({
     )
   }
 
+  const counts = {
+    all: pages.length,
+    draft: pages.filter((p) => p.status === 'draft').length,
+    published: pages.filter((p) => p.status === 'published').length,
+  }
+  const shown = filter === 'all' ? pages : pages.filter((p) => p.status === filter)
+  const FILTERS: [typeof filter, string][] = [
+    ['all', 'Tất cả'],
+    ['draft', 'Nháp'],
+    ['published', 'Đã đăng'],
+    ['archived', 'Lưu trữ'],
+  ]
+
   return (
-    <div style={{ padding: '30px 56px 80px', maxWidth: 1100 }}>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
-        <button style={btn} onClick={() => create('bibi')}>+ từ bibi</button>
-        <button style={btn} onClick={() => create('bibe')}>+ từ bibe</button>
-        <button style={quiet} onClick={() => create('blank')}>+ trang trống</button>
+    <div style={{ padding: '34px 56px 130px', maxWidth: 1080 }}>
+      <div style={{ display: 'flex', alignItems: 'center', borderBottom: `1px solid ${paper.rule}`, marginBottom: 4, flexWrap: 'wrap' }}>
+        {FILTERS.map(([t, label]) => (
+          <button
+            key={t}
+            onClick={() => setFilter(t)}
+            aria-pressed={filter === t}
+            style={{
+              fontFamily: sans,
+              fontSize: 11.5,
+              padding: '14px 4px',
+              marginRight: 26,
+              color: filter === t ? ink.base : ink.muted,
+              fontWeight: filter === t ? 500 : 400,
+              background: 'none',
+              border: 'none',
+              borderBottom: `2px solid ${filter === t ? ink.green : 'transparent'}`,
+              cursor: 'pointer',
+            }}
+          >
+            {label}
+          </button>
+        ))}
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 22, position: 'relative' }}>
+          {[
+            { n: counts.all, label: 'tổng' },
+            { n: counts.draft, label: 'nháp' },
+            { n: counts.published, label: 'đã đăng' },
+          ].map((x) => (
+            <div key={x.label} style={{ textAlign: 'right', fontFamily: sans }}>
+              <b style={{ fontSize: 15, display: 'block', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{x.n}</b>
+              <span style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '.14em', color: ink.faint }}>{x.label}</span>
+            </div>
+          ))}
+          <button
+            onClick={() => setMenu((m) => !m)}
+            aria-expanded={menu}
+            style={{
+              fontFamily: sans,
+              fontSize: 11.5,
+              letterSpacing: '.08em',
+              textTransform: 'uppercase',
+              border: 'none',
+              cursor: 'pointer',
+              background: ink.green,
+              color: '#fff',
+              padding: '9px 16px',
+              borderRadius: 4,
+            }}
+          >
+            + Trang mới
+          </button>
+          {menu && (
+            <div style={{ position: 'absolute', right: 0, top: '100%', marginTop: 6, background: paper.white, border: `1px solid ${paper.rule}`, zIndex: 5, minWidth: 180 }}>
+              {([
+                ['bibi', 'Từ mẫu bibi'],
+                ['bibe', 'Từ mẫu bibe'],
+                ['blank', 'Trang trống'],
+              ] as [PresetKey, string][]).map(([k, label]) => (
+                <button
+                  key={k}
+                  onClick={() => {
+                    setMenu(false)
+                    void create(k)
+                  }}
+                  style={{ display: 'block', width: '100%', textAlign: 'left', fontFamily: sans, fontSize: 12.5, padding: '10px 14px', border: 0, background: 'none', cursor: 'pointer', color: ink.base }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
-      {error && <div style={{ color: '#B33', fontFamily: sans, fontSize: 13, marginBottom: 12 }}>{error}</div>}
-      <div style={sectionHead}>{pages.length} trang</div>
-      {pages.map((p) => (
+      {error && <div style={{ color: '#8E1E42', fontFamily: sans, fontSize: 12.5, padding: '10px 0' }}>{error}</div>}
+      {shown.map((p) => (
         <PageRow
           key={p.id}
           page={p}
@@ -263,20 +359,36 @@ function PagesTab({
   )
 }
 
+// Same labels and colours as the post status pills (StatusBadge), so a status reads the same everywhere in admin.
 const STATUS_NAMES: Record<PortStatus, string> = {
-  draft: 'nháp',
-  published: 'đã đăng',
-  archived: 'lưu trữ',
+  draft: 'Nháp',
+  published: 'Đã đăng',
+  archived: 'Lưu trữ',
 }
-const STATUS_COLORS: Record<PortStatus, string> = {
-  draft: ink.soft,
-  published: ink.green,
-  archived: ink.faint,
+const STATUS_PILL: Record<PortStatus, { background: string; color: string }> = {
+  draft: { background: paper.rule, color: ink.soft },
+  published: { background: garden.leafTint, color: garden.moss },
+  archived: { background: garden.honeyTint, color: garden.cinnamon },
 }
 
-function StatusSelect({ value, onChange, style }: { value: PortStatus; onChange: (s: PortStatus) => void; style?: CSSProperties }) {
+function StatusSelect({ value, onChange, pill }: { value: PortStatus; onChange: (s: PortStatus) => void; pill?: boolean }) {
+  const style: CSSProperties = pill
+    ? {
+        fontFamily: sans,
+        fontSize: 9.5,
+        fontWeight: 500,
+        padding: '4px 10px',
+        borderRadius: 999,
+        border: 'none',
+        cursor: 'pointer',
+        appearance: 'none',
+        textAlign: 'center',
+        width: 'fit-content',
+        ...STATUS_PILL[value],
+      }
+    : boxed
   return (
-    <select style={{ ...boxed, ...style }} value={value} onChange={(e) => onChange(e.target.value as PortStatus)}>
+    <select style={style} value={value} onChange={(e) => onChange(e.target.value as PortStatus)}>
       {(Object.keys(STATUS_NAMES) as PortStatus[]).map((k) => (
         <option key={k} value={k}>{STATUS_NAMES[k]}</option>
       ))}
@@ -305,11 +417,9 @@ function PageRow({ page, onOpen, onSaved }: { page: PortPageRecord; onOpen: () =
           onBlurCapture={(e) => (e.currentTarget.style.borderColor = 'transparent')}
         />
         <span style={{ fontFamily: sans, fontSize: 12, color: ink.soft }}>/portfolio/{page.slug}</span>
-        <StatusSelect
-          value={page.status}
-          onChange={(status) => save({ status })}
-          style={{ fontSize: 11, letterSpacing: '.12em', textTransform: 'uppercase', color: STATUS_COLORS[page.status], padding: '6px 8px' }}
-        />
+        <span>
+          <StatusSelect pill value={page.status} onChange={(status) => save({ status })} />
+        </span>
         <button style={{ ...quiet, padding: '7px 10px', whiteSpace: 'nowrap' }} onClick={onOpen}>xếp trang →</button>
       </div>
       {error && <div style={{ color: '#B33', fontFamily: sans, fontSize: 12, marginTop: 4 }}>{error}</div>}

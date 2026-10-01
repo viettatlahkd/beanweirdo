@@ -97,6 +97,8 @@ export function buildCrumbs(
       return [admin, backend, { label: navLabel('logic') }]
     case 'cms':
       return [admin, backend, { label: navLabel('cms') }]
+    case 'portfolio':
+      return [admin, backend, { label: navLabel('portfolio') }]
     default:
       return [landing]
   }
@@ -126,6 +128,7 @@ export function crumbBack(nav: Nav, moduleId?: string, parentGo?: () => void): (
      * a long way from one step back.
      */
     case 'logic':
+    case 'portfolio':
       return nav.goCms
     case 'module':
       return nav.goHome
