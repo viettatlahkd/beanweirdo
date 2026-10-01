@@ -58,6 +58,14 @@
 - **Đọc thêm**, không ghi: `posts` (qua `usePublishedPosts`, cột `kind`,
   `pinned`, `hero_image_url`, `lead`, `published_at`), `modules` (qua
   `useModules`), `tags` (qua `useTags`).
+- **Dữ liệu thật đã ghi khi kiểm (chủ site đồng ý, 2026-10-01):** hai dòng
+  `portfolio_pages` — `bibi` (bảng màu biz) và `bibe` (bảng màu bæn), cả hai
+  `published`, **giữ lại làm mẫu** theo yêu cầu chủ site. `portfolio_design`
+  bị sửa thử (màu nền, thêm font Lora) rồi trả về `{}` bằng nút mặc định.
+  Không đụng bảng nào khác.
+- Site hiện có **0 bài ghim** trong 28 bài đã đăng, nên khối lấy nguồn "bài
+  ghim" ra trống; mẫu bibi vì thế lấy dải thứ hai theo module
+  (`preset`, nhánh `bibi`).
 - **Số hàm serverless nay là 12** — đúng trần gói Vercel Hobby. Endpoint mới
   sau này phải gộp vào file sẵn có.
 
