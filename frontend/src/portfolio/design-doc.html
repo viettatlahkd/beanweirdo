@@ -317,61 +317,61 @@ body[data-guide="on"] .fib.tall .axis{border-top-color:var(--acc-700)}
 </head>
 <body data-story="mirror" data-duo="A" data-branch="biz" data-guide="off" data-over="on">
 
-<header class="topbar"><a class="brand" href="index.html#/">bæn.</a><nav><a href="index.html#/biz-acumen">site</a><a aria-current>design system</a></nav><span class="r">v1.0</span></header>
+<header class="topbar"><a class="brand" href="index.html#/">bæn.</a><nav><a aria-current>design system</a></nav><span class="r">v1.0</span></header>
 
 <div class="sticky">
-  <span class="meta">xem thử</span>
-  <div class="ctl"><span>nhánh</span><div class="switch" data-set="branch"><button data-v="biz">biz</button><button data-v="baen">bæn</button></div></div>
-  <div class="ctl"><span>lưới fib</span><div class="switch" data-set="guide"><button data-v="on">hiện</button><button data-v="off">ẩn</button></div></div>
-  <div class="ctl"><span>06.7 Story · xoay</span><div class="switch" data-set="story"><button data-v="mirror">gương</button><button data-v="same">cùng chiều</button></div></div>
-  <div class="ctl"><span>06.3 Gallery · độ cao</span><div class="switch" data-set="duo"><button data-v="A">A</button><button data-v="B">B · 8·5·3</button></div></div>
-  <div class="ctl"><span>chữ đè</span><div class="switch" data-set="over"><button data-v="on">có</button><button data-v="off">không</button></div></div>
+  <span class="meta">Xem trước</span>
+  <div class="ctl"><span>Bảng màu</span><div class="switch" data-set="branch"><button data-v="biz">biz</button><button data-v="baen">bæn</button></div></div>
+  <div class="ctl"><span>Lưới fibonacci</span><div class="switch" data-set="guide"><button data-v="on">hiện</button><button data-v="off">ẩn</button></div></div>
+  <div class="ctl"><span>Story</span><div class="switch" data-set="story"><button data-v="mirror">gương</button><button data-v="same">cùng chiều</button></div></div>
+  <div class="ctl"><span>Gallery</span><div class="switch" data-set="duo"><button data-v="A">A</button><button data-v="B">B</button></div></div>
+  <div class="ctl"><span>Chữ phủ ảnh</span><div class="switch" data-set="over"><button data-v="on">có</button><button data-v="off">không</button></div></div>
 </div>
 
 <section class="rg" style="padding-top:var(--s-7);padding-bottom:var(--s-6)">
   <div class="main"><h1 class="display-1">design system</h1>
-    <p class="body" style="margin-top:var(--s-4);color:var(--ink-2)">Một ngôn ngữ cho cả bæn.: chung nền, chung lưới, chung chữ; biz và bæn mỗi nhánh một hệ màu, trang chung dùng màu ngữ cảnh. Tỉ lệ ảnh, khoảng cách và cỡ chữ dựng trên dãy fibonacci.</p></div>
+    <p class="body" style="margin-top:var(--s-4);color:var(--ink-2)">Hệ thống thiết kế chung cho bæn.: các trang dùng chung màu nền, lưới và kiểu chữ. Mỗi nhánh biz và bæn có một bảng màu riêng; các trang chung dùng màu ngữ cảnh. Tỉ lệ ảnh, khoảng cách và cỡ chữ dựa trên dãy fibonacci.</p></div>
 </section>
 
 <hr class="rule">
 
 <!-- 01 -->
 <section class="rg doc-sec">
-  <div class="rail"><span class="lbl">01 nguyên tắc</span></div>
+  <div class="rail"><span class="lbl">01 Nguyên tắc</span></div>
   <div class="main"><ol class="rules">
-    <li><span class="meta">01</span><span>Nền chung một màu giấy. Màu nhánh chỉ dùng cho dải nền, tag, bút hili và chữ nhấn.</span></li>
-    <li><span class="meta">02</span><span>Fraunces cho tiêu đề, Inter cho chữ đọc, Be Vietnam Pro cho nhãn, số và ngày. Viết thường, không in hoa, không ngoặc vuông.</span></li>
-    <li><span class="meta">03</span><span>Lưới rail : main = 1 : 3. Ảnh theo φ ≈ 1.618; chia đôi trong main theo 5 : 8; khoảng cách và cỡ chữ theo dãy fibonacci.</span></li>
-    <li><span class="meta">04</span><span>Rail chỉ giữ nhãn ngắn hoặc ảnh; chữ nội dung luôn nằm ở main.</span></li>
-    <li><span class="meta">05</span><span>Không kẻ dòng để chia danh sách — tách nhóm bằng khoảng trắng.</span></li>
-    <li><span class="meta">06</span><span>Góc bo rất nhẹ: 2px cho tag, nút; 3px cho ảnh, khung.</span></li>
-    <li><span class="meta">07</span><span>Hover = <a class="mk" href="#">bôi bút hili</a> bằng màu mark của nhánh.</span></li>
+    <li><span class="meta">01</span><span>Mọi trang dùng chung một màu nền. Màu trong bảng màu của nhánh chỉ dùng cho nền khối, tag, hiệu ứng đánh dấu và chữ nhấn.</span></li>
+    <li><span class="meta">02</span><span>Font tiêu đề là Fraunces, font nội dung là Inter, font giao diện là Be Vietnam Pro (nhãn, số và ngày). Chữ viết thường, không in hoa, không dùng ngoặc vuông.</span></li>
+    <li><span class="meta">03</span><span>Lưới chia rail : main = 1 : 3. Ảnh theo tỉ lệ φ ≈ 1.618; vùng main khi chia đôi theo tỉ lệ 5 : 8; khoảng cách và cỡ chữ theo dãy fibonacci.</span></li>
+    <li><span class="meta">04</span><span>Rail chỉ chứa nhãn ngắn hoặc ảnh; nội dung chữ luôn nằm trong main.</span></li>
+    <li><span class="meta">05</span><span>Danh sách không dùng đường kẻ phân cách; các nhóm tách nhau bằng khoảng trắng.</span></li>
+    <li><span class="meta">06</span><span>Bo góc nhỏ 2px cho tag và nút; bo góc lớn 3px cho ảnh và khung.</span></li>
+    <li><span class="meta">07</span><span>Trạng thái hover dùng <a class="mk" href="#">hiệu ứng đánh dấu</a> với màu đánh dấu của bảng màu đang dùng.</span></li>
   </ol></div>
 </section>
 
 <!-- 02 -->
 <section class="rg doc-sec">
-  <div class="rail"><span class="lbl">02 màu</span></div>
+  <div class="rail"><span class="lbl">02 Màu</span></div>
   <div class="main">
-    <p class="head doc-h">nền</p>
-    <p class="note">Đã chốt: 50% trắng tinh pha 50% kem (#fcfaf6).</p>
-    <div class="swatches"><div class="sw"><div class="chip" style="background:var(--paper)"></div><span class="lbl">--paper</span><div class="meta">#fefdfb · nền chung</div></div></div>
-    <p class="head doc-h">trung tính</p><div class="swatches" id="sw-n"></div>
-    <p class="head doc-h">biz</p><div class="swatches" id="sw-biz"></div>
-    <p class="head doc-h">bæn</p><div class="swatches" id="sw-baen"></div>
-    <p class="head doc-h">ngữ cảnh</p><p class="note">Cho trang chung (about). Đã chốt: xanh xô thơm.</p><div class="swatches" id="sw-ctx"></div>
+    <p class="head doc-h">Màu nền</p>
+    <p class="note">Màu nền chung cho mọi trang và mọi nhánh.</p>
+    <div class="swatches"><div class="sw"><div class="chip" style="background:var(--paper)"></div><span class="lbl">--paper</span><div class="meta">#fefdfb · Màu nền</div></div></div>
+    <p class="head doc-h">Màu trung tính</p><div class="swatches" id="sw-n"></div>
+    <p class="head doc-h">Bảng màu · biz</p><div class="swatches" id="sw-biz"></div>
+    <p class="head doc-h">Bảng màu · bæn</p><div class="swatches" id="sw-baen"></div>
+    <p class="head doc-h">Màu ngữ cảnh</p><p class="note">Dùng cho các trang chung như about, thay cho bảng màu của nhánh.</p><div class="swatches" id="sw-ctx"></div>
   </div>
 </section>
 
 <!-- 03 -->
 <section class="rg doc-sec">
-  <div class="rail"><span class="lbl">03 chữ</span></div>
+  <div class="rail"><span class="lbl">03 Kiểu chữ</span></div>
   <div class="main">
-    <p class="note">Đã chốt: Fraunces cho cỡ 1–4 (cỡ 1–2 nét 400), Inter cho cỡ 5 và bài đọc dài (15px), Be Vietnam Pro cho cỡ 6–7.</p>
+    <p class="note">Ba font, mỗi font một vai trò. Font tiêu đề (Fraunces) dùng cho Tiêu đề lớn 1, Tiêu đề lớn 2, Tiêu đề và Tiêu đề thẻ. Font nội dung (Inter) dùng cho Nội dung và Nội dung dài. Font giao diện (Be Vietnam Pro) dùng cho Nhãn và Chú thích.</p>
     <div class="fam" id="fam"></div>
     <div id="type"></div>
-    <p class="head doc-h" style="margin-top:var(--s-6)">trong ngữ cảnh</p>
-    <p class="note">Nhãn, meta, link và tag đặt đúng chỗ chúng xuất hiện trên trang.</p>
+    <p class="head doc-h" style="margin-top:var(--s-6)">Ví dụ sử dụng</p>
+    <p class="note">Nhãn, chú thích, liên kết và tag ở đúng vị trí xuất hiện trên trang.</p>
     <div class="ctx-box">
       <div class="ctx-head"><span class="lbl">pinned</span><a class="lbl" href="#"><span class="mk">all articles →</span></a></div>
       <div class="cards">
@@ -382,41 +382,41 @@ body[data-guide="on"] .fib.tall .axis{border-top-color:var(--acc-700)}
       <div style="margin-top:var(--s-5)"><span class="tag">roasting</span></div>
     </div>
     <div class="legend">
-      <div><span class="lbl">pinned</span><p class="body">nhãn mục — đầu mỗi khối</p></div>
-      <div><span class="lbl">all articles →</span><p class="body">link — cuối hàng, căn phải</p></div>
-      <div><span class="meta">due diligence · 2026.07</span><p class="body">meta — ngay trên tiêu đề thẻ</p></div>
-      <div><span class="tag">roasting</span><p class="body">tag — chỉ ở đầu khối series</p></div>
+      <div><span class="lbl">pinned</span><p class="body">Nhãn — đặt ở đầu mỗi khối</p></div>
+      <div><span class="lbl">all articles →</span><p class="body">Liên kết — cuối hàng, căn phải</p></div>
+      <div><span class="meta">due diligence · 2026.07</span><p class="body">Chú thích — ngay trên Tiêu đề thẻ</p></div>
+      <div><span class="tag">roasting</span><p class="body">Tag — chỉ dùng ở đầu khối Series</p></div>
     
   </div>
 </section>
 
 <!-- 04 -->
 <section class="rg doc-sec">
-  <div class="rail"><span class="lbl">04 khoảng cách + bo góc</span></div>
+  <div class="rail"><span class="lbl">04 Khoảng cách và bo góc</span></div>
   <div class="main">
-    <p class="note">Bước nhảy theo dãy fibonacci: 5 · 8 · 13 · 21 · 34 · 55 · 89 · 144.</p><div id="space"></div>
-    <p class="note" style="margin-top:var(--s-6)">Bo góc: --r-1 = 2px cho vật nhỏ, --r-2 = 3px cho ảnh và khung.</p>
+    <p class="note">Thang khoảng cách theo dãy fibonacci: 5 · 8 · 13 · 21 · 34 · 55 · 89 · 144.</p><div id="space"></div>
+    <p class="note" style="margin-top:var(--s-6)">Bo góc nhỏ (--r-1, 2px) dùng cho tag, nút và công tắc. Bo góc lớn (--r-2, 3px) dùng cho ảnh và khung.</p>
     <div class="radius">
-      <div style="width:89px;height:34px;border-radius:var(--r-1)"></div><span class="meta">--r-1 · 2px</span>
-      <div style="width:144px;height:89px;border-radius:var(--r-2)"></div><span class="meta">--r-2 · 3px</span>
+      <div style="width:89px;height:34px;border-radius:var(--r-1)"></div><span class="meta">--r-1 · Bo góc nhỏ · 2px</span>
+      <div style="width:144px;height:89px;border-radius:var(--r-2)"></div><span class="meta">--r-2 · Bo góc lớn · 3px</span>
     </div>
   </div>
 </section>
 
 <!-- 05 -->
 <section class="doc-sec">
-  <div class="rg"><div class="rail"><span class="lbl">05 lưới + tỉ lệ</span></div>
-    <div class="main"><p class="note">Rail : main = 1 : 3, lề ngoài 13–34px, khe cột 13–34px. Trong main: lưới thẻ 3 cột với ảnh φ; khi chia đôi dùng 5 : 8.</p></div></div>
+  <div class="rg"><div class="rail"><span class="lbl">05 Lưới và tỉ lệ</span></div>
+    <div class="main"><p class="note">Lưới hai cột rail : main = 1 : 3. Lề trang 13–34px, khoảng cách cột 13–34px. Trong main, Card grid mặc định có 3 cột với ảnh tỉ lệ φ; vùng chia đôi dùng tỉ lệ 5 : 8.</p></div></div>
   <div class="demo"><div class="rg demo-grid">
     <div class="rail"><span class="lbl">rail · 1</span></div>
     <div class="main"><span class="lbl">main · 3</span>
       <div class="cards" style="margin-top:var(--s-4)"><div class="ph" style="aspect-ratio:var(--ratio-card)"><span>φ</span></div><div class="ph" style="aspect-ratio:var(--ratio-card)"><span>φ</span></div><div class="ph" style="aspect-ratio:var(--ratio-card)"><span>φ</span></div></div>
     </div>
   </div></div>
-  <div class="rg" style="margin-top:var(--s-5)"><div class="rail"></div><div class="main"><p class="note" style="margin-bottom:0">Biến thể 2 ô: cùng rail 1 : main 3, main chia 2 thẻ. Ảnh vẫn giữ φ nên mỗi thẻ rộng và cao hơn — dùng khi cần ít bài hơn nhưng mỗi bài nặng hơn (ví dụ bài ghim, bài dài).</p></div></div>
+  <div class="rg" style="margin-top:var(--s-5)"><div class="rail"></div><div class="main"><p class="note" style="margin-bottom:0">Biến thể 2 cột: cùng lưới rail 1 : main 3, main chia thành 2 thẻ. Ảnh giữ tỉ lệ φ nên mỗi thẻ rộng và cao hơn. Dùng khi số bài ít và cần nhấn mạnh từng bài, như bài ghim hoặc bài dài.</p></div></div>
   <div class="demo" style="margin-top:var(--s-4)"><div class="rg demo-grid">
     <div class="rail"><span class="lbl">rail · 1</span></div>
-    <div class="main"><span class="lbl">main · 3 · 2 ô</span>
+    <div class="main"><span class="lbl">main · 3 · 2 cột</span>
       <div class="cards two" style="margin-top:var(--s-4)"><div class="ph" style="aspect-ratio:var(--ratio-card)"><span>φ</span></div><div class="ph" style="aspect-ratio:var(--ratio-card)"><span>φ</span></div></div>
     </div>
   </div></div>
@@ -426,58 +426,58 @@ body[data-guide="on"] .fib.tall .axis{border-top-color:var(--acc-700)}
 
 <!-- 06 -->
 <section class="rg doc-sec">
-  <div class="rail"><span class="lbl">06 component</span></div>
-  <div class="main"><p class="note">Bản chạy thật. Rê chuột để xem bút hili; đổi nhánh ở thanh trên cùng.</p></div>
+  <div class="rail"><span class="lbl">06 Thành phần</span></div>
+  <div class="main"><p class="note">Các component hiển thị bằng mã chạy thật. Di chuột lên liên kết để xem hiệu ứng đánh dấu; đổi bảng màu trên thanh Xem trước.</p></div>
 </section>
 
-<section class="rg doc-sec tight"><div class="rail"></div><div class="main"><p class="meta" style="letter-spacing:.06em;padding-top:var(--s-5);border-top:1px solid var(--ink)">chung · đầu</p><p class="note" style="margin:var(--s-2) 0 0">Có ở mọi trang.</p></div></section>
+<section class="rg doc-sec tight"><div class="rail"></div><div class="main"><p class="meta" style="letter-spacing:.06em;padding-top:var(--s-5);border-top:1px solid var(--ink)">Dùng chung · đầu trang</p><p class="note" style="margin:var(--s-2) 0 0">Xuất hiện trên mọi trang.</p></div></section>
 
 <section class="doc-sec tight">
-  <div class="rg"><div class="rail"><span class="lbl">06.1 Header</span></div><div class="main"><p class="note">Dòng đầu tiên của mọi trang.</p></div></div>
+  <div class="rg"><div class="rail"><span class="lbl">06.1 Header</span></div><div class="main"><p class="note">Thanh đầu trang: tên site, điều hướng giữa các nhánh và dòng mô tả.</p></div></div>
   <div style="border:var(--rule);border-radius:var(--r-2);margin:0 var(--gut)">
     <div class="topbar"><span class="brand">bæn.</span><nav><a aria-current>biz-acumen</a><a>bæn-weirdo</a><a>about</a></nav><span class="r">inside the mind of hkd</span></div>
   </div>
 </section>
 
-<section class="rg doc-sec tight"><div class="rail"></div><div class="main"><p class="meta" style="letter-spacing:.06em;padding-top:var(--s-5);border-top:1px solid var(--ink)">trang nhánh</p><p class="note" style="margin:var(--s-2) 0 0">Một cấp trang cho cả biz và bæn — mỗi nhánh chọn phần tử cần dùng, xếp từ trên xuống. Đầu trang đi liền các khối nội dung; hai popup đứng sau nội dung, trước khối about.</p></div></section>
+<section class="rg doc-sec tight"><div class="rail"></div><div class="main"><p class="meta" style="letter-spacing:.06em;padding-top:var(--s-5);border-top:1px solid var(--ink)">Trang nhánh</p><p class="note" style="margin:var(--s-2) 0 0">Áp dụng cho cả biz và bæn. Mỗi nhánh chọn các component cần dùng và xếp từ trên xuống. Hero đứng đầu, tiếp theo là các khối nội dung; Press card và Preview đứng sau các khối nội dung, trước About.</p></div></section>
 
 <section class="doc-sec tight">
-  <div class="rg"><div class="rail"><span class="lbl">06.2 Hero</span></div><div class="main"><p class="note">Ngay dưới topbar. Tiêu đề cỡ 1 và đoạn giới thiệu cỡ 5 nằm ở main; rail để trống. Trên --s-7, dưới --s-6.</p></div></div>
+  <div class="rg"><div class="rail"><span class="lbl">06.2 Hero</span></div><div class="main"><p class="note">Nằm ngay dưới Header. Tiêu đề lớn 1 và đoạn giới thiệu cỡ Nội dung đặt trong main; rail để trống. Khoảng cách phía trên --s-7, phía dưới --s-6.</p></div></div>
   <div class="frame-demo"><section class="rg page-head"><div class="rail"></div><div class="main"><h1 class="display-1">biz intelligence</h1><p class="body">Operations, compliance, due diligence and the org thinking that holds them together — written from inside the work.</p></div></section></div>
 </section>
 
 <section class="doc-sec">
   <div class="rg"><div class="rail"><span class="lbl">06.3 Gallery</span></div>
-    <div class="main"><p class="note">Ngay dưới đầu trang của trang nhánh (hiện đang dùng ở bæn). Chiều cao chia 8 hàng theo ảnh giữa (vuông, cao hết khung). Ảnh rail cao 5 hàng, bám mép trên. Ảnh cuối: <b>A</b> cao hết 8 hàng như ảnh giữa, <b>B</b> cao 3 hàng bám đáy — ba ảnh thành ba bậc fibonacci 8 · 5 · 3. <b>C</b> 2 ảnh đối xứng trải hết khung (tràn viền trái qua rail), cao bằng ảnh giữa của A/B. Đổi A / B ở thanh xem thử.</p></div></div>
+    <div class="main"><p class="note">Nằm ngay dưới Hero của trang nhánh. Chiều cao chia 8 hàng theo ảnh giữa (ảnh vuông, cao hết khung). Ảnh ở rail cao 5 hàng, bám mép trên. Ảnh cuối có hai biến thể: <b>A</b> cao 8 hàng, bằng ảnh giữa; <b>B</b> cao 3 hàng, bám mép dưới, tạo thành ba bậc fibonacci 8 · 5 · 3. Biến thể <b>C</b> gồm 2 ảnh đối xứng trải hết chiều rộng (tràn lề trái qua rail), cao bằng ảnh giữa của A và B. Chuyển giữa A và B bằng công tắc Gallery trên thanh Xem trước.</p></div></div>
   <div class="duo3">
-    <div class="d d-rail"><div class="ph"><span>5 : 8 · bám trên</span></div></div>
-    <div class="d d-big"><div class="ph"><span>8 · cao hết</span></div>
+    <div class="d d-rail"><div class="ph"><span>5 : 8 · bám mép trên</span></div></div>
+    <div class="d d-big"><div class="ph"><span>8 · cao hết khung</span></div>
       <div class="over" style="color:var(--acc-700)"><p>A notebook kept on the side — what I taste, bake, read and keep thinking about.</p><span></span></div></div>
     <div class="d d-last"><div class="ph"><span id="last-lbl">A · cao bằng ảnh giữa</span></div></div>
     <figcaption class="c-rail">sensory</figcaption><figcaption class="c-big">roasting</figcaption><figcaption class="c-last">fermentation</figcaption>
   </div>
-  <p class="rg" style="margin-top:var(--s-6)"><span class="main meta">C · 2 ảnh đối xứng trải hết khung — tràn viền trái qua rail, mỗi ảnh một nửa, cao bằng ảnh giữa của A/B</span></p>
+  <p class="rg" style="margin-top:var(--s-6)"><span class="main meta">C · 2 ảnh đối xứng trải hết chiều rộng, tràn lề trái qua rail; mỗi ảnh rộng một nửa, cao bằng ảnh giữa của A và B</span></p>
   <div style="margin-top:var(--s-3)"><div class="duo2">
-      <figure><div class="ph"><span>½ · cao bằng A/B</span></div><figcaption>roasting</figcaption>
+      <figure><div class="ph"><span>½ · cao bằng A và B</span></div><figcaption>roasting</figcaption>
         <div class="over" style="color:var(--acc-700)"><p>A notebook kept on the side — what I taste, bake, read and keep thinking about.</p></div></figure>
-      <figure><div class="ph"><span>½ · cao bằng A/B</span></div><figcaption>fermentation</figcaption></figure>
+      <figure><div class="ph"><span>½ · cao bằng A và B</span></div><figcaption>fermentation</figcaption></figure>
     </div>
   </div>
 </section>
 
 <section class="rg doc-sec">
   <div class="rail"><span class="lbl">06.4 Card grid</span></div>
-  <div class="main"><p class="note">Lưới 3 ô là mặc định; lưới 2 ô (05) cho bài nặng hơn. Hai cửa vào nhánh ở trang home cũng là thẻ bài lưới 2 ô.</p><p class="meta" style="margin-bottom:var(--s-3)">a · main 3 ô — mặc định</p>
+  <div class="main"><p class="note">Lưới 3 cột là mặc định; lưới 2 cột (xem 05) dùng cho các bài cần nhấn mạnh. Hai lối vào nhánh trên trang home cũng dùng Card grid 2 cột.</p><p class="meta" style="margin-bottom:var(--s-3)">A · 3 cột — mặc định</p>
     <div class="cards">
     <a class="card" href="#"><div class="ph"><span>φ</span></div><span class="meta">poc of anything · 1/3 · 2026.09</span><h3 class="title"><span class="mk">A proof of concept is a question, not a demo</span></h3></a>
     <a class="card" href="#"><div class="ph"><span>φ</span></div><span class="meta">due diligence</span><h3 class="title"><span class="mk">Due diligence is mostly listening</span></h3></a>
-    <a class="card mk-on" href="#"><div class="ph"><span>φ</span></div><span class="meta">trạng thái hover</span><h3 class="title"><span class="mk">The quiet economics of a neighbourhood café</span></h3></a>
+    <a class="card mk-on" href="#"><div class="ph"><span>φ</span></div><span class="meta">Trạng thái hover</span><h3 class="title"><span class="mk">The quiet economics of a neighbourhood café</span></h3></a>
   </div>
-    <p class="meta" style="margin:var(--s-6) 0 var(--s-3)">b · main 2 ô — bài nặng hơn, ảnh vẫn φ nên to hơn</p>
+    <p class="meta" style="margin:var(--s-6) 0 var(--s-3)">B · 2 cột — ảnh tỉ lệ φ, kích thước lớn hơn</p>
     <div class="cards two"><a class="card" href="#"><div class="ph"><span>φ</span></div><span class="meta">poc of anything · 1/3 · 2026.09</span><h3 class="title"><span class="mk">A proof of concept is a question, not a demo</span></h3></a><a class="card" href="#"><div class="ph"><span>φ</span></div><span class="meta">business in slices · 1/3 · 2026.09</span><h3 class="title"><span class="mk">Ops review, one slice at a time</span></h3></a></div></div></section>
 
 <section class="doc-sec tight">
-  <div class="rg"><div class="rail"><span class="lbl">06.5 Carousel</span></div><div class="main" style="display:flex;justify-content:flex-end"><button class="arrow" onclick="document.getElementById('sl').scrollBy({left:300,behavior:'smooth'})" aria-label="next">→</button></div></div>
+  <div class="rg"><div class="rail"><span class="lbl">06.5 Carousel</span></div><div class="main" style="display:flex;justify-content:flex-end"><button class="arrow" onclick="document.getElementById('sl').scrollBy({left:300,behavior:'smooth'})" aria-label="Tiếp theo">→</button></div></div>
   <div class="slider" id="sl" style="margin-top:var(--s-3)">
     <a class="card" href="#"><div class="ph"><span>φ</span></div><span class="meta">publication one · 2026</span><h3 class="title"><span class="mk">The quiet economics of a neighbourhood café</span></h3></a>
     <a class="card" href="#"><div class="ph"><span>φ</span></div><span class="meta">publication two · 2025</span><h3 class="title"><span class="mk">Inside a family business handing over</span></h3></a>
@@ -490,17 +490,17 @@ body[data-guide="on"] .fib.tall .axis{border-top-color:var(--acc-700)}
 <section class="rg doc-sec tight">
   <div class="rail"><span class="lbl">06.6 Series</span></div>
   <div class="main">
-    <p class="note">Chữ : ảnh = 5 : 8. Vùng ảnh là hình chữ nhật fibonacci 13 × 8, chia thành các ô vuông 8 · 5 · 3 · 2 · 1 · 1. Ảnh to đặt vào ô 8 hoặc 5, ảnh nhỏ vào một ô nhỏ hơn — nên tỉ lệ cạnh ảnh to : ảnh nhỏ luôn là 8:5, 8:3, 8:2, 5:3 hoặc 5:2. Cả hình lật được theo 4 hướng. Bật <b>lưới fib</b> ở thanh trên để thấy các ô.</p>
+    <p class="note">Tỉ lệ chữ : ảnh = 5 : 8. Vùng ảnh là hình chữ nhật fibonacci 13 × 8, chia thành các ô vuông 8 · 5 · 3 · 2 · 1 · 1. Ảnh lớn đặt vào ô 8 hoặc 5, ảnh nhỏ đặt vào một ô nhỏ hơn, nên tỉ lệ cạnh ảnh lớn : ảnh nhỏ luôn là 8 : 5, 8 : 3, 8 : 2, 5 : 3 hoặc 5 : 2. Vùng ảnh lật được theo 4 hướng. Bật <b>Lưới fibonacci</b> trên thanh Xem trước để hiện các ô.</p>
     <div class="golden" style="margin-bottom:var(--s-5)">
       <div style="grid-column:1/span 8;grid-row:1/span 8">8</div><div style="grid-column:9/span 5;grid-row:1/span 5">5</div>
       <div style="grid-column:11/span 3;grid-row:6/span 3">3</div><div style="grid-column:9/span 2;grid-row:7/span 2">2</div>
       <div style="grid-column:9/span 1;grid-row:6/span 1">1</div><div style="grid-column:10/span 1;grid-row:6/span 1">1</div>
     </div>
-    <p class="head doc-h">xoay thử</p>
+    <p class="head doc-h">Biến thể</p>
     <div id="fib-demo"></div>
-    <div style="display:flex;gap:var(--s-3);margin:var(--s-4) 0 var(--s-6)"><button class="btn" id="rot">xoay tiếp →</button><span class="meta" id="rot-code" style="align-self:center"></span></div>
-    <p class="head doc-h">nhiều khối liên tiếp</p>
-    <p class="note">Mỗi khối tự nhận một biến thể theo thứ tự: hướng xoay vòng qua 4 hướng, cặp ô xoay vòng qua 5 cặp — hai khối cạnh nhau không bao giờ trùng.</p>
+    <div style="display:flex;gap:var(--s-3);margin:var(--s-4) 0 var(--s-6)"><button class="btn" id="rot">Biến thể tiếp theo →</button><span class="meta" id="rot-code" style="align-self:center"></span></div>
+    <p class="head doc-h">Nhiều khối liên tiếp</p>
+    <p class="note">Mỗi khối nhận một biến thể theo thứ tự: hướng lật lần lượt qua 4 hướng, cặp ô lần lượt qua 5 cặp. Hai khối liền kề không trùng biến thể.</p>
     <div id="fib-run"></div>
   </div>
 </section>
@@ -508,7 +508,7 @@ body[data-guide="on"] .fib.tall .axis{border-top-color:var(--acc-700)}
 <section class="rg doc-sec">
   <div class="rail"><span class="lbl">06.7 Story</span></div>
   <div class="main">
-    <p class="note">Biến thể của 06.6 cho series kể chuyện thẳng trên trang: một câu mở cỡ head, đoạn kể cỡ đọc dài, link sang series. Chữ : ảnh = 8 : 5. Cột ảnh là hình chữ nhật fibonacci dựng đứng 8 × 13 với một trục hoành ở điểm cắt vàng (giữa hàng 8 và 9). Ảnh to luôn là ô 8 trên trục; ảnh nhỏ luôn dưới trục, xoay vòng ô 3 → 5 → 2. Chỉ lật ngang: <b>gương</b> — ảnh nhỏ nghiêng về phía chữ, các khối xen kẽ đối xứng qua giữa trang; <b>cùng chiều</b> — ảnh nhỏ luôn nghiêng một phía. Đổi ở thanh xem thử; bật lưới fib để thấy trục. Cả khối bấm được, dẫn tới bài đầu của series. Khi đặt nhiều khối liền nhau thì lật xen kẽ (ảnh trái / ảnh phải).</p>
+    <p class="note">Biến thể của Series (06.6), trình bày series dưới dạng kể chuyện trực tiếp trên trang: một câu mở cỡ Tiêu đề, đoạn kể cỡ Nội dung dài và liên kết sang series. Tỉ lệ chữ : ảnh = 8 : 5. Cột ảnh là hình chữ nhật fibonacci dựng đứng 8 × 13, có trục ngang tại điểm cắt vàng (giữa hàng 8 và 9). Ảnh lớn luôn là ô 8 phía trên trục; ảnh nhỏ luôn nằm dưới trục, lần lượt qua ô 3 → 5 → 2. Chỉ lật theo chiều ngang, với hai chế độ: <b>gương</b> — ảnh nhỏ nghiêng về phía chữ, các khối đối xứng qua giữa trang; <b>cùng chiều</b> — ảnh nhỏ luôn nghiêng về một phía. Chọn chế độ bằng công tắc Story trên thanh Xem trước; bật Lưới fibonacci để hiện trục. Toàn khối là một liên kết tới bài đầu tiên của series. Các khối liền nhau đặt ảnh xen kẽ trái / phải.</p>
     <a class="story" href="#">
       <div><span class="tag">sensory</span>
         <p class="head">Tasting is a trained instrument, not a gift.</p>
@@ -537,7 +537,7 @@ body[data-guide="on"] .fib.tall .axis{border-top-color:var(--acc-700)}
 <section class="rg doc-sec">
   <div class="rail"><span class="lbl">06.8 Press card</span></div>
   <div class="main">
-    <p class="note">Popup khi bấm một bài báo trong slider writer. Cả tấm là hình chữ nhật fibonacci 13 × 8: lời nhắn chiếm phần 8 (tiêu đề + nơi đăng), tem là ô vuông 5, link đọc bài gốc nằm ở dải 5 × 3 còn lại.<br>Hai popup (06.8, 06.9) đứng liền nhau, sau các khối nội dung, trước khối about. Postcard hiện khi bấm một thẻ trong slider.</p>
+    <p class="note">Cửa sổ bật lên khi chọn một bài báo trong Carousel. Toàn thẻ là hình chữ nhật fibonacci 13 × 8: phần lời nhắn chiếm ô 8 (tiêu đề và nơi đăng), tem là ô vuông 5, liên kết tới bài gốc nằm ở phần 5 × 3 còn lại.<br>Press card và Preview (06.9) đứng liền nhau, sau các khối nội dung và trước About.</p>
     <div>
       <div class="postcard">
         <button class="close" aria-label="đóng">×</button>
@@ -555,7 +555,7 @@ body[data-guide="on"] .fib.tall .axis{border-top-color:var(--acc-700)}
 <section class="rg doc-sec">
   <div class="rail"><span class="lbl">06.9 Preview</span></div>
   <div class="main">
-    <p class="note">Hiện khi bấm một thẻ bài trong site, trước khi vào trang bài. Ảnh 5 : 8 bên trái, chữ bên phải (chia 5 : 8): meta có thời gian đọc, tiêu đề, một đoạn tóm tắt cỡ đọc dài, vài ý chính, bài tiếp theo trong series và link đọc. Đứng ngay sau postcard.</p>
+    <p class="note">Cửa sổ bật lên khi chọn một thẻ bài, trước khi mở trang bài. Ảnh 5 : 8 bên trái, chữ bên phải (tỉ lệ 5 : 8), gồm: chú thích kèm thời gian đọc, tiêu đề, đoạn tóm tắt cỡ Nội dung dài, các ý chính, bài tiếp theo trong series và liên kết đọc bài. Đứng ngay sau Press card.</p>
         <div class="summary">
       <button class="close" aria-label="đóng">×</button>
       <div class="ph"><span>5 : 8</span></div>
@@ -575,7 +575,7 @@ body[data-guide="on"] .fib.tall .axis{border-top-color:var(--acc-700)}
 <section class="rg doc-sec">
   <div class="rail"><span class="lbl">06.10 About</span></div>
   <div class="main">
-    <p class="note">Khối cuối của trang nhánh, ngay trước footer. Chia 5 : 8 như khối series; ảnh đúng bằng ô 8 trong vùng ảnh 13 × 8 của series (rộng 8/13 cột ảnh, lùi 4px, bám phải) nên hai khối đặt cạnh nhau thì cạnh ảnh thẳng hàng. Contact dùng link group (06.11).</p>
+    <p class="note">Khối cuối của trang nhánh, ngay trước Footer. Tỉ lệ 5 : 8 như Series; ảnh có kích thước bằng ô 8 trong vùng ảnh 13 × 8 của Series (rộng 8/13 cột ảnh, lùi 4px, căn phải), nên khi đặt cạnh Series các cạnh ảnh thẳng hàng. Phần liên hệ dùng Link list (06.11).</p>
     <div class="about-block">
       <div class="intro"><span class="lbl">about</span>
         <p class="head">hkd turns messy businesses into systems people can run.</p>
@@ -591,18 +591,18 @@ body[data-guide="on"] .fib.tall .axis{border-top-color:var(--acc-700)}
 
 <section class="rg doc-sec">
   <div class="rail"><span class="lbl">06.11 Link list</span></div>
-  <div class="main"><p class="note">Lấy từ phần dưới trang about: nhãn nhỏ màu nhấn, link chồng lên nhau bằng Fraunces 300 cỡ 15. Không kẻ dòng, không dàn hàng cột — các nhóm đứng cạnh nhau, cách nhau bằng khoảng trắng.</p>
+  <div class="main"><p class="note">Nhãn nhỏ dùng Màu nhấn, các liên kết xếp chồng dùng Fraunces 300 cỡ 15px. Không dùng đường kẻ, không chia cột; các nhóm đặt cạnh nhau, tách bằng khoảng trắng. Dùng cho phần liên hệ trong About và trên trang about.</p>
     <div class="links">
       <div><span class="lbl">reach</span><ul><li><a href="#"><span class="mk">email</span></a></li><li><a href="#"><span class="mk">linkedin</span></a></li><li><a href="#"><span class="mk">cv</span></a></li></ul></div>
       <div><span class="lbl">post</span><ul><li><a href="#"><span class="mk">biz-acumen</span></a></li><li><a href="#"><span class="mk">bæn-weirdo</span></a></li></ul></div>
     </div></div>
 </section>
 
-<section class="rg doc-sec tight"><div class="rail"></div><div class="main"><p class="meta" style="letter-spacing:.06em;padding-top:var(--s-5);border-top:1px solid var(--ink)">trang trong</p><p class="note" style="margin:var(--s-2) 0 0">about, all articles, trang bài. Đầu trang của trang nào đi liền với body của trang đó.</p></div></section>
+<section class="rg doc-sec tight"><div class="rail"></div><div class="main"><p class="meta" style="letter-spacing:.06em;padding-top:var(--s-5);border-top:1px solid var(--ink)">Trang trong</p><p class="note" style="margin:var(--s-2) 0 0">Gồm about, all articles và trang bài. Phần đầu trang của mỗi trang đi liền với phần thân tương ứng.</p></div></section>
 
 <section class="doc-sec tight">
   <div class="rg"><div class="rail"><span class="lbl">06.12 About hero</span></div>
-    <div class="main"><p class="note">Ảnh hẹp ở rail, ảnh φ ở main. Chữ đè là một đoạn kể mảnh, màu ngữ cảnh, chỉ nằm trong main — có thể bỏ trống (nút "chữ đè" ở thanh trên).</p></div></div>
+    <div class="main"><p class="note">Ảnh hẹp ở rail, ảnh tỉ lệ φ ở main. Chữ phủ ảnh là một đoạn văn nét mảnh, dùng Màu chữ phủ ảnh và chỉ nằm trong main; có thể để trống (công tắc Chữ phủ ảnh trên thanh Xem trước).</p></div></div>
   <div class="stage">
     <div class="strip"><div class="ph"><span>strip</span></div></div>
     <div class="frame"><div class="ph"><span>φ</span></div>
@@ -617,25 +617,25 @@ body[data-guide="on"] .fib.tall .axis{border-top-color:var(--acc-700)}
 </section>
 
 <section class="doc-sec tight">
-  <div class="rg"><div class="rail"><span class="lbl">06.13 Listing header</span></div><div class="main"><p class="note">Dải màu của nhánh, tiêu đề cỡ 1, đoạn giới thiệu; ngay dưới dải là ảnh feature rộng 80%, tỉ lệ 2φ ≈ 3.236, bám trái. Không breadcrumb. Đi liền với hàng bài (06.14).</p></div></div>
+  <div class="rg"><div class="rail"><span class="lbl">06.13 Listing header</span></div><div class="main"><p class="note">Khối nền dùng Màu nền khối của nhánh, gồm Tiêu đề lớn 1 và đoạn giới thiệu; ngay bên dưới là ảnh feature rộng 80%, tỉ lệ 2φ ≈ 3.236, căn trái. Không có breadcrumb. Đi liền với Article list (06.14).</p></div></div>
   <div class="frame-demo"><section class="band"><h1 class="display-1">biz-acumen</h1><p class="body">Operations, compliance, due diligence and the org thinking that holds them together.</p></section><div class="band-hero"><div class="ph"><span>2φ · 80%</span></div></div></div>
 </section>
 
 <section class="doc-sec">
   <div class="rg"><div class="rail"><span class="lbl">06.14 Article list</span></div>
-    <div class="main"><p class="note">Ngay dưới đầu trang all articles (06.13). Hai cột; mỗi hàng: ảnh φ rộng 144px, tiêu đề cỡ 4, một dòng mô tả cỡ 5, meta gồm số thứ tự · loại bài (series / note / press) · ngày. Không kẻ dòng giữa các hàng.</p></div></div>
+    <div class="main"><p class="note">Nằm ngay dưới Listing header (06.13). Hai cột; mỗi hàng gồm ảnh φ rộng 144px, Tiêu đề thẻ, một dòng mô tả cỡ Nội dung và chú thích gồm số thứ tự · loại bài (series / note / press) · ngày. Không dùng đường kẻ giữa các hàng.</p></div></div>
   <div class="al-list"><a class="al-row" href="#"><div class="ph"><span>φ</span></div><div><h3 class="title"><span class="mk">A proof of concept is a question, not a demo</span></h3><p class="body">Why the first prototype should be built to be wrong in a useful way.</p><div class="meta"><span>01</span><span>series</span><span>2026.09</span></div></div></a><a class="al-row" href="#"><div class="ph"><span>φ</span></div><div><h3 class="title"><span class="mk">Ops review, one slice at a time</span></h3><p class="body">A method for reviewing a business without drowning in it.</p><div class="meta"><span>02</span><span>series</span><span>2026.09</span></div></div></a><a class="al-row" href="#"><div class="ph"><span>φ</span></div><div><h3 class="title"><span class="mk">Due diligence is mostly listening</span></h3><p class="body">What the data room doesn't tell you, the founder's pauses do.</p><div class="meta"><span>03</span><span>note</span><span>2026.07</span></div></div></a><a class="al-row" href="#"><div class="ph"><span>φ</span></div><div><h3 class="title"><span class="mk">The quiet economics of a neighbourhood café</span></h3><p class="body">A feature on margins, rent and the price of a flat white.</p><div class="meta"><span>04</span><span>press</span><span>2026.06</span></div></div></a></div>
 </section>
 
 <section class="doc-sec tight">
-  <div class="rg"><div class="rail"><span class="lbl">06.15 Article header</span></div><div class="main"><p class="note">Như đầu trang all articles, tiêu đề hạ xuống cỡ 2. Không breadcrumb. Đi liền với thân bài (06.16).</p></div></div>
+  <div class="rg"><div class="rail"><span class="lbl">06.15 Article header</span></div><div class="main"><p class="note">Cấu trúc như Listing header, tiêu đề dùng Tiêu đề lớn 2. Không có breadcrumb. Đi liền với Article body (06.16).</p></div></div>
   <div class="frame-demo"><section class="band"><h1 class="display-2">Ops review, one slice at a time</h1><p class="body">A method for reviewing a business without drowning in it.</p></section></div>
 </section>
 
 <section class="rg doc-sec">
   <div class="rail"><span class="lbl">06.16 Article body</span></div>
   <div class="main">
-    <p class="note">Ngay dưới đầu trang bài (06.15). Rail giữ meta (loại bài · ngày); main là thân bài cỡ đọc dài 15px, tối đa 62 ký tự mỗi dòng; cuối bài là tag và — nếu thuộc series — chuyển sang phần trước / sau.</p>
+    <p class="note">Nằm ngay dưới Article header (06.15). Rail chứa chú thích (loại bài · ngày); main chứa thân bài cỡ Nội dung dài 15px, tối đa 62 ký tự mỗi dòng. Cuối bài là tag và, nếu bài thuộc series, liên kết sang phần trước / sau.</p>
     <div class="art-demo">
       <div class="read"><p>Most pilots are built to impress. They answer the question "can we make this look real?" — which is rarely the question anyone needed answered.</p>
         <p>A proof of concept is more useful when it is built to be wrong in a specific, informative way. That means choosing one question, cutting everything that does not serve it, and deciding in advance what a failure would look like.</p></div>
@@ -645,10 +645,10 @@ body[data-guide="on"] .fib.tall .axis{border-top-color:var(--acc-700)}
   </div>
 </section>
 
-<section class="rg doc-sec tight"><div class="rail"></div><div class="main"><p class="meta" style="letter-spacing:.06em;padding-top:var(--s-5);border-top:1px solid var(--ink)">chung · cuối</p><p class="note" style="margin:var(--s-2) 0 0">Có ở mọi trang.</p></div></section>
+<section class="rg doc-sec tight"><div class="rail"></div><div class="main"><p class="meta" style="letter-spacing:.06em;padding-top:var(--s-5);border-top:1px solid var(--ink)">Dùng chung · cuối trang</p><p class="note" style="margin:var(--s-2) 0 0">Xuất hiện trên mọi trang.</p></div></section>
 
 <section class="doc-sec tight">
-  <div class="rg"><div class="rail"><span class="lbl">06.17 Footer</span></div><div class="main"><p class="note">Dòng cuối cùng của mọi trang.</p></div></div>
+  <div class="rg"><div class="rail"><span class="lbl">06.17 Footer</span></div><div class="main"><p class="note">Thanh cuối trang: tên site, năm và tác giả.</p></div></div>
   <div style="border:var(--rule);border-radius:var(--r-2);margin:0 var(--gut)">
     <div class="footer"><span>bæn. 2026</span><span>by hkd</span></div>
   </div>
@@ -658,19 +658,19 @@ body[data-guide="on"] .fib.tall .axis{border-top-color:var(--acc-700)}
 
 <!-- 07 -->
 <section class="rg doc-sec">
-  <div class="rail"><span class="lbl">07 trang dùng gì</span></div>
+  <div class="rail"><span class="lbl">07 Sử dụng theo trang</span></div>
   <div class="main">
-    <p class="note">Mỗi trang lấy component nào, theo đúng thứ tự từ ngoài vào trong.</p>
+    <p class="note">Các component dùng trên từng trang, liệt kê theo thứ tự từ ngoài vào trong.</p>
     <div class="tbl-wrap"><table class="tbl">
-      <thead><tr><th>cấp</th><th>trang</th><th>dùng component</th></tr></thead>
+      <thead><tr><th>Cấp</th><th>Trang</th><th>Component</th></tr></thead>
       <tbody>
-        <tr><td>chung</td><td>mọi trang</td><td>06.1 Header · 06.17 Footer</td></tr>
-        <tr><td>nhánh</td><td>home</td><td>06.2 Hero · 06.4 Card grid (2 ô)</td></tr>
-        <tr><td>nhánh</td><td>biz-acumen</td><td>06.2 Hero · 06.4 Card grid · 06.5 Carousel · 06.8 Press card · 06.10 About</td></tr>
-        <tr><td>nhánh</td><td>bæn-weirdo</td><td>06.2 Hero · 06.3 Gallery · 06.6 Series · 06.7 Story · 06.9 Preview · 06.10 About</td></tr>
-        <tr><td>trong</td><td>about</td><td>06.12 About hero · 06.11 Link list</td></tr>
-        <tr><td>trong</td><td>all articles</td><td>06.13 Listing header · 06.14 Article list</td></tr>
-        <tr><td>trong</td><td>trang bài</td><td>06.15 Article header · 06.16 Article body</td></tr>
+        <tr><td>Dùng chung</td><td>Mọi trang</td><td>06.1 Header · 06.17 Footer</td></tr>
+        <tr><td>Trang nhánh</td><td>home</td><td>06.2 Hero · 06.4 Card grid (2 cột)</td></tr>
+        <tr><td>Trang nhánh</td><td>biz-acumen</td><td>06.2 Hero · 06.4 Card grid · 06.5 Carousel · 06.8 Press card · 06.10 About</td></tr>
+        <tr><td>Trang nhánh</td><td>bæn-weirdo</td><td>06.2 Hero · 06.3 Gallery · 06.6 Series · 06.7 Story · 06.9 Preview · 06.10 About</td></tr>
+        <tr><td>Trang trong</td><td>about</td><td>06.12 About hero · 06.11 Link list</td></tr>
+        <tr><td>Trang trong</td><td>all articles</td><td>06.13 Listing header · 06.14 Article list</td></tr>
+        <tr><td>Trang trong</td><td>Trang bài</td><td>06.15 Article header · 06.16 Article body</td></tr>
 </tbody></table></div>
   </div>
 </section>
@@ -682,42 +682,42 @@ const cs=()=>getComputedStyle(document.body), v=n=>cs().getPropertyValue(n).trim
 const first=f=>f.split(",")[0].replace(/"/g,"");
 
 const SW={
-  "sw-n":[["--ink","chữ"],["--ink-2","chữ phụ"],["--ink-3","meta"],["--line","đường kẻ"],["--ph","ô ảnh tạm"]],
-  "sw-biz":[["--biz-500","dải nền"],["--biz-700","chữ nhấn, tag"],["--biz-900","chữ trên dải"],["--biz-mark","bút hili"]],
-  "sw-baen":[["--baen-500","dải nền"],["--baen-700","chữ nhấn, tag"],["--baen-900","chữ trên dải"],["--baen-mark","bút hili"]],
-  "sw-ctx":[["--signal","chữ đè, nhãn"],["--signal-mark","bút hili"]],
+  "sw-n":[["--ink","Màu chữ"],["--ink-2","Màu chữ phụ"],["--ink-3","Màu chữ mờ"],["--line","Màu viền"],["--ph","Màu khung ảnh"]],
+  "sw-biz":[["--biz-500","Màu nền khối"],["--biz-700","Màu nhấn"],["--biz-900","Chữ trên nền khối"],["--biz-mark","Màu đánh dấu"]],
+  "sw-baen":[["--baen-500","Màu nền khối"],["--baen-700","Màu nhấn"],["--baen-900","Chữ trên nền khối"],["--baen-mark","Màu đánh dấu"]],
+  "sw-ctx":[["--signal","Màu chữ phủ ảnh"],["--signal-mark","Màu đánh dấu"]],
 };
 const renderSw=()=>{for(const id in SW)document.getElementById(id).innerHTML=SW[id].map(([n,r])=>
   `<div class="sw"><div class="chip" style="background:var(${n})"></div><span class="lbl">${n}</span><div class="meta">${v(n)} · ${r}</div></div>`).join("");};
 
 const T=[
-  ["display-1","biz intelligence","cỡ 1 · tiêu đề trang"],
-  ["display-2","tư duy tư duy","cỡ 2 · câu lớn"],
-  ["head","The quiet economics of a café","cỡ 3 · tiêu đề phụ"],
-  ["title","A proof of concept is a question","cỡ 4 · tiêu đề thẻ, link"],
-  ["body","Tháo những hệ thống lớn về những khớp cơ học khiến chúng chuyển động — với kinh tế, business, luật lệ.","cỡ 5 · đoạn văn"],
-  ["read","Thân bài đọc dài dùng cỡ này: rộng hơn body một chút, dòng thoáng hơn để đọc lâu không mỏi.","cỡ 5b · thân bài dài"],
-  ["lbl","featuring: writer","cỡ 6 · nhãn, nav, nút"],
-  ["meta","01 · series · 2026.09","cỡ 7 · số, ngày, loại bài"],
+  ["display-1","biz intelligence","Tiêu đề lớn 1 · tiêu đề trang"],
+  ["display-2","tư duy tư duy","Tiêu đề lớn 2 · câu dẫn lớn"],
+  ["head","The quiet economics of a café","Tiêu đề · tiêu đề khối"],
+  ["title","A proof of concept is a question","Tiêu đề thẻ · tiêu đề thẻ, liên kết"],
+  ["body","Tháo những hệ thống lớn về những khớp cơ học khiến chúng chuyển động — với kinh tế, business, luật lệ.","Nội dung · đoạn văn"],
+  ["read","Nội dung dài dùng cho thân bài: cỡ chữ lớn hơn Nội dung và giãn dòng rộng hơn, phù hợp với văn bản dài.","Nội dung dài · thân bài"],
+  ["lbl","featuring: writer","Nhãn · nhãn, điều hướng, nút"],
+  ["meta","01 · series · 2026.09","Chú thích · số, ngày, loại bài"],
 ];
 const typeEl=document.getElementById("type");
 typeEl.innerHTML=T.map(([c,s,use])=>`<div class="spec"><div class="${c}">${s}</div><div class="meta" data-spec></div><span hidden>${use}</span></div>`).join("");
 function renderTypeSpecs(){
   typeEl.querySelectorAll(".spec").forEach(row=>{
     const st=getComputedStyle(row.firstElementChild), use=row.querySelector("[hidden]").textContent;
-    row.querySelector("[data-spec]").innerHTML=`${first(st.fontFamily)} ${st.fontWeight}<br>${Math.round(parseFloat(st.fontSize))}px · lh ${(parseFloat(st.lineHeight)/parseFloat(st.fontSize)).toFixed(2)}<br>${use}`;
+    row.querySelector("[data-spec]").innerHTML=`${first(st.fontFamily)} · độ đậm ${st.fontWeight}<br>${Math.round(parseFloat(st.fontSize))}px · giãn dòng ${(parseFloat(st.lineHeight)/parseFloat(st.fontSize)).toFixed(2)}<br>${use}`;
   });
-  const roles=[["Fraunces","--f-display","cỡ 1–4 · tiêu đề"],["Inter","--f-body","cỡ 5 · chữ đọc"],["Be Vietnam Pro","--f-meta","cỡ 6–7 · nhãn, số, ngày"]];
+  const roles=[["Fraunces","--f-display","Font tiêu đề"],["Inter","--f-body","Font nội dung"],["Be Vietnam Pro","--f-meta","Font giao diện"]];
   document.getElementById("fam").innerHTML=roles.map(([r,n,u])=>`<div><span class="meta">${u}</span><b style="font-family:var(${n})">${r}</b><span class="meta" style="font-family:var(${n})">Aa Ăă Ơơ Ưư Đđ 0123</span></div>`).join("");
 }
 
-const S=[["--s-1","khe rất nhỏ"],["--s-2","ảnh → meta"],["--s-3","nhãn → nội dung"],["--s-4","khe nhỏ"],["--s-5","giữa hàng thẻ"],["--s-6","cuối section"],["--s-7","đầu trang"],["--gut","lề ngoài"],["--col-gap","rail ↔ main"],["--card-gap","giữa các thẻ"]];
+const S=[["--s-1","Bậc 1"],["--s-2","Bậc 2"],["--s-3","Bậc 3"],["--s-4","Bậc 4"],["--s-5","Bậc 5"],["--s-6","Khoảng cách khối"],["--s-7","Khoảng cách đầu trang"],["--gut","Lề trang"],["--col-gap","Khoảng cách cột"],["--card-gap","Khoảng cách thẻ"]];
 const renderSpace=()=>document.getElementById("space").innerHTML=S.map(([n,use])=>
   `<div class="space-row"><span class="meta">${n}</span><i style="width:var(${n})"></i><span class="meta">${v(n)} · ${use}</span></div>`).join("");
 
 /* ---- fibonacci series ---- */
 const CELLS={"8":[1,1,8],"5":[9,1,5],"3":[11,6,3],"2":[9,7,2],"1":[9,6,1],"1b":[10,6,1]};
-const ORIENT=[0,3,1,2], ORIENT_NAME=["gốc","lật ngang","lật dọc","lật cả hai"];
+const ORIENT=[0,3,1,2], ORIENT_NAME=["Gốc","Lật ngang","Lật dọc","Lật hai chiều"];
 const PAIRS=[["8","3"],["5","2"],["8","2"],["5","3"],["8","5"]];
 const place=(key,flip)=>{let [c,r,s]=CELLS[key];if(flip&1)c=15-c-s;if(flip&2)r=10-r-s;return `grid-column:${c}/span ${s};grid-row:${r}/span ${s}`;};
 const variant=i=>({flip:ORIENT[i%4],pair:PAIRS[i%5]});
@@ -748,12 +748,12 @@ function fibTall(i,imageLeft){
   const pos=k=>{const {col,row,sz}=at(k,m);return `grid-column:${col}/span ${sz};grid-row:${row}/span ${sz}`;};
   const guides=Object.keys(CELLS).map(k=>`<div class="guide" style="${pos(k)}">${CELLS[k][2]}</div>`).join("");
   const imgs=pair.map(k=>`<span style="${pos(k)};position:relative"><div class="ph"><span>${CELLS[k][2]}</span></div></span>`).join("");
-  return `<div class="fib tall">${guides}<div class="axis"></div>${imgs}</div><span class="meta code">ô 8 trên trục · ô ${small} dưới trục · nghiêng ${wantRight?"phải":"trái"}</span>`;
+  return `<div class="fib tall">${guides}<div class="axis"></div>${imgs}</div><span class="meta code">Ô 8 trên trục · ô ${small} dưới trục · nghiêng ${wantRight?"phải":"trái"}</span>`;
 }
 function renderStories(){document.querySelectorAll("[data-tall]").forEach(el=>el.innerHTML=fibTall(+el.dataset.tall,el.closest(".story").classList.contains("flip")));}
 renderStories();
 let rot=0;
-const renderDemo=()=>{document.getElementById("fib-demo").innerHTML=seriesBlock(BLOCKS[0],rot);document.getElementById("rot-code").textContent=`biến thể ${rot%20+1} / 20`;};
+const renderDemo=()=>{document.getElementById("fib-demo").innerHTML=seriesBlock(BLOCKS[0],rot);document.getElementById("rot-code").textContent=`Biến thể ${rot%20+1} / 20`;};
 document.getElementById("rot").onclick=()=>{rot++;renderDemo();};
 document.getElementById("fib-run").innerHTML=BLOCKS.map(seriesBlock).join("");
 
@@ -763,7 +763,7 @@ function set(key,val){
   document.body.dataset[key]=val;
   document.querySelectorAll(`.switch[data-set="${key}"] button`).forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===val));
   renderSw();renderSpace();renderStories();
-  const l=document.getElementById("last-lbl"); if(l) l.textContent=document.body.dataset.duo==="B"?"B · 3 hàng, bám đáy":"A · cao bằng ảnh giữa";
+  const l=document.getElementById("last-lbl"); if(l) l.textContent=document.body.dataset.duo==="B"?"B · cao 3 hàng, bám mép dưới":"A · cao bằng ảnh giữa";
 }
 document.addEventListener("click",e=>{const s=e.target.closest(".switch button");if(s)set(s.parentElement.dataset.set,s.dataset.v);});
 KEYS.forEach(k=>document.querySelectorAll(`.switch[data-set="${k}"] button`).forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===document.body.dataset[k])));
