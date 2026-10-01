@@ -31,6 +31,23 @@
   đoạn kể (`portfolio/blocks.ts` `convertBlock`). Thứ tự đổi bằng nút ↑ ↓ trên
   từng khối; khối được đánh số 01, 02… theo thứ tự (`Builder`, `move`,
   `setType`). `useRowDrag` không còn dùng ở màn này.
+- **[ĐỔI HÀNH VI]** Thêm font: bỏ ô nhập tên Google Fonts, thay bằng nút **Cập nhật**
+  tải file `.woff2/.woff/.ttf/.otf` lên (qua `/api/upload`, bucket `post-images`).
+  Tên họ lấy theo tên file (`familyFromFile`); font nạp bằng `@font-face`
+  (`fontFaceCss`) ở bản xem trước và trang công khai. Ba font mặc định vẫn nạp từ
+  Google. `portfolio/tokens.ts` (`Design.fonts.files`), `PortfolioView.tsx` (`useAssets`).
+- **[ĐỔI HÀNH VI]** Đầu trang Portfolio đồng bộ Content management: breadcrumb
+  Admin › Backend › Portfolio (`lib/crumbs.ts`), câu giới thiệu, số liệu bên phải,
+  hàng lọc Tất cả / Nháp / Đã đăng / Lưu trữ, con số tổng, nút xanh "+ Trang mới"
+  (mở chọn: từ mẫu bibi, từ mẫu bibe, trang trống). Nhãn trạng thái cùng màu
+  `StatusBadge`.
+- **[ĐỔI HÀNH VI]** Tab Design system: bên trái là tài liệu design system gốc
+  (`portfolio/design-doc.html`, nhúng bằng iframe), bên phải là bảng thông số.
+  Chỉnh thông số → lưu làm mặc định cho mọi trang port và đẩy ngay vào tài liệu
+  (`docVars`, tin nhắn `pf-tokens`). Nhãn bảng thông số và toàn bộ chữ trong tài
+  liệu viết lại bằng tiếng Việt chuẩn.
+- **[ĐỔI HÀNH VI]** Thanh chia kéo được giữa hai nửa màn, ở cả màn xếp trang và
+  tab Design system; độ rộng nhớ trong localStorage (`useSplit`).
 
 ## Đụng dữ liệu
 
@@ -43,7 +60,10 @@
   "business" chủ site tự tạo) không đụng tới.
 - Hệ quả trên production ngay khi ghi, trước cả khi PR merge:
   `/portfolio/bibi`, `/portfolio/bibe` thôi hiện công khai.
-- Endpoint không thêm; vẫn 12 hàm serverless.
+- Endpoint không thêm; vẫn 12 hàm serverless. `/api/upload` nay cũng nhận file
+  font (không đổi code endpoint — endpoint vốn không giới hạn loại file).
+- Kiểm tải font: một file `.woff2` thử lên `post-images` rồi đã xoá; design trả
+  về `{}`.
 
 ## Đụng luật
 

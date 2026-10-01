@@ -123,6 +123,71 @@ function useDebounced<T>(save: (v: T) => Promise<unknown>, merge: (a: T, b: T) =
   return { push, flush, error }
 }
 
+
+/**
+ * A draggable divider between the two halves of a split screen. `side` is the
+ * half whose width is stored; the other half takes what is left. The width is
+ * remembered per screen in localStorage, and iframes stop taking pointer
+ * events while dragging so the drag is not swallowed by the embedded page.
+ */
+function useSplit(key: string, initial: number, side: 'left' | 'right', min = 280, max = 900) {
+  const [size, setSize] = useState(() => {
+    try {
+      const v = Number(localStorage.getItem(`pf-split-${key}`))
+      return v >= min && v <= max ? v : initial
+    } catch {
+      return initial
+    }
+  })
+  const [dragging, setDragging] = useState(false)
+  const start = (e: React.PointerEvent) => {
+    e.preventDefault()
+    const x0 = e.clientX
+    const s0 = size
+    setDragging(true)
+    const move = (ev: PointerEvent) => {
+      const d = ev.clientX - x0
+      setSize(Math.min(max, Math.max(min, side === 'left' ? s0 + d : s0 - d)))
+    }
+    const up = () => {
+      setDragging(false)
+      window.removeEventListener('pointermove', move)
+      window.removeEventListener('pointerup', up)
+      setSize((v) => {
+        try {
+          localStorage.setItem(`pf-split-${key}`, String(v))
+        } catch {
+          /* private mode: the width just isn't remembered */
+        }
+        return v
+      })
+    }
+    window.addEventListener('pointermove', move)
+    window.addEventListener('pointerup', up)
+  }
+  const columns = side === 'left' ? `${size}px 7px minmax(0,1fr)` : `minmax(0,1fr) 7px ${size}px`
+  const handle = (
+    <div
+      role="separator"
+      aria-orientation="vertical"
+      aria-label="Kéo để đổi độ rộng"
+      onPointerDown={start}
+      style={{
+        cursor: 'col-resize',
+        alignSelf: 'stretch',
+        height: 'calc(100vh - 220px)',
+        position: 'sticky',
+        top: 0,
+        background: dragging ? ink.faint : paper.rule,
+        borderLeft: `3px solid ${paper.cream}`,
+        borderRight: `3px solid ${paper.cream}`,
+        touchAction: 'none',
+      }}
+    />
+  )
+  return { columns, handle, dragging }
+}
+
 const TABS = [
   { k: 'pages', t: 'Trang port' },
   { k: 'design', t: 'Design system' },
@@ -450,6 +515,7 @@ function Builder({
 }) {
   const [draft, setDraft] = useState({ ...page, blocks: parseBlocks(page.blocks) })
   const [active, setActive] = useState<string | null>(null)
+  const split = useSplit('builder', 420, 'left')
   const { tags } = useTags()
 
   const save = useCallback(
@@ -489,8 +555,8 @@ function Builder({
   }, [active])
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(360px, 420px) minmax(0,1fr)', alignItems: 'start' }}>
-      <div style={{ padding: '22px 22px 80px 56px', height: 'calc(100vh - 160px)', overflowY: 'auto', position: 'sticky', top: 0 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: split.columns, alignItems: 'start' }}>
+      <div style={{ padding: '22px 22px 80px 56px', height: 'calc(100vh - 220px)', overflowY: 'auto', position: 'sticky', top: 0 }}>
         <button style={{ ...quiet, border: 0, padding: 0, marginBottom: 14 }} onClick={onBack}>← tất cả trang</button>
         <Field label="Tiêu đề">
           <input style={{ ...boxed, fontFamily: serif, fontSize: 22 }} value={draft.title} onChange={(e) => set({ title: e.target.value })} />
@@ -598,7 +664,8 @@ function Builder({
         </button>
       </div>
 
-      <div style={{ borderLeft: `1px solid ${paper.rule}`, height: 'calc(100vh - 160px)', overflowY: 'auto', position: 'sticky', top: 0 }}>
+      {split.handle}
+      <div style={{ height: 'calc(100vh - 220px)', overflowY: 'auto', position: 'sticky', top: 0 }}>
         <PortfolioView
           title={draft.title}
           intro={draft.intro}
@@ -942,6 +1009,7 @@ function DesignTab({
 }) {
   const fileRef = useRef<HTMLInputElement>(null)
   const frameRef = useRef<HTMLIFrameElement>(null)
+  const split = useSplit('design', 420, 'right')
   const [uploading, setUploading] = useState(false)
   const [fontError, setFontError] = useState<string | null>(null)
   const merge2 = (a: Record<string, unknown>, b: Record<string, unknown>) => {
@@ -1021,16 +1089,17 @@ function DesignTab({
   const sub = (t: string) => <div style={{ ...fieldLabel, marginTop: 14 }}>{t}</div>
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(360px, 420px)', alignItems: 'start' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: split.columns, alignItems: 'start' }}>
       <iframe
         ref={frameRef}
         title="Design system"
         srcDoc={docHtml}
         onLoad={sendTokens}
-        style={{ width: '100%', height: 'calc(100vh - 220px)', border: 0, borderRight: `1px solid ${paper.rule}`, background: paper.white, display: 'block', position: 'sticky', top: 0 }}
+        style={{ width: '100%', height: 'calc(100vh - 220px)', border: 0, background: paper.white, display: 'block', position: 'sticky', top: 0, pointerEvents: split.dragging ? 'none' : undefined }}
       />
+      {split.handle}
 
-      <div style={{ padding: '6px 56px 80px 26px', height: 'calc(100vh - 220px)', overflowY: 'auto', position: 'sticky', top: 0 }}>
+      <div style={{ padding: '6px 34px 80px 22px', height: 'calc(100vh - 220px)', overflowY: 'auto', position: 'sticky', top: 0 }}>
         {error && <div style={{ color: '#8E1E42', fontFamily: sans, fontSize: 12.5, marginTop: 12 }}>{error}</div>}
 
         {head('Màu', 'colors')}
