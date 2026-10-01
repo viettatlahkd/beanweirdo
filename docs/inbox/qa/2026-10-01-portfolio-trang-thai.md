@@ -17,6 +17,14 @@
   tại chỗ. Sau: mở màn xếp trang bằng nút "xếp trang →" ở cuối dòng.
   `admin/screens/Portfolio.tsx` (`PageRow`, `StatusSelect`, `STATUS_NAMES`).
 - Màn xếp trang (`Builder`) dùng cùng ô chọn ba trạng thái (`StatusSelect`).
+- **[ĐỔI HÀNH VI]** Tên khối trong trình xếp trang đổi sang tên component chuẩn,
+  khớp từng chữ với design system (bản prototype v1.0), kèm số mục để tra chéo:
+  Hero · 06.2, Gallery · 06.3, Card grid · 06.4, Carousel · 06.5, Series · 06.6,
+  Story · 06.7, About · 06.10. Trước: "06.2 đầu trang", "06.3 mở đầu", "06.4 thẻ
+  bài", "06.5 slider", "06.6 khối series", "06.7 kể chuyện", "06.10 khối about".
+  Mô tả ngắn của Carousel ghi "mũi tên / tự chạy trái / tự chạy phải" thay vì
+  `arrow` / `left` / `right`. `portfolio/blocks.ts` (`BLOCK_NAMES`, `BLOCK_DS`),
+  `admin/screens/Portfolio.tsx` (`summary`).
 
 ## Đụng dữ liệu
 
