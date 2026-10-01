@@ -11,17 +11,17 @@ import {
   type PortPageRecord,
   type PortStatus,
 } from '../lib/apiClient'
-import { useRowDrag } from '../lib/useRowDrag'
 import { PortfolioView } from '../../portfolio/PortfolioView'
 import { postHref, usePortSources } from '../../portfolio/data'
 import {
-  BLOCK_DS,
   BLOCK_NAMES,
   BLOCK_ORDER,
+  convertBlock,
   newBlock,
   parseBlocks,
   preset,
   type Block,
+  type BlockType,
   type PortPost,
   type PresetKey,
   type Source,
@@ -350,12 +350,15 @@ function Builder({
   const patchBlock = (id: string, patch: Partial<Block>) =>
     setBlocks(draft.blocks.map((b) => (b.id === id ? ({ ...b, ...patch } as Block) : b)))
 
-  const drag = useRowDrag((from, to) => {
+  const move = (i: number, by: -1 | 1) => {
+    const to = i + by
+    if (to < 0 || to >= draft.blocks.length) return
     const next = [...draft.blocks]
-    const [moved] = next.splice(from, 1)
-    next.splice(to, 0, moved)
+    ;[next[i], next[to]] = [next[to], next[i]]
     setBlocks(next)
-  })
+  }
+  const setType = (id: string, type: BlockType) =>
+    setBlocks(draft.blocks.map((b) => (b.id === id ? convertBlock(b, type, src.moduleIds[0]) : b)))
 
   const remove = async () => {
     if (!window.confirm(`Xoá trang “${draft.title}”?`)) return
@@ -413,18 +416,9 @@ function Builder({
           <div
             key={b.id}
             id={`pf-row-${b.id}`}
-            draggable
-            onDragStart={() => drag.setFrom(i)}
-            onDragOver={(e) => {
-              e.preventDefault()
-              drag.setOver(i)
-            }}
-            onDrop={() => drag.drop(i)}
-            onDragEnd={drag.end}
             style={{
               border: `1px solid ${active === b.id ? ink.base : paper.rule}`,
-              background: drag.over === i && drag.from !== i ? '#EEF5F8' : paper.white,
-              opacity: drag.from === i ? 0.5 : 1,
+              background: paper.white,
               marginBottom: 6,
             }}
           >
@@ -432,11 +426,25 @@ function Builder({
               onClick={() => setActive(active === b.id ? null : b.id)}
               style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 10px', cursor: 'pointer', fontFamily: sans, fontSize: 12.5 }}
             >
-              <span style={{ cursor: 'grab', color: ink.faint }}>⋮⋮</span>
+              <span style={{ fontFamily: sans, fontSize: 10, color: ink.faint, width: 16 }}>{String(i + 1).padStart(2, '0')}</span>
               <span style={{ flex: 1 }}>
                 {BLOCK_NAMES[b.type]}
-                <span style={{ color: ink.faint }}> · {BLOCK_DS[b.type]}{summary(b, src.moduleTitles)}</span>
+                <span style={{ color: ink.faint }}>{summary(b, src.moduleTitles)}</span>
               </span>
+              {([-1, 1] as const).map((by) => (
+                <button
+                  key={by}
+                  disabled={i + by < 0 || i + by >= draft.blocks.length}
+                  style={{ border: 0, background: 'none', color: ink.faint, cursor: 'pointer', fontSize: 13, padding: '0 3px', opacity: i + by < 0 || i + by >= draft.blocks.length ? 0.3 : 1 }}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    move(i, by)
+                  }}
+                  aria-label={by < 0 ? 'lên' : 'xuống'}
+                >
+                  {by < 0 ? '↑' : '↓'}
+                </button>
+              ))}
               <button
                 style={{ border: 0, background: 'none', color: ink.faint, cursor: 'pointer', fontSize: 15 }}
                 onClick={(e) => {
@@ -450,26 +458,28 @@ function Builder({
             </div>
             {active === b.id && (
               <div style={{ padding: '4px 12px 10px', borderTop: `1px solid ${paper.rule}` }}>
+                <Field label="Component">
+                  <select style={small} value={b.type} onChange={(e) => setType(b.id, e.target.value as BlockType)}>
+                    {BLOCK_ORDER.map((t) => (
+                      <option key={t} value={t}>{BLOCK_NAMES[t]}</option>
+                    ))}
+                  </select>
+                </Field>
                 <BlockFields block={b} onChange={(p) => patchBlock(b.id, p)} src={src} tags={tags} />
               </div>
             )}
           </div>
         ))}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 12 }}>
-          {BLOCK_ORDER.map((t) => (
-            <button
-              key={t}
-              style={quiet}
-              onClick={() => {
-                const b = newBlock(t, src.moduleIds[0])
-                setBlocks([...draft.blocks, b])
-                setActive(b.id)
-              }}
-            >
-              + {BLOCK_NAMES[t]}
-            </button>
-          ))}
-        </div>
+        <button
+          style={{ ...quiet, marginTop: 10 }}
+          onClick={() => {
+            const b = newBlock('cards', src.moduleIds[0])
+            setBlocks([...draft.blocks, b])
+            setActive(b.id)
+          }}
+        >
+          + thêm khối
+        </button>
       </div>
 
       <div style={{ borderLeft: `1px solid ${paper.rule}`, height: 'calc(100vh - 160px)', overflowY: 'auto', position: 'sticky', top: 0 }}>

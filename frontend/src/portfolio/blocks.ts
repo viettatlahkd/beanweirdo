@@ -44,17 +44,6 @@ export const BLOCK_NAMES: Record<BlockType, string> = {
   about: 'About',
 }
 
-/** Where each block lives in the design system document, so the two can be cross-read. */
-export const BLOCK_DS: Record<BlockType, string> = {
-  head: '06.2',
-  opening: '06.3',
-  cards: '06.4',
-  slider: '06.5',
-  series: '06.6',
-  story: '06.7',
-  about: '06.10',
-}
-
 export const BLOCK_ORDER: BlockType[] = ['head', 'opening', 'cards', 'slider', 'series', 'story', 'about']
 
 /** A real post — the columns Portfolio needs from `posts`. */
@@ -116,6 +105,21 @@ export function newBlock(type: BlockType, firstModule = ''): Block {
     case 'about':
       return { id, type, head: '', text: '', image: '', links: [{ label: 'email', url: '' }, { label: 'linkedin', url: '' }, { label: 'cv', url: '' }] }
   }
+}
+
+/**
+ * Switch a block to another component, keeping what still applies: its id (so
+ * it stays in place and stays selected), its label and its post source. The
+ * rest starts from the new component's defaults.
+ */
+export function convertBlock(b: Block, type: BlockType, firstModule = ''): Block {
+  if (b.type === type) return b
+  const next = { ...newBlock(type, firstModule), id: b.id } as Block & Record<string, unknown>
+  if ('label' in b && 'label' in next) next.label = b.label
+  if ('source' in b && 'source' in next) next.source = b.source
+  if ('head' in b && 'head' in next) next.head = b.head
+  if ('text' in b && 'text' in next) next.text = b.text
+  return next as Block
 }
 
 export type PresetKey = 'bibi' | 'bibe' | 'blank'

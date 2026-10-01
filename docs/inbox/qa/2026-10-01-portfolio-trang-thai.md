@@ -18,13 +18,19 @@
   `admin/screens/Portfolio.tsx` (`PageRow`, `StatusSelect`, `STATUS_NAMES`).
 - Màn xếp trang (`Builder`) dùng cùng ô chọn ba trạng thái (`StatusSelect`).
 - **[ĐỔI HÀNH VI]** Tên khối trong trình xếp trang đổi sang tên component chuẩn,
-  khớp từng chữ với design system (bản prototype v1.0), kèm số mục để tra chéo:
-  Hero · 06.2, Gallery · 06.3, Card grid · 06.4, Carousel · 06.5, Series · 06.6,
-  Story · 06.7, About · 06.10. Trước: "06.2 đầu trang", "06.3 mở đầu", "06.4 thẻ
-  bài", "06.5 slider", "06.6 khối series", "06.7 kể chuyện", "06.10 khối about".
-  Mô tả ngắn của Carousel ghi "mũi tên / tự chạy trái / tự chạy phải" thay vì
-  `arrow` / `left` / `right`. `portfolio/blocks.ts` (`BLOCK_NAMES`, `BLOCK_DS`),
-  `admin/screens/Portfolio.tsx` (`summary`).
+  khớp từng chữ với design system (bản prototype v1.0): Hero, Gallery, Card
+  grid, Carousel, Series, Story, About. Trước: "06.2 đầu trang", "06.3 mở
+  đầu", "06.4 thẻ bài", "06.5 slider", "06.6 khối series", "06.7 kể chuyện",
+  "06.10 khối about". Số `06.x` không còn hiện trong trình xếp trang (chủ site:
+  người dùng không cần). Mô tả ngắn của Carousel ghi "mũi tên / tự chạy trái /
+  tự chạy phải" thay vì `arrow` / `left` / `right`. `portfolio/blocks.ts`
+  (`BLOCK_NAMES`), `admin/screens/Portfolio.tsx` (`summary`).
+- **[ĐỔI HÀNH VI]** Trình xếp trang bỏ kéo thả và bỏ hàng nút "+ <loại khối>".
+  Sau: một nút "+ thêm khối" (tạo khối Card grid), mỗi khối có ô **Component**
+  ở đầu phần chỉnh để chọn loại; đổi loại giữ id, nhãn, nguồn bài, câu mở,
+  đoạn kể (`portfolio/blocks.ts` `convertBlock`). Thứ tự đổi bằng nút ↑ ↓ trên
+  từng khối; khối được đánh số 01, 02… theo thứ tự (`Builder`, `move`,
+  `setType`). `useRowDrag` không còn dùng ở màn này.
 
 ## Đụng dữ liệu
 
@@ -32,7 +38,8 @@
   `portfolio_pages_status_check` để nhận `archived`. Không đổi dòng nào.
 - **Dữ liệu thật đã ghi (chủ site yêu cầu, 2026-10-01):** `portfolio_pages`
   dòng `bibi` và `bibe` chuyển `published` → `archived`. Tên `bibi` đổi thử
-  thành "biz intelligence" rồi trả lại "bibi". Dòng `biz-by-hkd` (trang
+  thành "biz intelligence" rồi trả lại "bibi". Khối của `bibi` thử ↑ ↓ và
+  đổi Series → Card grid → Series, rồi trả về đúng như cũ. Dòng `biz-by-hkd` (trang
   "business" chủ site tự tạo) không đụng tới.
 - Hệ quả trên production ngay khi ghi, trước cả khi PR merge:
   `/portfolio/bibi`, `/portfolio/bibe` thôi hiện công khai.
