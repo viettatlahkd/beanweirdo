@@ -98,7 +98,9 @@ describe('pages from the feature layer', () => {
   })
 
   it('keeps a module no page took over as a page of its own', () => {
-    expect(findPage(pages, 'ghi02')).toMatchObject({ source: 'module', screen: 'hours', title: 'private' })
+    expect(findPage(pages, 'ghi02')).toMatchObject({ source: 'module', title: 'private' })
+    // Its journal screen belongs to Practice now; the leftover row opens nothing special.
+    expect(findPage(pages, 'ghi02')?.screen).toBeUndefined()
   })
 
   it('lists the owner order first, then every subject not placed, honouring the flags', () => {

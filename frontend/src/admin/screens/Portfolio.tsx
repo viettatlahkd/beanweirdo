@@ -200,9 +200,8 @@ const TABS = [
 
 // ── screen ──────────────────────────────────────────────────────────────────
 
-export function Portfolio() {
-  const nav = useNav()
-  const tab = nav.portTab
+/** Port pages, the design system and the fixed copy — what every port editor reads. */
+export function usePortAdmin() {
   const [pages, setPages] = useState<PortPageRecord[]>([])
   const [stored, setStored] = useState<Record<string, unknown>>({})
   const [contentStored, setContentStored] = useState<Record<string, unknown>>({})
@@ -223,6 +222,13 @@ export function Portfolio() {
 
   const design = useMemo(() => resolveDesign(stored), [stored])
   const content = useMemo(() => resolveContent(contentStored), [contentStored])
+  return { pages, setPages, stored, setStored, setContentStored, design, content, loaded, error }
+}
+
+export function Portfolio() {
+  const nav = useNav()
+  const tab = nav.portTab
+  const { pages, setPages, stored, setStored, setContentStored, design, content, loaded, error } = usePortAdmin()
 
   return (
     <div style={{ background: paper.cream, color: ink.base, minHeight: '100vh' }}>
@@ -286,6 +292,13 @@ function uniqueSlug(base: string, pages: PortPageRecord[]) {
   for (let i = 2; ; i++) if (!taken.has(`${base}-${i}`)) return `${base}-${i}`
 }
 
+/** A new port page from a preset; it starts as a draft at the end of the list. */
+export async function createFromPreset(key: PresetKey, pages: PortPageRecord[], moduleIds: string[]): Promise<PortPageRecord> {
+  const base = key === 'blank' ? 'trang' : key
+  const slug = uniqueSlug(base, pages)
+  return createPortPage({ slug, title: slug, blocks: preset(key, moduleIds), palette: key === 'bibe' ? 'baen' : 'biz', sortOrder: pages.length })
+}
+
 function PagesTab({
   pages,
   setPages,
@@ -305,16 +318,8 @@ function PagesTab({
   const open = pages.find((p) => p.id === openId) ?? null
 
   const create = async (key: PresetKey) => {
-    const base = key === 'blank' ? 'trang' : key
-    const slug = uniqueSlug(base, pages)
     try {
-      const page = await createPortPage({
-        slug,
-        title: slug,
-        blocks: preset(key, src.moduleIds),
-        palette: key === 'bibe' ? 'baen' : 'biz',
-        sortOrder: pages.length,
-      })
+      const page = await createFromPreset(key, pages, src.moduleIds)
       setPages((ps) => [...ps, page])
       setOpenId(page.id)
     } catch (e) {
@@ -557,7 +562,7 @@ function PageRow({
 
 type Sources = ReturnType<typeof usePortSources>
 
-function Builder({
+export function Builder({
   page,
   design,
   src,
@@ -565,14 +570,17 @@ function Builder({
   pages,
   onBack,
   onSaved,
+  onDelete,
 }: {
   page: PortPageRecord
   design: Design
   src: Sources
   content: PortContent
   pages: PortPageRecord[]
-  onBack: () => void
+  onBack?: () => void
   onSaved: (p: PortPageRecord) => void
+  /** Shown as a link under the status when the page is opened from the CMS page tree. */
+  onDelete?: () => void
 }) {
   const [draft, setDraft] = useState({ ...page, blocks: parseBlocks(page.blocks) })
   const [active, setActive] = useState<string | null>(null)
@@ -612,7 +620,7 @@ function Builder({
   return (
     <div style={{ display: 'grid', gridTemplateColumns: split.columns, alignItems: 'start' }}>
       <div style={{ padding: '22px 22px 80px 56px', height: 'calc(100vh - 220px)', overflowY: 'auto', position: 'sticky', top: 0 }}>
-        <button style={{ ...quiet, border: 0, padding: 0, marginBottom: 14 }} onClick={onBack}>← tất cả trang</button>
+        {onBack && <button style={{ ...quiet, border: 0, padding: 0, marginBottom: 14 }} onClick={onBack}>← tất cả trang</button>}
         <Field label="Tiêu đề">
           <input style={{ ...boxed, fontFamily: serif, fontSize: 22 }} value={draft.title} onChange={(e) => set({ title: e.target.value })} />
         </Field>
@@ -643,6 +651,11 @@ function Builder({
             <a href={`/portfolio/${draft.slug}`} target="_blank" rel="noopener noreferrer" style={{ color: ink.green }}>
               mở trang ↗
             </a>
+          )}
+          {onDelete && (
+            <button style={{ border: 0, background: 'none', padding: 0, cursor: 'pointer', color: ink.muted, fontFamily: sans, fontSize: 12 }} onClick={onDelete}>
+              xoá trang
+            </button>
           )}
           {error && <span style={{ color: '#B33' }}>{error}</span>}
         </div>
@@ -1013,15 +1026,22 @@ const rowBox: CSSProperties = { border: `1px solid ${paper.rule}`, background: p
  * way Content management edits site copy: grouped fields, autosaved (rule 08.3).
  * Each group is saved whole under `site_settings.data.portfolio.<group>`.
  */
-function ContentTab({
+/** The parts of the fixed port copy, each a node of its own in the CMS page tree. */
+export type PortPart = 'home' | 'about' | 'sign' | 'header' | 'footer'
+
+export function ContentTab({
   content,
   setStored,
   pages,
+  only,
 }: {
   content: PortContent
   setStored: (f: (s: Record<string, unknown>) => Record<string, unknown>) => void
   pages: PortPageRecord[]
+  /** One part only; without it, every part in one column as the Portfolio screen had it. */
+  only?: PortPart
 }) {
+  const show = (part: PortPart) => !only || only === part
   const save = useCallback((patch: Record<string, unknown>) => updateSite({ portfolio: patch } as never), [])
   const { push, error } = useDebounced<Record<string, unknown>>(save, (a, b) => ({ ...a, ...b }))
   const setGroup = <K extends keyof PortContent>(group: K, value: PortContent[K]) => {
@@ -1089,9 +1109,11 @@ function ContentTab({
   })
 
   return (
-    <div style={{ padding: '34px 56px 130px', maxWidth: 1080 }}>
+    <div style={{ padding: only ? '6px 32px 130px' : '34px 56px 130px', maxWidth: 1080 }}>
       {error && <div style={{ color: '#8E1E42', fontFamily: sans, fontSize: 12.5, marginBottom: 12 }}>{error}</div>}
 
+      {show('header') && (
+        <>
       {head('Header')}
       <div style={two}>
         {text('Chữ thương hiệu', header.brand, (v) => setGroup('header', { ...header, brand: v }))}
@@ -1114,12 +1136,22 @@ function ContentTab({
         </div>
       ))}
 
+        </>
+      )}
+
+      {show('footer') && (
+        <>
       {head('Footer')}
       <div style={two}>
         {text('Chữ bên trái', footer.left, (v) => setGroup('footer', { ...footer, left: v }))}
         {text('Chữ bên phải', footer.right, (v) => setGroup('footer', { ...footer, right: v }))}
       </div>
 
+        </>
+      )}
+
+      {show('home') && (
+        <>
       {head('Trang tổng', `/${word}`)}
       <div style={two}>
         {text('Tiêu đề', home.title, (v) => setGroup('home', { ...home, title: v }))}
@@ -1159,6 +1191,11 @@ function ContentTab({
         </select>
       )}
 
+        </>
+      )}
+
+      {show('about') && (
+        <>
       {head('About', `/${word}/about`)}
       {text('Đoạn chữ phủ ảnh', about.text, (v) => setGroup('about', { ...about, text: v }), true)}
       <div style={fieldLabel}>Nhãn trên ảnh</div>
@@ -1175,7 +1212,12 @@ function ContentTab({
           />
         ))}
       </div>
-      <div style={fieldLabel}>Ký tên</div>
+        </>
+      )}
+
+      {show('sign') && (
+        <>
+      {only ? head('Ký tên', `/${word}/about`) : <div style={fieldLabel}>Ký tên</div>}
       {about.signs.map((sg, i) => (
         <div key={i} style={{ display: 'grid', gridTemplateColumns: '70px minmax(0,1fr) 24px', gap: 8, marginBottom: 6, alignItems: 'center' }}>
           <label style={{ fontFamily: sans, fontSize: 12, display: 'flex', gap: 6, alignItems: 'center' }}>
@@ -1204,6 +1246,11 @@ function ContentTab({
       <button style={{ ...quiet, marginTop: 4, marginBottom: 12 }} onClick={() => setGroup('about', { ...about, signs: [...about.signs, ''] })}>
         + Thêm ký tên
       </button>
+        </>
+      )}
+
+      {show('about') && (
+        <>
       <div style={two}>
         <ImageField label="Ảnh hẹp" value={about.imageLeft} onChange={(v) => setGroup('about', { ...about, imageLeft: v })} />
         <ImageField label="Ảnh chính" value={about.imageRight} onChange={(v) => setGroup('about', { ...about, imageRight: v })} />
@@ -1225,6 +1272,8 @@ function ContentTab({
       <button style={{ ...quiet, marginTop: 4 }} onClick={() => setGroup('about', { ...about, reach: [...about.reach, { label: '', url: '' }] })}>
         + Thêm link
       </button>
+        </>
+      )}
     </div>
   )
 }
@@ -1307,7 +1356,7 @@ function Num({ label, value, onChange, step = 1 }: { label?: string; value: numb
  * Every change is saved as the default for all port pages and pushed into the
  * document at once, so the owner tunes against the reference itself.
  */
-function DesignTab({
+export function DesignTab({
   stored,
   setStored,
   design,

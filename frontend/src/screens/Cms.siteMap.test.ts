@@ -13,7 +13,8 @@ import { NAV } from '../content/navItems'
 describe('nav entries that are modules', () => {
   it('names the module each such page is', () => {
     expect(NAV.find((n) => n.key === 'notes')?.moduleId).toBe('ghi01')
-    expect(NAV.find((n) => n.key === 'hours')?.moduleId).toBe('ghi02')
+    // Ghi 02 is Practice's own section, not a module of the blog.
+    expect(NAV.find((n) => n.key === 'hours')?.moduleId).toBeUndefined()
   })
 
   it('claims each module at most once, so no page can be listed twice', () => {

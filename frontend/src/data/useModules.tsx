@@ -269,11 +269,10 @@ export function buildPages(store: Store): PageRow[] {
   return arrange(out.map(withScreen), pages.find((p) => p.kind === 'nav'), topics, modules)
 }
 
-/** Ghi 01 and Ghi 02 keep the screens written for them. */
+/** Ghi 01 keeps the screen written for it. (Ghi 02 is Practice's, not a blog page.) */
 function withScreen(p: PageRow): PageRow {
   if (p.screen) return p
   if (p.id === 'ghi01' || p.aliases.includes('ghi01')) return { ...p, screen: 'notes' }
-  if (p.id === 'ghi02' || p.aliases.includes('ghi02')) return { ...p, screen: 'hours' }
   return p
 }
 

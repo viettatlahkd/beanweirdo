@@ -35,6 +35,8 @@ vi.mock('../admin/lib/apiClient', () => ({
   // Quản lý trang (bước 3c) đọc tầng feature.
   getLayout: () => Promise.resolve({ pages: [], overrides: [], rules: [] }),
   listKeywords: () => Promise.resolve([]),
+  // Quản lý trang cũng giữ các trang port.
+  getPortfolio: () => Promise.resolve({ pages: [], design: {} }),
   createModule: vi.fn(), deleteModule: vi.fn(), reorderModules: vi.fn(),
   reorderPosts: vi.fn(), updateModule: vi.fn(), updatePost: vi.fn(),
   uploadImage: vi.fn(), transitionStatus: vi.fn(),
@@ -70,8 +72,7 @@ describe('CMS hiện nội dung thật', () => {
     render(<Cms />)
     // Chữ của Mục lục nằm trong chính trang ấy ở Quản lý trang.
     ;(await screen.findByText(/^quản lý trang$/i)).click()
-    const muclu = await screen.findByText('Mục lục', { selector: 'span' })
-    ;(muclu.parentElement!.querySelector('button') as HTMLButtonElement).click()
+    ;(await screen.findByRole('button', { name: /^Mục lục/ })).click()
     // Ô đã có mặt, mang chữ mặc định, trong lúc mạng còn đang chờ.
     await waitFor(() => expect(screen.queryByDisplayValue(SITE_DEFAULTS.blurb)).not.toBeNull())
 

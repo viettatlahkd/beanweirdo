@@ -909,6 +909,23 @@ export function Cms() {
 
       {tab === 'pages' && (
         <PagesManager
+          renderPractice={() => {
+            const practice = site.practice ?? {}
+            const save = (patch: { title?: string; accent?: string }) => void saveSite({ practice: { ...practice, ...patch } })
+            return (
+              <div style={{ ...grid(two, 20), marginTop: 22 }}>
+                <Field label="Tên trên thanh bên">
+                  <input defaultValue={practice.title ?? ''} key={practice.title ?? ''} placeholder="Ghi 02" onBlur={(e) => e.target.value.trim() !== (practice.title ?? '') && save({ title: e.target.value.trim() || undefined })} style={{ ...serifInput, fontSize: 20 }} />
+                </Field>
+                <Field label="Màu">
+                  <input defaultValue={practice.accent ?? ''} key={practice.accent ?? ''} placeholder="#hex" onBlur={(e) => /^#[0-9a-f]{6}$/i.test(e.target.value.trim()) && save({ accent: e.target.value.trim() })} style={{ ...serifInput, fontSize: 16 }} />
+                </Field>
+                <Field label="Tên section">
+                  <input defaultValue={copy.sections.Practice} key={copy.sections.Practice} onBlur={(e) => e.target.value.trim() && e.target.value.trim() !== copy.sections.Practice && void saveSite({ sections: { Practice: e.target.value.trim() } })} style={{ ...serifInput, fontSize: 16 }} />
+                </Field>
+              </div>
+            )
+          }}
           renderCopy={(key) => pageCopy[key]}
           renderModule={(id) => {
             const m = modules.find((x) => x.id === id)

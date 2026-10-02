@@ -219,7 +219,7 @@ export function Sidebar() {
   const [drawer, setDrawer] = useState(false)
   const { data: allModules, postsOf } = useModules()
   const modules = sidebarModules(allModules)
-  const { site } = useSiteCopy()
+  const { site, overrides } = useSiteCopy()
   const { authed, signOut } = useAuth()
   const dark = nav.screen === 'notes' || nav.screen === 'hours'
   const t = theme(dark)
@@ -266,6 +266,26 @@ export function Sidebar() {
        * nav entry instead — a hand-copied name and a hand-picked glyph that
        * renaming the module in the CMS left untouched. Ledger D2.
        */
+      if (group === 'Practice') {
+        // Practice wears its own name and colour (site settings), drawn as the
+        // square every journal has — the same row the blog page ghi-02 drew,
+        // count included, so moving the definition changed nothing on screen.
+        const practice = overrides.practice ?? {}
+        rows.push(
+          <Row
+            key={item.key}
+            onClick={go(nav, item)}
+            label={practice.title ?? item.label}
+            sub={item.sub}
+            count={0}
+            muted={t.muted}
+            hoverBg={t.hover}
+            glyph={practice.accent ? <ModuleMark m={{ kind: 'special', accent: practice.accent } as ModuleRow} /> : <Mark shape={item.shape} />}
+          />,
+        )
+        continue
+      }
+
       const own = findPage(allModules, item.moduleId)
       rows.push(
         <Row

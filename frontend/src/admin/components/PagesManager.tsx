@@ -4,6 +4,7 @@ import {
   createPage,
   createRule,
   deleteOverride,
+  deletePortPage,
   deletePage,
   getLayout,
   listKeywords,
@@ -23,6 +24,9 @@ import { useRowDrag } from '../lib/useRowDrag'
 import { findPage, useModules, type PageRow } from '../../data/useModules'
 import { treeOrder, type ListingRule, type RuleGroup, type RuleSort, type RuleTier } from '../../lib/listingRule'
 import { toPath } from '../../lib/routes'
+import { Builder, ContentTab, createFromPreset, usePortAdmin, type PortPart } from '../screens/Portfolio'
+import { usePortSources } from '../../portfolio/data'
+import type { PresetKey } from '../../portfolio/blocks'
 import { ink, paper, sans, serif } from '../../design/tokens'
 
 /**
@@ -42,6 +46,15 @@ type Selected =
   | { kind: 'curated'; id: string }
   | { kind: 'template'; id: string }
   | { kind: 'override'; type: 'topic' | 'keyword'; node: string }
+  /** A topic or tag page on its template, before it has settings of its own. */
+  | { kind: 'node'; type: 'topic' | 'keyword'; node: string }
+  | { kind: 'nav' }
+  | { kind: 'port-page'; id: string }
+  | { kind: 'port-part'; part: PortPart }
+  | { kind: 'practice' }
+
+/** What PageEditor opens: the blog's own pages. */
+type BlogSelected = Extract<Selected, { kind: 'system' | 'curated' | 'template' | 'override' }>
 
 const SYSTEM: { key: SystemPage; title: string; path: string }[] = [
   { key: 'landing', title: 'Trang chủ', path: '/' },
@@ -283,22 +296,62 @@ function HandOrder({ rule, posts, onChange }: { rule: StoredRule; posts: { id: s
 
 type NavItem = { ref: string; sidebar?: boolean; home?: boolean }
 
+const PORT_PARTS: { part: PortPart; title: string }[] = [
+  { part: 'about', title: 'About' },
+  { part: 'sign', title: 'Signature' },
+  { part: 'header', title: 'Thanh trên' },
+  { part: 'footer', title: 'Chân trang' },
+]
+
+const treeRow = (on: boolean, indent: number): CSSProperties => ({
+  all: 'unset',
+  boxSizing: 'border-box',
+  display: 'flex',
+  alignItems: 'baseline',
+  gap: 8,
+  width: '100%',
+  padding: `5px 12px 5px ${indent}px`,
+  cursor: 'pointer',
+  fontFamily: sans,
+  fontSize: 13,
+  color: ink.base,
+  background: on ? '#EEF5F8' : undefined,
+  boxShadow: on ? `inset 3px 0 0 ${ink.green}` : undefined,
+})
+const meta: CSSProperties = { marginLeft: 'auto', fontSize: 11, color: ink.faint, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }
+const siteHead: CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '16px 12px 6px', fontFamily: serif, fontSize: 18, color: ink.base }
+const group: CSSProperties = { ...label, margin: 0, padding: '10px 12px 3px 24px' }
+
+const same = (a: Selected | null, b: Selected) => JSON.stringify(a) === JSON.stringify(b)
+
+/**
+ * Quản lý trang — every page of the three sites in one tree (Port, Personal
+ * Blog, Practice), and the selected page's settings beside it. Port used to be
+ * a screen of its own and Ghi 02 a special module of the blog; both are pages
+ * like the others now, edited from here.
+ */
 export function PagesManager({
   renderCopy,
   renderModule,
+  renderPractice,
 }: {
   /** The fixed copy of a page the site draws with a screen of its own. */
   renderCopy: (key: SystemPage) => ReactNode
   /** The fields of a module a page still takes its looks from. */
   renderModule: (moduleId: string) => ReactNode
+  /** Practice's own settings — its name and colour live in site settings, not in the blog's pages. */
+  renderPractice: () => ReactNode
 }) {
   const { data: pages, postsOf, reload } = useModules()
+  const port = usePortAdmin()
+  const src = usePortSources()
   const [layout, setLayout] = useState<{ pages: LayoutPage[]; overrides: LayoutOverride[]; rules: StoredRule[] } | null>(null)
   const [vocab, setVocab] = useState<Vocab>({ topics: [], keywords: [], kinds: [] })
-  const [open, setOpen] = useState<Selected | null>(null)
+  const [open, setOpen] = useState<Selected>({ kind: 'system', key: 'landing' })
   const [err, setErr] = useState<string | null>(null)
   const [round, setRound] = useState(0)
   const [newPage, setNewPage] = useState('')
+  const [archived, setArchived] = useState(false)
 
   const load = () => void getLayout().then(setLayout).catch((e: Error) => setErr(e.message))
   useEffect(() => {
@@ -343,9 +396,206 @@ export function PagesManager({
     </div>
   )
 
-  if (open) {
-    return (
+  // A page drawn by the practice journal's screen is Practice's, not the blog's
+  // (the leftover row of the old Ghi 02 module, until it is removed).
+  const curated = layout.pages.filter((p) => p.kind === 'curated' && p.presentation.screen !== 'hours')
+  const templates = layout.pages.filter((p) => p.kind.startsWith('template_'))
+  const overrideOf = (type: 'topic' | 'keyword', id: string) => layout.overrides.find((o) => o.node_type === type && o.node_id === id)
+  const sortedTopics = [...vocab.topics].sort((a, b) => a.sort_order - b.sort_order)
+  const subjects = sortedTopics.filter((t) => t.parent_id === null)
+  const livePort = port.pages.filter((p) => p.status !== 'archived')
+  const archivedPort = port.pages.filter((p) => p.status === 'archived')
+
+  const item = (sel: Selected, text: ReactNode, indent: number, right?: ReactNode, big = false) => (
+    <button type="button" key={JSON.stringify(sel)} aria-current={same(open, sel) ? 'page' : undefined} onClick={() => setOpen(sel)} style={{ ...treeRow(same(open, sel), indent), ...(big ? { fontFamily: serif, fontSize: 15 } : {}) }}>
+      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{text}</span>
+      {right !== undefined && <span style={meta}>{right}</span>}
+    </button>
+  )
+  const nodeItem = (type: 'topic' | 'keyword', id: string, title: string, indent: number, big = false) => {
+    const page = findPage(pages, type === 'keyword' ? `tag-${id}` : id)
+    const own = overrideOf(type, id)
+    const sel: Selected = own ? { kind: 'override', type, node: id } : { kind: 'node', type, node: id }
+    return item(sel, title, indent, `${own ? 'riêng · ' : ''}${page ? postsOf(page.id).length : 0}`, big)
+  }
+
+  const tree = (
+    <nav aria-label="Cây trang" style={{ borderRight: `1px solid ${paper.rule}`, background: paper.white, paddingBottom: 24, position: 'sticky', top: 0, maxHeight: '100vh', overflowY: 'auto' }}>
+      <div style={siteHead}>
+        Port <span style={meta}>/portfolio</span>
+      </div>
+      {item({ kind: 'port-part', part: 'home' }, 'Trang chủ', 24)}
+      <div style={group}>Các trang port</div>
+      {livePort.map((p) => item({ kind: 'port-page', id: p.id }, p.title, 34, p.status === 'draft' ? 'nháp' : ''))}
+      <AddPort
+        onAdd={(key) =>
+          run(async () => {
+            const page = await createFromPreset(key, port.pages, src.moduleIds)
+            port.setPages((ps) => [...ps, page])
+            setOpen({ kind: 'port-page', id: page.id })
+          })
+        }
+      />
+      {archivedPort.length > 0 && (
+        <>
+          <button type="button" aria-expanded={archived} onClick={() => setArchived((a) => !a)} style={{ ...treeRow(false, 34), color: ink.muted, fontSize: 12 }}>
+            {archived ? '▾' : '▸'} Lưu trữ <span style={meta}>{archivedPort.length}</span>
+          </button>
+          {archived && archivedPort.map((p) => item({ kind: 'port-page', id: p.id }, p.title, 46))}
+        </>
+      )}
+      {PORT_PARTS.map((x) => item({ kind: 'port-part', part: x.part }, x.title, 24))}
+
+      <div style={{ ...siteHead, borderTop: `1px solid ${paper.rule}`, marginTop: 12 }}>
+        Personal Blog <span style={meta}>/</span>
+      </div>
+      {SYSTEM.map((s) => item({ kind: 'system', key: s.key }, s.title, 24))}
+      {item({ kind: 'nav' }, 'Điều hướng', 24, navItems.length)}
+      <div style={group}>Trang chọn tay</div>
+      {curated.map((p) => item({ kind: 'curated', id: p.id }, p.title || p.id, 34, postsOf(p.id).length))}
+      <div style={{ padding: '3px 12px 3px 34px', display: 'flex', gap: 6 }}>
+        <input aria-label="Địa chỉ trang mới" placeholder="+ trang mới" value={newPage} onChange={(e) => setNewPage(e.target.value.trim())} style={{ ...box, padding: '3px 7px', fontSize: 12 }} />
+        {newPage && (
+          <button type="button" onClick={() => run(async () => { await createPage(newPage, newPage); setOpen({ kind: 'curated', id: newPage }); setNewPage('') })} style={link}>
+            tạo
+          </button>
+        )}
+      </div>
+      <div style={group}>Chủ đề</div>
+      {subjects.map((s) => (
+        <div key={s.id}>
+          {nodeItem('topic', s.id, s.title, 34, true)}
+          {sortedTopics.filter((t) => t.parent_id === s.id).map((t) => nodeItem('topic', t.id, t.title, 48))}
+        </div>
+      ))}
+      {vocab.keywords.length > 0 && <div style={group}>Tag</div>}
+      {vocab.keywords.map((k) => nodeItem('keyword', k.id, k.label, 34))}
+      <div style={group}>Mẫu</div>
+      {templates.map((p) => item({ kind: 'template', id: p.id }, TEMPLATE_TITLES[p.kind], 34))}
+
+      <div style={{ ...siteHead, borderTop: `1px solid ${paper.rule}`, marginTop: 12 }}>
+        Practice <span style={meta}>{toPath({ area: 'practice', screen: 'hours' })}</span>
+      </div>
+      {item({ kind: 'practice' }, 'Ghi 02', 24, 'sau đăng nhập')}
+    </nav>
+  )
+
+  let body: ReactNode
+  if (open.kind === 'port-part') {
+    body = port.loaded ? <ContentTab key={open.part} only={open.part} content={port.content} setStored={port.setContentStored} pages={port.pages} /> : null
+  } else if (open.kind === 'port-page') {
+    const p = port.pages.find((x) => x.id === open.id)
+    body = p ? (
+      <Builder
+        key={p.id}
+        page={p}
+        design={port.design}
+        src={src}
+        content={port.content}
+        pages={port.pages}
+        onSaved={(next) => port.setPages((ps) => ps.map((x) => (x.id === next.id ? next : x)))}
+        onDelete={() => {
+          if (!window.confirm(`Xoá trang “${p.title}”? Thao tác này không hoàn tác được.`)) return
+          run(async () => {
+            await deletePortPage(p.id)
+            port.setPages((ps) => ps.filter((x) => x.id !== p.id))
+            setOpen({ kind: 'port-part', part: 'home' })
+          })
+        }}
+      />
+    ) : null
+  } else if (open.kind === 'practice') {
+    const path = toPath({ area: 'practice', screen: 'hours' })
+    body = (
+      <div style={{ padding: '6px 32px 130px', maxWidth: 640 }}>
+        <div style={{ fontFamily: serif, fontSize: 30, margin: '10px 0 4px' }}>Ghi 02</div>
+        <a href={path} target="_blank" rel="noreferrer" style={{ fontFamily: 'ui-monospace, Menlo, monospace', fontSize: 12, color: ink.soft }}>
+          {path} ↗
+        </a>
+        {renderPractice()}
+      </div>
+    )
+  } else if (open.kind === 'nav') {
+    body = (
+      <div style={{ padding: '6px 32px 130px', maxWidth: 760 }}>
+        <div style={{ fontFamily: serif, fontSize: 30, margin: '10px 0 4px' }}>Điều hướng</div>
+        {errorLine}
+        {navItems.map((it, i) => {
+          const p = navPage(it.ref)
+          return (
+            <div key={it.ref} {...dragRow(navDrag, i)}>
+              <span style={{ cursor: 'grab', color: ink.faint }} aria-hidden>
+                ⋮⋮
+              </span>
+              <span style={{ flex: 1 }}>{p?.title ?? it.ref}</span>
+              <span style={{ color: ink.faint, fontSize: 11 }}>{p ? postsOf(p.id).length : 0} bài</span>
+              {(['sidebar', 'home'] as const).map((flag) => (
+                <label key={flag} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11.5, color: ink.muted }}>
+                  <input
+                    type="checkbox"
+                    aria-label={`${flag === 'sidebar' ? 'thanh bên' : 'trang chủ'} ${p?.title ?? it.ref}`}
+                    checked={it[flag] !== false}
+                    onChange={(e) => saveNav(navItems.map((x, j) => (j === i ? { ...x, [flag]: e.target.checked } : x)))}
+                  />
+                  {flag === 'sidebar' ? 'thanh bên' : 'trang chủ'}
+                </label>
+              ))}
+            </div>
+          )
+        })}
+      </div>
+    )
+  } else if (open.kind === 'node') {
+    // A node on its template: what it follows, and the way to give it settings of its own.
+    const { type, node } = open
+    const topic = vocab.topics.find((t) => t.id === node)
+    const tplKind = type === 'keyword' ? 'template_keyword' : topic?.parent_id ? 'template_topic' : 'template_subject'
+    const tpl = templates.find((p) => p.kind === tplKind)
+    const page = findPage(pages, type === 'keyword' ? `tag-${node}` : node)
+    const preview = page ? toPath({ area: 'public', screen: 'module', moduleId: page.id }) : ''
+    body = (
+      <div style={{ display: 'grid', gridTemplateColumns: preview ? 'minmax(0,1fr) minmax(0,1fr)' : 'minmax(0,1fr)', minHeight: '70vh' }}>
+        <div style={{ padding: '6px 32px 130px', maxWidth: 640 }}>
+          <div style={{ fontFamily: serif, fontSize: 30, margin: '10px 0 4px' }}>{page?.title ?? node}</div>
+          {errorLine}
+          <div style={{ fontFamily: sans, fontSize: 13, color: ink.muted, margin: '8px 0 14px' }}>
+            theo{' '}
+            {tpl ? (
+              <button type="button" onClick={() => setOpen({ kind: 'template', id: tpl.id })} style={{ ...link, fontSize: 13 }}>
+                {TEMPLATE_TITLES[tplKind]}
+              </button>
+            ) : (
+              TEMPLATE_TITLES[tplKind]
+            )}{' '}
+            · {page ? postsOf(page.id).length : 0} bài
+          </div>
+          <button
+            type="button"
+            style={{ ...link, fontSize: 12.5 }}
+            onClick={() =>
+              run(async () => {
+                // The node starts from its template's rule, with the node written in.
+                const { id: _id, ...copy } = ruleOf(tpl?.blocks[0]) ?? ({} as StoredRule)
+                const rule = await createRule({ ...copy, tier: type, from_page: false, nodes: [node] })
+                await saveOverride({ node_type: type, node_id: node, rule_id: rule.id })
+                setOpen({ kind: 'override', type, node })
+              })
+            }
+          >
+            + cài đặt riêng
+          </button>
+        </div>
+        {preview && (
+          <div style={{ borderLeft: `1px solid ${paper.rule}`, position: 'sticky', top: 0, height: '100vh' }}>
+            <iframe key={round} title={`xem trước ${page?.title ?? node}`} src={preview} style={{ width: '100%', height: '100%', border: 0 }} />
+          </div>
+        )}
+      </div>
+    )
+  } else {
+    body = (
       <PageEditor
+        key={JSON.stringify(open)}
         selected={open}
         layout={layout}
         pages={pages}
@@ -355,127 +605,30 @@ export function PagesManager({
         error={errorLine}
         ruleOf={ruleOf}
         run={run}
-        onBack={() => setOpen(null)}
+        onBack={() => setOpen({ kind: 'system', key: 'landing' })}
         renderCopy={renderCopy}
         renderModule={renderModule}
       />
     )
   }
 
-  const curated = layout.pages.filter((p) => p.kind === 'curated')
-  const templates = layout.pages.filter((p) => p.kind.startsWith('template_'))
-  const overridden = layout.overrides
-  const freeNodes = vocab.topics.filter((t) => !overridden.some((o) => o.node_type === 'topic' && o.node_id === t.id))
-
   return (
-    <div style={{ padding: '10px 56px 130px', maxWidth: 1080 }}>
-      {errorLine}
-
-      <div style={head}>Điều hướng</div>
-      {navItems.map((item, i) => {
-        const p = navPage(item.ref)
-        return (
-          <div key={item.ref} {...dragRow(navDrag, i)}>
-            <span style={{ cursor: 'grab', color: ink.faint }} aria-hidden>
-              ⋮⋮
-            </span>
-            <span style={{ flex: 1 }}>{p?.title ?? item.ref}</span>
-            <span style={{ color: ink.faint, fontSize: 11 }}>{p ? postsOf(p.id).length : 0} bài</span>
-            {(['sidebar', 'home'] as const).map((flag) => (
-              <label key={flag} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11.5, color: ink.muted }}>
-                <input
-                  type="checkbox"
-                  aria-label={`${flag === 'sidebar' ? 'thanh bên' : 'trang chủ'} ${p?.title ?? item.ref}`}
-                  checked={item[flag] !== false}
-                  onChange={(e) => saveNav(navItems.map((x, j) => (j === i ? { ...x, [flag]: e.target.checked } : x)))}
-                />
-                {flag === 'sidebar' ? 'thanh bên' : 'trang chủ'}
-              </label>
-            ))}
-          </div>
-        )
-      })}
-
-      <div style={head}>Trang</div>
-      {SYSTEM.map((s) => (
-        <div key={s.key} style={row}>
-          <span style={{ flex: 1 }}>{s.title}</span>
-          <button type="button" onClick={() => setOpen({ kind: 'system', key: s.key })} style={link}>
-            sửa →
-          </button>
-        </div>
-      ))}
-      {curated.map((p) => (
-        <div key={p.id} style={row}>
-          <span style={{ flex: 1 }}>{p.title || p.id}</span>
-          <span style={{ color: ink.faint, fontSize: 11 }}>{postsOf(p.id).length} bài</span>
-          <button type="button" onClick={() => setOpen({ kind: 'curated', id: p.id })} style={link}>
-            sửa →
-          </button>
-        </div>
-      ))}
-      <div style={{ ...row, borderBottom: 'none' }}>
-        <input
-          aria-label="Địa chỉ trang mới"
-          placeholder="dia-chi-trang-moi"
-          value={newPage}
-          onChange={(e) => setNewPage(e.target.value.trim())}
-          style={{ ...box, width: 220 }}
-        />
-        <button type="button" disabled={!newPage} onClick={() => run(async () => { await createPage(newPage, newPage); setOpen({ kind: 'curated', id: newPage }); setNewPage('') })} style={link}>
-          + trang mới
-        </button>
-      </div>
-
-      <div style={head}>Trang theo tầng</div>
-      {templates.map((p) => (
-        <div key={p.id} style={row}>
-          <span style={{ flex: 1 }}>{TEMPLATE_TITLES[p.kind]}</span>
-          <button type="button" onClick={() => setOpen({ kind: 'template', id: p.id })} style={link}>
-            sửa →
-          </button>
-        </div>
-      ))}
-      {overridden.map((o) => {
-        const p = findPage(pages, o.node_type === 'keyword' ? `tag-${o.node_id}` : o.node_id)
-        return (
-          <div key={`${o.node_type}:${o.node_id}`} style={row}>
-            <span style={{ flex: 1 }}>{p?.title ?? o.node_id}</span>
-            <span style={{ color: ink.faint, fontSize: 11 }}>cài đặt riêng · {p ? postsOf(p.id).length : 0} bài</span>
-            <button type="button" onClick={() => setOpen({ kind: 'override', type: o.node_type, node: o.node_id })} style={link}>
-              sửa →
-            </button>
-          </div>
-        )
-      })}
-      <div style={{ ...row, borderBottom: 'none' }}>
-        <select
-          aria-label="Cài đặt riêng cho chủ đề"
-          value=""
-          onChange={(e) => {
-            const node = e.target.value
-            if (!node) return
-            const tpl = templates.find((p) => p.kind === (vocab.topics.find((t) => t.id === node)?.parent_id ? 'template_topic' : 'template_subject'))
-            const base = ruleOf(tpl?.blocks[0])
-            run(async () => {
-              // The node starts from its template's rule, with the node written in.
-              const { id: _id, ...copy } = base ?? ({} as StoredRule)
-              const rule = await createRule({ ...copy, tier: 'topic', from_page: false, nodes: [node] })
-              await saveOverride({ node_type: 'topic', node_id: node, rule_id: rule.id })
-              setOpen({ kind: 'override', type: 'topic', node })
-            })
-          }}
-          style={box}
-        >
-          <option value="">+ cài đặt riêng cho…</option>
-          {freeNodes.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.title}
-            </option>
-          ))}
-        </select>
-      </div>
+    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,260px) minmax(0,1fr)', borderTop: `1px solid ${paper.rule}`, alignItems: 'start' }}>
+      {tree}
+      <div style={{ minWidth: 0, paddingTop: 14 }}>{body}</div>
     </div>
+  )
+}
+
+/** "+ trang port": from one of the two presets or blank, like the Portfolio screen offered. */
+function AddPort({ onAdd }: { onAdd: (key: PresetKey) => void }) {
+  return (
+    <select aria-label="Trang port mới" value="" onChange={(e) => e.target.value && onAdd(e.target.value as PresetKey)} style={{ ...box, width: 'auto', margin: '2px 12px 4px 34px', padding: '2px 6px', fontSize: 12, color: ink.green, border: 'none', background: 'transparent' }}>
+      <option value="">+ trang port</option>
+      <option value="bibi">từ mẫu bibi</option>
+      <option value="bibe">từ mẫu bibe</option>
+      <option value="blank">trang trống</option>
+    </select>
   )
 }
 
@@ -493,7 +646,7 @@ function PageEditor({
   renderCopy,
   renderModule,
 }: {
-  selected: Selected
+  selected: BlogSelected
   layout: { pages: LayoutPage[]; overrides: LayoutOverride[]; rules: StoredRule[] }
   pages: PageRow[]
   postsOf: (id: string) => { id: string; en: string }[]
@@ -540,10 +693,7 @@ function PageEditor({
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: preview ? 'minmax(0,1fr) minmax(0,1fr)' : 'minmax(0,1fr)', minHeight: '70vh' }}>
-      <div style={{ padding: '10px 32px 130px 56px', maxWidth: 640 }}>
-        <button type="button" onClick={onBack} style={quiet}>
-          ← Quản lý trang
-        </button>
+      <div style={{ padding: '6px 32px 130px', maxWidth: 640 }}>
         <div style={{ fontFamily: serif, fontSize: 30, margin: '10px 0 4px' }}>{title}</div>
         {error}
 

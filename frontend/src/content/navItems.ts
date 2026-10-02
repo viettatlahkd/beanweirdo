@@ -93,7 +93,6 @@ export const NAV: NavItem[] = [
   {
     key: 'hours',
     group: 'Practice',
-    moduleId: 'ghi02',
     label: 'Ghi 02',
     desc: 'daily journal',
     screen: 'hours',
