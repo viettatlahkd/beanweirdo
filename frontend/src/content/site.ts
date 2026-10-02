@@ -141,6 +141,8 @@ export type SiteOverrides = Partial<Omit<SiteCopy, 'sections'>> & {
    * the blog page `ghi-02` (once the special module Ghi 02).
    */
   practice?: { title?: string; accent?: string }
+  /** The blog's design system: only what the owner changed, keyed `group.name` — see `design/blogDesign.ts`. */
+  design?: Record<string, string | null | undefined>
 }
 
 /**

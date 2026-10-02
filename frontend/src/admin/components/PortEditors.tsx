@@ -1,12 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { garden, ink, paper, sans, serif } from '../../design/tokens'
-import { useNav } from '../../lib/nav'
-import { Breadcrumbs } from '../../components/Breadcrumbs'
 import { useRowDrag } from '../lib/useRowDrag'
 import { useTags } from '../../data/useTags'
 import {
   createPortPage,
-  deletePortPage,
   getPortfolio,
   updatePortDesign,
   updatePortPage,
@@ -192,12 +189,6 @@ function useSplit(key: string, initial: number, side: 'left' | 'right', min = 28
   return { columns, handle, dragging }
 }
 
-const TABS = [
-  { k: 'pages', t: 'Quản lý port' },
-  { k: 'content', t: 'Nội dung trang' },
-  { k: 'design', t: 'Cài đặt hiển thị' },
-] as const
-
 // ── screen ──────────────────────────────────────────────────────────────────
 
 /** Port pages, the design system and the fixed copy — what every port editor reads. */
@@ -225,65 +216,6 @@ export function usePortAdmin() {
   return { pages, setPages, stored, setStored, setContentStored, design, content, loaded, error }
 }
 
-export function Portfolio() {
-  const nav = useNav()
-  const tab = nav.portTab
-  const { pages, setPages, stored, setStored, setContentStored, design, content, loaded, error } = usePortAdmin()
-
-  return (
-    <div style={{ background: paper.cream, color: ink.base, minHeight: '100vh' }}>
-      <div style={{ background: '#DDEBF0', color: '#0E2C38', padding: '44px 56px 30px' }}>
-        <Breadcrumbs style={{ opacity: 0.75 }} />
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 44, flexWrap: 'wrap' }}>
-          <div>
-            <h1 style={{ fontFamily: serif, fontWeight: 400, fontSize: 70, lineHeight: 1, letterSpacing: '-.04em', margin: 0 }}>
-              Portfolio
-            </h1>
-            <div style={{ fontFamily: sans, fontWeight: 300, fontSize: 13.5, lineHeight: 1.5, marginTop: 10, maxWidth: 430, opacity: 0.85 }}>
-              Trang portfolio và hệ thiết kế dùng chung cho mọi trang.
-            </div>
-          </div>
-          <div style={{ fontFamily: sans, fontSize: 11, letterSpacing: '.14em', textTransform: 'uppercase', opacity: 0.7, paddingBottom: 8 }}>
-            {pages.length} trang · {pages.filter((p) => p.status === 'published').length} đã đăng
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: 4, marginTop: 26 }}>
-          {TABS.map((x) => (
-            <div
-              key={x.k}
-              onClick={() => nav.goPortfolio(x.k)}
-              style={{
-                fontFamily: sans,
-                fontSize: 11,
-                fontWeight: 500,
-                letterSpacing: '.16em',
-                textTransform: 'uppercase',
-                padding: '10px 18px',
-                cursor: 'pointer',
-                background: tab === x.k ? ink.base : 'transparent',
-                color: tab === x.k ? paper.cream : ink.soft,
-              }}
-            >
-              {x.t}
-            </div>
-          ))}
-        </div>
-      </div>
-      {error && (
-        <div style={{ background: '#FBE7E5', color: '#8E1E42', fontFamily: sans, fontSize: 12.5, padding: '10px 56px' }}>{error}</div>
-      )}
-      {loaded &&
-        (tab === 'design' ? (
-          <DesignTab stored={stored} setStored={setStored} design={design} />
-        ) : tab === 'content' ? (
-          <ContentTab content={content} setStored={setContentStored} pages={pages} />
-        ) : (
-          <PagesTab pages={pages} setPages={setPages} design={design} content={content} />
-        ))}
-    </div>
-  )
-}
-
 // ── tab 1: port pages ───────────────────────────────────────────────────────
 
 function uniqueSlug(base: string, pages: PortPageRecord[]) {
@@ -297,151 +229,6 @@ export async function createFromPreset(key: PresetKey, pages: PortPageRecord[], 
   const base = key === 'blank' ? 'trang' : key
   const slug = uniqueSlug(base, pages)
   return createPortPage({ slug, title: slug, blocks: preset(key, moduleIds), palette: key === 'bibe' ? 'baen' : 'biz', sortOrder: pages.length })
-}
-
-function PagesTab({
-  pages,
-  setPages,
-  design,
-  content,
-}: {
-  pages: PortPageRecord[]
-  setPages: (f: (p: PortPageRecord[]) => PortPageRecord[]) => void
-  design: Design
-  content: PortContent
-}) {
-  const [openId, setOpenId] = useState<string | null>(null)
-  const [filter, setFilter] = useState<'all' | PortStatus>('all')
-  const [menu, setMenu] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const src = usePortSources()
-  const open = pages.find((p) => p.id === openId) ?? null
-
-  const create = async (key: PresetKey) => {
-    try {
-      const page = await createFromPreset(key, pages, src.moduleIds)
-      setPages((ps) => [...ps, page])
-      setOpenId(page.id)
-    } catch (e) {
-      setError((e as Error).message)
-    }
-  }
-
-  if (open) {
-    return (
-      <Builder
-        key={open.id}
-        page={open}
-        design={design}
-        src={src}
-        content={content}
-        pages={pages}
-        onBack={() => setOpenId(null)}
-        onSaved={(p) => setPages((ps) => ps.map((x) => (x.id === p.id ? p : x)))}
-      />
-    )
-  }
-
-  const counts = {
-    all: pages.length,
-    draft: pages.filter((p) => p.status === 'draft').length,
-    published: pages.filter((p) => p.status === 'published').length,
-  }
-  const shown = filter === 'all' ? pages : pages.filter((p) => p.status === filter)
-  const FILTERS: [typeof filter, string][] = [
-    ['all', 'Tất cả'],
-    ['draft', 'Nháp'],
-    ['published', 'Đã đăng'],
-    ['archived', 'Lưu trữ'],
-  ]
-
-  return (
-    <div style={{ padding: '34px 56px 130px', maxWidth: 1080 }}>
-      <div style={{ display: 'flex', alignItems: 'center', borderBottom: `1px solid ${paper.rule}`, marginBottom: 4, flexWrap: 'wrap' }}>
-        {FILTERS.map(([t, label]) => (
-          <button
-            key={t}
-            onClick={() => setFilter(t)}
-            aria-pressed={filter === t}
-            style={{
-              fontFamily: sans,
-              fontSize: 11.5,
-              padding: '14px 4px',
-              marginRight: 26,
-              color: filter === t ? ink.base : ink.muted,
-              fontWeight: filter === t ? 500 : 400,
-              background: 'none',
-              border: 'none',
-              borderBottom: `2px solid ${filter === t ? ink.green : 'transparent'}`,
-              cursor: 'pointer',
-            }}
-          >
-            {label}
-          </button>
-        ))}
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 22, position: 'relative' }}>
-          {[
-            { n: counts.all, label: 'tổng' },
-            { n: counts.draft, label: 'nháp' },
-            { n: counts.published, label: 'đã đăng' },
-          ].map((x) => (
-            <div key={x.label} style={{ textAlign: 'right', fontFamily: sans }}>
-              <b style={{ fontSize: 15, display: 'block', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{x.n}</b>
-              <span style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '.14em', color: ink.faint }}>{x.label}</span>
-            </div>
-          ))}
-          <button
-            onClick={() => setMenu((m) => !m)}
-            aria-expanded={menu}
-            style={{
-              fontFamily: sans,
-              fontSize: 11.5,
-              letterSpacing: '.08em',
-              textTransform: 'uppercase',
-              border: 'none',
-              cursor: 'pointer',
-              background: ink.green,
-              color: '#fff',
-              padding: '9px 16px',
-              borderRadius: 4,
-            }}
-          >
-            + Trang mới
-          </button>
-          {menu && (
-            <div style={{ position: 'absolute', right: 0, top: '100%', marginTop: 6, background: paper.white, border: `1px solid ${paper.rule}`, zIndex: 5, minWidth: 180 }}>
-              {([
-                ['bibi', 'Từ mẫu bibi'],
-                ['bibe', 'Từ mẫu bibe'],
-                ['blank', 'Trang trống'],
-              ] as [PresetKey, string][]).map(([k, label]) => (
-                <button
-                  key={k}
-                  onClick={() => {
-                    setMenu(false)
-                    void create(k)
-                  }}
-                  style={{ display: 'block', width: '100%', textAlign: 'left', fontFamily: sans, fontSize: 12.5, padding: '10px 14px', border: 0, background: 'none', cursor: 'pointer', color: ink.base }}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-      {error && <div style={{ color: '#8E1E42', fontFamily: sans, fontSize: 12.5, padding: '10px 0' }}>{error}</div>}
-      {shown.map((p) => (
-        <PageRow
-          key={p.id}
-          page={p}
-          onOpen={() => setOpenId(p.id)}
-          onSaved={(next) => setPages((ps) => ps.map((x) => (x.id === next.id ? next : x)))}
-          onDeleted={(id) => setPages((ps) => ps.filter((x) => x.id !== id))}
-        />
-      ))}
-    </div>
-  )
 }
 
 // Same labels and colours as the post status pills (StatusBadge), so a status reads the same everywhere in admin.
@@ -478,85 +265,6 @@ function StatusSelect({ value, onChange, pill }: { value: PortStatus; onChange: 
         <option key={k} value={k}>{STATUS_NAMES[k]}</option>
       ))}
     </select>
-  )
-}
-
-/** One row of the page list: name and status are edited in place, autosaved like everything else (rule 08.3). */
-function PageRow({
-  page,
-  onOpen,
-  onSaved,
-  onDeleted,
-}: {
-  page: PortPageRecord
-  onOpen: () => void
-  onSaved: (p: PortPageRecord) => void
-  onDeleted: (id: string) => void
-}) {
-  const [title, setTitle] = useState(page.title)
-  const [hover, setHover] = useState(false)
-  const save = useCallback((patch: Record<string, unknown>) => updatePortPage(page.id, patch).then(onSaved), [page.id, onSaved])
-  const { push, flush, error } = useDebounced<Record<string, unknown>>(save, (a, b) => ({ ...a, ...b }))
-  const [delError, setDelError] = useState<string | null>(null)
-  const remove = async () => {
-    if (!window.confirm(`Xoá trang “${title}”? Thao tác này không hoàn tác được.`)) return
-    try {
-      await deletePortPage(page.id)
-      onDeleted(page.id)
-    } catch (e) {
-      setDelError((e as Error).message)
-    }
-  }
-  const link = { background: 'none', border: 'none', padding: 0, font: 'inherit' } as const
-  // Row layout and actions follow PostCard: actions sit as small links under
-  // the name, so deleting is a deliberate step on the list, not a control
-  // inside the editor.
-  return (
-    <div
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-      style={{
-        borderBottom: `1px solid ${paper.rule}`,
-        borderLeft: `3px solid ${hover ? ink.green : 'transparent'}`,
-        background: hover ? paper.hover : 'transparent',
-        padding: '12px 18px 12px 14px',
-      }}
-    >
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 200px 110px', gap: 18, alignItems: 'start' }}>
-        <div style={{ minWidth: 0 }}>
-          <input
-            aria-label="Tên trang"
-            value={title}
-            onChange={(e) => {
-              setTitle(e.target.value)
-              if (e.target.value.trim()) push({ title: e.target.value })
-            }}
-            onBlur={flush}
-            style={{ ...boxed, fontFamily: serif, fontSize: 22, background: 'transparent', border: '1px solid transparent', padding: '2px 6px', marginLeft: -6 }}
-            onFocus={(e) => (e.currentTarget.style.borderColor = paper.rule)}
-            onBlurCapture={(e) => (e.currentTarget.style.borderColor = 'transparent')}
-          />
-          <div style={{ fontFamily: sans, fontSize: 11, marginTop: 6 }}>
-            <button className="admin-link-action" style={link} onClick={onOpen}>
-              Xếp trang
-            </button>
-            {page.status === 'published' && (
-              <a className="admin-link-action" href={`/portfolio/${page.slug}`} target="_blank" rel="noopener noreferrer">
-                Xem trang ↗
-              </a>
-            )}
-            <button className="admin-link-action" style={link} onClick={remove}>
-              Xoá
-            </button>
-          </div>
-        </div>
-        <span style={{ fontFamily: sans, fontSize: 12, color: ink.soft, paddingTop: 8 }}>/portfolio/{page.slug}</span>
-        <span style={{ paddingTop: 6 }}>
-          <StatusSelect pill value={page.status} onChange={(status) => save({ status })} />
-        </span>
-      </div>
-      {(error || delError) && <div style={{ color: '#8E1E42', fontFamily: sans, fontSize: 12, marginTop: 4 }}>{error || delError}</div>}
-    </div>
   )
 }
 

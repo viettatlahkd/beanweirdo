@@ -6,11 +6,20 @@
  * Playfair Display for headings, Figtree Light 300 for everything else.
  */
 
-export const serif = "'Playfair Display', serif"
-export const sans = "'Be Vietnam Pro', system-ui, sans-serif"
+/**
+ * Every colour and family below is the shipped default of the blog's design
+ * system. What the site owner changes is stored in `site_settings.data.design`
+ * and reaches the page as CSS variables (`design/blogDesign.ts`) — so each
+ * token is `var(--bw-…, <default>)`: wherever no variable is set (the CMS,
+ * tests, a page before the settings arrive) it is exactly the old value.
+ */
+export const RAW_FONTS = {
+  serif: "'Playfair Display', serif",
+  sans: "'Be Vietnam Pro', system-ui, sans-serif",
+} as const
 
 /** Paper, ink and rules — the shared substrate of every blog screen. */
-export const paper = {
+export const RAW_PAPER = {
   cream: '#FDFBF2',
   white: '#FFFFFF',
   /** sidebar row hover */
@@ -18,7 +27,7 @@ export const paper = {
   rule: '#EBE5D3',
 } as const
 
-export const ink = {
+export const RAW_INK = {
   base: '#23211A',
   body: '#262319',
   strong: '#3B3729',
@@ -33,7 +42,7 @@ export const ink = {
 } as const
 
 /** The five garden hues plus their supporting tints. */
-export const garden = {
+export const RAW_GARDEN = {
   blush: '#F2A0A5',
   leaf: '#7FB87E',
   apricot: '#F0B45C',
@@ -46,6 +55,18 @@ export const garden = {
   honeyTint: '#F9EBD2',
   honeyTint2: '#F3DCAE',
 } as const
+
+/** The CSS variable a token reads: `--bw-<group>-<name>`. */
+export const tokenVar = (group: string, name: string) => `--bw-${group}-${name}`
+
+const vars = <T extends Record<string, string>>(group: string, raw: T): { readonly [K in keyof T]: string } =>
+  Object.fromEntries(Object.entries(raw).map(([k, v]) => [k, `var(${tokenVar(group, k)}, ${v})`])) as { [K in keyof T]: string }
+
+export const serif = `var(${tokenVar('font', 'serif')}, ${RAW_FONTS.serif})`
+export const sans = `var(${tokenVar('font', 'sans')}, ${RAW_FONTS.sans})`
+export const paper = vars('paper', RAW_PAPER)
+export const ink = vars('ink', RAW_INK)
+export const garden = vars('garden', RAW_GARDEN)
 
 /** Practice — 01 / Hours runs its own cool grey-green language. */
 export const hoursTheme = {

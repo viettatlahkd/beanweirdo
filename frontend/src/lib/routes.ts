@@ -55,9 +55,11 @@ const adminPages = (w: RouteWords): Record<string, Screen> => ({
   [`${w.admin}-${w.adDisplay}`]: 'cms',
   [`${w.admin}-${w.adConvention}`]: 'logic',
   [`${w.admin}-${w.adArchive}`]: 'archive',
-  [`${w.admin}-${w.adPortfolio}`]: 'portfolio',
-  [`${w.admin}-${w.adPortContent}`]: 'portfolio',
-  [`${w.admin}-${w.adPortDesign}`]: 'portfolio',
+  // Portfolio folded into the CMS (port pages in Quản lý trang, its design in
+  // Cài đặt hiển thị); its old addresses still land there.
+  [`${w.admin}-${w.adPortfolio}`]: 'cms',
+  [`${w.admin}-${w.adPortContent}`]: 'cms',
+  [`${w.admin}-${w.adPortDesign}`]: 'cms',
 })
 
 /** Nội dung (posts and the vocabularies filing them) · Quản lý trang · Cài đặt hiển thị. */
@@ -86,6 +88,9 @@ export const cmsTabs = (w: RouteWords = activeWords()): Record<string, CmsTab> =
   // Nội dung trang folded into Quản lý trang; its old address still lands there.
   [`${w.admin}-${w.adPageContent}`]: 'pages',
   [`${w.admin}-${w.adDisplay}`]: 'display',
+  [`${w.admin}-${w.adPortfolio}`]: 'pages',
+  [`${w.admin}-${w.adPortContent}`]: 'pages',
+  [`${w.admin}-${w.adPortDesign}`]: 'display',
 })
 const pageOfTab = (w: RouteWords): Record<CmsTab, string> => ({
   posts: `${w.admin}-${w.adPost}`,

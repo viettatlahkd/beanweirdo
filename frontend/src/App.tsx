@@ -3,6 +3,7 @@ import { Sidebar } from './components/Sidebar'
 import { ModulesProvider, findPage, useModules } from './data/useModules'
 import { PostAddressProvider, usePostAddresses } from './data/usePostAddresses'
 import { SiteCopyProvider, useSiteCopy } from './data/useSiteCopy'
+import { useBlogDesign } from './design/blogDesign'
 import { ink, layout, paper, sans } from './design/tokens'
 import { AuthGate, AuthProvider } from './lib/auth'
 import { useIsMobile } from './lib/useIsMobile'
@@ -30,7 +31,6 @@ import { IndexScreen } from './screens/IndexScreen'
 import { Landing } from './screens/Landing'
 import { Logic } from './screens/Logic'
 import { PortfolioAbout, PortfolioHome, PortfolioPage } from './screens/PortfolioPage'
-import { Portfolio } from './admin/screens/Portfolio'
 import { ModuleScreen } from './screens/ModuleScreen'
 import { Notes } from './screens/Notes'
 
@@ -101,6 +101,8 @@ function RouteWordsSync({ onAdopt }: { onAdopt: () => void }) {
  */
 function Routed({ where, go }: { where: Where; go: (next: Where) => void }) {
   const area = where.area
+  // The owner's blog design dresses the reader's site and Practice; the CMS keeps the shipped look.
+  useBlogDesign(area !== 'admin')
   const posts = usePostAddresses()
   const [variant, setVariant] = useState<Variant>('A')
 
@@ -216,7 +218,6 @@ function Routed({ where, go }: { where: Where; go: (next: Where) => void }) {
       {shown === 'archive' && <Archive />}
       {shown === 'cms' && <Cms />}
       {shown === 'logic' && <Logic />}
-      {shown === 'portfolio' && <Portfolio />}
       {shown === 'postNew' && <NewPostWizard />}
       {shown === 'postEdit' && postId && <Editor postId={postId} />}
       {shown === 'postPreview' && postId && <Preview postId={postId} />}

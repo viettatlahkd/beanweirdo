@@ -55,9 +55,9 @@ describe('địa chỉ Portfolio', () => {
     expect(parsePath('/portfolio/bibi', '', DEFAULT_WORDS)).toEqual(w)
   })
 
-  it('hai tab admin là hai địa chỉ', () => {
-    expect(toPath({ area: 'admin', screen: 'portfolio', portTab: 'pages' }, DEFAULT_WORDS)).toBe('/ad-portfolio')
-    expect(toPath({ area: 'admin', screen: 'portfolio', portTab: 'design' }, DEFAULT_WORDS)).toBe('/ad-portfolio-design')
-    expect(parsePath('/ad-portfolio-design', '', DEFAULT_WORDS)).toEqual({ area: 'admin', screen: 'portfolio', portTab: 'design' })
+  it('địa chỉ admin cũ của Portfolio rơi vào CMS', () => {
+    // Port pages live in Quản lý trang, the port design in Cài đặt hiển thị.
+    expect(parsePath('/ad-portfolio', '', DEFAULT_WORDS)).toEqual({ area: 'admin', screen: 'cms', tab: 'pages' })
+    expect(parsePath('/ad-portfolio-design', '', DEFAULT_WORDS)).toEqual({ area: 'admin', screen: 'cms', tab: 'display' })
   })
 })

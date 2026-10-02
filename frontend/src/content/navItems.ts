@@ -99,14 +99,6 @@ export const NAV: NavItem[] = [
     shape: glyph({ r: '50% 50% 50% 0', bd: '0', brw: '0', bbw: '0', bg: '#C25C7C' }),
   },
   {
-    key: 'portfolio',
-    group: 'Admin',
-    label: 'Portfolio',
-    desc: 'trang port và design system',
-    screen: 'portfolio',
-    shape: glyph({ w: '11px', h: '7px', bbw: '1px' }),
-  },
-  {
     key: 'cms',
     group: 'Admin',
     label: 'Content management',

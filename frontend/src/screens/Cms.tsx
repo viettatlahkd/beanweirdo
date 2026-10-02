@@ -23,6 +23,7 @@ import type { FeatureOverride } from '../content/notes'
 import { ink, paper, sans, serif } from '../design/tokens'
 import { Hover } from '../lib/Hover'
 import { ContentWorkspace } from '../admin/components/ContentWorkspace'
+import { DisplaySettings } from '../admin/components/DisplaySettings'
 import { useNav } from '../lib/nav'
 
 const sectionHead: CSSProperties = {
@@ -935,7 +936,11 @@ export function Cms() {
       )}
 
       {tab === 'display' && (
-        <div style={{ padding: '34px 56px 130px', maxWidth: 1080 }}>
+        <DisplaySettings
+          design={site.design}
+          onSaveDesign={(patch) => saveSite({ design: patch })}
+          blog={
+            <>
           <div style={sectionHead}>Đường dẫn</div>
           <RoutesPanel
             stored={site.routes}
@@ -1023,7 +1028,9 @@ export function Cms() {
           >
             Trả về nội dung gốc
           </Hover>
-        </div>
+            </>
+          }
+        />
       )}
     </div>
   )
