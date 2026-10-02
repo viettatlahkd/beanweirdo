@@ -60,8 +60,8 @@ const adminPages = (w: RouteWords): Record<string, Screen> => ({
   [`${w.admin}-${w.adPortDesign}`]: 'portfolio',
 })
 
-/** Quản lý bài · Phân loại · Quản lý trang · Cài đặt hiển thị (step 3c). */
-export type CmsTab = 'posts' | 'taxonomy' | 'pages' | 'display'
+/** Nội dung (posts and the vocabularies filing them) · Quản lý trang · Cài đặt hiển thị. */
+export type CmsTab = 'posts' | 'pages' | 'display'
 
 /** Portfolio has two tabs: port pages (create, arrange) and the design system. */
 export type PortTab = 'pages' | 'content' | 'design'
@@ -80,7 +80,8 @@ const portTabs = (w: RouteWords): Record<string, PortTab> => ({
  */
 export const cmsTabs = (w: RouteWords = activeWords()): Record<string, CmsTab> => ({
   [`${w.admin}-${w.adPost}`]: 'posts',
-  [`${w.admin}-${w.adTaxonomy}`]: 'taxonomy',
+  // Phân loại folded into Nội dung; its old address still lands there.
+  [`${w.admin}-${w.adTaxonomy}`]: 'posts',
   [`${w.admin}-${w.adSitemap}`]: 'pages',
   // Nội dung trang folded into Quản lý trang; its old address still lands there.
   [`${w.admin}-${w.adPageContent}`]: 'pages',
@@ -88,7 +89,6 @@ export const cmsTabs = (w: RouteWords = activeWords()): Record<string, CmsTab> =
 })
 const pageOfTab = (w: RouteWords): Record<CmsTab, string> => ({
   posts: `${w.admin}-${w.adPost}`,
-  taxonomy: `${w.admin}-${w.adTaxonomy}`,
   pages: `${w.admin}-${w.adSitemap}`,
   display: `${w.admin}-${w.adDisplay}`,
 })

@@ -10,16 +10,7 @@ import {
   type Module,
   type PostSummary,
 } from '../admin/lib/apiClient'
-import {
-  getSite,
-  listTags,
-  createTag,
-  renameTag,
-  deleteTag,
-  type Tag,
-} from '../admin/lib/apiClient'
-import { tagColor } from '../lib/notesFilter'
-import { PostsPanel } from '../admin/components/PostsPanel'
+import { getSite } from '../admin/lib/apiClient'
 import { RoutesPanel } from '../admin/components/RoutesPanel'
 import { PagesManager, type SystemPage } from '../admin/components/PagesManager'
 import { ModuleImages } from '../admin/components/ModuleImages'
@@ -31,7 +22,7 @@ import { FeatureCellsEditor } from '../admin/components/FeatureCellsEditor'
 import type { FeatureOverride } from '../content/notes'
 import { ink, paper, sans, serif } from '../design/tokens'
 import { Hover } from '../lib/Hover'
-import { KeywordsPanel, TopicsPanel } from '../admin/components/ContentLayerPanels'
+import { ContentWorkspace } from '../admin/components/ContentWorkspace'
 import { useNav } from '../lib/nav'
 
 const sectionHead: CSSProperties = {
@@ -100,8 +91,7 @@ const nameRowPlain = 'minmax(0,1fr) 112px'
 
 /** The three tabs, named once so the site map and the tab bar cannot drift. */
 const TABS = [
-  { k: 'posts', t: 'Quản lý bài' },
-  { k: 'taxonomy', t: 'Phân loại' },
+  { k: 'posts', t: 'Nội dung' },
   { k: 'pages', t: 'Quản lý trang' },
   { k: 'display', t: 'Cài đặt hiển thị' },
 ] as const
@@ -360,121 +350,6 @@ function ImageSlot({
  * Everything saves on blur — there is no page-level save button (System
  * conventions, rule 08).
  */
-/**
- * Thêm, đổi tên, xoá tag.
- *
- * Cùng một khuôn với tag của Ghi 02, kể cả phần khó nhất của nó: xoá một tag
- * thì phải nói trước những gì đang đeo nó sẽ về đâu. Xoá lặng lẽ là để lại bài
- * trỏ vào một tag không còn tồn tại — nó biến mất khỏi mọi thanh lọc mà vẫn nằm
- * đó, đúng cái lỗi "viết xong rồi không tìm thấy được".
- */
-function TagsPanel() {
-  const [tags, setTags] = useState<Tag[]>([])
-  const [busy, setBusy] = useState<string | null>(null)
-  const [asking, setAsking] = useState<{ id: string; wearing: { posts: string[]; notes: string[] } } | null>(null)
-  const [adding, setAdding] = useState(false)
-  const [err, setErr] = useState<string | null>(null)
-
-  const load = () => void listTags().then(setTags)
-  useEffect(load, [])
-
-  const run = async (id: string, fn: () => Promise<unknown>) => {
-    setBusy(id)
-    try {
-      await fn()
-      setErr(null)
-      load()
-    } catch (e) {
-      setErr((e as Error).message)
-    } finally {
-      setBusy(null)
-    }
-  }
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 18 }}>
-      {err && <div role="alert" style={{ fontSize: 12, color: '#8E1E42' }}>{err}</div>}
-      {tags.map((t) => (
-        <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ width: 9, height: 9, borderRadius: 999, background: tagColor(t.label), flex: 'none' }} />
-          <input
-            defaultValue={t.label}
-            key={t.label}
-            aria-label={`tên dạng bài ${t.label}`}
-            onBlur={(e) => {
-              const v = e.target.value.trim()
-              if (v && v !== t.label) void run(t.id, () => renameTag(t.id, v))
-            }}
-            style={{ ...boxed, maxWidth: 260, padding: '5px 9px', fontSize: 13 }}
-          />
-          <button
-            type="button"
-            disabled={busy === t.id}
-            onClick={() =>
-              void run(t.id, async () => {
-                try {
-                  await deleteTag(t.id)
-                } catch (e) {
-                  // Máy chủ từ chối vì còn thứ đang đeo, và trả về danh sách ấy.
-                  const w = (e as { payload?: { wearing?: { posts: string[]; notes: string[] } } }).payload?.wearing
-                  if (!w) throw e
-                  setAsking({ id: t.id, wearing: w })
-                }
-              })
-            }
-            style={{ fontFamily: sans, fontSize: 11, color: ink.muted, background: 'none', border: 'none', cursor: 'pointer' }}
-          >
-            xoá
-          </button>
-          {asking?.id === t.id && (
-            <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: ink.mid }}>
-              {asking.wearing.posts.length + asking.wearing.notes.length} thứ đang đeo — chuyển sang
-              <select
-                aria-label="chuyển sang dạng bài"
-                defaultValue=""
-                onChange={(e) => {
-                  const to = e.target.value
-                  setAsking(null)
-                  void run(t.id, () => deleteTag(t.id, to))
-                }}
-                style={{ ...boxed, width: 'auto', padding: '3px 6px', fontSize: 11.5 }}
-              >
-                {/* No "leave empty": posts.kind and notes.k are NOT NULL, the server refuses it. */}
-                <option value="" disabled>—</option>
-                {tags.filter((o) => o.id !== t.id).map((o) => (
-                  <option key={o.id} value={o.id}>{o.label}</option>
-                ))}
-              </select>
-            </span>
-          )}
-        </div>
-      ))}
-      {adding ? (
-        <input
-          autoFocus
-          placeholder="tên dạng bài mới rồi Enter"
-          onKeyDown={(e) => {
-            if (e.key === 'Escape') return setAdding(false)
-            if (e.key !== 'Enter') return
-            const v = (e.target as HTMLInputElement).value.trim()
-            setAdding(false)
-            if (v) void run('new', () => createTag(v))
-          }}
-          onBlur={() => setAdding(false)}
-          style={{ ...boxed, maxWidth: 260, padding: '5px 9px', fontSize: 13 }}
-        />
-      ) : (
-        <button
-          type="button"
-          onClick={() => setAdding(true)}
-          style={{ alignSelf: 'flex-start', fontFamily: sans, fontSize: 11, color: ink.green, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-        >
-          + dạng bài mới
-        </button>
-      )}
-    </div>
-  )
-}
 
 export function Cms() {
   const nav = useNav()
@@ -1030,24 +905,7 @@ export function Cms() {
         </div>
       )}
 
-      {tab === 'posts' && (
-        <div style={{ padding: '34px 56px 130px', maxWidth: 1080 }}>
-          <PostsPanel onChanged={() => void load()} />
-        </div>
-      )}
-
-      {tab === 'taxonomy' && (
-        <div style={{ padding: '34px 56px 130px', maxWidth: 1080 }}>
-          <div style={{ ...sectionHead, margin: '34px 0 18px' }}>Chủ đề</div>
-          <TopicsPanel />
-
-          <div style={{ ...sectionHead, margin: '34px 0 18px' }}>Tag</div>
-          <KeywordsPanel />
-
-          <div style={{ ...sectionHead, margin: '34px 0 18px' }}>Dạng bài</div>
-          <TagsPanel />
-        </div>
-      )}
+      {tab === 'posts' && <ContentWorkspace onChanged={() => void load()} />}
 
       {tab === 'pages' && (
         <PagesManager

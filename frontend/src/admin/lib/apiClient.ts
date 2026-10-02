@@ -46,6 +46,8 @@ export type PostSummary = {
   pinned: boolean
   /** Chỗ trên cây chủ đề (migration 0027); null khi chưa xếp. */
   topic_id: string | null
+  /** Tag theme ids; only the list endpoint fills it (GET /api/posts). */
+  keywords?: string[]
   visibility: PostVisibility
   /** Địa chỉ đã cố định; null với bài nháp, vốn được gọi bằng địa chỉ suy ra. */
   slug: string | null
@@ -201,7 +203,8 @@ export async function createPost(input: {
   return request<{ id: string }>('/api/posts', { method: 'POST', body: JSON.stringify(input) })
 }
 
-export type Tag = { id: string; label: string }
+/** A dạng bài. `posts`: how many posts wear it (not in every response). */
+export type Tag = { id: string; label: string; posts?: number }
 
 /** GET /api/tags — every tag the owner has written, oldest first. */
 export async function listTags(): Promise<Tag[]> {
@@ -611,8 +614,9 @@ export async function renameKeyword(id: string, label: string): Promise<void> {
   await request(`/api/tags?vocab=keywords&id=${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify({ label }) })
 }
 
-export async function deleteKeyword(id: string): Promise<void> {
-  await request(`/api/tags?vocab=keywords&id=${encodeURIComponent(id)}`, { method: 'DELETE' })
+/** `to`: merge into that tag — its posts wear `to` before this one goes. */
+export async function deleteKeyword(id: string, to?: string): Promise<void> {
+  await request(`/api/tags?vocab=keywords&id=${encodeURIComponent(id)}`, { method: 'DELETE', body: JSON.stringify(to ? { to } : {}) })
 }
 
 // ── Tầng feature: trang, quy chế, cài đặt đè (migration 0028) ────────────────

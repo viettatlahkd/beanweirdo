@@ -18,7 +18,6 @@ const ROUNDTRIP: Where[] = [
   { area: 'practice', screen: 'hours' },
   { area: 'admin', screen: 'cms' },
   { area: 'admin', screen: 'cms', tab: 'posts' },
-  { area: 'admin', screen: 'cms', tab: 'taxonomy' },
   { area: 'admin', screen: 'cms', tab: 'pages' },
   { area: 'admin', screen: 'cms', tab: 'display' },
   { area: 'public', screen: 'module', moduleId: 'tag-heat' },
@@ -80,7 +79,8 @@ describe('routes — tên trong địa chỉ', () => {
     expect(parsePath('/ad-sitemap').tab).toBe('pages')
     // Nội dung trang folded into Quản lý trang; its old address still lands there.
     expect(parsePath('/ad-page-content').tab).toBe('pages')
-    expect(parsePath('/ad-taxonomy').tab).toBe('taxonomy')
+    // Phân loại folded into Nội dung; its old address still lands there.
+    expect(parsePath('/ad-taxonomy').tab).toBe('posts')
     expect(parsePath('/ad-display').tab).toBe('display')
     expect(toPath({ area: 'public', screen: 'module', moduleId: 'tag-heat' })).toBe('/tag/heat')
     // `/ad` names the screen and not a tab, so it opens on the first one

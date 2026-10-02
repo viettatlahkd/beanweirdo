@@ -47,16 +47,19 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
   if (['layout', 'rules', 'pages', 'overrides'].includes(layout)) return handleLayout(req, res, supabase, layout)
 
   if (req.method === 'GET') {
-    const { data, error } = await supabase
-      .from('tags')
-      .select('id, label')
-      .order('created_at', { ascending: true })
+    const [{ data, error }, { data: kinds }] = await Promise.all([
+      supabase.from('tags').select('id, label').order('created_at', { ascending: true }),
+      supabase.from('posts').select('kind').neq('status', 'deleted'),
+    ])
 
     if (error) {
       res.status(500).json({ error: error.message })
       return
     }
-    res.status(200).json({ tags: data })
+    // How many posts wear each one, so Phân loại can show what is used and what is not.
+    const counts = new Map<string, number>()
+    for (const { kind } of (Array.isArray(kinds) ? kinds : []) as { kind: string }[]) counts.set(kind, (counts.get(kind) ?? 0) + 1)
+    res.status(200).json({ tags: (data ?? []).map((t) => ({ ...t, posts: counts.get((t as { id: string }).id) ?? 0 })) })
     return
   }
 

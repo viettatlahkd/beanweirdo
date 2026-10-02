@@ -30,13 +30,20 @@ async function handleList(req: VercelRequest, res: VercelResponse): Promise<void
     query = query.eq('status', statusParam)
   }
 
-  const { data, error } = await query
+  const [{ data, error }, { data: worn }] = await Promise.all([query, supabase.from('post_keywords').select('post_id, keyword_id')])
   if (error) {
     res.status(500).json({ error: error.message })
     return
   }
 
-  res.status(200).json({ posts: (data as PostRow[]).map(toPostSummary) })
+  // The content workspace filters and bulk-edits by theme tag, so the list
+  // carries each post's tags; one query for all of them, not one per post.
+  const tags = new Map<string, string[]>()
+  for (const r of (Array.isArray(worn) ? worn : []) as { post_id?: unknown; keyword_id?: unknown }[]) {
+    if (typeof r.post_id !== 'string' || typeof r.keyword_id !== 'string') continue
+    tags.set(r.post_id, [...(tags.get(r.post_id) ?? []), r.keyword_id])
+  }
+  res.status(200).json({ posts: (data as PostRow[]).map((row) => ({ ...toPostSummary(row), keywords: tags.get(row.id) ?? [] })) })
 }
 
 interface CreatePostBody {

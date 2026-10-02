@@ -88,7 +88,7 @@ export const WORD_LABELS: Record<Exclude<keyof RouteWords, 'dateOrder' | 'module
   notes: 'Ghi 01',
   practice: 'Nhật ký',
   portfolio: 'Portfolio',
-  adPost: 'Quản lý bài',
+  adPost: 'Nội dung',
   adSitemap: 'Quản lý trang',
   adPageContent: 'Quản lý trang (địa chỉ cũ)',
   adTaxonomy: 'Phân loại',

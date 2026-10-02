@@ -207,8 +207,18 @@ export async function handleKeywords(req: VercelRequest, res: VercelResponse, su
   }
 
   // DELETE needs no "move to": a post may wear no theme tag at all, so the
-  // tag simply comes off every post (post_keywords cascades).
+  // tag simply comes off every post (post_keywords cascades). With `to`, the
+  // posts wearing it take that tag instead first — merging two tags into one.
   if (req.method === 'DELETE') {
+    const to = typeof (req.body ?? {}).to === 'string' ? (req.body as { to: string }).to : null
+    if (to && to !== id) {
+      const { data: wearing } = await supabase.from('post_keywords').select('post_id').eq('keyword_id', id)
+      const rows = ((Array.isArray(wearing) ? wearing : []) as { post_id: string }[]).map((r) => ({ post_id: r.post_id, keyword_id: to }))
+      if (rows.length > 0) {
+        const { error: moveError } = await supabase.from('post_keywords').upsert(rows, { onConflict: 'post_id,keyword_id', ignoreDuplicates: true })
+        if (moveError) return fail(res, moveError)
+      }
+    }
     const { error } = await supabase.from('keywords').delete().eq('id', id)
     if (error) return fail(res, error)
     res.status(200).json({ deleted: id })
