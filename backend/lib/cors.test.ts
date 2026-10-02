@@ -41,6 +41,8 @@ describe('applyCorsHeaders', () => {
     expect(headers['Access-Control-Allow-Origin']).toBe('https://admin.example.com')
     expect(headers['Access-Control-Allow-Headers']).toContain('Authorization')
     expect(headers['Access-Control-Allow-Methods']).toContain('GET')
+    // Every reorder is a PUT; without it the browser refuses the call outright.
+    expect(headers['Access-Control-Allow-Methods']).toContain('PUT')
   })
 })
 

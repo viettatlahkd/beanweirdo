@@ -17,6 +17,10 @@ import { SITE_DEFAULTS } from '../content/site'
  */
 
 const getSite = vi.fn()
+vi.mock('../data/useModules', () => ({
+  useModules: () => ({ data: [], loading: false, error: null, postsOf: () => [], reload: () => {} }),
+  findPage: () => undefined,
+}))
 vi.mock('../admin/lib/apiClient', () => ({
   getSite: (...a: unknown[]) => getSite(...a),
   listModules: () => Promise.resolve([]),
@@ -28,6 +32,8 @@ vi.mock('../admin/lib/apiClient', () => ({
   createTag: vi.fn(), renameTag: vi.fn(), deleteTag: vi.fn(),
   // Cây chủ đề và tag theme cũng nằm ở tab này (migration 0027).
   listTopics: () => Promise.resolve([]),
+  // Quản lý trang (bước 3c) đọc tầng feature.
+  getLayout: () => Promise.resolve({ pages: [], overrides: [], rules: [] }),
   listKeywords: () => Promise.resolve([]),
   createModule: vi.fn(), deleteModule: vi.fn(), reorderModules: vi.fn(),
   reorderPosts: vi.fn(), updateModule: vi.fn(), updatePost: vi.fn(),
@@ -62,7 +68,10 @@ describe('CMS hiện nội dung thật', () => {
     getSite.mockReturnValue(new Promise((r) => (traVe = r)))
 
     render(<Cms />)
-    ;(await screen.findByText(/^nội dung trang$/i)).click()
+    // Chữ của Mục lục nằm trong chính trang ấy ở Quản lý trang.
+    ;(await screen.findByText(/^quản lý trang$/i)).click()
+    const muclu = await screen.findByText('Mục lục', { selector: 'span' })
+    ;(muclu.parentElement!.querySelector('button') as HTMLButtonElement).click()
     // Ô đã có mặt, mang chữ mặc định, trong lúc mạng còn đang chờ.
     await waitFor(() => expect(screen.queryByDisplayValue(SITE_DEFAULTS.blurb)).not.toBeNull())
 

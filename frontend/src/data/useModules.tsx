@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { supabase } from '../lib/supabaseClient'
 import { resolveRule, toRule, type ListingRule, type RuleTopic } from '../lib/listingRule'
 import type { PostRow } from './usePublishedPosts'
+import { TAG_PAGE } from '../lib/routes'
 
 export type ModuleLayout = 'band' | 'specimen' | 'sequence'
 
@@ -85,6 +86,8 @@ export type UseModulesResult = {
   error: string | null
   /** The posts a page lists, in its rule's order. */
   postsOf: (pageId: string) => PostRow[]
+  /** Read everything again — after the CMS changes a rule or a page. */
+  reload: () => void
 }
 
 type Override = { node_type: 'topic' | 'keyword'; node_id: string; rule_id: string | null; presentation: Record<string, unknown>; aliases: string[] }
@@ -225,7 +228,7 @@ export function buildPages(store: Store): PageRow[] {
     const own = override('keyword', k.id)
     out.push({
       ...present({ title: k.label }, [tpl?.presentation, own?.presentation], modules),
-      id: `tag-${k.id}`,
+      id: `${TAG_PAGE}${k.id}`,
       aliases: own?.aliases ?? [],
       source: 'keyword',
       node: k.id,
@@ -277,7 +280,7 @@ function withScreen(p: PageRow): PageRow {
 function arrange(pages: PageRow[], nav: PageRecord | undefined, topics: TopicRecord[], modules: ModuleRow[]): PageRow[] {
   const byRef = (ref: string) => {
     const [type, id] = ref.split(':')
-    return pages.find((p) => (type === 'tag' ? p.id === `tag-${id}` : p.id === id))
+    return pages.find((p) => (type === 'tag' ? p.id === `${TAG_PAGE}${id}` : p.id === id))
   }
 
   if (!nav) {
@@ -367,11 +370,13 @@ function useModulesQuery(enabled: boolean): UseModulesResult {
   const [store, setStore] = useState<Store>(EMPTY)
   const [loading, setLoading] = useState(enabled)
   const [error, setError] = useState<string | null>(null)
+  const [round, setRound] = useState(0)
 
   useEffect(() => {
     if (!enabled) return
     let cancelled = false
-    setLoading(true)
+    // Only the first load shows as loading; a reload keeps the page drawn.
+    if (round === 0) setLoading(true)
     loadStore()
       .then((s) => {
         if (cancelled) return
@@ -383,7 +388,7 @@ function useModulesQuery(enabled: boolean): UseModulesResult {
     return () => {
       cancelled = true
     }
-  }, [enabled])
+  }, [enabled, round])
 
   return useMemo(() => {
     const data = buildPages(store)
@@ -394,7 +399,7 @@ function useModulesQuery(enabled: boolean): UseModulesResult {
       if (!cache.has(key)) cache.set(key, pagePosts(page, store))
       return cache.get(key)!
     }
-    return { data, loading, error, postsOf }
+    return { data, loading, error, postsOf, reload: () => setRound((r) => r + 1) }
   }, [store, loading, error])
 }
 

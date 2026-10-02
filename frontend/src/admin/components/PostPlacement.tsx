@@ -56,6 +56,7 @@ export function PostPlacement({
   derivedSlug,
   onPatch,
   onSlug,
+  onForget,
 }: {
   post: PostDetail
   modules: Module[]
@@ -64,6 +65,8 @@ export function PostPlacement({
   onPatch: (patch: PlacementPatch) => void
   /** Resolves to an error message, or null when the address was taken. */
   onSlug: (slug: string) => Promise<string | null>
+  /** Stop an old address forwarding to this post. */
+  onForget?: (slug: string) => void
 }) {
   const [topics, setTopics] = useState<Topic[]>([])
   const [keywords, setKeywords] = useState<Keyword[]>([])
@@ -213,6 +216,27 @@ export function PostPlacement({
           </span>
         )}
       </label>
+
+      {(post.old_slugs ?? []).length > 0 && (
+        <span style={label}>
+          Địa chỉ cũ
+          {(post.old_slugs ?? []).map((s) => (
+            <span key={s} style={{ background: paper.hover, color: ink.strong, padding: '2px 4px 2px 8px', display: 'inline-flex', gap: 4 }}>
+              {s}
+              {onForget && (
+                <button
+                  type="button"
+                  aria-label={`bỏ địa chỉ cũ ${s}`}
+                  onClick={() => onForget(s)}
+                  style={{ border: 'none', background: 'none', cursor: 'pointer', color: ink.muted, padding: '0 2px' }}
+                >
+                  ×
+                </button>
+              )}
+            </span>
+          ))}
+        </span>
+      )}
     </div>
   )
 }

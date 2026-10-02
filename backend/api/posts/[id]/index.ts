@@ -19,6 +19,12 @@ async function keywordsOf(supabase: Db, id: string): Promise<string[]> {
   return Array.isArray(data) ? (data as { keyword_id: string }[]).map((r) => r.keyword_id) : []
 }
 
+/** Addresses this post used to have and still forwards from (post_slugs). */
+async function oldSlugsOf(supabase: Db, id: string): Promise<string[]> {
+  const { data } = await supabase.from('post_slugs').select('slug').eq('post_id', id)
+  return Array.isArray(data) ? (data as { slug: string }[]).map((r) => r.slug) : []
+}
+
 /** Postgres errors a client caused, mapped to the status that says so. */
 function clientError(code: string | undefined): number | null {
   if (code === '23505') return 409 // unique: an address another post holds
@@ -45,7 +51,7 @@ async function handleGet(req: VercelRequest, res: VercelResponse, id: string): P
     return
   }
 
-  res.status(200).json({ post: toPostDetail(data as PostRow, await keywordsOf(supabase, id)) })
+  res.status(200).json({ post: { ...toPostDetail(data as PostRow, await keywordsOf(supabase, id)), old_slugs: await oldSlugsOf(supabase, id) } })
 }
 
 interface PatchPostBody {
@@ -76,6 +82,8 @@ interface PatchPostBody {
   slug?: unknown
   /** Tag-theme ids; replaces the whole set. */
   keywords?: unknown
+  /** Old addresses to stop forwarding. */
+  forget_slugs?: unknown
 }
 
 /**
@@ -143,7 +151,9 @@ async function handlePatch(req: VercelRequest, res: VercelResponse, id: string):
     return
   }
 
-  if (Object.keys(patch).length === 0 && !wantsSlug && !wantsKeywords) {
+  const forget = Array.isArray(body.forget_slugs) ? body.forget_slugs.filter((x): x is string => typeof x === 'string') : []
+
+  if (Object.keys(patch).length === 0 && !wantsSlug && !wantsKeywords && forget.length === 0) {
     res.status(400).json({ error: 'No updatable fields provided' })
     return
   }
@@ -200,6 +210,14 @@ async function handlePatch(req: VercelRequest, res: VercelResponse, id: string):
     }
   }
 
+  if (forget.length > 0) {
+    const { error } = await supabase.from('post_slugs').delete().eq('post_id', id).in('slug', forget)
+    if (error) {
+      res.status(500).json({ error: error.message })
+      return
+    }
+  }
+
   patch.updated_at = new Date().toISOString()
 
   const { data, error } = await supabase
@@ -218,7 +236,7 @@ async function handlePatch(req: VercelRequest, res: VercelResponse, id: string):
     return
   }
 
-  res.status(200).json({ post: toPostDetail(data as PostRow, await keywordsOf(supabase, id)) })
+  res.status(200).json({ post: { ...toPostDetail(data as PostRow, await keywordsOf(supabase, id)), old_slugs: await oldSlugsOf(supabase, id) } })
 }
 
 async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {

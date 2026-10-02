@@ -27,7 +27,7 @@ type Block = {
 const BLOCKS: Block[] = [
   {
     title: 'Trang công khai',
-    keys: ['index', 'notes', 'module', 'post', 'practice', 'portfolio'],
+    keys: ['index', 'notes', 'module', 'tag', 'post', 'practice', 'portfolio'],
     sample: (w) => toPath({ area: 'public', screen: 'module', moduleId: 'biochem' }, w),
   },
   {
@@ -37,7 +37,7 @@ const BLOCKS: Block[] = [
   },
   {
     title: 'Trang con của khu quản trị',
-    keys: ['adPost', 'adSitemap', 'adPageContent', 'adConvention', 'adArchive', 'adPortfolio', 'adPortContent', 'adPortDesign'],
+    keys: ['adPost', 'adSitemap', 'adPageContent', 'adTaxonomy', 'adDisplay', 'adConvention', 'adArchive', 'adPortfolio', 'adPortContent', 'adPortDesign'],
     sample: (w) => toPath({ area: 'admin', screen: 'archive' }, w),
   },
   {

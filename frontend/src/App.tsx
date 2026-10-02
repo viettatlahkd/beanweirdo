@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Sidebar } from './components/Sidebar'
-import { ModulesProvider } from './data/useModules'
+import { ModulesProvider, findPage, useModules } from './data/useModules'
 import { PostAddressProvider, usePostAddresses } from './data/usePostAddresses'
 import { SiteCopyProvider, useSiteCopy } from './data/useSiteCopy'
 import { ink, layout, paper, sans } from './design/tokens'
@@ -115,6 +115,20 @@ function Routed({ where, go }: { where: Where; go: (next: Where) => void }) {
    * straightened to the address it has now — with `replace`, since following
    * an old link is not a step the reader took.
    */
+  // The same for a page reached by an address it used to have (a module id).
+  const { data: pageList } = useModules()
+  useEffect(() => {
+    if (where.screen !== 'module' || !where.moduleId) return
+    const page = findPage(pageList, where.moduleId)
+    if (!page || page.id === where.moduleId || !page.aliases.includes(where.moduleId)) return
+    // An old id can read back from the address it already has (`biochem` ↔
+    // `/module/biochemistry`); only a different address is worth replacing.
+    const next = toPath({ ...where, moduleId: page.id })
+    if (next === window.location.pathname) return
+    window.history.replaceState({}, '', next)
+    window.dispatchEvent(new PopStateEvent('popstate'))
+  }, [where, pageList])
+
   useEffect(() => {
     if (!where.slug || !postId || !posts.forwards(where.slug)) return
     // The old addresses can arrive before the current ones; until the book

@@ -477,12 +477,17 @@ function EditorContent({ postId }: { postId: string }) {
         onSlug={async (slug) => {
           try {
             const saved = await updatePost(postId, { slug })
-            setPost((prev) => (prev ? { ...prev, slug: saved.slug } : prev))
+            setPost((prev) => (prev ? { ...prev, slug: saved.slug, old_slugs: saved.old_slugs } : prev))
             return null
           } catch (e) {
             return (e as Error).message
           }
         }}
+        onForget={(slug) =>
+          void updatePost(postId, { forget_slugs: [slug] }).then((saved) =>
+            setPost((prev) => (prev ? { ...prev, old_slugs: saved.old_slugs } : prev)),
+          )
+        }
       />
 
       {/*

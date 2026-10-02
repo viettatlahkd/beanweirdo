@@ -12,7 +12,9 @@ export function applyCorsHeaders(req: VercelRequest, res: VercelResponse): void 
   res.setHeader('Access-Control-Allow-Origin', origin)
   res.setHeader('Vary', 'Origin')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS')
+  // PUT is how every reorder is sent (posts, modules, topics) and how a page
+  // override is written; leaving it out made the browser refuse those calls.
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
 }
 
 export function withCors(handler: Handler): Handler {

@@ -1,25 +1,16 @@
 import { type CSSProperties, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Breadcrumbs } from '../components/Breadcrumbs'
-import { NAV } from '../content/navItems'
-import { displayNumber } from '../lib/postText'
-import { onlyLive, orderPosts } from '../lib/postOrder'
-import { resolveSite, SITE_DEFAULTS, type NavGroup, type SiteCopy, type SiteOverrides } from '../content/site'
+import { resolveSite, SITE_DEFAULTS, type SiteCopy, type SiteOverrides } from '../content/site'
 import {
-  createModule,
-  deleteModule,
   listModules,
   listPosts,
-  reorderModules,
-  reorderPosts,
   updateModule,
-  updatePost,
   updateSite,
   uploadImage,
   type Module,
   type PostSummary,
 } from '../admin/lib/apiClient'
 import {
-  transitionStatus,
   getSite,
   listTags,
   createTag,
@@ -30,6 +21,7 @@ import {
 import { tagColor } from '../lib/notesFilter'
 import { PostsPanel } from '../admin/components/PostsPanel'
 import { RoutesPanel } from '../admin/components/RoutesPanel'
+import { PagesManager, type SystemPage } from '../admin/components/PagesManager'
 import { ModuleImages } from '../admin/components/ModuleImages'
 import { captionColumn, formShapeOf, imageColumn } from '../admin/moduleForm'
 import { FocusPicker } from '../admin/components/FocusPicker'
@@ -105,30 +97,14 @@ const three = 'repeat(3,minmax(0,1fr))'
 const nameRow = 'minmax(0,1fr) 112px 124px 128px'
 const nameRowPlain = 'minmax(0,1fr) 112px'
 
-/**
- * What a module row counts.
- *
- * Ghi 02 keeps daily ticks, not posts, so counting posts there would always
- * read zero and mean nothing. Everywhere else the count is posts — and an
- * empty module still appears on the site, so saying otherwise was wrong:
- * group 05 has it that a created public module always shows.
- */
-function countLabel(id: string, live: number): string {
-  if (id === 'ghi02') return 'checkbox hàng ngày'
-  // Counting every post a module ever had said "6 bài" for a module with
-  // nothing on the site at all.
-  return live ? `${live} bài` : 'chưa có bài nào trên trang'
-}
 
 /** The three tabs, named once so the site map and the tab bar cannot drift. */
 const TABS = [
   { k: 'posts', t: 'Quản lý bài' },
-  { k: 'map', t: 'Sơ đồ trang' },
-  { k: 'content', t: 'Nội dung trang' },
+  { k: 'taxonomy', t: 'Phân loại' },
+  { k: 'pages', t: 'Quản lý trang' },
+  { k: 'display', t: 'Cài đặt hiển thị' },
 ] as const
-
-/** One page on the site map, and what it holds. */
-type MapRow = { label: string; desc: string; kids: string[] }
 
 /** Names where a field turns up on the site — identification, not instruction. */
 function Where({ children }: { children: ReactNode }) {
@@ -376,14 +352,10 @@ function ImageSlot({
 /**
  * Content management — the site's own back office.
  *
- * Three tabs. "Tạo bài đăng" is where everything written is written — posts
- * under modules and Ghi 01 notes alike, one list, because a note is a kind of
- * entry rather than a separate thing to administer.
- * "Sơ đồ trang" is a read-through map of every page in the sidebar, where the
- * three section names are editable in place. "Sửa nội dung" edits the site
- * copy, the three opening plates, and every module: its colours, its layout,
- * its image slots, and its list of posts (drag to reorder, which renumbers
- * them server-side).
+ * Four tabs, one per layer (step 3c): Quản lý bài — every post; Phân loại —
+ * the topic tree, theme tags and dạng bài; Quản lý trang — where posts are
+ * shown: the navigation, pages, their listing rules and their fixed copy;
+ * Cài đặt hiển thị — addresses and the back office's own words.
  *
  * Everything saves on blur — there is no page-level save button (System
  * conventions, rule 08).
@@ -513,10 +485,6 @@ export function Cms() {
   const [modules, setModules] = useState<Module[]>([])
   // The site map names what Templates holds, so it has to know.
   const [posts, setPosts] = useState<PostSummary[]>([])
-  const [openModule, setOpenModule] = useState<string | null>(null)
-  const [dragModule, setDragModule] = useState<string | null>(null)
-  const [overModule, setOverModule] = useState<string | null>(null)
-  const [dragEntry, setDragEntry] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const load = useCallback(async () => {
@@ -640,343 +608,15 @@ export function Cms() {
     }
   }
 
-  async function dropModule(targetId: string) {
-    const src = dragModule
-    setDragModule(null)
-    setOverModule(null)
-    if (!src || src === targetId) return
-    const order = modules.map((m) => m.id)
-    const i = order.indexOf(src)
-    const j = order.indexOf(targetId)
-    if (i < 0 || j < 0) return
-    order.splice(j, 0, order.splice(i, 1)[0])
-    setModules(order.map((id) => modules.find((m) => m.id === id)!))
-    try {
-      setModules(await reorderModules(order))
-    } catch (e) {
-      setError((e as Error).message)
-    }
-  }
+
 
   /**
-   * A module's posts, in the order the site shows them.
-   *
-   * This used to sort by `sort_order` alone. With every value null — which is
-   * the normal state, since a number there means somebody dragged the post
-   * somewhere — the sort changed nothing and the list stayed in the API's
-   * order, `updated_at`, most recently edited first. So the numbers 01…06 named
-   * an order the site never used, and the drag handle rearranged a list that
-   * did not match the page it was arranging.
+   * The fixed copy of each page the site draws with a screen of its own. It
+   * lives in the page it belongs to, in Quản lý trang (step 3c), rather than
+   * in one long list of every page's words.
    */
-  const postsOf = (module_id: string) =>
-    orderPosts(posts.filter((p) => p.module_id === module_id))
-
-  /**
-   * The posts a reader can actually see in this module.
-   *
-   * The editor listed every post a module had ever had — drafts, archived,
-   * deleted — and numbered them 01…06 as if that were their running order on
-   * the site. It was not: sensory had one post published and five archived, and
-   * roasting had none at all while the editor said "6 bài". So the numbers named
-   * places no reader would ever count to, and the drag handle rearranged
-   * archived posts in among live ones.
-   */
-  const liveOf = (module_id: string) => onlyLive(postsOf(module_id))
-
-  async function patchPost(id: string, patch: { en?: string; vi?: string; date_label?: string }) {
-    setPosts((ps) => ps.map((p) => (p.id === id ? { ...p, ...patch } : p)))
-    try {
-      await updatePost(id, patch)
-    } catch (e) {
-      setError((e as Error).message)
-    }
-  }
-
-  async function dropEntry(module_id: string, targetId: string) {
-    const src = dragEntry
-    setDragEntry(null)
-    if (!src || src === targetId) return
-    // Only the posts on the page can be arranged, and only they are given a
-    // `sort_order` — the column means "the owner put this here", so writing it
-    // on an archived post would claim a placement nobody made.
-    const order = liveOf(module_id).map((p) => p.id)
-    const i = order.indexOf(src)
-    const j = order.indexOf(targetId)
-    if (i < 0 || j < 0) return
-    order.splice(j, 0, order.splice(i, 1)[0])
-    try {
-      const updated = await reorderPosts(module_id, order)
-      setPosts((ps) => ps.filter((p) => p.module_id !== module_id).concat(updated))
-    } catch (e) {
-      setError((e as Error).message)
-    }
-  }
-
-
-  async function removeEntry(id: string) {
-    try {
-      await transitionStatus(id, 'delete')
-      setPosts((ps) => ps.filter((p) => p.id !== id))
-    } catch (e) {
-      setError((e as Error).message)
-    }
-  }
-
-  /**
-   * What an admin page holds, for the pages that hold something nameable.
-   *
-   * Content management holds its own three tabs. Phần còn lại giữ luật và
-   * tham chiếu, thứ chính trang ấy bày ra tốt hơn một dòng trong sơ đồ.
-   */
-  function childrenOf(key: string): string[] {
-    if (key === 'cms') return TABS.map((t) => t.t)
-    return []
-  }
-
-  /**
-   * The site map: every page, and what each one actually holds.
-   *
-   * It used to be assembled from two sources that disagreed. Ghi 01 and Ghi 02
-   * are modules *and* nav entries, so each was listed twice — once with the
-   * hand-typed name from `navItems.ts`, once with the real one from the
-   * database — and Ghi 02, which is private, turned up under Public as well as
-   * Practice. A page that is a module now names itself from that module and
-   * carries its posts; a module with a page of its own is not listed again.
-   *
-   * Rows the admin cannot open do not belong on a map of the site, and rows
-   * that hold something say what they hold, so nothing here is written by hand
-   * twice.
-   */
-  const tree: { group: NavGroup; color: string; rows: MapRow[] }[] = (
-    [
-      { group: 'Public', color: ink.green },
-      { group: 'Practice', color: '#C25C7C' },
-      { group: 'Admin', color: '#6FA8C0' },
-    ] as { group: NavGroup; color: string }[]
-  ).map((g) => {
-    const rows: MapRow[] = []
-    // Modules that a nav entry already speaks for — listing them again is the
-    // duplicate this map used to show.
-    const spokenFor = new Set(NAV.map((n) => n.moduleId).filter(Boolean) as string[])
-
-    for (const item of NAV.filter((n) => n.group === g.group && !n.hiddenFromSidebar)) {
-      // Reading modules sit under Trang chủ, the gallery that shows them.
-      if (g.group === 'Public' && item.key === 'notes') {
-        for (const m of modules.filter((x) => !spokenFor.has(x.id))) {
-          rows.push({
-            label: m.title,
-            desc: m.concept ? `module · ${m.concept}` : 'module',
-            kids: liveOf(m.id).map((p, i) => `${displayNumber(i)} · ${p.en}`),
-          })
-        }
-      }
-
-      const m = item.moduleId ? modules.find((x) => x.id === item.moduleId) : undefined
-      rows.push({
-        // The database wins where it has something to say; the nav entry is the
-        // fallback for a module that has not loaded or does not exist yet.
-        label: m?.title ?? item.label,
-        desc: m?.concept ? `module · ${m.concept}` : item.desc,
-        // A site map shows the site: a post nobody can read is not on it.
-        kids: m
-          ? liveOf(m.id).map((p, i) => `${displayNumber(i)} · ${p.en}`)
-          : childrenOf(item.key),
-      })
-    }
-    return { ...g, rows }
-  })
-
-  const postCount = posts.length
-
-  return (
-    <div style={{ background: paper.cream, color: ink.base, minHeight: '100vh' }}>
-      <div style={{ background: '#DDEBF0', color: '#0E2C38', padding: '44px 56px 30px' }}>
-        <Breadcrumbs style={{ opacity: 0.75 }} />
-
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'flex-end',
-            justifyContent: 'space-between',
-            gap: 44,
-            flexWrap: 'wrap',
-          }}
-        >
-          <div>
-            <h1
-              style={{
-                fontFamily: serif,
-                fontWeight: 400,
-                fontSize: 70,
-                lineHeight: 1,
-                letterSpacing: '-.04em',
-                margin: 0,
-              }}
-            >
-              {copy.cmsTitle}
-            </h1>
-            <div
-              style={{
-                fontFamily: sans,
-                fontWeight: 300,
-                fontSize: 13.5,
-                lineHeight: 1.5,
-                marginTop: 10,
-                maxWidth: 430,
-                opacity: 0.85,
-              }}
-            >
-              {copy.cmsIntro}
-            </div>
-          </div>
-          <div
-            style={{
-              fontFamily: sans,
-              fontSize: 11,
-              letterSpacing: '.14em',
-              textTransform: 'uppercase',
-              opacity: 0.7,
-              paddingBottom: 8,
-            }}
-          >
-            {modules.length} module · {postCount} bài
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: 4, marginTop: 26 }}>
-          {TABS.map((x) => (
-            <div
-              key={x.k}
-              onClick={() => nav.goCms(x.k)}
-              style={{
-                fontFamily: sans,
-                fontSize: 11,
-                fontWeight: 500,
-                letterSpacing: '.16em',
-                textTransform: 'uppercase',
-                padding: '10px 18px',
-                cursor: 'pointer',
-                background: tab === x.k ? ink.base : 'transparent',
-                color: tab === x.k ? paper.cream : ink.soft,
-              }}
-            >
-              {x.t}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {error && (
-        <div
-          style={{
-            background: '#FBE7E5',
-            color: '#8E1E42',
-            fontFamily: sans,
-            fontSize: 12.5,
-            padding: '10px 56px',
-          }}
-        >
-          {error}
-        </div>
-      )}
-
-      {tab === 'posts' && (
-        <div style={{ padding: '34px 56px 130px', maxWidth: 1080 }}>
-          <PostsPanel onChanged={() => void load()} />
-        </div>
-      )}
-
-      {tab === 'map' && (
-        <div style={{ padding: '34px 56px 130px', maxWidth: 1080 }}>
-          {tree.map((g) => (
-            <div key={g.group} style={{ marginBottom: 40 }}>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  borderBottom: `2px solid ${ink.base}`,
-                  paddingBottom: 9,
-                  marginBottom: 6,
-                }}
-              >
-                <div style={{ width: 9, height: 9, background: g.color }} />
-                <input
-                  value={copy.sections[g.group]}
-                  onChange={(e) =>
-                    setSite((s) => ({ ...s, sections: { ...s.sections, [g.group]: e.target.value } }))
-                  }
-                  onBlur={(e) => void saveSite({ sections: { [g.group]: e.target.value } })}
-                  title="Tên section — đồng bộ với sidebar"
-                  style={{
-                    flex: 1,
-                    minWidth: 0,
-                    background: 'transparent',
-                    border: 0,
-                    outline: 'none',
-                    color: ink.base,
-                    fontFamily: sans,
-                    fontSize: 10.5,
-                    fontWeight: 500,
-                    letterSpacing: '.2em',
-                    textTransform: 'uppercase',
-                    padding: '0 0 1px',
-                  }}
-                />
-              </div>
-              {g.rows.map((r, i) => (
-                <div key={`${r.label}-${i}`} style={{ borderBottom: '1px solid #F0EBDB', padding: '11px 0' }}>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 14 }}>
-                    <div
-                      style={{
-                        fontFamily: serif,
-                        fontSize: 21,
-                        lineHeight: 1.1,
-                        letterSpacing: '-.02em',
-                        flex: 1,
-                        minWidth: 0,
-                      }}
-                    >
-                      {r.label}
-                    </div>
-                    <div style={{ fontFamily: sans, fontWeight: 300, fontSize: 12, color: ink.muted }}>
-                      {r.desc}
-                    </div>
-                  </div>
-                  {r.kids.map((k, ki) => (
-                    <div
-                      key={ki}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'baseline',
-                        gap: 12,
-                        padding: '4px 0 4px 26px',
-                        borderLeft: `1px solid ${paper.rule}`,
-                        margin: '4px 0 0 6px',
-                        fontFamily: sans,
-                        fontWeight: 300,
-                        fontSize: 12.5,
-                        color: ink.soft,
-                      }}
-                    >
-                      {k}
-                    </div>
-                  ))}
-                </div>
-              ))}
-            </div>
-          ))}
-
-          <RoutesPanel
-            stored={site.routes}
-            modules={modules}
-            onSave={(routes) => saveSite({ routes } as SiteOverrides)}
-          />
-        </div>
-      )}
-
-      {tab === 'content' && (
-        <div style={{ padding: '34px 56px 130px', maxWidth: 1080 }}>
+  const pageCopy: Record<SystemPage, ReactNode> = {
+    landing: <>
           <div style={sectionHead}>Trang chủ — landing</div>
           <div style={grid(two)}>
             <Field label="Nhãn trên cùng">
@@ -1034,15 +674,8 @@ export function Cms() {
             * chỗ. Trước đây bốn dạng ghi viết cứng trong code, muốn đổi một chữ
             * là phải sửa code.
             */}
-          <div style={{ ...sectionHead, margin: '34px 0 18px' }}>Chủ đề</div>
-          <TopicsPanel />
-
-          <div style={{ ...sectionHead, margin: '34px 0 18px' }}>Tag</div>
-          <KeywordsPanel />
-
-          <div style={{ ...sectionHead, margin: '34px 0 18px' }}>Dạng bài</div>
-          <TagsPanel />
-
+        </>,
+    notes: <>
           <div style={{ ...sectionHead, margin: '34px 0 18px' }}>Trang Ghi chép</div>
           <div style={grid(two)}>
             <Field label="Tiêu đề trang">
@@ -1068,7 +701,8 @@ export function Cms() {
               <input {...field('notesEndNote')} style={boxed} />
             </Field>
           </div>
-
+        </>,
+    archive: <>
           <div style={{ ...sectionHead, margin: '34px 0 18px' }}>Trang Lưu trữ</div>
           <div style={grid(two)}>
             <Field label="Tiêu đề trang">
@@ -1078,7 +712,8 @@ export function Cms() {
               <input {...field('archiveNote')} style={boxed} />
             </Field>
           </div>
-
+        </>,
+    index: <>
           <div style={{ ...sectionHead, margin: '34px 0 18px' }}>Mục lục</div>
           <div style={grid(two)}>
             <Field label="Tiêu đề — dòng 1">
@@ -1127,155 +762,15 @@ export function Cms() {
               />
             ))}
           </div>
+        </>,
+  }
 
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 20,
-              borderBottom: `2px solid ${ink.base}`,
-              paddingBottom: 9,
-              marginBottom: 6,
-            }}
-          >
-            <div
-              style={{
-                fontFamily: sans,
-                fontSize: 10.5,
-                fontWeight: 500,
-                letterSpacing: '.2em',
-                textTransform: 'uppercase',
-                color: ink.muted,
-              }}
-            >
-              Module — kéo thẻ để đổi thứ tự
-            </div>
-            <div
-              onClick={async () => {
-                try {
-                  const m = await createModule()
-                  setModules((ms) => ms.concat([m]))
-                  setOpenModule(m.id)
-                } catch (e) {
-                  setError((e as Error).message)
-                }
-              }}
-              style={{
-                fontFamily: sans,
-                fontSize: 11,
-                letterSpacing: '.14em',
-                textTransform: 'uppercase',
-                background: ink.base,
-                color: paper.cream,
-                padding: '8px 14px',
-                cursor: 'pointer',
-              }}
-            >
-              + module mới
-            </div>
-          </div>
-
-          {modules.map((m, mi) => {
-            // Only what a reader sees. Order is a fact about the page, so a
-            // post that is not on the page has no place in this list — the
-            // drafts and the archive are managed on Tạo bài đăng.
-            const entries = liveOf(m.id)
-            const open = openModule === m.id
-            // Which fields this module actually uses — see admin/moduleForm.ts.
-            const shape = formShapeOf(m)
-            return (
-              <div
-                key={m.id}
-                draggable
-                onDragStart={() => setDragModule(m.id)}
-                onDragOver={(e) => {
-                  e.preventDefault()
-                  if (overModule !== m.id) setOverModule(m.id)
-                }}
-                onDrop={(e) => {
-                  e.preventDefault()
-                  void dropModule(m.id)
-                }}
-                onDragEnd={() => {
-                  setDragModule(null)
-                  setOverModule(null)
-                }}
-                style={{
-                  borderBottom: '1px solid #F0EBDB',
-                  padding: '13px 0',
-                  opacity: dragModule === m.id ? 0.45 : 1,
-                }}
-              >
-                {overModule === m.id && dragModule !== m.id && (
-                  <div style={{ height: 2, background: ink.base, margin: '-13px 0 11px' }} />
-                )}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
-                  <Hover
-                    title="Kéo để đổi thứ tự"
-                    style={{
-                      fontFamily: sans,
-                      fontSize: 13,
-                      lineHeight: 1,
-                      color: '#C9C2AC',
-                      cursor: 'grab',
-                      width: 12,
-                      flex: 'none',
-                      letterSpacing: '.05em',
-                    }}
-                    hoverStyle={{ color: ink.base }}
-                  >
-                    ⠿
-                  </Hover>
-                  <div
-                    onClick={() => setOpenModule(open ? null : m.id)}
-                    style={{ fontFamily: sans, fontSize: 12, color: ink.muted, cursor: 'pointer', width: 14, flex: 'none' }}
-                  >
-                    {open ? '▾' : '▸'}
-                  </div>
-                  <div style={{ width: 9, height: 9, borderRadius: '50%', background: m.accent, flex: 'none' }} />
-                  <div
-                    style={{ fontFamily: sans, fontSize: 10.5, letterSpacing: '.16em', color: ink.faint, width: 26, flex: 'none' }}
-                  >
-                    {String(mi + 1).padStart(2, '0')}
-                  </div>
-                  <div
-                    onClick={() => setOpenModule(open ? null : m.id)}
-                    style={{
-                      fontFamily: serif,
-                      fontSize: 24,
-                      lineHeight: 1.1,
-                      letterSpacing: '-.025em',
-                      flex: 1,
-                      minWidth: 0,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {m.title}
-                  </div>
-                  <div style={{ fontFamily: sans, fontWeight: 300, fontSize: 12, color: ink.muted, flex: 'none' }}>
-                    {countLabel(m.id, entries.length)}
-                  </div>
-                  <Hover
-                    onClick={async () => {
-                      try {
-                        await deleteModule(m.id)
-                        setModules((ms) => ms.filter((x) => x.id !== m.id))
-                        setPosts((ps) => ps.filter((p) => p.module_id !== m.id))
-                        setOpenModule(null)
-                      } catch (e) {
-                        setError((e as Error).message)
-                      }
-                    }}
-                    style={{ fontFamily: sans, fontSize: 12, color: ink.faint, cursor: 'pointer', flex: 'none' }}
-                    hoverStyle={{ color: '#C25C7C' }}
-                  >
-                    ✕
-                  </Hover>
-                </div>
-
-                {open && (
-                  <div style={{ padding: '16px 0 6px 39px' }}>
+  /** A module's own fields, for a page that still takes its looks from that module. */
+  function moduleFields(m: Module) {
+    // Which fields this module actually uses — see admin/moduleForm.ts.
+    const shape = formShapeOf(m)
+    return (
+      <div>
                     <div style={grid(shape.concept ? nameRow : nameRowPlain)}>
                       <Field label="Tên module">
                         <input
@@ -1437,150 +932,141 @@ export function Cms() {
                         }
                       />
                     ))}
+      </div>
+    )
+  }
 
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: 16,
-                        borderTop: '1px solid #E8E2CE',
-                        paddingTop: 14,
-                        marginBottom: 4,
-                      }}
-                    >
-                      <div
-                        style={{
-                          fontFamily: sans,
-                          fontSize: 10,
-                          fontWeight: 500,
-                          letterSpacing: '.18em',
-                          textTransform: 'uppercase',
-                          color: ink.muted,
-                        }}
-                      >
-                        Bài trong module
-                      </div>
-                      {/*
-                        Writing a post starts in one place. This list is for
-                        reading the order and changing it, so the button hands
-                        over to the wizard rather than dropping a blank draft
-                        in from the side.
-                      */}
-                      <Hover
-                        onClick={() => nav.newPost()}
-                        style={{
-                          fontFamily: sans,
-                          fontSize: 10.5,
-                          letterSpacing: '.14em',
-                          textTransform: 'uppercase',
-                          border: '1px solid #DAD7C7',
-                          padding: '6px 12px',
-                          cursor: 'pointer',
-                          color: ink.soft,
-                        }}
-                        hoverStyle={{ borderColor: ink.base, color: ink.base }}
-                      >
-                        + bài
-                      </Hover>
-                    </div>
+  const postCount = posts.length
 
-                    {entries.map((e, i) => (
-                      <div
-                        key={e.id}
-                        draggable
-                        onDragStart={() => setDragEntry(e.id)}
-                        onDragOver={(ev) => ev.preventDefault()}
-                        onDrop={(ev) => {
-                          ev.preventDefault()
-                          void dropEntry(m.id, e.id)
-                        }}
-                        onDragEnd={() => setDragEntry(null)}
-                        style={{
-                          display: 'grid',
-                          // Titles are short names; descriptions are sentences,
-                          // and the ones that got cut off were always these.
-                          gridTemplateColumns: '44px minmax(0,0.72fr) minmax(0,1.6fr) 74px 48px',
-                          gap: 10,
-                          alignItems: 'center',
-                          padding: '6px 0',
-                          borderBottom: '1px solid #EFEADA',
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                          <Hover
-                            title="Kéo để đổi thứ tự"
-                            style={{ fontFamily: sans, fontSize: 12, lineHeight: 1, color: '#D5CEB8', cursor: 'grab' }}
-                            hoverStyle={{ color: ink.base }}
-                          >
-                            ⠿
-                          </Hover>
-                          <div style={{ fontFamily: sans, fontSize: 10.5, letterSpacing: '.12em', color: ink.faint }}>
-                            {displayNumber(i)}
-                          </div>
-                        </div>
-                        <input
-                          defaultValue={e.en}
-                          onBlur={(ev) => void patchPost(e.id, { en: ev.target.value })}
-                          style={{
-                            width: '100%',
-                            boxSizing: 'border-box',
-                            background: 'transparent',
-                            border: 0,
-                            color: ink.base,
-                            fontFamily: sans,
-                            fontSize: 13.5,
-                            padding: '4px 2px',
-                            outline: 'none',
-                          }}
-                        />
-                        <input
-                          defaultValue={e.vi}
-                          onBlur={(ev) => void patchPost(e.id, { vi: ev.target.value })}
-                          style={{
-                            width: '100%',
-                            boxSizing: 'border-box',
-                            background: 'transparent',
-                            border: 0,
-                            color: ink.soft,
-                            fontFamily: sans,
-                            fontWeight: 300,
-                            fontSize: 13,
-                            padding: '4px 2px',
-                            outline: 'none',
-                          }}
-                        />
-                        <input
-                          defaultValue={e.date_label}
-                          onBlur={(ev) => void patchPost(e.id, { date_label: ev.target.value })}
-                          style={{
-                            width: '100%',
-                            boxSizing: 'border-box',
-                            background: 'transparent',
-                            border: 0,
-                            color: ink.muted,
-                            fontFamily: sans,
-                            fontSize: 12,
-                            padding: '4px 2px',
-                            outline: 'none',
-                          }}
-                        />
-                        <Hover
-                          onClick={() => void removeEntry(e.id)}
-                          style={{ fontFamily: sans, fontSize: 12, color: ink.faint, cursor: 'pointer' }}
-                          hoverStyle={{ color: '#C25C7C' }}
-                        >
-                          ✕
-                        </Hover>
-                      </div>
-                    ))}
+  return (
+    <div style={{ background: paper.cream, color: ink.base, minHeight: '100vh' }}>
+      <div style={{ background: '#DDEBF0', color: '#0E2C38', padding: '44px 56px 30px' }}>
+        <Breadcrumbs style={{ opacity: 0.75 }} />
 
-                  </div>
-                )}
-              </div>
-            )
-          })}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'space-between',
+            gap: 44,
+            flexWrap: 'wrap',
+          }}
+        >
+          <div>
+            <h1
+              style={{
+                fontFamily: serif,
+                fontWeight: 400,
+                fontSize: 70,
+                lineHeight: 1,
+                letterSpacing: '-.04em',
+                margin: 0,
+              }}
+            >
+              {copy.cmsTitle}
+            </h1>
+            <div
+              style={{
+                fontFamily: sans,
+                fontWeight: 300,
+                fontSize: 13.5,
+                lineHeight: 1.5,
+                marginTop: 10,
+                maxWidth: 430,
+                opacity: 0.85,
+              }}
+            >
+              {copy.cmsIntro}
+            </div>
+          </div>
+          <div
+            style={{
+              fontFamily: sans,
+              fontSize: 11,
+              letterSpacing: '.14em',
+              textTransform: 'uppercase',
+              opacity: 0.7,
+              paddingBottom: 8,
+            }}
+          >
+            {modules.length} module · {postCount} bài
+          </div>
+        </div>
 
+        <div style={{ display: 'flex', gap: 4, marginTop: 26 }}>
+          {TABS.map((x) => (
+            <div
+              key={x.k}
+              onClick={() => nav.goCms(x.k)}
+              style={{
+                fontFamily: sans,
+                fontSize: 11,
+                fontWeight: 500,
+                letterSpacing: '.16em',
+                textTransform: 'uppercase',
+                padding: '10px 18px',
+                cursor: 'pointer',
+                background: tab === x.k ? ink.base : 'transparent',
+                color: tab === x.k ? paper.cream : ink.soft,
+              }}
+            >
+              {x.t}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {error && (
+        <div
+          style={{
+            background: '#FBE7E5',
+            color: '#8E1E42',
+            fontFamily: sans,
+            fontSize: 12.5,
+            padding: '10px 56px',
+          }}
+        >
+          {error}
+        </div>
+      )}
+
+      {tab === 'posts' && (
+        <div style={{ padding: '34px 56px 130px', maxWidth: 1080 }}>
+          <PostsPanel onChanged={() => void load()} />
+        </div>
+      )}
+
+      {tab === 'taxonomy' && (
+        <div style={{ padding: '34px 56px 130px', maxWidth: 1080 }}>
+          <div style={{ ...sectionHead, margin: '34px 0 18px' }}>Chủ đề</div>
+          <TopicsPanel />
+
+          <div style={{ ...sectionHead, margin: '34px 0 18px' }}>Tag</div>
+          <KeywordsPanel />
+
+          <div style={{ ...sectionHead, margin: '34px 0 18px' }}>Dạng bài</div>
+          <TagsPanel />
+        </div>
+      )}
+
+      {tab === 'pages' && (
+        <PagesManager
+          renderCopy={(key) => pageCopy[key]}
+          renderModule={(id) => {
+            const m = modules.find((x) => x.id === id)
+            return m ? moduleFields(m) : null
+          }}
+        />
+      )}
+
+      {tab === 'display' && (
+        <div style={{ padding: '34px 56px 130px', maxWidth: 1080 }}>
+          <div style={sectionHead}>Đường dẫn</div>
+          <RoutesPanel
+            stored={site.routes}
+            modules={modules}
+            onSave={(routes) => saveSite({ routes } as SiteOverrides)}
+          />
           <div style={{ ...sectionHead, margin: '44px 0 18px' }}>{copy.sections.Admin}</div>
           <div style={grid(two, 20)}>
             <Field label="Design system — tiêu đề dòng 1">

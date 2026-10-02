@@ -15,6 +15,8 @@ export type RouteWords = {
   admin: string
   post: string
   module: string
+  /** Trang của một tag: `/tag/<id>`. */
+  tag: string
   index: string
   notes: string
   practice: string
@@ -24,6 +26,9 @@ export type RouteWords = {
   adPost: string
   adSitemap: string
   adPageContent: string
+  /** Content management · Phân loại và Cài đặt hiển thị. */
+  adTaxonomy: string
+  adDisplay: string
   adConvention: string
   adArchive: string
   /** Portfolio's two tabs: `/ad-portfolio`, `/ad-portfolio-design`. */
@@ -47,6 +52,7 @@ export const DEFAULT_WORDS: RouteWords = {
   admin: 'ad',
   post: 'post',
   module: 'module',
+  tag: 'tag',
   index: 'muc-luc',
   notes: 'ghi',
   practice: 'practice',
@@ -54,6 +60,8 @@ export const DEFAULT_WORDS: RouteWords = {
   adPost: 'post',
   adSitemap: 'sitemap',
   adPageContent: 'page-content',
+  adTaxonomy: 'taxonomy',
+  adDisplay: 'display',
   adConvention: 'convention',
   adArchive: 'archive',
   adPortfolio: 'portfolio',
@@ -75,13 +83,16 @@ export const WORD_LABELS: Record<Exclude<keyof RouteWords, 'dateOrder' | 'module
   admin: 'Tên khu',
   post: 'Bài viết',
   module: 'Module',
+  tag: 'Tag',
   index: 'Mục lục',
   notes: 'Ghi 01',
   practice: 'Nhật ký',
   portfolio: 'Portfolio',
   adPost: 'Quản lý bài',
-  adSitemap: 'Sơ đồ trang',
-  adPageContent: 'Nội dung trang',
+  adSitemap: 'Quản lý trang',
+  adPageContent: 'Quản lý trang (địa chỉ cũ)',
+  adTaxonomy: 'Phân loại',
+  adDisplay: 'Cài đặt hiển thị',
   adConvention: 'System conventions',
   adArchive: 'Archive',
   adPortfolio: 'Portfolio · Quản lý port',
@@ -114,9 +125,9 @@ const SHAPE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
  */
 const MUST_DIFFER: (keyof RouteWords)[][] = [
   // Đoạn đầu địa chỉ: mọi trang công khai và khu quản trị nằm cùng một chỗ.
-  ['admin', 'post', 'module', 'index', 'notes', 'practice', 'portfolio'],
+  ['admin', 'post', 'module', 'tag', 'index', 'notes', 'practice', 'portfolio'],
   // Bảy trang con đứng cùng một chỗ, ngay sau `ad-`.
-  ['adPost', 'adSitemap', 'adPageContent', 'adConvention', 'adArchive', 'adPortfolio', 'adPortContent', 'adPortDesign'],
+  ['adPost', 'adSitemap', 'adPageContent', 'adTaxonomy', 'adDisplay', 'adConvention', 'adArchive', 'adPortfolio', 'adPortContent', 'adPortDesign'],
   // Ba động từ đứng cùng một chỗ, ngay sau `/ad-post/`.
   ['create', 'edit', 'view'],
 ]

@@ -69,6 +69,58 @@ trang chủ (27 · 4 · 11 · 3 · 3 · 5), `/module/bean-weirdo`, `/module/mod1
 - Cảnh báo React "two children with the same key" ở Mục lục có từ trước: ba ảnh đầu
   trang dùng chú thích làm key (`IndexScreen.tsx`, `key={p.caption}`) và chú thích trùng nhau.
 
+## 3c — CMS (đẩy vào cùng PR #112)
+
+- **[ĐỔI HÀNH VI]** Content management đổi từ ba tab (Quản lý bài · Sơ đồ trang ·
+  Nội dung trang) thành bốn: **Quản lý bài · Phân loại · Quản lý trang · Cài đặt
+  hiển thị** (`Cms.tsx:TABS`, `routes.ts:CmsTab`). Địa chỉ: `/ad-post`, `/ad-taxonomy`,
+  `/ad-sitemap`, `/ad-display`; `/ad-page-content` cũ mở Quản lý trang. Từ địa chỉ mới
+  `adTaxonomy`, `adDisplay`, `tag` (`routeWords.ts`, `RoutesPanel` BLOCKS).
+- **[ĐỔI HÀNH VI]** Phân loại: Chủ đề, Tag, Dạng bài (chuyển từ Nội dung trang).
+- **[ĐỔI HÀNH VI]** Quản lý trang (`admin/components/PagesManager.tsx`):
+  điều hướng (kéo thả thứ tự, cờ thanh bên / trang chủ; subject chưa xếp tự hiện cuối
+  danh sách), trang (Trang chủ, Mục lục, Lưu trữ, trang dựng tay, "+ trang mới"),
+  trang theo tầng (ba mẫu, các nút có cài đặt riêng, "+ cài đặt riêng cho…" — chép quy
+  chế của mẫu). Trình sửa trang: quy chế (`RuleEditor`), thứ tự tay + ghim
+  (`HandOrder`, ghi `manual_order`/`pinned`), hình trang (các ô module được nối —
+  `Cms.tsx:moduleFields`), chữ cố định (`Cms.tsx:pageCopy`), xem trước là chính trang
+  công khai trong iframe, tải lại sau mỗi lần lưu.
+- **[ĐỔI HÀNH VI]** Bỏ khỏi CMS: cây Sơ đồ trang, danh sách module kéo thả, "+ module mới",
+  xoá module, danh sách "Bài trong module" (kéo thả ghi `posts.sort_order`). Thứ tự giờ
+  sửa ở Quản lý trang › trang › Thứ tự.
+- **[ĐỔI HÀNH VI]** Cài đặt hiển thị: Đường dẫn (chuyển từ Sơ đồ trang), chữ khu quản trị,
+  "Trả về nội dung gốc".
+- **[ĐỔI HÀNH VI]** API (`backend/lib/layout.ts`, qua `/api/tags?vocab=layout|rules|pages|overrides`):
+  đọc tầng feature, tạo/sửa quy chế, tạo/sửa/xoá trang dựng tay, ghi/xoá cài đặt đè.
+- **[ĐỔI HÀNH VI]** Trang tag ở `/tag/<id>` (trước: `/module/tag-<id>`).
+- **[ĐỔI HÀNH VI]** Mở trang bằng địa chỉ cũ (id module) thì thanh địa chỉ đổi sang địa chỉ
+  mới (`App.tsx:Routed`); `/module/biochemistry` ↔ `biochem` không lặp.
+- **[ĐỔI HÀNH VI]** Khung sửa bài: danh sách "Địa chỉ cũ" dưới ô Địa chỉ, bỏ được từng cái
+  (`PATCH /api/posts/:id` `forget_slugs`; GET trả `old_slugs`).
+
+Kiểm 3c: `npm test` 1288 xanh (tắt dev server), `vite build` xanh. Trình duyệt: bốn tab;
+Quản lý trang đọc đúng điều hướng (5 subject mới bỏ chọn thanh bên), 4 trang có cài đặt
+riêng; trình sửa biochemistry 101 hiện quy chế, 5 bài thứ tự tay, ô module, xem trước;
+bấm thêm nút / đổi cách xếp / ghim — **chặn lệnh ghi trong trình duyệt**, đọc payload,
+không ghi gì. `/tag/ops-review`, `/module/mod1789737119986` → `/module/tu-duy-tu-duy`.
+Vòng thử ghi trên dữ liệu thật (chủ site: "chạy thử rồi đẩy vào 112", 2026-10-02):
+  - trang dựng tay `trang-thu`: tạo (201) → quy chế đổi sang tag ops-review (200) → `sort: 'random'`
+    bị từ chối (400) → đổi tên (200) → xoá (200, quy chế đi theo). Xoá mẫu `tpl-topic` → 400.
+  - cài đặt riêng cho fermentation: tạo quy chế + PUT override → DELETE (quy chế đi theo).
+  - ghim Water ở biochemistry: trang công khai lên đầu "Water > Varieties… > Beans… > Lipid…";
+    bỏ ghim.
+  - bật philo lên thanh bên: Mục lục thêm "philo · 2 bài"; trả về ẩn.
+  - PUT `?vocab=topics` với đúng thứ tự cũ (6 subject 1…6).
+  - Sau vòng thử: 6 trang, 4 cài đặt đè, 9 quy chế, không ghim, không thứ tự tay, thứ tự
+    subject như cũ. Đổi `updated_at` của quy chế biochemistry và trang `nav`.
+- **[SỬA LỖI]** (tìm ra trong vòng thử) `backend/lib/cors.ts:applyCorsHeaders` không cho
+  `PUT`, nên trình duyệt chặn mọi lệnh PUT: sắp lại bài, sắp lại module (CMS cũ, có từ
+  2026-08-17, commit 18268dc), sắp lại chủ đề (PR #111, đang trên production), ghi cài đặt
+  đè (3c). Thêm `PUT`; test `cors.test.ts`.
+
+Chưa làm: nút ghim ở Quản lý bài vẫn ghi `posts.pinned` (chỉ còn ảnh hưởng bài chưa xếp
+trong quy chế xếp tay) — bỏ ở 3d cùng các cột cũ.
+
 ## Đụng luật
 
 - **05** (Module: sidebar module thường trước, đặc biệt sau; trang chủ chỉ module

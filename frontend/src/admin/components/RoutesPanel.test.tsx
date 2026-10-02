@@ -57,7 +57,7 @@ describe('RoutesPanel — chủ site đổi từ, không đổi logic', () => {
 
   it('refuses to save two pages under one name', () => {
     const onSave = open()
-    fireEvent.change(box('Sơ đồ trang'), { target: { value: 'archive' } })
+    fireEvent.change(box('Quản lý trang'), { target: { value: 'archive' } })
 
     expect(saveButton().disabled).toBe(true)
     expect(onSave).not.toHaveBeenCalled()

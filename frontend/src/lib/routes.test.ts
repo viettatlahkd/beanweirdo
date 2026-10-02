@@ -18,8 +18,10 @@ const ROUNDTRIP: Where[] = [
   { area: 'practice', screen: 'hours' },
   { area: 'admin', screen: 'cms' },
   { area: 'admin', screen: 'cms', tab: 'posts' },
-  { area: 'admin', screen: 'cms', tab: 'map' },
-  { area: 'admin', screen: 'cms', tab: 'content' },
+  { area: 'admin', screen: 'cms', tab: 'taxonomy' },
+  { area: 'admin', screen: 'cms', tab: 'pages' },
+  { area: 'admin', screen: 'cms', tab: 'display' },
+  { area: 'public', screen: 'module', moduleId: 'tag-heat' },
   { area: 'admin', screen: 'logic' },
   { area: 'admin', screen: 'archive' },
   { area: 'admin', screen: 'postNew' },
@@ -72,11 +74,15 @@ describe('routes — tên trong địa chỉ', () => {
   })
 
   it('opens each Content management tab at its own address', () => {
-    for (const p of ['/ad-post', '/ad-sitemap', '/ad-page-content', '/ad']) {
+    for (const p of ['/ad-post', '/ad-sitemap', '/ad-page-content', '/ad-taxonomy', '/ad-display', '/ad']) {
       expect(parsePath(p).screen, p).toBe('cms')
     }
-    expect(parsePath('/ad-sitemap').tab).toBe('map')
-    expect(parsePath('/ad-page-content').tab).toBe('content')
+    expect(parsePath('/ad-sitemap').tab).toBe('pages')
+    // Nội dung trang folded into Quản lý trang; its old address still lands there.
+    expect(parsePath('/ad-page-content').tab).toBe('pages')
+    expect(parsePath('/ad-taxonomy').tab).toBe('taxonomy')
+    expect(parsePath('/ad-display').tab).toBe('display')
+    expect(toPath({ area: 'public', screen: 'module', moduleId: 'tag-heat' })).toBe('/tag/heat')
     // `/ad` names the screen and not a tab, so it opens on the first one
     // without rewriting itself to another address on arrival.
     expect(parsePath('/ad').tab).toBeUndefined()

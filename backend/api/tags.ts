@@ -3,6 +3,7 @@ import { withCors } from '../lib/cors.js'
 import { requireAuth } from '../lib/auth.js'
 import { getSupabase } from '../lib/supabase.js'
 import { handleKeywords, handleTopics, slug, vocabOf } from '../lib/vocab.js'
+import { handleLayout } from '../lib/layout.js'
 
 /**
  * Tags — what a post is, in the owner's own words.
@@ -13,6 +14,7 @@ import { handleKeywords, handleTopics, slug, vocabOf } from '../lib/vocab.js'
  *   DELETE /api/tags?id=…       remove one, after saying where its things go
  *
  *   ?vocab=topics | keywords    the topic tree and theme tags (lib/vocab.ts)
+ *   ?vocab=layout | rules | pages | overrides   the feature layer (lib/layout.ts)
  *
  * Since migration 0027 this vocabulary means dạng bài — what form a post
  * takes — and theme tags live in `keywords` instead.
@@ -41,6 +43,8 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
   const vocab = vocabOf(req)
   if (vocab === 'topics') return handleTopics(req, res, supabase)
   if (vocab === 'keywords') return handleKeywords(req, res, supabase)
+  const layout = typeof req.query.vocab === 'string' ? req.query.vocab : ''
+  if (['layout', 'rules', 'pages', 'overrides'].includes(layout)) return handleLayout(req, res, supabase, layout)
 
   if (req.method === 'GET') {
     const { data, error } = await supabase

@@ -9,6 +9,7 @@
 import type { SectionData } from 'post-renderer'
 import type { SiteOverrides } from '../../content/site'
 import type { LogEntry } from '../../content/hours'
+import type { ListingRule } from '../../lib/listingRule'
 
 /** The 3 real post templates (the old `templates` table is gone). */
 export const TEMPLATES = ['article', 'cards', 'report', 'longform', 'memo', 'bitesize'] as const
@@ -58,6 +59,8 @@ export type PostVisibility = 'public' | 'private'
 export type PostDetail = PostSummary & {
   /** Tag theme (post_keywords). */
   keywords: string[]
+  /** Địa chỉ cũ vẫn chuyển tiếp về bài (post_slugs). */
+  old_slugs?: string[]
   body: SectionData[] | null
   hero_caption: string | null
   lead: string | null
@@ -268,6 +271,8 @@ export async function updatePost(
       slug: string
       /** Thay cả bộ tag theme. */
       keywords: string[]
+      /** Thôi chuyển tiếp các địa chỉ cũ này. */
+      forget_slugs: string[]
   }>,
 ): Promise<PostDetail> {
   const result = await request<{ post: PostDetail }>(`/api/posts/${id}`, {
@@ -608,4 +613,60 @@ export async function renameKeyword(id: string, label: string): Promise<void> {
 
 export async function deleteKeyword(id: string): Promise<void> {
   await request(`/api/tags?vocab=keywords&id=${encodeURIComponent(id)}`, { method: 'DELETE' })
+}
+
+// ── Tầng feature: trang, quy chế, cài đặt đè (migration 0028) ────────────────
+
+
+export type LayoutPage = {
+  id: string
+  kind: 'curated' | 'template_subject' | 'template_topic' | 'template_keyword' | 'nav'
+  title: string
+  copy: Record<string, unknown>
+  presentation: Record<string, unknown>
+  blocks: string[]
+  aliases: string[]
+  visibility: PostVisibility
+}
+export type LayoutOverride = {
+  node_type: 'topic' | 'keyword'
+  node_id: string
+  rule_id: string | null
+  presentation: Record<string, unknown>
+  aliases: string[]
+}
+export type StoredRule = ListingRule & { id: string }
+
+export async function getLayout(): Promise<{ pages: LayoutPage[]; overrides: LayoutOverride[]; rules: StoredRule[] }> {
+  return request('/api/tags?vocab=layout')
+}
+
+export async function createRule(rule: Partial<ListingRule>): Promise<StoredRule> {
+  return (await request<{ rule: StoredRule }>('/api/tags?vocab=rules', { method: 'POST', body: JSON.stringify(rule) })).rule
+}
+
+export async function updateRule(id: string, patch: Partial<ListingRule>): Promise<StoredRule> {
+  const r = await request<{ rule: StoredRule }>(`/api/tags?vocab=rules&id=${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(patch) })
+  return r.rule
+}
+
+export async function createPage(id: string, title: string): Promise<{ page: LayoutPage; rule: { id: string } }> {
+  return request('/api/tags?vocab=pages', { method: 'POST', body: JSON.stringify({ id, title }) })
+}
+
+export async function updatePage(id: string, patch: Partial<Omit<LayoutPage, 'id' | 'kind'>>): Promise<LayoutPage> {
+  const r = await request<{ page: LayoutPage }>(`/api/tags?vocab=pages&id=${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(patch) })
+  return r.page
+}
+
+export async function deletePage(id: string): Promise<void> {
+  await request(`/api/tags?vocab=pages&id=${encodeURIComponent(id)}`, { method: 'DELETE' })
+}
+
+export async function saveOverride(row: Pick<LayoutOverride, 'node_type' | 'node_id'> & Partial<LayoutOverride>): Promise<LayoutOverride> {
+  return (await request<{ override: LayoutOverride }>('/api/tags?vocab=overrides', { method: 'PUT', body: JSON.stringify(row) })).override
+}
+
+export async function deleteOverride(type: string, node: string): Promise<void> {
+  await request(`/api/tags?vocab=overrides&type=${encodeURIComponent(type)}&node=${encodeURIComponent(node)}`, { method: 'DELETE' })
 }
