@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type CSSProperties, type DragEvent, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import {
   TEMPLATES,
   createPage,
@@ -24,7 +25,7 @@ import { useRowDrag } from '../lib/useRowDrag'
 import { findPage, useModules, type PageRow } from '../../data/useModules'
 import { treeOrder, type ListingRule, type RuleGroup, type RuleSort, type RuleTier } from '../../lib/listingRule'
 import { toPath } from '../../lib/routes'
-import { Builder, ContentTab, createFromPreset, usePortAdmin, type PortPart } from './PortEditors'
+import { Builder, ContentTab, createFromPreset, usePortAdmin, useSplit, type PortPart } from './PortEditors'
 import { usePortSources } from '../../portfolio/data'
 import type { PresetKey } from '../../portfolio/blocks'
 import { ink, paper, sans, serif } from '../../design/tokens'
@@ -353,6 +354,16 @@ export function PagesManager({
   const [round, setRound] = useState(0)
   const [newPage, setNewPage] = useState('')
   const [archived, setArchived] = useState(false)
+  // Two halves, like the port builder: the tree with the open page's settings
+  // inside it, and the page itself. Editors portal their preview into `slot`.
+  const split = useSplit('pages', 440, 'left', 320, 760)
+  const [slot, setSlot] = useState<HTMLDivElement | null>(null)
+  const [portRound, setPortRound] = useState(0)
+  useEffect(() => {
+    // Fixed port copy autosaves after typing rests; reload its preview after that, not per keystroke.
+    const t = setTimeout(() => setPortRound((r) => r + 1), 1200)
+    return () => clearTimeout(t)
+  }, [port.content])
 
   const load = () => void getLayout().then(setLayout).catch((e: Error) => setErr(e.message))
   useEffect(() => {
@@ -408,11 +419,17 @@ export function PagesManager({
   const archivedPort = port.pages.filter((p) => p.status === 'archived')
 
   const item = (sel: Selected, text: ReactNode, indent: number, right?: ReactNode, big = false) => (
-    <button type="button" key={JSON.stringify(sel)} aria-current={same(open, sel) ? 'page' : undefined} onClick={() => setOpen(sel)} style={{ ...treeRow(same(open, sel), indent), ...(big ? { fontFamily: serif, fontSize: 15 } : {}) }}>
-      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{text}</span>
-      {right !== undefined && <span style={meta}>{right}</span>}
-    </button>
+    <div key={JSON.stringify(sel)}>
+      <button type="button" aria-current={same(open, sel) ? 'page' : undefined} aria-expanded={same(open, sel)} onClick={() => setOpen(sel)} style={{ ...treeRow(same(open, sel), indent), ...(big ? { fontFamily: serif, fontSize: 15 } : {}) }}>
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{text}</span>
+        {right !== undefined && <span style={meta}>{right}</span>}
+      </button>
+      {/* The open page's settings sit under its own row, not in a column of their own. */}
+      {same(open, sel) && <div style={{ padding: '6px 16px 22px 24px', borderBottom: `1px solid ${paper.rule}`, background: paper.cream }}>{body}</div>}
+    </div>
   )
+  const frame = (path: string, title: string, key: number = round) =>
+    slot && path ? createPortal(<iframe key={key} title={`xem trước ${title}`} src={path} style={{ width: '100%', height: '100%', border: 0 }} />, slot) : null
   const nodeItem = (type: 'topic' | 'keyword', id: string, title: string, indent: number, big = false) => {
     const page = findPage(pages, type === 'keyword' ? `tag-${id}` : id)
     const own = overrideOf(type, id)
@@ -420,8 +437,8 @@ export function PagesManager({
     return item(sel, title, indent, `${own ? 'riêng · ' : ''}${page ? postsOf(page.id).length : 0}`, big)
   }
 
-  const tree = (
-    <nav aria-label="Cây trang" style={{ borderRight: `1px solid ${paper.rule}`, background: paper.white, paddingBottom: 24, position: 'sticky', top: 0, maxHeight: '100vh', overflowY: 'auto' }}>
+  const tree = () => (
+    <nav aria-label="Cây trang" style={{ background: paper.white, paddingBottom: 24, height: 'calc(100vh - 220px)', overflowY: 'auto', position: 'sticky', top: 0 }}>
       <div style={siteHead}>
         Port <span style={meta}>/portfolio</span>
       </div>
@@ -483,7 +500,13 @@ export function PagesManager({
 
   let body: ReactNode
   if (open.kind === 'port-part') {
-    body = port.loaded ? <ContentTab key={open.part} only={open.part} content={port.content} setStored={port.setContentStored} pages={port.pages} /> : null
+    const path = `/portfolio${open.part === 'about' || open.part === 'sign' ? '/about' : ''}`
+    body = port.loaded ? (
+      <>
+        <ContentTab key={open.part} only={open.part} content={port.content} setStored={port.setContentStored} pages={port.pages} />
+        {frame(path, 'port', portRound)}
+      </>
+    ) : null
   } else if (open.kind === 'port-page') {
     const p = port.pages.find((x) => x.id === open.id)
     body = p ? (
@@ -495,6 +518,7 @@ export function PagesManager({
         content={port.content}
         pages={port.pages}
         onSaved={(next) => port.setPages((ps) => ps.map((x) => (x.id === next.id ? next : x)))}
+        previewSlot={slot}
         onDelete={() => {
           if (!window.confirm(`Xoá trang “${p.title}”? Thao tác này không hoàn tác được.`)) return
           run(async () => {
@@ -508,19 +532,19 @@ export function PagesManager({
   } else if (open.kind === 'practice') {
     const path = toPath({ area: 'practice', screen: 'hours' })
     body = (
-      <div style={{ padding: '6px 32px 130px', maxWidth: 640 }}>
-        <div style={{ fontFamily: serif, fontSize: 30, margin: '10px 0 4px' }}>Ghi 02</div>
+      <div>
         <a href={path} target="_blank" rel="noreferrer" style={{ fontFamily: 'ui-monospace, Menlo, monospace', fontSize: 12, color: ink.soft }}>
           {path} ↗
         </a>
         {renderPractice()}
+        {frame(path, 'Ghi 02')}
       </div>
     )
   } else if (open.kind === 'nav') {
     body = (
-      <div style={{ padding: '6px 32px 130px', maxWidth: 760 }}>
-        <div style={{ fontFamily: serif, fontSize: 30, margin: '10px 0 4px' }}>Điều hướng</div>
+      <div>
         {errorLine}
+        {frame('/', 'trang chủ')}
         {navItems.map((it, i) => {
           const p = navPage(it.ref)
           return (
@@ -555,9 +579,8 @@ export function PagesManager({
     const page = findPage(pages, type === 'keyword' ? `tag-${node}` : node)
     const preview = page ? toPath({ area: 'public', screen: 'module', moduleId: page.id }) : ''
     body = (
-      <div style={{ display: 'grid', gridTemplateColumns: preview ? 'minmax(0,1fr) minmax(0,1fr)' : 'minmax(0,1fr)', minHeight: '70vh' }}>
-        <div style={{ padding: '6px 32px 130px', maxWidth: 640 }}>
-          <div style={{ fontFamily: serif, fontSize: 30, margin: '10px 0 4px' }}>{page?.title ?? node}</div>
+      <div>
+        <div>
           {errorLine}
           <div style={{ fontFamily: sans, fontSize: 13, color: ink.muted, margin: '8px 0 14px' }}>
             theo{' '}
@@ -586,11 +609,7 @@ export function PagesManager({
             + cài đặt riêng
           </button>
         </div>
-        {preview && (
-          <div style={{ borderLeft: `1px solid ${paper.rule}`, position: 'sticky', top: 0, height: '100vh' }}>
-            <iframe key={round} title={`xem trước ${page?.title ?? node}`} src={preview} style={{ width: '100%', height: '100%', border: 0 }} />
-          </div>
-        )}
+        {frame(preview, page?.title ?? node)}
       </div>
     )
   } else {
@@ -609,14 +628,16 @@ export function PagesManager({
         onBack={() => setOpen({ kind: 'system', key: 'landing' })}
         renderCopy={renderCopy}
         renderModule={renderModule}
+        previewSlot={slot}
       />
     )
   }
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,260px) minmax(0,1fr)', borderTop: `1px solid ${paper.rule}`, alignItems: 'start' }}>
-      {tree}
-      <div style={{ minWidth: 0, paddingTop: 14 }}>{body}</div>
+    <div style={{ display: 'grid', gridTemplateColumns: split.columns, borderTop: `1px solid ${paper.rule}`, alignItems: 'start' }}>
+      {tree()}
+      {split.handle}
+      <div ref={setSlot} style={{ height: 'calc(100vh - 220px)', position: 'sticky', top: 0, background: paper.white }} />
     </div>
   )
 }
@@ -646,6 +667,7 @@ function PageEditor({
   onBack,
   renderCopy,
   renderModule,
+  previewSlot,
 }: {
   selected: BlogSelected
   layout: { pages: LayoutPage[]; overrides: LayoutOverride[]; rules: StoredRule[] }
@@ -659,6 +681,7 @@ function PageEditor({
   onBack: () => void
   renderCopy: (key: SystemPage) => ReactNode
   renderModule: (moduleId: string) => ReactNode
+  previewSlot: HTMLElement | null
 }) {
   let title = ''
   let rule: StoredRule | undefined
@@ -693,9 +716,8 @@ function PageEditor({
   const saveRule = (patch: Partial<ListingRule>) => rule && run(() => updateRule(rule!.id, patch))
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: preview ? 'minmax(0,1fr) minmax(0,1fr)' : 'minmax(0,1fr)', minHeight: '70vh' }}>
-      <div style={{ padding: '6px 32px 130px', maxWidth: 640 }}>
-        <div style={{ fontFamily: serif, fontSize: 30, margin: '10px 0 4px' }}>{title}</div>
+    <div>
+      <div>
         {error}
 
         {record && selected.kind === 'curated' && (
@@ -753,11 +775,7 @@ function PageEditor({
           </button>
         )}
       </div>
-      {preview && (
-        <div style={{ borderLeft: `1px solid ${paper.rule}`, position: 'sticky', top: 0, height: '100vh' }}>
-          <iframe key={round} title={`xem trước ${title}`} src={preview} style={{ width: '100%', height: '100%', border: 0 }} />
-        </div>
-      )}
+      {preview && previewSlot && createPortal(<iframe key={round} title={`xem trước ${title}`} src={preview} style={{ width: '100%', height: '100%', border: 0 }} />, previewSlot)}
     </div>
   )
 }

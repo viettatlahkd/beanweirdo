@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { garden, ink, paper, sans, serif } from '../../design/tokens'
 import { useRowDrag } from '../lib/useRowDrag'
 import { useTags } from '../../data/useTags'
@@ -47,7 +48,7 @@ import {
 
 // ── shared ──────────────────────────────────────────────────────────────────
 
-const sectionHead: CSSProperties = {
+export const sectionHead: CSSProperties = {
   fontFamily: sans,
   fontSize: 10.5,
   fontWeight: 500,
@@ -131,7 +132,7 @@ function useDebounced<T>(save: (v: T) => Promise<unknown>, merge: (a: T, b: T) =
  * remembered per screen in localStorage, and iframes stop taking pointer
  * events while dragging so the drag is not swallowed by the embedded page.
  */
-function useSplit(key: string, initial: number, side: 'left' | 'right', min = 280, max = 900) {
+export function useSplit(key: string, initial: number, side: 'left' | 'right', min = 280, max = 900) {
   const [size, setSize] = useState(() => {
     try {
       const v = Number(localStorage.getItem(`pf-split-${key}`))
@@ -279,6 +280,7 @@ export function Builder({
   onBack,
   onSaved,
   onDelete,
+  previewSlot,
 }: {
   page: PortPageRecord
   design: Design
@@ -289,6 +291,12 @@ export function Builder({
   onSaved: (p: PortPageRecord) => void
   /** Shown as a link under the status when the page is opened from the CMS page tree. */
   onDelete?: () => void
+  /**
+   * Inline in the CMS page tree: only the fields are drawn here, and the live
+   * page goes to this element (the tree's right half). `undefined` keeps the
+   * builder's own split screen.
+   */
+  previewSlot?: HTMLElement | null
 }) {
   const [draft, setDraft] = useState({ ...page, blocks: parseBlocks(page.blocks) })
   const [active, setActive] = useState<string | null>(null)
@@ -325,9 +333,8 @@ export function Builder({
     document.getElementById(`pf-row-${active}`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
   }, [active])
 
-  return (
-    <div style={{ display: 'grid', gridTemplateColumns: split.columns, alignItems: 'start' }}>
-      <div style={{ padding: '22px 22px 80px 56px', height: 'calc(100vh - 220px)', overflowY: 'auto', position: 'sticky', top: 0 }}>
+  const fields = (
+    <>
         {onBack && <button style={{ ...quiet, border: 0, padding: 0, marginBottom: 14 }} onClick={onBack}>← tất cả trang</button>}
         <Field label="Tiêu đề">
           <input style={{ ...boxed, fontFamily: serif, fontSize: 22 }} value={draft.title} onChange={(e) => set({ title: e.target.value })} />
@@ -432,10 +439,9 @@ export function Builder({
         >
           + thêm khối
         </button>
-      </div>
-
-      {split.handle}
-      <div style={{ height: 'calc(100vh - 220px)', overflowY: 'auto', position: 'sticky', top: 0 }}>
+          </>
+  )
+  const view = (
         <PortfolioView
           title={draft.title}
           intro={draft.intro}
@@ -449,6 +455,22 @@ export function Builder({
           onPick={setActive}
           chrome={buildChrome(content, pages.map((p) => (p.id === draft.id ? { ...p, title: draft.title, slug: draft.slug, status: draft.status } : p)), `page:${draft.id}`)}
         />
+  )
+
+  if (previewSlot !== undefined)
+    return (
+      <div style={{ padding: '4px 0 20px' }}>
+        {fields}
+        {previewSlot && createPortal(<div style={{ height: '100%', overflowY: 'auto' }}>{view}</div>, previewSlot)}
+      </div>
+    )
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: split.columns, alignItems: 'start' }}>
+      <div style={{ padding: '22px 22px 80px 56px', height: 'calc(100vh - 220px)', overflowY: 'auto', position: 'sticky', top: 0 }}>{fields}</div>
+      {split.handle}
+      <div style={{ height: 'calc(100vh - 220px)', overflowY: 'auto', position: 'sticky', top: 0 }}>
+        {view}
       </div>
     </div>
   )
@@ -817,7 +839,7 @@ export function ContentTab({
   })
 
   return (
-    <div style={{ padding: only ? '6px 32px 130px' : '34px 56px 130px', maxWidth: 1080 }}>
+    <div style={{ padding: only ? '0 0 20px' : '34px 56px 130px', maxWidth: 1080 }}>
       {error && <div style={{ color: '#8E1E42', fontFamily: sans, fontSize: 12.5, marginBottom: 12 }}>{error}</div>}
 
       {show('header') && (

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { BLOG_COLORS, BLOG_FONTS, blogFontHref, blogVars, type BlogDesign } from '../../design/blogDesign'
 import { ink, paper, sans, serif } from '../../design/tokens'
-import { DesignTab, usePortAdmin } from './PortEditors'
+import { DesignTab, sectionHead, usePortAdmin, useSplit } from './PortEditors'
 
 /**
  * Cài đặt hiển thị — one half per site. Personal Blog: its addresses, the
@@ -19,7 +19,6 @@ const remembered = (): Site => {
   }
 }
 
-const head: CSSProperties = { fontFamily: sans, fontSize: 10.5, fontWeight: 500, letterSpacing: '.2em', textTransform: 'uppercase', color: ink.muted, borderBottom: `2px solid ${ink.base}`, paddingBottom: 9, margin: '36px 0 16px' }
 const label: CSSProperties = { fontFamily: sans, fontSize: 10, letterSpacing: '.16em', textTransform: 'uppercase', color: ink.faint, marginBottom: 6 }
 const box: CSSProperties = { boxSizing: 'border-box', width: '100%', background: paper.white, border: `1px solid ${paper.rule}`, color: ink.base, fontFamily: sans, fontSize: 12.5, padding: '6px 8px', outline: 'none' }
 const HEX = /^#[0-9a-fA-F]{6}$/
@@ -50,10 +49,10 @@ export function DisplaySettings({ blog, design, onSaveDesign }: { blog: ReactNod
         ))}
       </div>
       {site === 'blog' ? (
-        <div style={{ padding: '6px 56px 130px', maxWidth: 1180 }}>
-          {blog}
+        <>
           <BlogDesignPanel stored={design ?? {}} onSave={onSaveDesign} />
-        </div>
+          <div style={{ padding: '6px 56px 130px', maxWidth: 1180 }}>{blog}</div>
+        </>
       ) : (
         <PortDesign />
       )}
@@ -112,47 +111,60 @@ function BlogDesignPanel({ stored, onSave }: { stored: BlogDesign; onSave: (patc
   }
   useEffect(dress, [previewStyle, fonts])
 
-  return (
+  const split = useSplit('blog-design', 420, 'right')
+  const group = (title: string, body: ReactNode, extra?: ReactNode) => (
     <>
-      <div style={{ ...head, display: 'flex', justifyContent: 'space-between' }}>
-        <span>Design system</span>
-        {changed && (
-          <button
-            type="button"
-            onClick={() => save(Object.fromEntries(Object.keys(stored).map((k) => [k, null])))}
-            style={{ all: 'unset', cursor: 'pointer', fontFamily: sans, fontSize: 10.5, letterSpacing: '.16em', color: ink.faint }}
-          >
-            Trả về mặc định
-          </button>
-        )}
+      <div style={{ ...sectionHead, display: 'flex', justifyContent: 'space-between' }}>
+        <span>{title}</span>
+        {extra}
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 28, alignItems: 'start' }}>
-        <div style={{ display: 'grid', gap: 22 }}>
-          <div>
-            <div style={label}>Font</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              {BLOG_FONTS.map((f) => (
-                <label key={f.key} style={{ display: 'grid', gap: 5 }}>
-                  <span style={{ fontFamily: sans, fontSize: 12, color: ink.soft }}>{f.title}</span>
-                  <input
-                    aria-label={f.title}
-                    key={String(stored[f.key] ?? '')}
-                    defaultValue={stored[f.key] ?? ''}
-                    placeholder={f.fallback.split(',')[0].replace(/'/g, '')}
-                    onBlur={(e) => {
-                      const v = e.target.value.trim()
-                      if (v !== (stored[f.key] ?? '')) save({ [f.key]: v || null })
-                    }}
-                    style={{ ...box, fontFamily: f.key === 'font.serif' ? serif : sans, fontSize: 14 }}
-                  />
-                </label>
-              ))}
-            </div>
-          </div>
-          {BLOG_COLORS.map((g) => (
-            <div key={g.group}>
-              <div style={label}>{g.title}</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(170px,1fr))', gap: '8px 12px' }}>
+      {body}
+    </>
+  )
+
+  // Port's layout, half for half: the page on the left, the tokens on the right.
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: split.columns, alignItems: 'start', marginTop: 16 }}>
+      <iframe
+        ref={frame}
+        title="xem trước Personal Blog"
+        src="/"
+        onLoad={dress}
+        style={{ width: '100%', height: 'calc(100vh - 220px)', border: 0, background: paper.white, display: 'block', position: 'sticky', top: 0, pointerEvents: split.dragging ? 'none' : undefined }}
+      />
+      {split.handle}
+      <div style={{ padding: '6px 34px 80px 22px', height: 'calc(100vh - 220px)', overflowY: 'auto', position: 'sticky', top: 0 }}>
+        {group(
+          'Font',
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            {BLOG_FONTS.map((f) => (
+              <label key={f.key} style={{ display: 'grid', gap: 5 }}>
+                <span style={label}>{f.title}</span>
+                <input
+                  aria-label={f.title}
+                  key={String(stored[f.key] ?? '')}
+                  defaultValue={stored[f.key] ?? ''}
+                  placeholder={f.fallback.split(',')[0].replace(/'/g, '')}
+                  onBlur={(e) => {
+                    const v = e.target.value.trim()
+                    if (v !== (stored[f.key] ?? '')) save({ [f.key]: v || null })
+                  }}
+                  style={{ ...box, fontFamily: f.key === 'font.serif' ? serif : sans, fontSize: 14 }}
+                />
+              </label>
+            ))}
+          </div>,
+          changed && (
+            <button type="button" onClick={() => save(Object.fromEntries(Object.keys(stored).map((k) => [k, null])))} style={{ all: 'unset', cursor: 'pointer', fontSize: 10, letterSpacing: '.16em', color: ink.faint }}>
+              Trả về mặc định
+            </button>
+          ),
+        )}
+        {BLOG_COLORS.map((g) => (
+          <div key={g.group}>
+            {group(
+              g.title,
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 12px' }}>
                 {Object.entries(g.raw).map(([name, def]) => {
                   const key = `${g.group}.${name}`
                   const value = draft[key] ?? def
@@ -180,20 +192,11 @@ function BlogDesignPanel({ stored, onSave }: { stored: BlogDesign; onSave: (patc
                     </label>
                   )
                 })}
-              </div>
-            </div>
-          ))}
-        </div>
-        <div style={{ position: 'sticky', top: 0, height: '80vh', border: `1px solid ${paper.rule}` }}>
-          <iframe
-            ref={frame}
-            title="xem trước Personal Blog"
-            src="/"
-            onLoad={dress}
-            style={{ width: '100%', height: '100%', border: 0 }}
-          />
-        </div>
+              </div>,
+            )}
+          </div>
+        ))}
       </div>
-    </>
+    </div>
   )
 }

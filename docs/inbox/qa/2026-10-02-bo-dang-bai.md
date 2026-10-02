@@ -32,3 +32,15 @@ Xoá `tags` id `note`, `quan-sat`: lệnh `DELETE` bị bộ phân loại an to�
 Test sửa theo hành vi mới: `notesFilter.test.ts`, `postToRenderer.bitesize.test.ts`, `Article.test.tsx`,
 `MetadataStep.test.tsx` (bỏ hai test ghi dạng bài mới), `posts/index.test.ts`, `ContentWorkspace.test.tsx`
 (lọc theo template thay gỡ dạng bài). `npm test` cả bộ: chưa chạy với 3001 tắt (chủ site đang xem admin).
+
+## Cùng commit sau — bố cục theo góp ý chủ site (2026-10-02)
+
+- **[ĐỔI HÀNH VI]** Quản lý trang: ba khung (cây · cấu hình · xem trước) gộp thành hai nửa như trình dựng port —
+  cây bên trái, cấu hình của trang đang chọn mở ngay dưới dòng của nó; bên phải là trang đó, kéo được vạch chia
+  (`PagesManager.tsx`: `useSplit('pages')`, `slot`). Mỗi trình sửa tự đưa bản xem trước sang nửa phải bằng portal:
+  `PageEditor`, trang theo mẫu, Điều hướng (trang chủ), Practice (`/practice`), phần cố định port (`/portfolio`,
+  `/portfolio/about`, nạp lại 1,2s sau lần gõ cuối), trang port (`PortEditors.tsx:Builder`, tham số `previewSlot` —
+  bản nháp đang sửa, không phải trang đã lưu).
+- **[ĐỔI HÀNH VI]** Cài đặt hiển thị › Personal Blog: design system dùng đúng bố cục của Port — trang bên trái, vạch
+  chia kéo được, cột token 420px bên phải chia nhóm bằng cùng kiểu tiêu đề (`PortEditors.tsx:sectionHead`, `useSplit`
+  export ra). Đường dẫn và chữ trang quản trị (không phải design system) nằm dưới.
