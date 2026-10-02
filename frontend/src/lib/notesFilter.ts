@@ -12,11 +12,14 @@ import { noteColor, noteBlock } from '../content/notes'
  */
 export type NoteFilter = 'tất cả' | string
 
-/** Bài đăng đủ để xếp vào một tag. */
-export type TaggedPost = { kind?: string | null }
+/**
+ * Bài đăng đủ để xếp vào một tag: các tag theme nó mang (`post_keywords`).
+ * Trước đây là dạng bài (`posts.kind`); dạng bài đã bỏ, thanh lọc đọc tag.
+ */
+export type TaggedPost = { tags?: readonly string[] }
 
 /**
- * `f` is the tag id — what `posts.kind` stores and what the filter compares.
+ * `f` is the tag id — what `post_keywords` stores and what the filter compares.
  * `label` is what the chip shows; ids are slugs and read badly on the page.
  */
 export type FilterChip = { f: NoteFilter; label: string; on: boolean; n: number; color: string; wash: string }
@@ -45,12 +48,12 @@ export function tagWash(label: string): string {
   return noteBlock[label] ?? pick(label, WASH)
 }
 
-export function noteFilterBar(
-  posts: readonly TaggedPost[],
+export function noteFilterBar<P extends TaggedPost>(
+  posts: readonly P[],
   tags: readonly { id: string; label: string }[],
   active: NoteFilter,
-): { visiblePosts: readonly TaggedPost[]; chips: FilterChip[] } {
-  const wears = (tag: string) => posts.filter((p) => p.kind === tag).length
+): { visiblePosts: readonly P[]; chips: FilterChip[] } {
+  const wears = (tag: string) => posts.filter((p) => p.tags?.includes(tag)).length
 
   /*
    * Chỉ bày tag đang có thứ đeo nó.
@@ -61,7 +64,7 @@ export function noteFilterBar(
   const used = tags.filter((t) => wears(t.id) > 0)
 
   return {
-    visiblePosts: active === 'tất cả' ? posts : posts.filter((p) => p.kind === active),
+    visiblePosts: active === 'tất cả' ? posts : posts.filter((p) => p.tags?.includes(active)),
     chips: [
       { f: 'tất cả', label: 'tất cả', on: active === 'tất cả', n: posts.length, color: '#172124', wash: '#EFEDE4' },
       // Colour stays keyed by label: the design's inks in `noteColor` are

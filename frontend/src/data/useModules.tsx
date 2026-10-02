@@ -91,6 +91,8 @@ export type UseModulesResult = {
    * not group.
    */
   groupsOf: (pageId: string) => PostGroup<PostRow>[]
+  /** A post's theme tags, by name, in the order they were given. Optional so stubs need not care. */
+  tagsOf?: (postId: string) => { id: string; label: string }[]
   /** Read everything again — after the CMS changes a rule or a page. */
   reload: () => void
 }
@@ -413,7 +415,9 @@ function useModulesQuery(enabled: boolean): UseModulesResult {
         labelOf: (_g, key) => store.keywords.find((k) => k.id === key)?.label ?? key,
       })
     }
-    return { data, loading, error, postsOf, groupsOf, reload: () => setRound((r) => r + 1) }
+    const labels = new Map(store.keywords.map((k) => [k.id, k.label]))
+    const tagsOf = (postId: string) => (store.postKeywords.get(postId) ?? []).map((id) => ({ id, label: labels.get(id) ?? id }))
+    return { data, loading, error, postsOf, groupsOf, tagsOf, reload: () => setRound((r) => r + 1) }
   }, [store, loading, error])
 }
 

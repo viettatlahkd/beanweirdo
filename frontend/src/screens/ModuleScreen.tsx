@@ -1,4 +1,5 @@
 import { Fragment, type CSSProperties } from 'react'
+import { templateName } from '../lib/templateNames'
 import { displayNumber, postDescription } from '../lib/postText'
 import { Breadcrumbs } from '../components/Breadcrumbs'
 import type { ModuleRow } from '../data/useModules'
@@ -174,7 +175,7 @@ function Band({ m, groups }: { m: ModuleRow; groups: PostGroup<PostRow>[] }) {
                     </div>
                     <div style={{ display: 'flex', gap: 12, ...meta }}>
                       <div>{displayNumber(i)}</div>
-                      <div>{e.kind}</div>
+                      <div>{templateName(e.template)}</div>
                       <div>{e.date_label}</div>
                     </div>
                   </div>
@@ -287,7 +288,7 @@ function Specimen({ m, groups }: { m: ModuleRow; groups: PostGroup<PostRow>[] })
                         letterSpacing: '.08em',
                       }}
                     >
-                      {e.kind}
+                      {templateName(e.template)}
                     </div>
                   </div>
                   {showPlates && (
@@ -640,7 +641,7 @@ function Sequence({ m, groups }: { m: ModuleRow; groups: PostGroup<PostRow>[] })
                 </div>
                 <div style={{ fontSize: 13.5, color: ink.soft, lineHeight: 1.3 }}>{postDescription(e)}</div>
                 <div style={{ ...meta, textAlign: 'right' }}>
-                  {e.kind}
+                  {templateName(e.template)}
                   <br />
                   {e.date_label}
                 </div>

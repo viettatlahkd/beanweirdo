@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { templateName } from '../lib/templateNames'
 import { postDescription } from '../lib/postText'
 import { Breadcrumbs } from '../components/Breadcrumbs'
 import { PostExcerpt } from '../components/PostExcerpt'
@@ -124,7 +125,7 @@ export function Archive() {
                 textTransform: 'uppercase',
               }}
             >
-              {archived ? 'lưu trữ' : open ? 'thu ↑' : p.kind}
+              {archived ? 'lưu trữ' : open ? 'thu ↑' : templateName(p.template)}
             </div>
           </Hover>
 

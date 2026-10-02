@@ -2,18 +2,14 @@ import { useCallback, useEffect, useMemo, useState, type CSSProperties, type Dra
 import {
   createKeyword,
   createPost,
-  createTag,
   createTopic,
   deleteKeyword,
-  deleteTag,
   deleteTopic,
   getLayout,
   listKeywords,
   listPosts,
-  listTags,
   listTopics,
   renameKeyword,
-  renameTag,
   reorderTopics,
   saveOverride,
   transitionStatus,
@@ -24,12 +20,12 @@ import {
   type PostStatus,
   type PostSummary,
   type StatusAction,
-  type Tag,
   type Topic,
 } from '../lib/apiClient'
 import { ink, paper, sans, serif } from '../../design/tokens'
 import { TAG_PAGE, toPath } from '../../lib/routes'
 import { useNav } from '../../lib/nav'
+import { TEMPLATE_KEYS, templateName } from '../../lib/templateNames'
 import { usePostAddresses } from '../../data/usePostAddresses'
 import { StatusBadge } from './StatusBadge'
 
@@ -44,8 +40,8 @@ import { StatusBadge } from './StatusBadge'
  * it would touch, which the middle column is then filtered to.
  */
 
-type Vocab = 'topic' | 'kind' | 'kw'
-type Filters = { topic: string | null; kind: string | null; kw: string | null; status: PostStatus | null }
+type Vocab = 'topic' | 'tpl' | 'kw'
+type Filters = { topic: string | null; tpl: string | null; kw: string | null; status: PostStatus | null }
 type Undo = { msg: string; revert?: () => Promise<unknown> }
 
 const isUndo = (u: unknown): u is Undo => !!u && typeof u === 'object' && typeof (u as Undo).msg === 'string'
@@ -281,10 +277,9 @@ export function ContentWorkspace({ onChanged }: { onChanged?: () => void }) {
   const addresses = usePostAddresses()
   const [topics, setTopics] = useState<Topic[]>([])
   const [keywords, setKeywords] = useState<Keyword[]>([])
-  const [kinds, setKinds] = useState<Tag[]>([])
   const [posts, setPosts] = useState<PostSummary[]>([])
   const [err, setErr] = useState<string | null>(null)
-  const [f, setF] = useState<Filters>({ topic: null, kind: null, kw: null, status: null })
+  const [f, setF] = useState<Filters>({ topic: null, tpl: null, kw: null, status: null })
   const [q, setQ] = useState('')
   const [sel, setSel] = useState<Set<string>>(new Set())
   const [cfg, setCfg] = useState<{ vocab: Vocab; id: string } | null>(null)
@@ -293,11 +288,10 @@ export function ContentWorkspace({ onChanged }: { onChanged?: () => void }) {
 
   const load = useCallback(
     () =>
-      Promise.all([listTopics(), listKeywords(), listTags(), listPosts('all')])
-        .then(([t, k, d, p]) => {
+      Promise.all([listTopics(), listKeywords(), listPosts('all')])
+        .then(([t, k, p]) => {
           setTopics(t)
           setKeywords(k)
-          setKinds(d)
           setPosts(p)
         })
         .catch((e: Error) => setErr(e.message)),
@@ -334,35 +328,24 @@ export function ContentWorkspace({ onChanged }: { onChanged?: () => void }) {
     id === UNPLACED ? !p.topic_id : p.topic_id === id || topicById.get(p.topic_id ?? '')?.parent_id === id
   const kwOf = (p: PostSummary) => p.keywords ?? []
   const postsOf = (vocab: Vocab, id: string, from = live) =>
-    from.filter((p) => (vocab === 'topic' ? inTopic(p, id) : vocab === 'kind' ? p.kind === id : kwOf(p).includes(id)))
+    from.filter((p) => (vocab === 'topic' ? inTopic(p, id) : vocab === 'tpl' ? p.template === id : kwOf(p).includes(id)))
 
   const visible = posts
     .filter((p) => (f.status ? p.status === f.status : p.status !== 'deleted'))
     .filter((p) => !f.topic || inTopic(p, f.topic))
-    .filter((p) => !f.kind || p.kind === f.kind)
+    .filter((p) => !f.tpl || p.template === f.tpl)
     .filter((p) => !f.kw || kwOf(p).includes(f.kw))
     .filter((p) => !q.trim() || `${p.en} ${p.vi}`.toLowerCase().includes(q.trim().toLowerCase()))
     .sort((a, b) => (b.date_label ?? '').localeCompare(a.date_label ?? '') || b.updated_at.localeCompare(a.updated_at))
   const selected = posts.filter((p) => sel.has(p.id))
-
-  /** A dạng bài whose every post shares one topic or one template adds nothing a reader can use. */
-  const sameAs = (kindId: string): string | null => {
-    const ps = postsOf('kind', kindId)
-    if (ps.length < 2) return null
-    const tp = new Set(ps.map((p) => p.topic_id))
-    if (tp.size === 1 && ps[0].topic_id) return topicById.get(ps[0].topic_id)?.title ?? null
-    const tm = new Set(ps.map((p) => p.template))
-    if (tm.size === 1 && ps[0].template) return ps[0].template
-    return null
-  }
 
   const nameOf = (vocab: Vocab | 'status', id: string) =>
     vocab === 'topic'
       ? id === UNPLACED
         ? 'chưa xếp'
         : topicById.get(id)?.title ?? id
-      : vocab === 'kind'
-        ? kinds.find((k) => k.id === id)?.label ?? id
+      : vocab === 'tpl'
+        ? templateName(id)
         : vocab === 'kw'
           ? keywords.find((k) => k.id === id)?.label ?? id
           : STATUS_LABEL[id as PostStatus]
@@ -440,18 +423,15 @@ export function ContentWorkspace({ onChanged }: { onChanged?: () => void }) {
    * Change one field on many posts. The old values are kept so Hoàn tác can
    * put each post back exactly as it was, not to some common value.
    */
-  function bulk(field: 'topic_id' | 'kind' | 'kw+' | 'kw-', value: string) {
+  function bulk(field: 'topic_id' | 'kw+' | 'kw-', value: string) {
     const targets = selected
-    const before = targets.map((p) => ({ id: p.id, topic_id: p.topic_id, kind: p.kind, keywords: kwOf(p) }))
+    const before = targets.map((p) => ({ id: p.id, topic_id: p.topic_id, keywords: kwOf(p) }))
     const patchOf = (p: PostSummary) =>
       field === 'topic_id'
         ? { topic_id: value }
-        : field === 'kind'
-          ? { kind: value }
-          : { keywords: field === 'kw+' ? [...new Set([...kwOf(p), value])] : kwOf(p).filter((k) => k !== value) }
+        : { keywords: field === 'kw+' ? [...new Set([...kwOf(p), value])] : kwOf(p).filter((k) => k !== value) }
     const what = {
       topic_id: `chủ đề → ${nameOf('topic', value)}`,
-      kind: `dạng bài → ${nameOf('kind', value)}`,
       'kw+': `+ tag ${nameOf('kw', value)}`,
       'kw-': `− tag ${nameOf('kw', value)}`,
     }[field]
@@ -462,7 +442,7 @@ export function ContentWorkspace({ onChanged }: { onChanged?: () => void }) {
         revert: () =>
           Promise.all(
             before.map((b) =>
-              updatePost(b.id, field === 'topic_id' ? { topic_id: b.topic_id } : field === 'kind' ? { kind: b.kind } : { keywords: b.keywords }),
+              updatePost(b.id, field === 'topic_id' ? { topic_id: b.topic_id } : { keywords: b.keywords }),
             ),
           ),
       }
@@ -526,24 +506,6 @@ export function ContentWorkspace({ onChanged }: { onChanged?: () => void }) {
     setF((o) => ({ ...o, topic: null }))
   }
 
-  function retireKind(k: Tag, to: string) {
-    const moved = postsOf('kind', k.id, posts)
-    run(
-      async () => {
-        await deleteTag(k.id, to)
-        return {
-          msg: moved.length ? `${moved.length} bài → ${nameOf('kind', to)} · đã xoá ${k.label}` : `Đã xoá ${k.label}`,
-          revert: async () => {
-            const back = await createTag(k.label)
-            await Promise.all(moved.map((p) => updatePost(p.id, { kind: back.id })))
-          },
-        }
-      },
-      () => setCfg(null),
-    )
-    setF((o) => ({ ...o, kind: null }))
-  }
-
   function retireKeyword(k: Keyword, to: string | null) {
     const moved = postsOf('kw', k.id, posts)
     run(
@@ -605,23 +567,11 @@ export function ContentWorkspace({ onChanged }: { onChanged?: () => void }) {
         {unplaced > 0 && <RailRow name="chưa xếp" count={unplaced} on={f.topic === UNPLACED} onClick={() => toggle('topic', UNPLACED)} />}
         <AddInline text="+ subject" onAdd={(title) => run(() => createTopic(title, null))} />
       </Section>
-      <Section title="Dạng bài">
-        {kinds.map((k) => {
-          const same = sameAs(k.id)
-          return (
-            <RailRow
-              key={k.id}
-              name={k.label}
-              count={postsOf('kind', k.id).length}
-              on={f.kind === k.id}
-              open={cfg?.vocab === 'kind' && cfg.id === k.id}
-              onClick={() => toggle('kind', k.id)}
-              onMore={() => open('kind', k.id)}
-              flag={same ? `≡ ${same}` : undefined}
-            />
-          )
-        })}
-        <AddInline text="+ dạng bài" onAdd={(l) => run(() => createTag(l))} />
+      {/* Dạng bài is retired: the template a post is written in says what it is. */}
+      <Section title="Template">
+        {TEMPLATE_KEYS.map((t) => (
+          <RailRow key={t} name={templateName(t)} count={postsOf('tpl', t).length} on={f.tpl === t} onClick={() => toggle('tpl', t)} />
+        ))}
       </Section>
       <Section title="Tag">
         {keywords.map((k) => (
@@ -646,7 +596,7 @@ export function ContentWorkspace({ onChanged }: { onChanged?: () => void }) {
   )
 
   // ── middle column ────────────────────────────────────────────────────────
-  const chips = (['topic', 'kind', 'kw', 'status'] as const).filter((v) => f[v])
+  const chips = (['topic', 'tpl', 'kw', 'status'] as const).filter((v) => f[v])
   const allOn = visible.length > 0 && visible.every((p) => sel.has(p.id))
   const pillBtn = (vocab: keyof Filters, id: string, text: string, dashed = false) => (
     <button key={id} type="button" className="cw-pill" onClick={() => setF((o) => ({ ...o, [vocab]: id }))} style={{ ...pill, borderStyle: dashed ? 'dashed' : 'solid' }}>
@@ -710,7 +660,7 @@ export function ContentWorkspace({ onChanged }: { onChanged?: () => void }) {
               </th>
               <th style={th}>Bài</th>
               <th style={th}>Chủ đề</th>
-              <th style={th}>Dạng</th>
+              <th style={th}>Template</th>
               <th style={th}>Tag</th>
               <th style={th}>Trạng thái</th>
               <th style={th}>Ngày</th>
@@ -763,7 +713,7 @@ export function ContentWorkspace({ onChanged }: { onChanged?: () => void }) {
                     </div>
                   </td>
                   <td style={td}>{t ? pillBtn('topic', t.id, t.title) : pillBtn('topic', UNPLACED, 'chưa xếp')}</td>
-                  <td style={td}>{pillBtn('kind', p.kind, nameOf('kind', p.kind))}</td>
+                  <td style={td}>{pillBtn('tpl', p.template ?? '', templateName(p.template))}</td>
                   <td style={td}>{kwOf(p).map((k) => pillBtn('kw', k, nameOf('kw', k), true))}</td>
                   <td style={td}>
                     <StatusBadge status={p.status} />
@@ -780,7 +730,6 @@ export function ContentWorkspace({ onChanged }: { onChanged?: () => void }) {
         <BulkBar
           count={selected.length}
           topics={subjects.flatMap((s) => [s, ...childrenOf(s.id)])}
-          kinds={kinds}
           keywords={keywords}
           busy={busy}
           onField={bulk}
@@ -808,24 +757,6 @@ export function ContentWorkspace({ onChanged }: { onChanged?: () => void }) {
           used={[...new Set(topics.map((x) => x.accent).filter((c): c is string => !!c))]}
           save={(patch) => run(() => updateTopic(t.id, patch))}
           onRetire={(to) => retireTopic(t, to)}
-          onClose={close}
-        />
-      )
-  }
-  if (cfg?.vocab === 'kind') {
-    const k = kinds.find((x) => x.id === cfg.id)
-    if (k)
-      settings = (
-        <FlatSettings
-          key={k.id}
-          kind="Dạng bài"
-          entry={k}
-          count={postsOf('kind', k.id, posts).length}
-          others={kinds.filter((x) => x.id !== k.id)}
-          same={sameAs(k.id)}
-          required
-          onRename={(l) => run(() => renameTag(k.id, l))}
-          onRetire={(to) => to && retireKind(k, to)}
           onClose={close}
         />
       )
@@ -880,7 +811,6 @@ export function ContentWorkspace({ onChanged }: { onChanged?: () => void }) {
 function BulkBar({
   count,
   topics,
-  kinds,
   keywords,
   busy,
   onField,
@@ -889,10 +819,9 @@ function BulkBar({
 }: {
   count: number
   topics: Topic[]
-  kinds: Tag[]
   keywords: Keyword[]
   busy: boolean
-  onField: (field: 'topic_id' | 'kind' | 'kw+' | 'kw-', value: string) => void
+  onField: (field: 'topic_id' | 'kw+' | 'kw-', value: string) => void
   onStatus: (a: StatusAction) => void
   onClear: () => void
 }) {
@@ -917,7 +846,6 @@ function BulkBar({
     <div role="toolbar" aria-label="Sửa nhiều bài" style={{ position: 'sticky', bottom: 0, display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center', background: ink.base, color: paper.cream, padding: '9px 14px', fontFamily: sans, fontSize: 13 }}>
       <b style={{ marginRight: 8, fontWeight: 500 }}>{count} bài</b>
       {pick('Chủ đề', topics.map((t) => [t.id, t.parent_id ? `  › ${t.title}` : t.title]), (v) => onField('topic_id', v))}
-      {pick('Dạng bài', kinds.map((k) => [k.id, k.label]), (v) => onField('kind', v))}
       {keywords.length > 0 && pick('+ Tag', keywords.map((k) => [k.id, k.label]), (v) => onField('kw+', v))}
       {keywords.length > 0 && pick('− Tag', keywords.map((k) => [k.id, k.label]), (v) => onField('kw-', v))}
       {pick('Trạng thái', BULK_STATUS.map((b) => [b.action, b.label]), (v) => onStatus(v as StatusAction))}
@@ -1107,7 +1035,6 @@ function FlatSettings({
   onClose: () => void
 }) {
   const [to, setTo] = useState(required ? (others.find((o) => o.id === 'note') ?? others[0])?.id ?? '' : '')
-  const target = others.find((o) => o.id === to)
   return (
     <>
       <Head kind={kind} count={count} onClose={onClose} />
@@ -1138,11 +1065,6 @@ function FlatSettings({
                 ))}
               </select>
             </Field>
-            {kind === 'Dạng bài' && (
-              <div style={{ fontFamily: sans, fontSize: 12, color: ink.muted, lineHeight: 1.5 }}>
-                <s>{entry.label}</s> → {target?.label ?? '—'} · dòng đầu bài, màu nhãn, thanh lọc Ghi
-              </div>
-            )}
             <Confirm text={to ? `Chuyển và xoá ${entry.label}` : `Gỡ khỏi ${count} bài và xoá`} disabled={required && !to} onGo={() => onRetire(to || null)} />
           </>
         ) : (

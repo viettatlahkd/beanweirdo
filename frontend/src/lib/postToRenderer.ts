@@ -1,4 +1,5 @@
 import { CLIP_INK, CLIP_WASH, paletteFrom, shade } from 'post-renderer'
+import { templateName } from './templateNames'
 import { toReportBlocks, toReportNotes } from './reportBlocks'
 import type {
   ArticlePostData,
@@ -48,6 +49,8 @@ export type RenderablePost = {
   vi: string
   lead: string | null
   kind: string
+  /** The renderer — what the post is, since dạng bài retired (`lib/templateNames.ts`). */
+  template?: string | null
   date_label: string
   body: unknown
   hero_caption: string | null
@@ -112,8 +115,8 @@ export function toArticleData(
     // is no way to know where this post sits in it.
     eyebrow:
       position >= 0
-        ? `${displayNumber(position)} — ${post.kind} — ${post.date_label}`
-        : `${post.kind} — ${post.date_label}`,
+        ? `${displayNumber(position)} — ${templateName(post.template)} — ${post.date_label}`
+        : `${templateName(post.template)} — ${post.date_label}`,
     moduleTitle,
     title,
     titleItalic,
@@ -250,6 +253,13 @@ export type BitesizeBody = {
 }
 
 /**
+ * A card with no theme tag keeps the ink every Ghi card wore while they were
+ * all dạng bài "note" — retiring dạng bài changed what the chip says, not the
+ * colours of the page.
+ */
+const UNTAGGED = 'note'
+
+/**
  * Một bài viết trên template bitesize note.
  *
  * Màu lấy theo tag chứ không theo module: cả trang Ghi 01 phân biệt bài bằng
@@ -262,7 +272,12 @@ export type BitesizeBody = {
  */
 export function toBitesizeData(
   post: RenderablePost & { pinned?: boolean },
-  options: { num?: string; mod?: RenderableModule } = {},
+  options: {
+    num?: string
+    mod?: RenderableModule
+    /** The post's first theme tag, by name — the chip on the card and the ink it is told apart by. */
+    tag?: string
+  } = {},
 ): BitesizePostData {
   const body = (post.body ?? {}) as BitesizeBody
   const len = body.len ?? 'ngắn'
@@ -271,7 +286,7 @@ export function toBitesizeData(
   const theme = post.theme_color || null
   return {
     title: postTitle(post),
-    tag: post.kind,
+    tag: options.tag ?? '',
     date: post.date_label,
     num: options.num ?? '',
     pinned: post.pinned ?? false,
@@ -289,8 +304,8 @@ export function toBitesizeData(
      * Vệt sáng cần một sắc SÁNG mà vẫn có màu (như #E9B79C của bản gốc, độ sáng
      * ~76), không phải `tint` gần trắng của bảng màu.
      */
-    ink: theme ? paletteFrom(theme).ink : media === 'vid' ? CLIP_INK : tagColor(post.kind),
-    wash: theme ? shade(theme, 76) : media === 'vid' ? CLIP_WASH : tagWash(post.kind),
+    ink: theme ? paletteFrom(theme).ink : media === 'vid' ? CLIP_INK : tagColor(options.tag ?? UNTAGGED),
+    wash: theme ? shade(theme, 76) : media === 'vid' ? CLIP_WASH : tagWash(options.tag ?? UNTAGGED),
     media,
     len,
     portrait,

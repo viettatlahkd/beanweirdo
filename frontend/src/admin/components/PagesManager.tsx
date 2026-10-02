@@ -177,7 +177,8 @@ function RuleEditor({ rule, vocab, template, onChange }: { rule: StoredRule; voc
         <div>
           <div style={label}>Kéo từ</div>
           <select aria-label="Kéo từ" value={rule.tier} onChange={(e) => onChange({ tier: e.target.value as RuleTier, nodes: [], exclude: [] })} style={box}>
-            {(Object.keys(TIER_NAMES) as RuleTier[]).filter((t) => t !== 'pick').map((t) => (
+            {/* No dạng bài: it is retired, the template tier says the same. */}
+            {(Object.keys(TIER_NAMES) as RuleTier[]).filter((t) => t !== 'pick' && t !== 'kind').map((t) => (
               <option key={t} value={t}>
                 {TIER_NAMES[t]}
               </option>
@@ -243,7 +244,7 @@ function RuleEditor({ rule, vocab, template, onChange }: { rule: StoredRule; voc
         <div>
           <div style={label}>Nhóm</div>
           <select aria-label="Nhóm" value={rule.group_by} onChange={(e) => onChange({ group_by: e.target.value as RuleGroup })} style={box}>
-            {(Object.keys(GROUP_NAMES) as RuleGroup[]).map((g) => (
+            {(Object.keys(GROUP_NAMES) as RuleGroup[]).filter((g) => g !== 'kind').map((g) => (
               <option key={g} value={g}>
                 {GROUP_NAMES[g]}
               </option>

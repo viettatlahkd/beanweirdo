@@ -41,7 +41,7 @@ const status = {
 export function Article() {
   const mobile = useIsMobile()
   const nav = useNav()
-  const { data: modules } = useModules()
+  const { data: modules, tagsOf } = useModules()
 
   // The sidebar's static "sample post" link has no id to hand over — fall
   // back to the module's first published post. Looking one up by `posts.n`
@@ -81,7 +81,7 @@ export function Article() {
   const moduleTitle = module_?.title ?? post.module_id
 
   if (post.template === 'bitesize') {
-    return <PostRenderer template="bitesize" post={toBitesizeData(post, { mod: module_ })} breadcrumb={crumbs} mobile={mobile} />
+    return <PostRenderer template="bitesize" post={toBitesizeData(post, { mod: module_, tag: tagsOf?.(post.id)[0]?.label })} breadcrumb={crumbs} mobile={mobile} />
   }
   if (post.template === 'memo') {
     return <PostRenderer template="memo" post={toMemoData(post, module_)} breadcrumb={crumbs} mobile={mobile} />

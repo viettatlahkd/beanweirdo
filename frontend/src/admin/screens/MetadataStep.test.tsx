@@ -52,7 +52,7 @@ describe('MetadataStep', () => {
       expect(onContinue).toHaveBeenCalledWith({
         module_id: 'roasting',
         topic_id: 'roasting',
-        kind: 'note',
+        kind: '',
         en: 'Senses of Flavors',
         vi: 'mô tả',
         templateId: 't-longform',
@@ -63,40 +63,6 @@ describe('MetadataStep', () => {
     )
   })
 
-  /*
-   * `kind` was four words a programmer picked, fenced by a database constraint.
-   * A tag typed for the first time is written down, so it is offered next time.
-   */
-  it('writes down a tag it has not seen before', async () => {
-    const onContinue = vi.fn()
-    render(<MetadataStep onContinue={onContinue} />)
-    await waitFor(() => expect(screen.getByLabelText('Module')).toHaveValue('sensory'))
-
-    await userEvent.clear(screen.getByLabelText('Dạng bài'))
-    await userEvent.type(screen.getByLabelText('Dạng bài'), 'thí nghiệm')
-    await pickTopic()
-    await userEvent.type(screen.getByLabelText('Tiêu đề'), 'Bài mới')
-    await userEvent.click(screen.getByRole('button', { name: /soạn bài/i }))
-
-    await waitFor(() => expect(createTag).toHaveBeenCalledWith('thí nghiệm'))
-    await waitFor(() =>
-      expect(onContinue).toHaveBeenCalledWith(expect.objectContaining({ kind: 'thi-nghiem' })),
-    )
-  })
-
-  it('does not write down a tag it already knows', async () => {
-    createTag.mockClear()
-    render(<MetadataStep onContinue={vi.fn()} />)
-    await waitFor(() => expect(screen.getByLabelText('Dạng bài')).toHaveValue('note'))
-
-    await pickTopic()
-    await userEvent.type(screen.getByLabelText('Tiêu đề'), 'Bài mới')
-    await userEvent.click(screen.getByRole('button', { name: /soạn bài/i }))
-
-    await waitFor(() => expect(createTag).not.toHaveBeenCalled())
-  })
-
-  /* A description is a nicety; a title is what the post is called. */
   it('needs a title, and asks for nothing in a particular language', async () => {
     render(<MetadataStep onContinue={vi.fn()} />)
     await waitFor(() => expect(screen.getByLabelText('Module')).toHaveValue('sensory'))

@@ -10,14 +10,14 @@ import { noteFilterBar, tagColor } from './notesFilter'
  * — một ghi chép dưới Ghi 01 chính là một bài đăng dưới Ghi 01. Nên thanh này
  * chỉ còn đếm và lọc bài.
  */
-// `posts.kind` lưu id của tag (slug), không lưu tên hiển thị.
+// `post_keywords` lưu id của tag (slug), không lưu tên hiển thị.
 const tags = [
   { id: 'quan-sat', label: 'quan sát' },
   { id: 'video', label: 'video' },
   { id: 'essay', label: 'essay' },
   { id: 'log', label: 'log' },
 ]
-const posts = [{ kind: 'video' }, { kind: 'video' }, { kind: 'essay' }, { kind: 'quan-sat' }]
+const posts = [{ tags: ['video'] }, { tags: ['video'] }, { tags: ['essay'] }, { tags: ['quan-sat'] }]
 
 describe('thanh lọc trang Ghi chép', () => {
   it('mỗi chip đếm số bài mang tag ấy', () => {
@@ -29,7 +29,7 @@ describe('thanh lọc trang Ghi chép', () => {
 
   it('bấm một chip thì chỉ còn bài mang tag ấy', () => {
     const bar = noteFilterBar(posts, tags, 'video')
-    expect(bar.visiblePosts).toEqual([{ kind: 'video' }, { kind: 'video' }])
+    expect(bar.visiblePosts).toEqual([{ tags: ['video'] }, { tags: ['video'] }])
   })
 
   it('chỉ bày tag đang có bài đeo nó', () => {
@@ -47,7 +47,7 @@ describe('thanh lọc trang Ghi chép', () => {
     expect(chip?.label).toBe('quan sát')
     expect(chip?.n).toBe(1)
     expect(chip?.color).toBe(tagColor('quan sát'))
-    expect(noteFilterBar(posts, tags, 'quan-sat').visiblePosts).toEqual([{ kind: 'quan-sat' }])
+    expect(noteFilterBar(posts, tags, 'quan-sat').visiblePosts).toEqual([{ tags: ['quan-sat'] }])
   })
 
   it('tag mới cũng có màu, và luôn là một màu', () => {

@@ -108,29 +108,14 @@ describe('POST /api/posts', () => {
    * that vocabulary into the `tags` table, so any tag the owner has written is
    * valid — what is left to reject is nothing at all.
    */
-  it('accepts a tag it has never seen, and rejects an empty one', async () => {
+  it('takes a post with no dạng bài — the template says what it is now', async () => {
     const insert = queryBuilder({ data: { id: 'new-id' }, error: null })
-    fromMock.mockReturnValueOnce(insert)
+    fromMock.mockReturnValue(insert)
     await handler(
-      mockReq({
-        method: 'POST',
-        headers: authHeaders(token),
-        body: { module_id: 'sensory', kind: 'thi-nghiem', en: 'Title', vi: 'Mô tả' },
-      }),
+      mockReq({ method: 'POST', headers: authHeaders(token), body: { module_id: 'sensory', en: 'Title', vi: 'Mô tả' } }),
       mockRes(),
     )
-    expect((insert.insert.mock.calls[0][0] as { kind: string }).kind).toBe('thi-nghiem')
-
-    const res = mockRes()
-    await handler(
-      mockReq({
-        method: 'POST',
-        headers: authHeaders(token),
-        body: { module_id: 'sensory', kind: '', en: 'Title', vi: 'Mô tả' },
-      }),
-      res,
-    )
-    expect(res.statusCode).toBe(400)
+    expect((insert.insert.mock.calls[0][0] as { kind: string }).kind).toBe('')
   })
 
   it('creates a draft and returns its id', async () => {

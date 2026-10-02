@@ -44,16 +44,16 @@ describe('bài trên template bitesize note', () => {
 
   it('dạng clip mang bộ màu riêng, dạng ảnh vẫn theo tag', () => {
     // "vid thì đổi màu" — bộ màu `video` bên design đặt sẵn ở bản gốc.
-    const clip = toBitesizeData(post({ kind: 'quan sát', body: { media: 'vid' } }))
+    const clip = toBitesizeData(post({ body: { media: 'vid' } }), { tag: 'quan sát' })
     expect(clip.ink).toBe('#172124')
     expect(clip.wash).toBe('#8CBAB4')
-    expect(toBitesizeData(post({ kind: 'quan sát' })).ink).toBe('#B65A3C')
+    expect(toBitesizeData(post(), { tag: 'quan sát' }).ink).toBe('#B65A3C')
   })
 
   it('màu riêng của bài thắng cả tag lẫn bộ màu clip', () => {
     // Chủ site: đổi màu ở thanh trên cùng "thì mới thay được 1 dải màu đầu
     // tiên, content thì không reflect". Nay nó tới cả vệt sáng và ô ảnh.
-    const rieng = toBitesizeData(post({ theme_color: '#8E4585', kind: 'quan sát' }))
+    const rieng = toBitesizeData(post({ theme_color: '#8E4585' }), { tag: 'quan sát' })
     expect(rieng.ink).not.toBe('#B65A3C')
     expect(rieng.wash).not.toBe('#E9B79C')
     // Vệt sáng phải SÁNG mà vẫn có màu — không phải trắng, không phải mực.
@@ -76,10 +76,10 @@ describe('bài trên template bitesize note', () => {
   it('màu đi theo tag chứ không theo module', () => {
     // Cả trang Ghi 01 phân biệt bài bằng mực của tag; `lib/notesFilter` là nơi
     // duy nhất quyết định tag nào ra màu nào.
-    expect(toBitesizeData(post({ kind: 'quan sát' })).ink).toBe('#B65A3C')
-    const tuDat = toBitesizeData(post({ kind: 'hạt' }))
+    expect(toBitesizeData(post(), { tag: 'quan sát' }).ink).toBe('#B65A3C')
+    const tuDat = toBitesizeData(post(), { tag: 'hạt' })
     expect(tuDat.ink).toMatch(/^#[0-9A-F]{6}$/i)
-    expect(tuDat.ink).toBe(toBitesizeData(post({ kind: 'hạt' })).ink)
+    expect(tuDat.ink).toBe(toBitesizeData(post(), { tag: 'hạt' }).ink)
   })
 
   it('dải màu module chỉ có khi biết module', () => {

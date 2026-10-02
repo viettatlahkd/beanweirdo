@@ -98,24 +98,14 @@ describe('ContentWorkspace', () => {
     expect(api.transitionStatus).toHaveBeenCalledWith('Chlorogenic Acids', 'permanently-delete')
   })
 
-  it('retires a dạng bài beside the very posts it touches, and can take it back', async () => {
+  it('files posts by template — dạng bài is retired', async () => {
+    posts[1] = { ...posts[1], template: 'bitesize' }
     render(<ContentWorkspace />)
     await screen.findByRole('button', { name: 'Senses of Flavors' })
-    await userEvent.click(screen.getByRole('button', { name: 'Sửa book-film' }))
-    // The list narrows to the two posts wearing it; the settings say they duplicate the topic.
-    expect(screen.queryByRole('button', { name: 'Senses of Flavors' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Sửa note/ })).not.toBeInTheDocument()
+    await userEvent.click(within(screen.getByRole('navigation', { name: 'Phân loại' })).getByRole('button', { name: /^bitesize/ }))
     expect(screen.getByRole('button', { name: 'Detachment' })).toBeInTheDocument()
-    const panel = screen.getByRole('complementary', { name: 'Cấu hình' })
-    expect(within(panel).getByText(/2\/2 bài cũng ở book & film/)).toBeInTheDocument()
-
-    await userEvent.click(within(panel).getByRole('button', { name: 'Chuyển và xoá book-film' }))
-    await userEvent.click(within(panel).getByRole('button', { name: 'Chuyển và xoá book-film' }))
-    expect(api.deleteTag).toHaveBeenCalledWith('book-film', 'note')
-
-    await userEvent.click(await screen.findByRole('button', { name: 'Hoàn tác' }))
-    await vi.waitFor(() => expect(api.createTag).toHaveBeenCalledWith('book-film'))
-    expect(api.updatePost).toHaveBeenCalledWith('Detachment', { kind: 'book-film' })
-    expect(api.updatePost).toHaveBeenCalledWith('Wings of Desire', { kind: 'book-film' })
+    expect(screen.queryByRole('button', { name: 'Senses of Flavors' })).not.toBeInTheDocument()
   })
 
   it('moves the selected posts to a topic and puts each back on undo', async () => {

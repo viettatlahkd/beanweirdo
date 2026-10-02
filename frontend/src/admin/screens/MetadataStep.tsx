@@ -1,12 +1,9 @@
 import { useEffect, useState } from 'react'
 import {
-  createTag,
   listModules,
-  listTags,
   listTemplates,
   listTopics,
   type Module,
-  type Tag,
   type TemplateSummary,
   type Topic,
 } from '../lib/apiClient'
@@ -45,12 +42,10 @@ const fieldLabelStyle = {
 
 export function MetadataStep({ onContinue }: { onContinue: (m: Metadata) => void }) {
   const [modules, setModules] = useState<Module[]>([])
-  const [tags, setTags] = useState<Tag[]>([])
   const [templates, setTemplates] = useState<TemplateSummary[]>([])
   const [module_id, setModuleId] = useState('')
   const [topics, setTopics] = useState<Topic[]>([])
   const [topic_id, setTopicId] = useState('')
-  const [tag, setTag] = useState('')
   const [templateId, setTemplateId] = useState('')
   const [en, setEn] = useState('')
   const [vi, setVi] = useState('')
@@ -62,10 +57,6 @@ export function MetadataStep({ onContinue }: { onContinue: (m: Metadata) => void
       setModules(mods)
       if (mods.length > 0) setModuleId(mods[0].id)
     })
-    listTags().then((ts) => {
-      setTags(ts)
-      if (ts.length > 0) setTag(ts[0].label)
-    })
     listTopics().then(setTopics)
     listTemplates().then((ts) => {
       setTemplates(ts)
@@ -75,18 +66,14 @@ export function MetadataStep({ onContinue }: { onContinue: (m: Metadata) => void
 
   const canContinue = module_id !== '' && topic_id !== '' && templateId !== '' && en.trim() !== '' && !busy
 
-  /** A tag typed for the first time is written down, so it is there next time. */
   async function submit() {
     setBusy(true)
     try {
-      const label = tag.trim()
-      const known = tags.find((t) => t.label.toLowerCase() === label.toLowerCase())
-      const saved = known ?? (label ? await createTag(label) : null)
-      if (saved && !known) setTags([...tags, saved])
       onContinue({
         module_id,
         topic_id,
-        kind: saved?.id ?? '',
+        // Dạng bài is retired — the template says what a post is.
+        kind: '',
         en: en.trim(),
         vi: vi.trim(),
         templateId,
@@ -142,24 +129,6 @@ export function MetadataStep({ onContinue }: { onContinue: (m: Metadata) => void
           </optgroup>
         ))}
       </select>
-
-      <label htmlFor="tag" style={fieldLabelStyle}>
-        Dạng bài
-      </label>
-      <input
-        id="tag"
-        aria-label="Dạng bài"
-        list="tag-list"
-        value={tag}
-        onChange={(e) => setTag(e.target.value)}
-        className="admin-field"
-        placeholder="chọn hoặc gõ dạng bài mới"
-      />
-      <datalist id="tag-list">
-        {tags.map((t) => (
-          <option key={t.id} value={t.label} />
-        ))}
-      </datalist>
 
       <label style={fieldLabelStyle}>Màu bài</label>
       <ThemePicker

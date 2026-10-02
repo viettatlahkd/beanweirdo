@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react'
+import { templateName } from '../lib/templateNames'
 import { displayNumber, postDescription } from '../lib/postText'
 import { useMemo } from 'react'
 import type { ModuleRow } from '../data/useModules'
@@ -226,7 +227,7 @@ function Ledger({ modules, postsByModule }: ModulesProps) {
                     gridArea: mob ? '3 / 2' : undefined,
                   }}
                 >
-                  {e.kind}
+                  {templateName(e.template)}
                 </div>
                 <div
                   style={{ fontFamily: sans, fontSize: 10, color: ink.faint, textAlign: 'right', gridArea: mob ? '3 / 3' : undefined }}

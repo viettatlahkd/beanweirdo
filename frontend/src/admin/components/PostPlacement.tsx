@@ -2,13 +2,11 @@ import { useEffect, useState, type CSSProperties } from 'react'
 import {
   createKeyword,
   listKeywords,
-  listTags,
   listTopics,
   type Keyword,
   type Module,
   type PostDetail,
   type PostVisibility,
-  type Tag,
   type Topic,
 } from '../lib/apiClient'
 import { ink, paper, sans } from '../../design/tokens'
@@ -70,13 +68,11 @@ export function PostPlacement({
 }) {
   const [topics, setTopics] = useState<Topic[]>([])
   const [keywords, setKeywords] = useState<Keyword[]>([])
-  const [tags, setTags] = useState<Tag[]>([])
   const [slugError, setSlugError] = useState<string | null>(null)
 
   useEffect(() => {
     void listTopics().then(setTopics)
     void listKeywords().then(setKeywords)
-    void listTags().then(setTags)
   }, [])
 
   const wearing = post.keywords ?? []
@@ -156,18 +152,6 @@ export function PostPlacement({
           ))}
         </datalist>
       </span>
-
-      <label style={label}>
-        Dạng bài
-        <select aria-label="Dạng bài" value={post.kind} onChange={(e) => onPatch({ kind: e.target.value })} style={select}>
-          {!tags.some((t) => t.id === post.kind) && <option value={post.kind}>{post.kind}</option>}
-          {tags.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.label}
-            </option>
-          ))}
-        </select>
-      </label>
 
       <label style={label}>
         Module

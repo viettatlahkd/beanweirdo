@@ -101,12 +101,12 @@ async function handleCreate(req: VercelRequest, res: VercelResponse): Promise<vo
     return
   }
   /*
-   * `kind` holds a tag now. It was four words fenced by a database constraint —
-   * note, essay, ref, log — with no way to add a fifth, and migration 0020 took
-   * the fence down. What is left to check is that there is something there.
+   * `kind` (dạng bài) is retired: the template says what a post is. The column
+   * is still NOT NULL until a migration drops it, so a post that names no kind
+   * gets an empty one rather than a refusal.
    */
-  if (typeof kind !== 'string' || kind.length === 0) {
-    res.status(400).json({ error: 'kind is required' })
+  if (kind !== undefined && typeof kind !== 'string') {
+    res.status(400).json({ error: 'kind must be a string' })
     return
   }
 
@@ -212,7 +212,7 @@ async function handleCreate(req: VercelRequest, res: VercelResponse): Promise<vo
     .from('posts')
     .insert({
       module_id: module_id,
-      kind: kind as PostKind,
+      kind: (kind ?? '') as PostKind,
       en,
       vi,
       template: template as PostTemplate,

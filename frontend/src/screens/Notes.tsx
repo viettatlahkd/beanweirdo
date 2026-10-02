@@ -2,7 +2,6 @@ import { Fragment, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { Breadcrumbs } from '../components/Breadcrumbs'
 import { useSiteCopy } from '../data/useSiteCopy'
 import { noteFilterBar } from '../lib/notesFilter'
-import { useTags } from '../data/useTags'
 import { useIsMobile } from '../lib/useIsMobile'
 import { useNarrow } from '../lib/useNarrow'
 import {
@@ -64,6 +63,7 @@ function OpenedPost({
    * ở bề ngang 390.
    */
   const mobile = useIsMobile()
+  const { tagsOf } = useModules()
   /*
    * Bài mở ra chỉ chiếm ba phần tư lưới, nên trên màn 905 nó còn 561 — hẹp hơn
    * ngưỡng 899 trong khi cửa sổ thì không. Hỏi cửa sổ ở đây là hỏi sai chỗ:
@@ -73,17 +73,18 @@ function OpenedPost({
   const box = useRef<HTMLDivElement>(null)
   const narrow = useNarrow(box)
   const tight = mobile || narrow
-  return <div ref={box}>{draw(post, mod, tight)}</div>
+  return <div ref={box}>{draw(post, mod, tight, tagsOf?.(post.id)[0]?.label)}</div>
 }
 
 function draw(
   post: PostRow,
   mod: { title: string; accent: string; on_color: string } | undefined,
   mobile: boolean,
+  tag: string | undefined,
 ) {
   switch (post.template) {
     case 'bitesize':
-      return <PostRenderer template="bitesize" post={toBitesizeData(post, { mod })} mobile={mobile} />
+      return <PostRenderer template="bitesize" post={toBitesizeData(post, { mod, tag })} mobile={mobile} />
     case 'memo':
       return <PostRenderer template="memo" post={toMemoData(post, mod)} mobile={mobile} />
     case 'longform':
@@ -127,11 +128,12 @@ function Collapsed({
   mob: boolean
 }) {
   const [hovered, setHovered] = useState(false)
+  const { tagsOf } = useModules()
   if (post.template === 'bitesize') {
     return (
       <div onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
         <BitesizeCard
-          post={toBitesizeData(post, { num })}
+          post={toBitesizeData(post, { num, tag: tagsOf?.(post.id)[0]?.label })}
           hovered={hovered}
           aspect={aspect}
           mediaWidth={mediaWidth}
@@ -360,7 +362,7 @@ export function Notes() {
   const { site } = useSiteCopy()
   // Ghi 01's own colours, so an unfolded post wears them the way it would on a
   // page of its own.
-  const { data: allModules, error, groupsOf } = useModules()
+  const { data: allModules, error, groupsOf, tagsOf } = useModules()
   // The page that was module Ghi 01 (migration 0028 keeps its old id as an alias).
   const ghi01 = findPage(allModules, 'ghi01')
   // The design's cells, carrying whatever photos and words the CMS has set.
@@ -370,13 +372,22 @@ export function Notes() {
   )
   // What the Ghi page's rule pulls — the memo lives here, as a post like any other.
   const { data: filed, loading } = usePagePosts(ghi01?.id ?? 'ghi01')
-  const { tags } = useTags()
   // Tag là chữ chủ site tự đặt, nên không còn là bốn giá trị đóng nữa.
   const [noteFilter, setNoteFilter] = useState<string>('tất cả')
   const [openNote, setOpenNoteState] = useState<string | null>(null)
 
   // Phép lọc và phép đếm để riêng ở `lib/notesFilter` — xem chú thích ở đó.
-  const bar = useMemo(() => noteFilterBar(filed, tags, noteFilter), [filed, tags, noteFilter])
+  // The theme tags the filed posts wear are the chips; dạng bài is retired.
+  const { tagged, tags } = useMemo(() => {
+    const seen = new Map<string, { id: string; label: string }>()
+    const tagged = filed.map((p) => {
+      const own = tagsOf?.(p.id) ?? []
+      for (const t of own) seen.set(t.id, t)
+      return { ...p, tags: own.map((t) => t.id) }
+    })
+    return { tagged, tags: [...seen.values()] }
+  }, [filed, tagsOf])
+  const bar = useMemo(() => noteFilterBar(tagged, tags, noteFilter), [tagged, tags, noteFilter])
 
   function setOpenNote(v: string | ((prev: string | null) => string | null)) {
     setOpenNoteState(v)
@@ -384,7 +395,7 @@ export function Notes() {
 
 
   const noteFilters = bar.chips
-  const shownPosts = bar.visiblePosts as typeof filed
+  const shownPosts: readonly PostRow[] = bar.visiblePosts
   // The page's rule may group its posts (migration 0028/0029); the tag chips
   // still filter inside every group. The design's feature cells sit in the
   // biggest group only, so they are not drawn twice.
