@@ -939,14 +939,9 @@ export function Cms() {
         <DisplaySettings
           design={site.design}
           onSaveDesign={(patch) => saveSite({ design: patch })}
+          routes={<RoutesPanel stored={site.routes} modules={modules} onSave={(routes) => saveSite({ routes } as SiteOverrides)} />}
           blog={
             <>
-          <div style={sectionHead}>Đường dẫn</div>
-          <RoutesPanel
-            stored={site.routes}
-            modules={modules}
-            onSave={(routes) => saveSite({ routes } as SiteOverrides)}
-          />
           <div style={{ ...sectionHead, margin: '44px 0 18px' }}>{copy.sections.Admin}</div>
           <div style={grid(two, 20)}>
             <Field label="Design system — tiêu đề dòng 1">

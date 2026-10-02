@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 
 import { BLOG_COLORS, BLOG_FONTS, blogFontHref, blogVars, type BlogDesign } from '../../design/blogDesign'
 import { ink, paper, sans, serif } from '../../design/tokens'
 import { DesignTab, sectionHead, usePortAdmin, useSplit } from './PortEditors'
+import { ScaledPreview, useWidth } from './ScaledPreview'
 
 /**
  * Cài đặt hiển thị — one half per site. Personal Blog: its addresses, the
@@ -9,11 +10,12 @@ import { DesignTab, sectionHead, usePortAdmin, useSplit } from './PortEditors'
  * are drawn with (it was the third tab of the separate Portfolio screen).
  */
 
-type Site = 'blog' | 'port'
+type Site = 'blog' | 'port' | 'routes'
 const KEY = 'beanweirdo.display.site'
 const remembered = (): Site => {
   try {
-    return localStorage.getItem(KEY) === 'port' ? 'port' : 'blog'
+    const v = localStorage.getItem(KEY)
+    return v === 'port' || v === 'routes' ? v : 'blog'
   } catch {
     return 'blog'
   }
@@ -23,7 +25,18 @@ const label: CSSProperties = { fontFamily: sans, fontSize: 10, letterSpacing: '.
 const box: CSSProperties = { boxSizing: 'border-box', width: '100%', background: paper.white, border: `1px solid ${paper.rule}`, color: ink.base, fontFamily: sans, fontSize: 12.5, padding: '6px 8px', outline: 'none' }
 const HEX = /^#[0-9a-fA-F]{6}$/
 
-export function DisplaySettings({ blog, design, onSaveDesign }: { blog: ReactNode; design: BlogDesign | undefined; onSaveDesign: (patch: BlogDesign) => Promise<void> }) {
+/** Addresses are the whole site's — blog, port and practice words alike — so they are a tab of their own. */
+export function DisplaySettings({
+  blog,
+  routes,
+  design,
+  onSaveDesign,
+}: {
+  blog: ReactNode
+  routes: ReactNode
+  design: BlogDesign | undefined
+  onSaveDesign: (patch: BlogDesign) => Promise<void>
+}) {
   const [site, setSiteState] = useState<Site>(remembered)
   const setSite = (s: Site) => {
     setSiteState(s)
@@ -36,7 +49,7 @@ export function DisplaySettings({ blog, design, onSaveDesign }: { blog: ReactNod
   return (
     <div>
       <div role="tablist" style={{ display: 'inline-flex', border: `1px solid ${paper.rule}`, background: paper.white, margin: '26px 56px 0' }}>
-        {(['blog', 'port'] as const).map((s, i) => (
+        {(['blog', 'port', 'routes'] as const).map((s, i) => (
           <button
             key={s}
             role="tab"
@@ -44,7 +57,7 @@ export function DisplaySettings({ blog, design, onSaveDesign }: { blog: ReactNod
             onClick={() => setSite(s)}
             style={{ all: 'unset', cursor: 'pointer', fontFamily: sans, fontSize: 13, padding: '7px 18px', borderLeft: i ? `1px solid ${paper.rule}` : undefined, background: site === s ? ink.base : 'transparent', color: site === s ? paper.cream : ink.soft }}
           >
-            {s === 'blog' ? 'Personal Blog' : 'Port'}
+            {{ blog: 'Personal Blog', port: 'Port', routes: 'Đường dẫn' }[s]}
           </button>
         ))}
       </div>
@@ -53,8 +66,10 @@ export function DisplaySettings({ blog, design, onSaveDesign }: { blog: ReactNod
           <BlogDesignPanel stored={design ?? {}} onSave={onSaveDesign} />
           <div style={{ padding: '6px 56px 130px', maxWidth: 1180 }}>{blog}</div>
         </>
-      ) : (
+      ) : site === 'port' ? (
         <PortDesign />
+      ) : (
+        <div style={{ padding: '26px 56px 130px', maxWidth: 1180 }}>{routes}</div>
       )}
     </div>
   )
@@ -111,7 +126,10 @@ function BlogDesignPanel({ stored, onSave }: { stored: BlogDesign; onSave: (patc
   }
   useEffect(dress, [previewStyle, fonts])
 
-  const split = useSplit('blog-design', 420, 'right')
+  // The tokens get the room; the page shrinks to fit (drawn at desktop width, scaled down).
+  const split = useSplit('blog-design-v2', 560, 'right', 360, 1000)
+  const [root, rootWidth] = useWidth<HTMLDivElement>()
+  const stacked = rootWidth > 0 && rootWidth < 860
   const group = (title: string, body: ReactNode, extra?: ReactNode) => (
     <>
       <div style={{ ...sectionHead, display: 'flex', justifyContent: 'space-between' }}>
@@ -124,16 +142,14 @@ function BlogDesignPanel({ stored, onSave }: { stored: BlogDesign; onSave: (patc
 
   // Port's layout, half for half: the page on the left, the tokens on the right.
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: split.columns, alignItems: 'start', marginTop: 16 }}>
-      <iframe
-        ref={frame}
-        title="xem trước Personal Blog"
-        src="/"
-        onLoad={dress}
-        style={{ width: '100%', height: 'calc(100vh - 220px)', border: 0, background: paper.white, display: 'block', position: 'sticky', top: 0, pointerEvents: split.dragging ? 'none' : undefined }}
-      />
-      {split.handle}
-      <div style={{ padding: '6px 34px 80px 22px', height: 'calc(100vh - 220px)', overflowY: 'auto', position: 'sticky', top: 0 }}>
+    <div ref={root} style={{ display: 'grid', gridTemplateColumns: stacked ? 'minmax(0,1fr)' : split.columns, alignItems: 'start', marginTop: 16 }}>
+      <div style={{ background: paper.white, pointerEvents: split.dragging ? 'none' : undefined, ...(stacked ? { height: '55vh', order: 2 } : { height: 'calc(100vh - 220px)', position: 'sticky', top: 0 }) }}>
+        <ScaledPreview>
+          <iframe ref={frame} title="xem trước Personal Blog" src="/" onLoad={dress} style={{ width: '100%', height: '100%', border: 0, display: 'block' }} />
+        </ScaledPreview>
+      </div>
+      {!stacked && split.handle}
+      <div style={stacked ? { padding: '6px 20px 24px' } : { padding: '6px 34px 80px 22px', height: 'calc(100vh - 220px)', overflowY: 'auto', position: 'sticky', top: 0 }}>
         {group(
           'Font',
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -164,7 +180,7 @@ function BlogDesignPanel({ stored, onSave }: { stored: BlogDesign; onSave: (patc
           <div key={g.group}>
             {group(
               g.title,
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(170px,1fr))', gap: '8px 12px' }}>
                 {Object.entries(g.raw).map(([name, def]) => {
                   const key = `${g.group}.${name}`
                   const value = draft[key] ?? def

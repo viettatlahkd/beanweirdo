@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
+import { ScaledPreview } from './ScaledPreview'
 import { garden, ink, paper, sans, serif } from '../../design/tokens'
 import { useRowDrag } from '../lib/useRowDrag'
 import { useTags } from '../../data/useTags'
@@ -461,7 +462,13 @@ export function Builder({
     return (
       <div style={{ padding: '4px 0 20px' }}>
         {fields}
-        {previewSlot && createPortal(<div style={{ height: '100%', overflowY: 'auto' }}>{view}</div>, previewSlot)}
+        {previewSlot &&
+          createPortal(
+            <ScaledPreview>
+              <div style={{ height: '100%', overflowY: 'auto' }}>{view}</div>
+            </ScaledPreview>,
+            previewSlot,
+          )}
       </div>
     )
 

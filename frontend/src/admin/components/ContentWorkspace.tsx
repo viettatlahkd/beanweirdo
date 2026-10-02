@@ -28,6 +28,7 @@ import { useNav } from '../../lib/nav'
 import { TEMPLATE_KEYS, templateName } from '../../lib/templateNames'
 import { usePostAddresses } from '../../data/usePostAddresses'
 import { StatusBadge } from './StatusBadge'
+import { SectionHead, plusButton } from './SectionHead'
 
 /**
  * Nội dung — the posts and the three vocabularies that file them, on one
@@ -123,28 +124,23 @@ function Dot({ own, inherited }: { own: string | null; inherited?: string | null
   )
 }
 
-function AddInline({ text, onAdd, indent = 16 }: { text: string; onAdd: (title: string) => void; indent?: number }) {
-  const [open, setOpen] = useState(false)
-  if (!open)
-    return (
-      <button type="button" onClick={() => setOpen(true)} style={{ ...link, display: 'block', padding: `4px 12px 4px ${indent}px` }}>
-        {text}
-      </button>
-    )
+/** The name of a new topic, typed under the subject whose "+" opened it. */
+function AddInline({ text, onAdd, onDone, indent = 16 }: { text: string; onAdd: (title: string) => void; onDone: () => void; indent?: number }) {
   return (
-    <div style={{ padding: `3px 12px 3px ${indent}px` }}>
+    <div style={{ padding: `3px 12px 6px ${indent}px` }}>
       <input
         autoFocus
         aria-label={text}
+        placeholder={text}
         onKeyDown={(e) => {
-          if (e.key === 'Escape') setOpen(false)
+          if (e.key === 'Escape') onDone()
           if (e.key !== 'Enter') return
           const v = e.currentTarget.value.trim()
-          setOpen(false)
+          onDone()
           if (v) onAdd(v)
         }}
-        onBlur={() => setOpen(false)}
-        style={{ ...box, padding: '4px 8px' }}
+        onBlur={onDone}
+        style={{ ...box, padding: '4px 8px', borderColor: ink.green }}
       />
     </div>
   )
@@ -163,6 +159,7 @@ function RailRow({
   dot,
   flag,
   drag,
+  onPlus,
 }: {
   name: string
   count: number
@@ -174,6 +171,8 @@ function RailRow({
   big?: boolean
   dot?: ReactNode
   flag?: string
+  /** A subject's "+": a new topic inside it. */
+  onPlus?: () => void
   drag?: { draggable: true; onDragStart: () => void; onDragOver: (e: DragEvent) => void; onDrop: () => void; onDragEnd: () => void; over: boolean; dragging: boolean }
 }) {
   return (
@@ -191,7 +190,7 @@ function RailRow({
       onDragEnd={drag?.onDragEnd}
       style={{
         display: 'grid',
-        gridTemplateColumns: `${drag ? '10px ' : ''}${dot ? '9px ' : ''}minmax(0,1fr) auto 18px`,
+        gridTemplateColumns: `${drag ? '10px ' : ''}${dot ? '9px ' : ''}minmax(0,1fr) auto ${onPlus ? '20px ' : ''}18px`,
         gap: 7,
         alignItems: 'center',
         padding: `5px 8px 5px ${indent}px`,
@@ -212,6 +211,21 @@ function RailRow({
         {flag && <span style={{ fontFamily: sans, fontSize: 10, color: WARN, marginLeft: 6 }}>{flag}</span>}
       </span>
       <span style={{ fontFamily: sans, fontSize: 11.5, color: count ? ink.muted : ink.faint, fontVariantNumeric: 'tabular-nums' }}>{count}</span>
+      {onPlus && (
+        <span
+          className="cw-more"
+          role="button"
+          aria-label={`Thêm topic vào ${name}`}
+          title={`Thêm topic vào ${name}`}
+          onClick={(e) => {
+            e.stopPropagation()
+            onPlus()
+          }}
+          style={{ ...plusButton, width: 18, height: 18, fontSize: 13 }}
+        >
+          +
+        </span>
+      )}
       {onMore ? (
         <span
           className="cw-more"
@@ -228,15 +242,6 @@ function RailRow({
       ) : (
         <span />
       )}
-    </div>
-  )
-}
-
-function Section({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <div style={{ display: 'grid' }}>
-      <div style={{ ...label, padding: '14px 14px 5px' }}>{title}</div>
-      {children}
     </div>
   )
 }
@@ -285,6 +290,7 @@ export function ContentWorkspace({ onChanged }: { onChanged?: () => void }) {
   const [cfg, setCfg] = useState<{ vocab: Vocab; id: string } | null>(null)
   const [undo, setUndo] = useState<Undo | null>(null)
   const [busy, setBusy] = useState(false)
+  const [addingTopic, setAddingTopic] = useState<string | null>(null)
 
   const load = useCallback(
     () =>
@@ -531,7 +537,7 @@ export function ContentWorkspace({ onChanged }: { onChanged?: () => void }) {
   const statusCount = (s: PostStatus) => posts.filter((p) => p.status === s).length
   const rail = (
     <nav aria-label="Phân loại" className="cw-rail" style={{ borderRight: `1px solid ${paper.rule}`, background: paper.white, paddingBottom: 18 }}>
-      <Section title="Chủ đề">
+      <SectionHead id="content.topics" title="Chủ đề" add={{ label: 'subject', onAdd: (title) => run(() => createTopic(title, null)) }}>
         {subjects.map((s) => (
           <div key={s.id}>
             <RailRow
@@ -545,6 +551,7 @@ export function ContentWorkspace({ onChanged }: { onChanged?: () => void }) {
               dot={<Dot own={s.accent} />}
               flag={s.visibility === 'private' ? 'riêng tư' : undefined}
               drag={dragOf(s.id)}
+              onPlus={() => setAddingTopic(addingTopic === s.id ? null : s.id)}
             />
             {childrenOf(s.id).map((c) => (
               <RailRow
@@ -561,19 +568,18 @@ export function ContentWorkspace({ onChanged }: { onChanged?: () => void }) {
                 drag={dragOf(c.id)}
               />
             ))}
-            {cfg?.vocab === 'topic' && cfg.id === s.id && <AddInline text="+ topic" indent={47} onAdd={(title) => run(() => createTopic(title, s.id))} />}
+            {addingTopic === s.id && <AddInline text={`topic mới trong ${s.title}`} indent={47} onAdd={(title) => run(() => createTopic(title, s.id))} onDone={() => setAddingTopic(null)} />}
           </div>
         ))}
         {unplaced > 0 && <RailRow name="chưa xếp" count={unplaced} on={f.topic === UNPLACED} onClick={() => toggle('topic', UNPLACED)} />}
-        <AddInline text="+ subject" onAdd={(title) => run(() => createTopic(title, null))} />
-      </Section>
+      </SectionHead>
       {/* Dạng bài is retired: the template a post is written in says what it is. */}
-      <Section title="Template">
+      <SectionHead id="content.templates" title="Template">
         {TEMPLATE_KEYS.map((t) => (
           <RailRow key={t} name={templateName(t)} count={postsOf('tpl', t).length} on={f.tpl === t} onClick={() => toggle('tpl', t)} />
         ))}
-      </Section>
-      <Section title="Tag">
+      </SectionHead>
+      <SectionHead id="content.tags" title="Tag" add={{ label: 'tag', onAdd: (l) => run(() => createKeyword(l)) }}>
         {keywords.map((k) => (
           <RailRow
             key={k.id}
@@ -585,13 +591,12 @@ export function ContentWorkspace({ onChanged }: { onChanged?: () => void }) {
             onMore={() => open('kw', k.id)}
           />
         ))}
-        <AddInline text="+ tag" onAdd={(l) => run(() => createKeyword(l))} />
-      </Section>
-      <Section title="Trạng thái">
+      </SectionHead>
+      <SectionHead id="content.status" title="Trạng thái">
         {(Object.keys(STATUS_LABEL) as PostStatus[]).map((s) => (
           <RailRow key={s} name={STATUS_LABEL[s]} count={statusCount(s)} on={f.status === s} onClick={() => toggle('status', s)} />
         ))}
-      </Section>
+      </SectionHead>
     </nav>
   )
 

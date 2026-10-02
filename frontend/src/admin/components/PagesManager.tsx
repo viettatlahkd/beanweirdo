@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState, type CSSProperties, type DragEvent, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
+import { ScaledPreview, useWidth } from './ScaledPreview'
+import { SectionHead } from './SectionHead'
 import {
   TEMPLATES,
   createPage,
@@ -321,8 +323,6 @@ const treeRow = (on: boolean, indent: number): CSSProperties => ({
   boxShadow: on ? `inset 3px 0 0 ${ink.green}` : undefined,
 })
 const meta: CSSProperties = { marginLeft: 'auto', fontSize: 11, color: ink.faint, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }
-const siteHead: CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '16px 12px 6px', fontFamily: serif, fontSize: 18, color: ink.base }
-const group: CSSProperties = { ...label, margin: 0, padding: '10px 12px 3px 24px' }
 
 const same = (a: Selected | null, b: Selected) => JSON.stringify(a) === JSON.stringify(b)
 
@@ -352,11 +352,13 @@ export function PagesManager({
   const [open, setOpen] = useState<Selected>({ kind: 'system', key: 'landing' })
   const [err, setErr] = useState<string | null>(null)
   const [round, setRound] = useState(0)
-  const [newPage, setNewPage] = useState('')
-  const [archived, setArchived] = useState(false)
   // Two halves, like the port builder: the tree with the open page's settings
   // inside it, and the page itself. Editors portal their preview into `slot`.
-  const split = useSplit('pages', 440, 'left', 320, 760)
+  // The settings get the room; the preview shrinks (drawn at desktop width, scaled down).
+  const split = useSplit('pages-v2', 600, 'left', 360, 1100)
+  const [root, rootWidth] = useWidth<HTMLDivElement>()
+  // Too narrow for two halves: settings first, the preview under them.
+  const stacked = rootWidth > 0 && rootWidth < 860
   const [slot, setSlot] = useState<HTMLDivElement | null>(null)
   const [portRound, setPortRound] = useState(0)
   useEffect(() => {
@@ -429,7 +431,14 @@ export function PagesManager({
     </div>
   )
   const frame = (path: string, title: string, key: number = round) =>
-    slot && path ? createPortal(<iframe key={key} title={`xem trước ${title}`} src={path} style={{ width: '100%', height: '100%', border: 0 }} />, slot) : null
+    slot && path
+      ? createPortal(
+          <ScaledPreview>
+            <iframe key={key} title={`xem trước ${title}`} src={path} style={{ width: '100%', height: '100%', border: 0 }} />
+          </ScaledPreview>,
+          slot,
+        )
+      : null
   const nodeItem = (type: 'topic' | 'keyword', id: string, title: string, indent: number, big = false) => {
     const page = findPage(pages, type === 'keyword' ? `tag-${id}` : id)
     const own = overrideOf(type, id)
@@ -437,64 +446,67 @@ export function PagesManager({
     return item(sel, title, indent, `${own ? 'riêng · ' : ''}${page ? postsOf(page.id).length : 0}`, big)
   }
 
+  const addPort = (key: string) =>
+    run(async () => {
+      const page = await createFromPreset(key as PresetKey, port.pages, src.moduleIds)
+      port.setPages((ps) => [...ps, page])
+      setOpen({ kind: 'port-page', id: page.id })
+    })
+  const addPage = (id: string) =>
+    run(async () => {
+      await createPage(id, id)
+      setOpen({ kind: 'curated', id })
+    })
+
   const tree = () => (
-    <nav aria-label="Cây trang" style={{ background: paper.white, paddingBottom: 24, height: 'calc(100vh - 220px)', overflowY: 'auto', position: 'sticky', top: 0 }}>
-      <div style={siteHead}>
-        Port <span style={meta}>/portfolio</span>
-      </div>
-      {item({ kind: 'port-part', part: 'home' }, 'Trang chủ', 24)}
-      <div style={group}>Các trang port</div>
-      {livePort.map((p) => item({ kind: 'port-page', id: p.id }, p.title, 34, p.status === 'draft' ? 'nháp' : ''))}
-      <AddPort
-        onAdd={(key) =>
-          run(async () => {
-            const page = await createFromPreset(key, port.pages, src.moduleIds)
-            port.setPages((ps) => [...ps, page])
-            setOpen({ kind: 'port-page', id: page.id })
-          })
-        }
-      />
-      {archivedPort.length > 0 && (
-        <>
-          <button type="button" aria-expanded={archived} onClick={() => setArchived((a) => !a)} style={{ ...treeRow(false, 34), color: ink.muted, fontSize: 12 }}>
-            {archived ? '▾' : '▸'} Lưu trữ <span style={meta}>{archivedPort.length}</span>
-          </button>
-          {archived && archivedPort.map((p) => item({ kind: 'port-page', id: p.id }, p.title, 46))}
-        </>
-      )}
-      {PORT_PARTS.map((x) => item({ kind: 'port-part', part: x.part }, x.title, 24))}
+    <nav aria-label="Cây trang" style={{ background: paper.white, paddingBottom: 24, ...(stacked ? {} : { height: 'calc(100vh - 220px)', overflowY: 'auto', position: 'sticky', top: 0 }) }}>
+      <SectionHead id="pages.port" title="Port" big meta="/portfolio">
+        {item({ kind: 'port-part', part: 'home' }, 'Trang chủ', 24)}
+        <SectionHead
+          id="pages.port.pages"
+          title="Các trang port"
+          indent={24}
+          add={{ label: 'trang port', options: [{ value: 'bibi', label: 'từ mẫu bibi' }, { value: 'bibe', label: 'từ mẫu bibe' }, { value: 'blank', label: 'trang trống' }], onPick: addPort }}
+        >
+          {livePort.map((p) => item({ kind: 'port-page', id: p.id }, p.title, 40, p.status === 'draft' ? 'nháp' : ''))}
+          {archivedPort.length > 0 && (
+            <SectionHead id="pages.port.archived" title="Lưu trữ" indent={40} meta={archivedPort.length}>
+              {archivedPort.map((p) => item({ kind: 'port-page', id: p.id }, p.title, 54))}
+            </SectionHead>
+          )}
+        </SectionHead>
+        {PORT_PARTS.map((x) => item({ kind: 'port-part', part: x.part }, x.title, 24))}
+      </SectionHead>
 
-      <div style={{ ...siteHead, borderTop: `1px solid ${paper.rule}`, marginTop: 12 }}>
-        Personal Blog <span style={meta}>/</span>
-      </div>
-      {SYSTEM.map((s) => item({ kind: 'system', key: s.key }, s.title, 24))}
-      {item({ kind: 'nav' }, 'Điều hướng', 24, navItems.length)}
-      <div style={group}>Trang chọn tay</div>
-      {curated.map((p) => item({ kind: 'curated', id: p.id }, p.title || p.id, 34, postsOf(p.id).length))}
-      <div style={{ padding: '3px 12px 3px 34px', display: 'flex', gap: 6 }}>
-        <input aria-label="Địa chỉ trang mới" placeholder="+ trang mới" value={newPage} onChange={(e) => setNewPage(e.target.value.trim())} style={{ ...box, padding: '3px 7px', fontSize: 12 }} />
-        {newPage && (
-          <button type="button" onClick={() => run(async () => { await createPage(newPage, newPage); setOpen({ kind: 'curated', id: newPage }); setNewPage('') })} style={link}>
-            tạo
-          </button>
+      <div style={{ borderTop: `1px solid ${paper.rule}`, marginTop: 10 }} />
+      <SectionHead id="pages.blog" title="Personal Blog" big meta="/">
+        {SYSTEM.map((s) => item({ kind: 'system', key: s.key }, s.title, 24))}
+        {item({ kind: 'nav' }, 'Điều hướng', 24, navItems.length)}
+        <SectionHead id="pages.blog.curated" title="Trang chọn tay" indent={24} add={{ label: 'trang (địa chỉ)', onAdd: (v) => addPage(v.toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-|-$/g, '')) }}>
+          {curated.map((p) => item({ kind: 'curated', id: p.id }, p.title || p.id, 40, postsOf(p.id).length))}
+        </SectionHead>
+        <SectionHead id="pages.blog.topics" title="Chủ đề" indent={24}>
+          {subjects.map((s) => (
+            <div key={s.id}>
+              {nodeItem('topic', s.id, s.title, 40, true)}
+              {sortedTopics.filter((t) => t.parent_id === s.id).map((t) => nodeItem('topic', t.id, t.title, 54))}
+            </div>
+          ))}
+        </SectionHead>
+        {vocab.keywords.length > 0 && (
+          <SectionHead id="pages.blog.tags" title="Tag" indent={24}>
+            {vocab.keywords.map((k) => nodeItem('keyword', k.id, k.label, 40))}
+          </SectionHead>
         )}
-      </div>
-      <div style={group}>Chủ đề</div>
-      {subjects.map((s) => (
-        <div key={s.id}>
-          {nodeItem('topic', s.id, s.title, 34, true)}
-          {sortedTopics.filter((t) => t.parent_id === s.id).map((t) => nodeItem('topic', t.id, t.title, 48))}
-        </div>
-      ))}
-      {vocab.keywords.length > 0 && <div style={group}>Tag</div>}
-      {vocab.keywords.map((k) => nodeItem('keyword', k.id, k.label, 34))}
-      <div style={group}>Mẫu</div>
-      {templates.map((p) => item({ kind: 'template', id: p.id }, TEMPLATE_TITLES[p.kind], 34))}
+        <SectionHead id="pages.blog.templates" title="Mẫu" indent={24}>
+          {templates.map((p) => item({ kind: 'template', id: p.id }, TEMPLATE_TITLES[p.kind], 40))}
+        </SectionHead>
+      </SectionHead>
 
-      <div style={{ ...siteHead, borderTop: `1px solid ${paper.rule}`, marginTop: 12 }}>
-        Practice <span style={meta}>{toPath({ area: 'practice', screen: 'hours' })}</span>
-      </div>
-      {item({ kind: 'practice' }, 'Ghi 02', 24, 'sau đăng nhập')}
+      <div style={{ borderTop: `1px solid ${paper.rule}`, marginTop: 10 }} />
+      <SectionHead id="pages.practice" title="Practice" big meta={toPath({ area: 'practice', screen: 'hours' })}>
+        {item({ kind: 'practice' }, 'Ghi 02', 24, 'sau đăng nhập')}
+      </SectionHead>
     </nav>
   )
 
@@ -634,23 +646,18 @@ export function PagesManager({
   }
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: split.columns, borderTop: `1px solid ${paper.rule}`, alignItems: 'start' }}>
+    <div ref={root} style={{ display: 'grid', gridTemplateColumns: stacked ? 'minmax(0,1fr)' : split.columns, borderTop: `1px solid ${paper.rule}`, alignItems: 'start' }}>
       {tree()}
-      {split.handle}
-      <div ref={setSlot} style={{ height: 'calc(100vh - 220px)', position: 'sticky', top: 0, background: paper.white }} />
+      {!stacked && split.handle}
+      <div
+        ref={setSlot}
+        style={{
+          background: paper.white,
+          pointerEvents: split.dragging ? 'none' : undefined,
+          ...(stacked ? { height: '60vh', borderTop: `1px solid ${paper.rule}` } : { height: 'calc(100vh - 220px)', position: 'sticky', top: 0 }),
+        }}
+      />
     </div>
-  )
-}
-
-/** "+ trang port": from one of the two presets or blank, like the Portfolio screen offered. */
-function AddPort({ onAdd }: { onAdd: (key: PresetKey) => void }) {
-  return (
-    <select aria-label="Trang port mới" value="" onChange={(e) => e.target.value && onAdd(e.target.value as PresetKey)} style={{ ...box, width: 'auto', margin: '2px 12px 4px 34px', padding: '2px 6px', fontSize: 12, color: ink.green, border: 'none', background: 'transparent' }}>
-      <option value="">+ trang port</option>
-      <option value="bibi">từ mẫu bibi</option>
-      <option value="bibe">từ mẫu bibe</option>
-      <option value="blank">trang trống</option>
-    </select>
   )
 }
 
@@ -775,7 +782,14 @@ function PageEditor({
           </button>
         )}
       </div>
-      {preview && previewSlot && createPortal(<iframe key={round} title={`xem trước ${title}`} src={preview} style={{ width: '100%', height: '100%', border: 0 }} />, previewSlot)}
+      {preview &&
+        previewSlot &&
+        createPortal(
+          <ScaledPreview>
+            <iframe key={round} title={`xem trước ${title}`} src={preview} style={{ width: '100%', height: '100%', border: 0 }} />
+          </ScaledPreview>,
+          previewSlot,
+        )}
     </div>
   )
 }
