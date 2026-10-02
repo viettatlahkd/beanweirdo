@@ -22,6 +22,9 @@
   (`legacy`) giữ nguyên cách xếp cũ của database, nên trang roasting, sensory, tư duy
   tư duy không đổi.
 - `useModules().groupsOf(pageId)`.
+- **[ĐỔI HÀNH VI]** Khối port "mới nhất / module / tag / ghim" xếp bằng cùng hàm "mới nhất" của quy chế
+  (`portfolio/blocks.ts:newestFirst` = `listingRule.ts:newest`). Trước: theo giờ đăng — cùng chữ
+  "mới nhất" mà port và trang site xếp khác nhau (tự review, 2026-10-02).
 
 ## Đụng dữ liệu
 

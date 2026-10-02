@@ -7,6 +7,8 @@
  * every page has them.
  */
 
+import { newest } from '../lib/listingRule'
+
 export type Source =
   | { mode: 'latest'; limit: number }
   | { mode: 'module'; moduleId: string; limit: number }
@@ -66,8 +68,8 @@ export type PortPost = {
   pages?: string[]
 }
 
-const newestFirst = (a: PortPost, b: PortPost) =>
-  (b.published_at ?? b.date_label).localeCompare(a.published_at ?? a.date_label)
+// The same "newest" every site page uses: the date on the post, then publish time.
+const newestFirst = newest
 
 /** The posts a block shows, in display order. Published posts only. */
 export function resolvePosts(source: Source, posts: PortPost[]): PortPost[] {

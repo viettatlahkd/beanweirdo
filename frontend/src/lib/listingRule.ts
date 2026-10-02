@@ -141,14 +141,14 @@ export function selectPosts<P extends RulePost>(rule: ListingRule, posts: readon
   )
 }
 
-const stamp = (p: RulePost) => p.published_at ?? ''
+const stamp = (p: Pick<RulePost, 'published_at'>) => p.published_at ?? ''
 /*
  * Newest by the date the reader sees on the post (`date_label`, YYYY.MM), then
  * by when it went up. Posts imported in one batch share a publish time that has
  * nothing to do with when they were written, so the publish time alone put
  * 2025.11 ahead of 2026.01.
  */
-const newest = (a: RulePost, b: RulePost) =>
+export const newest = (a: Pick<RulePost, 'published_at' | 'date_label'>, b: Pick<RulePost, 'published_at' | 'date_label'>) =>
   b.date_label.localeCompare(a.date_label) || stamp(b).localeCompare(stamp(a))
 
 /**
