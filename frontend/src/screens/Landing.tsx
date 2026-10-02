@@ -3,7 +3,6 @@ import { splitAesc } from '../content/site'
 import { landingModules, useModules } from '../data/useModules'
 import type { ModuleImageFields } from '../admin/moduleForm'
 import { coverStyle } from '../lib/imageFocus'
-import type { PostRow } from '../data/usePublishedPosts'
 import { usePublishedPosts } from '../data/usePublishedPosts'
 import { useSiteCopy } from '../data/useSiteCopy'
 import { garden, ink, layout, paper, prose, sans, serif, wrapTitle } from '../design/tokens'
@@ -72,17 +71,6 @@ const bandGrid = (columns: string, rows: string, mob: boolean): CSSProperties =>
    */
   ...(mob ? { marginLeft: -layout.padMobile, marginRight: -layout.padMobile } : null),
 })
-
-/** Groups posts by `module_id`, preserving each module's `sort_order`. */
-function groupByModule(posts: PostRow[]): Map<string, PostRow[]> {
-  const map = new Map<string, PostRow[]>()
-  for (const p of posts) {
-    const list = map.get(p.module_id)
-    if (list) list.push(p)
-    else map.set(p.module_id, [p])
-  }
-  return map
-}
 
 /**
  * Each module gets its own image arrangement, and every tile breaks its grid
@@ -379,10 +367,12 @@ function PostSplit({ text }: { text: string }) {
 
 export function Landing() {
   const nav = useNav()
-  const { data: allModules } = useModules()
+  const { data: allModules, postsOf } = useModules()
   const modules = landingModules(allModules)
+  // Each page lists what its rule pulls (migration 0028), not what is filed under it.
+  const postsByModule = useMemo(() => new Map(modules.map((m) => [m.id, postsOf(m.id)])), [modules, postsOf])
+  // The call to action counts every post on the site, wherever it is shown.
   const { data: posts } = usePublishedPosts()
-  const postsByModule = useMemo(() => groupByModule(posts), [posts])
   const { site } = useSiteCopy()
   const title = splitAesc(site.lTitle1)
   const mob = useIsMobile()

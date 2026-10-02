@@ -4,7 +4,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const usePublishedPosts = vi.fn()
 const useModules = vi.fn()
 vi.mock('../data/usePublishedPosts', () => ({ usePublishedPosts: () => usePublishedPosts() }))
-vi.mock('../data/useModules', () => ({ useModules: () => useModules() }))
+vi.mock('../data/useModules', async (orig) =>
+  (await import('../test/pagesMock')).pagesModule(orig, (...a: unknown[]) => useModules(...a), () => usePublishedPosts().data ?? []),
+)
 vi.mock('../components/Breadcrumbs', () => ({ Breadcrumbs: () => null }))
 
 const { Notes } = await import('./Notes')

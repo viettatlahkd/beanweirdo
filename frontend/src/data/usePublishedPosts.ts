@@ -31,6 +31,8 @@ export type PostRow = {
   created_at: string
   status: PostStatus
   template: PostTemplate
+  /** Place on the topic tree (migration 0027). */
+  topic_id: string | null
   hero_image_url: string | null
   published_at: string | null
   deleted_at: string | null

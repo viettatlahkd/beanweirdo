@@ -29,7 +29,8 @@ describe('useModules', () => {
       { id: 'biochem', title: 'biochemistry 101', sort_order: 2 },
     ]
     const builder = makeQueryBuilder({ data: rows, error: null })
-    from.mockReturnValue(builder)
+    // Only the modules table has rows: no feature layer yet, so the modules are the pages.
+    from.mockImplementation((table: string) => (table === 'modules' ? builder : makeQueryBuilder({ data: [], error: null })))
 
     const { result } = renderHook(() => useModules())
     expect(result.current.loading).toBe(true)
@@ -39,13 +40,13 @@ describe('useModules', () => {
     expect(from).toHaveBeenCalledWith('modules')
     expect(builder.select).toHaveBeenCalledWith('*')
     expect(builder.order).toHaveBeenCalledWith('sort_order', { ascending: true })
-    expect(result.current.data).toEqual(rows)
+    expect(result.current.data).toMatchObject(rows)
     expect(result.current.error).toBeNull()
   })
 
   it('surfaces a query error and clears data', async () => {
     const builder = makeQueryBuilder({ data: null, error: { message: 'boom' } })
-    from.mockReturnValue(builder)
+    from.mockImplementation((table: string) => (table === 'modules' ? builder : makeQueryBuilder({ data: [], error: null })))
 
     const { result } = renderHook(() => useModules())
     await waitFor(() => expect(result.current.loading).toBe(false))

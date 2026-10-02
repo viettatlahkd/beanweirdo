@@ -1,8 +1,7 @@
 import { useState, type CSSProperties, type ReactNode } from 'react'
 import { NAV, type Glyph, type NavItem } from '../content/navItems'
 import type { NavGroup } from '../content/site'
-import { sidebarModules, useModules, type ModuleRow } from '../data/useModules'
-import { usePublishedPosts, type PostRow } from '../data/usePublishedPosts'
+import { findPage, sidebarModules, useModules, type ModuleRow } from '../data/useModules'
 import { useSiteCopy } from '../data/useSiteCopy'
 import { layout, paper, sans, serif } from '../design/tokens'
 import { areaOfGroup, goToArea, visibleGroups } from '../lib/area'
@@ -218,16 +217,16 @@ export function Sidebar() {
   const { on, bind } = useHover()
   const mobile = useIsMobile()
   const [drawer, setDrawer] = useState(false)
-  const { data: allModules } = useModules()
+  const { data: allModules, postsOf } = useModules()
   const modules = sidebarModules(allModules)
-  const { data: posts } = usePublishedPosts()
   const { site } = useSiteCopy()
   const { authed, signOut } = useAuth()
   const dark = nav.screen === 'notes' || nav.screen === 'hours'
   const t = theme(dark)
   const groups = visibleGroups(nav.area, authed)
 
-  const countFor = (m: ModuleRow) => posts.filter((p: PostRow) => p.module_id === m.id).length
+  // What the page's rule lists, so the count matches the page it opens.
+  const countFor = (m: ModuleRow) => postsOf(m.id).length
 
   const section = (group: NavGroup) => {
     const items = NAV.filter((n) => n.group === group && !n.hiddenFromSidebar)
@@ -267,7 +266,7 @@ export function Sidebar() {
        * nav entry instead — a hand-copied name and a hand-picked glyph that
        * renaming the module in the CMS left untouched. Ledger D2.
        */
-      const own = item.moduleId ? allModules.find((m) => m.id === item.moduleId) : undefined
+      const own = findPage(allModules, item.moduleId)
       rows.push(
         <Row
           key={item.key}

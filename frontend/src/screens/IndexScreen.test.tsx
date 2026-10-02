@@ -20,11 +20,9 @@ vi.mock('../lib/nav', async () => {
 })
 
 const useModules = vi.fn()
-vi.mock('../data/useModules', () => ({
-  useModules: (...args: unknown[]) => useModules(...args),
-  // The journals are modules too now; only the reading ones are listed here.
-  indexModules: (ms: { visibility?: string }[]) => ms.filter((m) => m.visibility !== 'private'),
-}))
+vi.mock('../data/useModules', async (orig) =>
+  (await import('../test/pagesMock')).pagesModule(orig, (...a: unknown[]) => useModules(...a), () => usePublishedPosts().data ?? []),
+)
 
 const usePublishedPosts = vi.fn()
 vi.mock('../data/usePublishedPosts', () => ({

@@ -4,7 +4,6 @@ import { useMemo } from 'react'
 import type { ModuleRow } from '../data/useModules'
 import { indexModules, useModules } from '../data/useModules'
 import type { PostRow } from '../data/usePublishedPosts'
-import { usePublishedPosts } from '../data/usePublishedPosts'
 import { Breadcrumbs } from '../components/Breadcrumbs'
 import { useSiteCopy } from '../data/useSiteCopy'
 import { coverStyle } from '../lib/imageFocus'
@@ -51,17 +50,6 @@ function usePlates() {
     caption: captions[i],
     fill: photos[i] ? coverStyle(photos[i]) : { background: p.bg },
   }))
-}
-
-/** Groups posts by `module_id`, preserving each module's `sort_order`. */
-function groupByModule(posts: PostRow[]): Map<string, PostRow[]> {
-  const map = new Map<string, PostRow[]>()
-  for (const p of posts) {
-    const list = map.get(p.module_id)
-    if (list) list.push(p)
-    else map.set(p.module_id, [p])
-  }
-  return map
 }
 
 type ModulesProps = { modules: ModuleRow[]; postsByModule: Map<string, PostRow[]> }
@@ -425,10 +413,10 @@ function Columns({ modules, postsByModule }: ModulesProps) {
 /** Mục lục — the table of contents, in whichever shape is selected. */
 export function IndexScreen() {
   const { variant } = useNav()
-  const { data: allModules } = useModules()
+  const { data: allModules, postsOf } = useModules()
   const modules = indexModules(allModules)
-  const { data: posts } = usePublishedPosts()
-  const postsByModule = useMemo(() => groupByModule(posts), [posts])
+  // Each page lists what its rule pulls (migration 0028), not what is filed under it.
+  const postsByModule = useMemo(() => new Map(modules.map((m) => [m.id, postsOf(m.id)])), [modules, postsOf])
 
   return variant === 'A' ? (
     <Ledger modules={modules} postsByModule={postsByModule} />

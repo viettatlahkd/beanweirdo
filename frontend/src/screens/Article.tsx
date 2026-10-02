@@ -10,8 +10,7 @@ import {
   toMemoData,
   toReportData,
 } from '../lib/postToRenderer'
-import { usePublishedPosts } from '../data/usePublishedPosts'
-import { useModules } from '../data/useModules'
+import { findPage, useModules, usePagePosts } from '../data/useModules'
 import { ink, sans } from '../design/tokens'
 import { Breadcrumbs } from '../components/Breadcrumbs'
 import { useNav } from '../lib/nav'
@@ -49,12 +48,13 @@ export function Article() {
   // used to work here, but that column is the authoring order, so a single
   // archive or reorder would have pointed this at nothing.
   const needsFallback = !nav.postId
-  const fallback = usePublishedPosts({ moduleId: 'biochem', enabled: needsFallback })
+  const fallback = usePagePosts(needsFallback ? 'biochem' : null)
   const fallbackId = fallback.data[0]?.id ?? null
   const effectivePostId = nav.postId ?? fallbackId
 
   const { data: post, loading, error } = usePost(effectivePostId)
-  const siblings = usePublishedPosts({ moduleId: post?.module_id, enabled: Boolean(post?.module_id) })
+  // Its neighbours are the posts of the page it is filed under, in that page's order.
+  const siblings = usePagePosts(findPage(modules, post?.module_id)?.id)
 
   if (needsFallback && fallback.loading) {
     return <div style={status}>Đang tải…</div>
@@ -72,7 +72,7 @@ export function Article() {
     return <div style={status}>Không tìm thấy bài viết.</div>
   }
 
-  const module_ = modules.find((m) => m.id === post.module_id)
+  const module_ = findPage(modules, post.module_id)
   // Every template gets the same trail back. The renderer package knows
   // nothing about routing, so the app hands it the finished element.
   const crumbs = (

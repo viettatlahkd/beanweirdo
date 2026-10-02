@@ -10,7 +10,9 @@ const useNav = vi.fn()
 vi.mock('../lib/nav', () => ({ useNav: (...args: unknown[]) => useNav(...args) }))
 
 const useModules = vi.fn()
-vi.mock('../data/useModules', () => ({ useModules: (...args: unknown[]) => useModules(...args) }))
+vi.mock('../data/useModules', async (orig) =>
+  (await import('../test/pagesMock')).pagesModule(orig, (...a: unknown[]) => useModules(...a), () => usePublishedPosts().data ?? []),
+)
 
 const usePublishedPosts = vi.fn()
 vi.mock('../data/usePublishedPosts', () => ({

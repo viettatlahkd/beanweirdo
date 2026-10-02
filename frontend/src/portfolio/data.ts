@@ -51,14 +51,22 @@ export function usePostHref(): (p: PortPost) => string {
 export function usePortSources(): { posts: PortPost[]; moduleTitles: Record<string, string>; moduleIds: string[]; loading: boolean } {
   const posts = usePublishedPosts()
   const modules = useModules()
+  // Which pages list each post, by page id and old addresses: a port block's
+  // "module" source is the page of that name, read through its rule.
+  const pagesOf = useMemo(() => {
+    const out = new Map<string, string[]>()
+    for (const page of modules.data)
+      for (const p of modules.postsOf(page.id)) out.set(p.id, [...(out.get(p.id) ?? []), page.id, ...page.aliases])
+    return out
+  }, [modules])
   return useMemo(
     () => ({
-      posts: posts.data.map(toPortPost),
+      posts: posts.data.map((p) => ({ ...toPortPost(p), pages: pagesOf.get(p.id) ?? [] })),
       moduleTitles: Object.fromEntries(modules.data.map((m) => [m.id, m.title])),
       moduleIds: modules.data.map((m) => m.id),
       loading: posts.loading || modules.loading,
     }),
-    [posts.data, posts.loading, modules.data, modules.loading],
+    [posts.data, posts.loading, modules.data, modules.loading, pagesOf],
   )
 }
 

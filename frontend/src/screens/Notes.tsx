@@ -11,13 +11,13 @@ import {
   type FeatureCell,
   type FeatureOverride,
 } from '../content/notes'
-import { usePublishedPosts, type PostRow } from '../data/usePublishedPosts'
+import type { PostRow } from '../data/usePublishedPosts'
 import { postDescription } from '../lib/postText'
 import { postThumbnail } from '../lib/postThumb'
 import { buildNotesGrid } from '../lib/notesGrid'
 import { featureMobile, notePlacementMobile } from '../content/notes'
 import { coverStyle } from '../lib/imageFocus'
-import { useModules } from '../data/useModules'
+import { findPage, useModules, usePagePosts } from '../data/useModules'
 import { BitesizeCard, PostRenderer } from 'post-renderer'
 import {
   toArticleData,
@@ -360,15 +360,16 @@ export function Notes() {
   const { site } = useSiteCopy()
   // Ghi 01's own colours, so an unfolded post wears them the way it would on a
   // page of its own.
-  const { data: allModules } = useModules()
-  const ghi01 = allModules.find((m) => m.id === 'ghi01')
+  const { data: allModules, error } = useModules()
+  // The page that was module Ghi 01 (migration 0028 keeps its old id as an alias).
+  const ghi01 = findPage(allModules, 'ghi01')
   // The design's cells, carrying whatever photos and words the CMS has set.
   const drawnCells = useMemo(
     () => withOverrides(featureCells, ghi01?.feature_cells as FeatureOverride[] | undefined),
     [ghi01?.feature_cells],
   )
-  // Posts filed under Ghi 01 — the memo lives here, as a post like any other.
-  const { data: filed, loading, error } = usePublishedPosts({ moduleId: 'ghi01' })
+  // What the Ghi page's rule pulls — the memo lives here, as a post like any other.
+  const { data: filed, loading } = usePagePosts(ghi01?.id ?? 'ghi01')
   const { tags } = useTags()
   // Tag là chữ chủ site tự đặt, nên không còn là bốn giá trị đóng nữa.
   const [noteFilter, setNoteFilter] = useState<string>('tất cả')

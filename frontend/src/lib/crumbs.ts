@@ -11,6 +11,12 @@ export type Crumb = {
   go?: () => void
 }
 
+/** A page by id, or by an address it used to have (a module id, migration 0028). */
+function byIdOrAlias(modules: readonly ModuleRow[], id: string | null | undefined): ModuleRow | undefined {
+  if (!id) return undefined
+  return modules.find((m) => m.id === id) ?? modules.find((m) => (m as { aliases?: string[] }).aliases?.includes(id))
+}
+
 /**
  * The breadcrumb trail, per screen.
  *
@@ -68,7 +74,7 @@ export function buildCrumbs(
   // Through moduleTarget: Ghi 01 and Ghi 02 have their own screens, and the
   // generic module page is a second, wrong door into them.
   const mod = (id: string): Crumb => {
-    const row = modules.find((m) => m.id === id)
+    const row = byIdOrAlias(modules, id)
     return {
       label: row?.title ?? id,
       go: toPublic('landing', () => (row ? openModule(nav, row) : nav.openModule(id))),
@@ -79,7 +85,7 @@ export function buildCrumbs(
     case 'home':
       return [landing, { label: navLabel('home') }]
     case 'module':
-      return [landing, index, { label: modules.find((m) => m.id === nav.moduleId)?.title ?? nav.moduleId }]
+      return [landing, index, { label: byIdOrAlias(modules, nav.moduleId)?.title ?? nav.moduleId }]
     case 'article':
       // The trail ends on the post's own name. 'Bài viết' told the reader
       // nothing they could not already see.
@@ -143,7 +149,7 @@ export function crumbBack(nav: Nav, moduleId?: string, parentGo?: () => void, mo
       // go to 'biochem' whatever you were reading.
       if (nav.articleFrom === 'module') {
         const id = moduleId ?? nav.moduleId
-        const row = modules.find((m) => m.id === id)
+        const row = byIdOrAlias(modules, id)
         return () => (row ? openModule(nav, row) : nav.openModule(id))
       }
       if (nav.articleFrom === 'archive') return nav.goArchive

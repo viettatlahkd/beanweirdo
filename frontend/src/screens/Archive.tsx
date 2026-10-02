@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { postDescription } from '../lib/postText'
 import { Breadcrumbs } from '../components/Breadcrumbs'
 import { PostExcerpt } from '../components/PostExcerpt'
-import { useModules } from '../data/useModules'
+import { findPage, useModules } from '../data/useModules'
 import { usePublishedPosts } from '../data/usePublishedPosts'
 import { useSiteCopy } from '../data/useSiteCopy'
 import { ink, layout, paper, sans, serif, wrapTitle } from '../design/tokens'
@@ -73,7 +73,7 @@ export function Archive() {
       </div>
 
       {posts.map((p) => {
-        const mod = modules.find((m) => m.id === p.module_id)
+        const mod = findPage(modules, p.module_id)
         const archived = p.status === 'archived'
         const open = openId === p.id
         return (

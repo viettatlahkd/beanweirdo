@@ -15,7 +15,9 @@ vi.mock('../lib/nav', () => ({
 }))
 
 const useModules = vi.fn()
-vi.mock('../data/useModules', () => ({ useModules: (...args: unknown[]) => useModules(...args) }))
+vi.mock('../data/useModules', async (orig) =>
+  (await import('../test/pagesMock')).pagesModule(orig, (...a: unknown[]) => useModules(...a), () => usePublishedPosts().data ?? []),
+)
 
 const usePublishedPosts = vi.fn()
 vi.mock('../data/usePublishedPosts', () => ({
@@ -85,7 +87,6 @@ describe('ModuleScreen', () => {
 
     expect(await screen.findByText('Senses of Flavors')).toBeInTheDocument()
     expect(screen.getByText('Taste Perception')).toBeInTheDocument()
-    expect(usePublishedPosts).toHaveBeenCalledWith(expect.objectContaining({ moduleId: 'sensory' }))
 
     await userEvent.click(screen.getByText('Senses of Flavors'))
     // The second argument records the door the reader came through — see `Origin`.

@@ -15,8 +15,15 @@ const SPECIAL_SCREEN: Record<string, (nav: Nav) => void> = {
   ghi02: (nav) => nav.goHours(),
 }
 
-export function openModule(nav: Nav, m: ModuleRow): void {
-  const special = SPECIAL_SCREEN[m.id]
+const SCREEN: Record<'notes' | 'hours', (nav: Nav) => void> = {
+  notes: (nav) => nav.goNotes(),
+  hours: (nav) => nav.goHours(),
+}
+
+export function openModule(nav: Nav, m: ModuleRow & { screen?: 'notes' | 'hours' }): void {
+  // A page says which screen it has (migration 0028); a bare module row still
+  // goes by its id.
+  const special = m.screen ? SCREEN[m.screen] : SPECIAL_SCREEN[m.id]
   if (special) special(nav)
   else nav.openModule(m.id)
 }

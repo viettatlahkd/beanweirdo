@@ -2,9 +2,8 @@ import type { CSSProperties } from 'react'
 import { displayNumber, postDescription } from '../lib/postText'
 import { Breadcrumbs } from '../components/Breadcrumbs'
 import type { ModuleRow } from '../data/useModules'
-import { useModules } from '../data/useModules'
+import { findPage, indexModules, useModules, usePagePosts } from '../data/useModules'
 import type { PostRow } from '../data/usePublishedPosts'
-import { usePublishedPosts } from '../data/usePublishedPosts'
 import { ink, layout, paper, prose, sans, serif, wrapTitle } from '../design/tokens'
 import { pageCaption, pageFill, pageImage } from '../lib/modulePageImages'
 import { Hover } from '../lib/Hover'
@@ -614,11 +613,10 @@ function Sequence({ m, posts }: { m: ModuleRow; posts: PostRow[] }) {
 export function ModuleScreen() {
   const { moduleId } = useNav()
   const { data: modules, loading: modulesLoading } = useModules()
-  const m = modules.find((x) => x.id === moduleId) ?? modules[0]
-  const { data: posts, loading: postsLoading } = usePublishedPosts({
-    moduleId: m?.id,
-    enabled: Boolean(m),
-  })
+  // An address a page used to have (a module id) still opens it; an unknown
+  // one falls back to the first page in the navigation.
+  const m = findPage(modules, moduleId) ?? indexModules(modules)[0] ?? modules[0]
+  const { data: posts, loading: postsLoading } = usePagePosts(m?.id)
 
   if (modulesLoading || !m) {
     return <div style={statusLabel}>Đang tải…</div>
