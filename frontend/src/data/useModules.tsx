@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { supabase } from '../lib/supabaseClient'
-import { resolveRule, toRule, type ListingRule, type RuleTopic } from '../lib/listingRule'
+import { groupPosts, resolveRule, toRule, type ListingRule, type PostGroup, type RuleTopic } from '../lib/listingRule'
 import type { PostRow } from './usePublishedPosts'
 import { TAG_PAGE } from '../lib/routes'
 
@@ -86,6 +86,11 @@ export type UseModulesResult = {
   error: string | null
   /** The posts a page lists, in its rule's order. */
   postsOf: (pageId: string) => PostRow[]
+  /**
+   * The page's posts as its rule groups them; one unnamed group when it does
+   * not group.
+   */
+  groupsOf: (pageId: string) => PostGroup<PostRow>[]
   /** Read everything again — after the CMS changes a rule or a page. */
   reload: () => void
 }
@@ -399,7 +404,17 @@ function useModulesQuery(enabled: boolean): UseModulesResult {
       if (!cache.has(key)) cache.set(key, pagePosts(page, store))
       return cache.get(key)!
     }
-    return { data, loading, error, postsOf, reload: () => setRound((r) => r + 1) }
+    const groupsOf = (pageId: string) => {
+      const page = findPage(data, pageId)
+      const posts = postsOf(pageId)
+      if (!page?.rule) return [{ key: '', label: '', posts }]
+      return groupPosts(page.rule, posts, {
+        topics: store.topics,
+        keywordsOf: (id) => store.postKeywords.get(id) ?? [],
+        labelOf: (_g, key) => store.keywords.find((k) => k.id === key)?.label ?? key,
+      })
+    }
+    return { data, loading, error, postsOf, groupsOf, reload: () => setRound((r) => r + 1) }
   }, [store, loading, error])
 }
 

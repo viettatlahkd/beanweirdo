@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type CSSProperties } from 'react'
+import { Fragment, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { Breadcrumbs } from '../components/Breadcrumbs'
 import { useSiteCopy } from '../data/useSiteCopy'
 import { noteFilterBar } from '../lib/notesFilter'
@@ -360,7 +360,7 @@ export function Notes() {
   const { site } = useSiteCopy()
   // Ghi 01's own colours, so an unfolded post wears them the way it would on a
   // page of its own.
-  const { data: allModules, error } = useModules()
+  const { data: allModules, error, groupsOf } = useModules()
   // The page that was module Ghi 01 (migration 0028 keeps its old id as an alias).
   const ghi01 = findPage(allModules, 'ghi01')
   // The design's cells, carrying whatever photos and words the CMS has set.
@@ -385,6 +385,16 @@ export function Notes() {
 
   const noteFilters = bar.chips
   const shownPosts = bar.visiblePosts as typeof filed
+  // The page's rule may group its posts (migration 0028/0029); the tag chips
+  // still filter inside every group. The design's feature cells sit in the
+  // biggest group only, so they are not drawn twice.
+  const shownIds = new Set(shownPosts.map((p) => p.id))
+  const sections = (ghi01 ? groupsOf(ghi01.id) : [{ key: '', label: '', posts: shownPosts }])
+    .map((g) => ({ ...g, posts: g.posts.filter((p) => shownIds.has(p.id)) }))
+    .filter((g) => g.posts.length > 0)
+  // The feature cells go with the biggest group: they are drawn between posts,
+  // and a one-post group would have nothing to sit them between.
+  const featureAt = sections.reduce((best, g, i) => (g.posts.length > sections[best].posts.length ? i : best), 0)
 
   return (
     <div
@@ -484,84 +494,107 @@ export function Notes() {
               statistics panel unfolds on Ghi 02 — the reader stays on the page
               they were reading. Open, it takes the full width of the grid and
               everything else steps back. */}
-            {buildNotesGrid(shownPosts, drawnCells).map((cell, gi, cells) => {
-              /*
-               * Hình học hẹp của ô đứng LIỀN TRƯỚC. `FeatureCellView` cần nó để
-               * biết có được kê lên ngang tầm ô ấy không — xem `canTuck`.
-               * Ô nào đứng trước ô nào phụ thuộc module có mấy bài, nên chỉ ở
-               * đây mới biết được, không đặt sẵn trong bảng được.
-               */
-              const before = gi > 0 ? cells[gi - 1] : null
-              const prevGeom = !before
-                ? null
-                : before.kind === 'feature'
-                  ? featureMobile[before.cell.n]
-                  : notePlacementMobile[before.slot % notePlacementMobile.length]
-              const prev = prevGeom ? { w: prevGeom.w, side: prevGeom.side } : null
-
-              if (cell.kind === 'feature') {
-                return (
-                  <FeatureCellView key={`F${cell.cell.n}-${gi}`} f={cell.cell} dimmed={openNote !== null} mob={mob} prev={prev} />
-                )
-              }
-              const p = cell.post
-              const open = openNote === p.id
-              const place = cell.place
-              const pm = notePlacementMobile[cell.slot % notePlacementMobile.length]
-            return (
-              <Hover
-                key={p.id}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setOpenNote((prev) => (prev === p.id ? null : p.id))
-                }}
-                style={{
-                  ...(mob
-                    ? {
-                        width: open ? '100%' : pm.w,
-                        alignSelf: open || pm.side === 'left' ? 'flex-start' : 'flex-end',
-                        marginTop: open ? '40px' : pm.mt,
-                        // Bài luôn nằm trên ảnh trang trí — luật chủ site chốt.
-                        position: 'relative',
-                        zIndex: 2,
-                      }
-                    : {
-                        /*
-                         * Bài mở ra KHÔNG chiếm trọn bề ngang.
-                         *
-                         * Chủ site: "bề ngang của bài nó chiếm trọn bề ngang
-                         * trang > trông rất lớn và cộc cằn (...) mục tiêu là
-                         * tạo cảm giác là bài này pop up và là 1 phần của trang
-                         * ghi, thay vì cảm giác như mở hẳn ra trang khác."
-                         *
-                         * Chín trên mười hai cột — ba phần tư — và thụt vào một
-                         * cột ở mép trái. Lưới của trang vẫn nhìn thấy được hai
-                         * bên, nên bài đọc ra là một khối nổi lên TRONG trang
-                         * chứ không phải một trang mới đè lên.
-                         */
-                        gridColumn: open ? '2 / span 9' : place.col,
-                        marginTop: open ? '40px' : place.mt,
-                      }),
-                  cursor: 'pointer',
-                  opacity: openNote !== null && !open ? 0.18 : 1,
-                  transition: 'opacity .45s ease',
-                }}
-                hoverStyle={{ opacity: 1 }}
-              >
-                {open ? (
-                  <OpenedPost post={p} mod={ghi01} />
-                ) : (
-                  <Collapsed
-                    post={p}
-                    num={String(shownPosts.length - shownPosts.indexOf(p)).padStart(2, '0')}
-                    aspect={mob ? pm.ar : place.ar}
-                    mediaWidth={mob ? '100%' : place.mw}
-                    mob={mob}
-                  />
+            {sections.map((sec, si) => (
+              <Fragment key={sec.key || 'all'}>
+                {/* A grouped Ghi (by subject, by topic…) titles each group across the grid. */}
+                {sec.label && (
+                  <div
+                    style={{
+                      gridColumn: '1 / -1',
+                      alignSelf: 'stretch',
+                      fontFamily: "'Be Vietnam Pro',sans-serif",
+                      fontSize: 11,
+                      fontWeight: 500,
+                      letterSpacing: '.2em',
+                      textTransform: 'uppercase',
+                      borderBottom: '1px solid currentColor',
+                      paddingBottom: 10,
+                      marginTop: si === 0 ? 0 : 30,
+                    }}
+                  >
+                    {sec.label}
+                  </div>
                 )}
-              </Hover>
-            )
-          })}
+                {buildNotesGrid(sec.posts, si === featureAt ? drawnCells : []).map((cell, gi, cells) => {
+                  /*
+                   * Hình học hẹp của ô đứng LIỀN TRƯỚC. `FeatureCellView` cần nó để
+                   * biết có được kê lên ngang tầm ô ấy không — xem `canTuck`.
+                   * Ô nào đứng trước ô nào phụ thuộc module có mấy bài, nên chỉ ở
+                   * đây mới biết được, không đặt sẵn trong bảng được.
+                   */
+                  const before = gi > 0 ? cells[gi - 1] : null
+                  const prevGeom = !before
+                    ? null
+                    : before.kind === 'feature'
+                      ? featureMobile[before.cell.n]
+                      : notePlacementMobile[before.slot % notePlacementMobile.length]
+                  const prev = prevGeom ? { w: prevGeom.w, side: prevGeom.side } : null
+
+                  if (cell.kind === 'feature') {
+                    return (
+                      <FeatureCellView key={`F${cell.cell.n}-${gi}`} f={cell.cell} dimmed={openNote !== null} mob={mob} prev={prev} />
+                    )
+                  }
+                  const p = cell.post
+                  const open = openNote === p.id
+                  const place = cell.place
+                  const pm = notePlacementMobile[cell.slot % notePlacementMobile.length]
+                return (
+                  <Hover
+                    key={p.id}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setOpenNote((prev) => (prev === p.id ? null : p.id))
+                    }}
+                    style={{
+                      ...(mob
+                        ? {
+                            width: open ? '100%' : pm.w,
+                            alignSelf: open || pm.side === 'left' ? 'flex-start' : 'flex-end',
+                            marginTop: open ? '40px' : pm.mt,
+                            // Bài luôn nằm trên ảnh trang trí — luật chủ site chốt.
+                            position: 'relative',
+                            zIndex: 2,
+                          }
+                        : {
+                            /*
+                             * Bài mở ra KHÔNG chiếm trọn bề ngang.
+                             *
+                             * Chủ site: "bề ngang của bài nó chiếm trọn bề ngang
+                             * trang > trông rất lớn và cộc cằn (...) mục tiêu là
+                             * tạo cảm giác là bài này pop up và là 1 phần của trang
+                             * ghi, thay vì cảm giác như mở hẳn ra trang khác."
+                             *
+                             * Chín trên mười hai cột — ba phần tư — và thụt vào một
+                             * cột ở mép trái. Lưới của trang vẫn nhìn thấy được hai
+                             * bên, nên bài đọc ra là một khối nổi lên TRONG trang
+                             * chứ không phải một trang mới đè lên.
+                             */
+                            gridColumn: open ? '2 / span 9' : place.col,
+                            marginTop: open ? '40px' : place.mt,
+                          }),
+                      cursor: 'pointer',
+                      opacity: openNote !== null && !open ? 0.18 : 1,
+                      transition: 'opacity .45s ease',
+                    }}
+                    hoverStyle={{ opacity: 1 }}
+                  >
+                    {open ? (
+                      <OpenedPost post={p} mod={ghi01} />
+                    ) : (
+                      <Collapsed
+                        post={p}
+                        num={String(sec.posts.length - sec.posts.indexOf(p)).padStart(2, '0')}
+                        aspect={mob ? pm.ar : place.ar}
+                        mediaWidth={mob ? '100%' : place.mw}
+                        mob={mob}
+                      />
+                    )}
+                  </Hover>
+                )
+              })}
+              </Fragment>
+            ))}
 
         {!loading && shownPosts.length === 0 && (
           <div

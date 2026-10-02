@@ -17,7 +17,7 @@ export async function pagesModule(orig: () => Promise<unknown>, useModules: Fn, 
   }
   return {
     ...real,
-    useModules: (...a: unknown[]) => ({ ...useModules(...a), postsOf, reload: () => {} }),
+    useModules: (...a: unknown[]) => ({ ...useModules(...a), postsOf, groupsOf: (id: string) => [{ key: '', label: '', posts: postsOf(id) }], reload: () => {} }),
     usePagePosts: (id: string | null | undefined) => ({ data: id ? postsOf(id) : [], loading: Boolean(useModules().loading) }),
   }
 }

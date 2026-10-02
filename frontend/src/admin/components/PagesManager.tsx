@@ -64,7 +64,7 @@ const TIER_NAMES: Record<RuleTier, string> = {
   all: 'Toàn bộ',
 }
 const SORT_NAMES: Record<RuleSort, string> = { newest: 'mới nhất trước', oldest: 'cũ nhất trước', manual: 'xếp tay', tree: 'theo cây chủ đề' }
-const GROUP_NAMES: Record<RuleGroup, string> = { none: 'không nhóm', topic: 'topic', keyword: 'tag', kind: 'dạng bài', year: 'năm' }
+const GROUP_NAMES: Record<RuleGroup, string> = { none: 'không nhóm', subject: 'subject', topic: 'topic', keyword: 'tag', kind: 'dạng bài', year: 'năm' }
 
 const head: CSSProperties = {
   fontFamily: sans,

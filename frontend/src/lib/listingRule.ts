@@ -12,7 +12,8 @@
 
 export type RuleTier = 'topic' | 'keyword' | 'kind' | 'template' | 'pick' | 'all'
 export type RuleSort = 'newest' | 'oldest' | 'manual' | 'tree'
-export type RuleGroup = 'none' | 'topic' | 'keyword' | 'kind' | 'year'
+/** `subject` groups a post under the subject at the root of its topic. */
+export type RuleGroup = 'none' | 'subject' | 'topic' | 'keyword' | 'kind' | 'year'
 
 export type ListingRule = {
   id?: string
@@ -141,14 +142,25 @@ export function selectPosts<P extends RulePost>(rule: ListingRule, posts: readon
 }
 
 const stamp = (p: RulePost) => p.published_at ?? ''
+/*
+ * Newest by the date the reader sees on the post (`date_label`, YYYY.MM), then
+ * by when it went up. Posts imported in one batch share a publish time that has
+ * nothing to do with when they were written, so the publish time alone put
+ * 2025.11 ahead of 2026.01.
+ */
 const newest = (a: RulePost, b: RulePost) =>
-  stamp(b).localeCompare(stamp(a)) || b.date_label.localeCompare(a.date_label)
+  b.date_label.localeCompare(a.date_label) || stamp(b).localeCompare(stamp(a))
 
-/** The posts table's own order: pinned, then placed by hand, then newest. */
+/**
+ * The posts table's own order, exactly as its query sorted: pinned, placed by
+ * hand, then publish time, then the date on the post. Kept as it was so a page
+ * nobody has ordered yet does not reshuffle under its readers.
+ */
 const legacy = (a: RulePost, b: RulePost) =>
   Number(Boolean(b.pinned)) - Number(Boolean(a.pinned)) ||
   (a.sort_order ?? Infinity) - (b.sort_order ?? Infinity) ||
-  newest(a, b)
+  stamp(b).localeCompare(stamp(a)) ||
+  b.date_label.localeCompare(a.date_label)
 
 export function sortPosts<P extends RulePost>(rule: ListingRule, posts: readonly P[], ctx: RuleContext): P[] {
   const list = [...posts]
@@ -175,19 +187,24 @@ export function groupPosts<P extends RulePost>(rule: ListingRule, posts: readonl
   if (rule.group_by === 'none') return [{ key: '', label: '', posts: [...posts] }]
   const groups = new Map<string, P[]>()
   const put = (key: string, p: P) => groups.set(key, [...(groups.get(key) ?? []), p])
+  const subjectOf = (id: string | null) => {
+    const t = id ? ctx.topics.find((x) => x.id === id) : undefined
+    return t ? t.parent_id ?? t.id : ''
+  }
   for (const p of posts) {
     if (rule.group_by === 'topic') put(p.topic_id ?? '', p)
+    else if (rule.group_by === 'subject') put(subjectOf(p.topic_id), p)
     else if (rule.group_by === 'kind') put(p.kind, p)
     else if (rule.group_by === 'year') put((p.published_at ?? p.date_label).slice(0, 4), p)
     else for (const k of ctx.keywordsOf?.(p.id) ?? []) put(k, p)
   }
   const keys = [...groups.keys()]
-  if (rule.group_by === 'topic') {
+  if (rule.group_by === 'topic' || rule.group_by === 'subject') {
     const at = new Map(treeOrder(ctx.topics).map((id, i) => [id, i]))
     keys.sort((a, b) => (at.get(a) ?? Infinity) - (at.get(b) ?? Infinity))
   } else if (rule.group_by === 'year') keys.sort((a, b) => b.localeCompare(a))
   const title = (key: string) =>
-    rule.group_by === 'topic'
+    rule.group_by === 'topic' || rule.group_by === 'subject'
       ? ctx.topics.find((t) => t.id === key)?.title ?? key
       : ctx.labelOf?.(rule.group_by, key) ?? key
   return keys.map((key) => ({ key, label: title(key), posts: groups.get(key)! }))

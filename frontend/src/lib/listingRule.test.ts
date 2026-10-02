@@ -87,6 +87,15 @@ describe('listing rule — groups', () => {
     ])
   })
 
+  it('groups by subject, gathering every topic under its subject', () => {
+    const g = resolveRule(toRule({ group_by: 'subject' }), posts, ctx).groups
+    expect(g.map((x) => [x.label, x.posts.map((p) => p.id)])).toEqual([
+      ['business', ['d']],
+      ['bean weirdo', ['b', 'a', 'c']],
+      ['', ['e']],
+    ])
+  })
+
   it('lets a post sit in every tag group it wears', () => {
     const g = resolveRule(toRule({ tier: 'keyword', nodes: ['heat', 'asia'], group_by: 'keyword' }), posts, ctx).groups
     expect(Object.fromEntries(g.map((x) => [x.key, x.posts.map((p) => p.id)]))).toEqual({ asia: ['d', 'b'], heat: ['b', 'a'] })
