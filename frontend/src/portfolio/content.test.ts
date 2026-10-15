@@ -38,9 +38,18 @@ describe('Header links', () => {
 
 describe('About signature', () => {
   it('shows the chosen signature, or the first when the choice is gone', () => {
-    const about = resolveContent({ about: { signs: ['one', 'two'], signUse: 1 } }).about
-    expect(aboutSign(about)).toBe('two')
-    expect(aboutSign({ ...about, signUse: 5 })).toBe('one')
+    const one = { id: 'a', name: 'one', image: '', reach: [] }
+    const two = { id: 'b', name: 'two', image: '', reach: [] }
+    const about = resolveContent({ about: { signatures: [one, two], signId: 'b' } }).about
+    expect(aboutSign(about)?.name).toBe('two')
+    expect(aboutSign({ ...about, signId: 'gone' })?.name).toBe('one')
+  })
+
+  it('reads the old names and contacts as signature 1', () => {
+    const reach = [{ label: 'email', url: 'a@b.c' }]
+    const about = resolveContent({ about: { signs: ['one', 'two'], signUse: 1, reach } }).about
+    expect(about.signatures).toEqual([{ id: 'sign-1', name: 'two', image: '', reach }])
+    expect(aboutSign(about)?.id).toBe('sign-1')
   })
 })
 

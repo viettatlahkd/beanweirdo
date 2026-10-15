@@ -27,7 +27,7 @@ import {
 import { PortfolioView } from '../../portfolio/PortfolioView'
 import docHtml from '../../portfolio/design-doc.html?raw'
 import { buildChrome, onwardOf, usePortSources, usePostHref } from '../../portfolio/data'
-import { navLinks, resolveContent, type Feature, type LinkItem, type NavOverride, type PortContent, menuFollowingFeatures } from '../../portfolio/content'
+import { aboutSign, navLinks, resolveContent, type Feature, type NavOverride, type PortContent, menuFollowingFeatures } from '../../portfolio/content'
 import {
   BLOCK_NAMES,
   BLOCK_ORDER,
@@ -737,8 +737,6 @@ function ImageField({ label, value, onChange }: { label: string; value: string; 
 
 const two: CSSProperties = { display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: '0 22px' }
 const rowBox: CSSProperties = { borderTop: `1px solid ${paper.rule}`, padding: '10px 0 6px' }
-/** "+ Thêm …" sits on its own line under the list it adds to. */
-const addLine: CSSProperties = { marginTop: 8 }
 
 /**
  * Portfolio › Nội dung trang — the content every port page shares, edited the
@@ -747,7 +745,7 @@ const addLine: CSSProperties = { marginTop: 8 }
  */
 /** The parts of the fixed port copy, each a node of its own in the CMS page tree. */
 /** `feature` is one port's block, opened from its row in Trang chủ's Thanh menu (owner, 2026-10-15). */
-export type PortPart = 'home' | 'feature' | 'about' | 'sign' | 'header' | 'footer'
+export type PortPart = 'home' | 'feature' | 'about' | 'header' | 'footer'
 
 export function ContentTab({
   content,
@@ -755,6 +753,7 @@ export function ContentTab({
   pages,
   only,
   pageId,
+  onNewSign,
 }: {
   content: PortContent
   setStored: (f: (s: Record<string, unknown>) => Record<string, unknown>) => void
@@ -763,6 +762,8 @@ export function ContentTab({
   only: PortPart
   /** The port page whose block `feature` edits. */
   pageId?: string
+  /** About's "Tạo chữ kí": signatures are made in Thông tin chung, so this goes there. */
+  onNewSign?: () => void
 }) {
   const show = (part: PortPart) => only === part
   const save = useCallback((patch: Record<string, unknown>) => updateSite({ portfolio: patch } as never), [])
@@ -890,66 +891,28 @@ export function ContentTab({
         </>
       )}
 
-      {show('sign') && (
-        <>
-      {about.signs.map((sg, i) => (
-        <div key={i} style={{ display: 'grid', gridTemplateColumns: '70px minmax(0,1fr) 28px', gap: 8, marginBottom: 6, alignItems: 'center' }}>
-          <label style={{ fontFamily: sans, fontSize: 12, display: 'flex', gap: 6, alignItems: 'center' }}>
-            <input type="radio" name="about-sign" checked={about.signUse === i} onChange={() => setGroup('about', { ...about, signUse: i })} />
-            Dùng
-          </label>
-          <input
-            style={small}
-            value={sg}
-            onChange={(e) => setGroup('about', { ...about, signs: about.signs.map((x, j) => (j === i ? e.target.value : x)) })}
-          />
-          <IconButton
-            size="sm"
-            label="Xoá ký tên"
-            onClick={() => {
-              const signs = about.signs.filter((_, j) => j !== i)
-              // Keep pointing at the same signature when one above it is removed.
-              const signUse = about.signUse > i ? about.signUse - 1 : about.signUse === i ? 0 : about.signUse
-              setGroup('about', { ...about, signs, signUse })
-            }}
-          >
-            <IconClose size={14} />
-          </IconButton>
-        </div>
-      ))}
-      <div style={addLine}>
-        <Button level="add" icon={<IconPlus size={14} />} onClick={() => setGroup('about', { ...about, signs: [...about.signs, ''] })}>
-          Thêm ký tên
-        </Button>
-      </div>
-        </>
-      )}
-
       {show('about') && (
         <>
       <div style={two}>
         <ImageField label="Ảnh hẹp" value={about.imageLeft} onChange={(v) => setGroup('about', { ...about, imageLeft: v })} />
         <ImageField label="Ảnh chính" value={about.imageRight} onChange={(v) => setGroup('about', { ...about, imageRight: v })} />
       </div>
-      <div style={fieldLabel}>Liên hệ</div>
-      {about.reach.map((l, i) => {
-        const set = (patch: Partial<LinkItem>) =>
-          setGroup('about', { ...about, reach: about.reach.map((x, j) => (j === i ? { ...x, ...patch } : x)) })
-        return (
-          <div key={i} style={{ display: 'grid', gridTemplateColumns: '140px minmax(0,1fr) 28px', gap: 8, marginBottom: 6, alignItems: 'center' }}>
-            <input style={small} value={l.label} placeholder="Nhãn" onChange={(e) => set({ label: e.target.value })} />
-            <input style={small} value={l.url} placeholder="Link" onChange={(e) => set({ url: e.target.value })} />
-            <IconButton size="sm" label="Xoá link" onClick={() => setGroup('about', { ...about, reach: about.reach.filter((_, j) => j !== i) })}>
-              <IconClose size={14} />
-            </IconButton>
-          </div>
-        )
-      })}
-      <div style={addLine}>
-        <Button level="add" icon={<IconPlus size={14} />} onClick={() => setGroup('about', { ...about, reach: [...about.reach, { label: '', url: '' }] })}>
-          Thêm link
-        </Button>
-      </div>
+      <Row label="Chữ kí">
+        <span style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <select aria-label="Chữ kí" value={aboutSign(about)?.id ?? ''} onChange={(e) => setGroup('about', { ...about, signId: e.target.value })}>
+            {about.signatures.map((sg) => (
+              <option key={sg.id} value={sg.id}>
+                {sg.name || 'chưa đặt tên'}
+              </option>
+            ))}
+          </select>
+          {onNewSign && (
+            <Button level="add" size="sm" icon={<IconPlus size={14} />} onClick={onNewSign}>
+              Tạo chữ kí
+            </Button>
+          )}
+        </span>
+      </Row>
         </>
       )}
     </div>
