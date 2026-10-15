@@ -217,7 +217,7 @@ export function usePortAdmin() {
 const uniqueSlug = (base: string, pages: Node[]) => freeSlug(base, new Set(pages.map((p) => p.slug)))
 
 /** What a new port page can start from, wherever one is made. */
-export const PRESET_CHOICES: { value: PresetKey; label: string }[] = [
+const PRESET_CHOICES: { value: PresetKey; label: string }[] = [
   { value: 'bibi', label: 'mẫu bibi' },
   { value: 'bibe', label: 'mẫu bibe' },
   { value: 'blank', label: 'trang trống' },
@@ -227,6 +227,18 @@ export const PRESET_CHOICES: { value: PresetKey; label: string }[] = [
 export async function createFromPreset(key: PresetKey, title: string, pages: Node[], moduleIds: string[], parentId: string | null = null): Promise<Node> {
   const slug = uniqueSlug(titleSlug(title) || (key === 'blank' ? 'trang' : key), pages)
   return createNode({ site: 'port', slug, title, parent_id: parentId, blocks: preset(key, moduleIds), look: key === 'bibe' ? 'baen' : 'biz', status: 'draft' })
+}
+
+/**
+ * A new port page that starts as a copy of one already there — a template like
+ * bibi or bibe, or a live site's home (owner, 2026-10-15): its blocks, look,
+ * words, colour and image; always a draft, under no site's home.
+ */
+export async function createFromPage(source: Node, title: string, pages: Node[]): Promise<Node> {
+  const slug = uniqueSlug(titleSlug(title) || 'trang', pages)
+  const made = await createNode({ site: 'port', slug, title, parent_id: null, blocks: source.blocks, look: source.look, status: 'draft' })
+  const { intro, accent, on_color, tint, tint2, image_url } = source
+  return intro || accent || image_url ? updateNode(made.id, { intro, accent, on_color, tint, tint2, image_url }) : made
 }
 
 type Sources = ReturnType<typeof usePortSources>

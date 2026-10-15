@@ -33,7 +33,7 @@ import { retireKeyword, retireTopic } from '../lib/retire'
 import { Switch, desk, DetailHead, ItemList, Row, Section, WHERE_WORDS, type AddSpec, type Crumb, type DetailAction, type ItemDrag, type ListItem } from './Detail'
 import { ColorField, RetireTag, RetireTopic, statusLabel, TopicFields } from './NodeFields'
 import { tagColor } from '../../lib/tagColor'
-import { Builder, ContentTab, PRESET_CHOICES, createFromPreset, usePortAdmin, useSplit, type PortPart } from './PortEditors'
+import { Builder, ContentTab, createFromPage, createFromPreset, usePortAdmin, useSplit, type PortPart } from './PortEditors'
 import { ScaledPreview, useWidth } from './ScaledPreview'
 import { TagBadges } from '../../components/TagBadges'
 import { CONFIG_SITE_LABELS as SITE_LABELS, Item, useAdminFrame, type ConfigSite } from '../AdminShell'
@@ -224,6 +224,13 @@ export function ConfigTree({
     return { kind: 'group', id: id === 'bean' ? 'bean-pages' : 'biz-pages' }
   }
   const [picked, setPicked] = useState<Picked>(() => (only ? { kind: 'group', id: only } : homeOf(site)))
+  // A click on the open site's row in the sidebar goes back to its first page.
+  const seenRound = useRef(frame.round)
+  useEffect(() => {
+    if (only || seenRound.current === frame.round) return
+    seenRound.current = frame.round
+    setPicked(homeOf(site))
+  }, [frame.round]) // eslint-disable-line react-hooks/exhaustive-deps
   // A port site opened before its home page loaded fell back to a page list; once the home is there, open it.
   useEffect(() => {
     if (only || (site !== 'biz' && site !== 'bean')) return
@@ -698,10 +705,19 @@ export function ConfigTree({
   const addPortPage = (parent: Node | undefined): AddSpec => ({
     label: parent && !parent.home_of ? 'Thêm mục con' : 'Thêm trang',
     placeholder: parent && !parent.home_of ? `tên trang mới trong ${parent.title}` : 'tên trang mới',
-    choose: { label: 'bắt đầu từ', options: PRESET_CHOICES },
+    // A blank page, or a copy of any page already in port archives › Template — archived or live (owner, 2026-10-15).
+    choose: {
+      label: 'bắt đầu từ',
+      options: [
+        { value: 'blank', label: 'trang trống' },
+        ...shownPort.map((pg) => ({ value: `copy:${pg.id}`, label: `bản sao ${pg.title} · ${statusLabel(pg.status)}` })),
+      ],
+    },
     onSave: (name, key) =>
       run(async () => {
-        const p = await newPortPage(name, (key ?? 'blank') as PresetKey, parent?.id ?? null)
+        const source = key?.startsWith('copy:') ? port.pages.find((pg) => pg.id === key.slice(5)) : undefined
+        const p = source ? await createFromPage(source, name, port.pages) : await newPortPage(name, 'blank', parent?.id ?? null)
+        if (source) port.setPages((ps) => [...ps, p])
         setPicked({ kind: 'port-page', id: p.id })
       }),
   })
@@ -965,12 +981,31 @@ export function ConfigTree({
         const toc = bean ? beanToc : bizToc
         crumbs = bean ? [siteCrumb('bean')] : []
         title = bean ? 'Danh mục con' : 'Template'
-        facts = [`${toc.items.length} trang`]
-        body = (
+        // Template lists every port page — the templates (bibi, bibe) and each port site's home — with its status
+        // spelled out, archived or published (owner, 2026-10-15). Homes cannot be deleted from here.
+        const homeOfLabel = (pg: Node) => (pg.home_of ? `trang chủ ${SITE_LABELS[pg.home_of]}` : '')
+        const rows: ListItem[] = shownPort.map((pg) => ({
+          id: pg.id,
+          name: pg.title,
+          depth: ancestorsOf(shownPort, pg.id).length,
+          dot: portDot(pg),
+          meta: [statusLabel(pg.status), homeOfLabel(pg), portPagePath(pg, port.pages)].filter(Boolean).join(' · '),
+          onOpen: pick({ kind: 'port-page', id: pg.id }),
+          actions: pg.home_of ? undefined : deleteOf({ kind: 'port-page', id: pg.id }),
+        }))
+        facts = [`${bean ? toc.items.length : rows.length} trang`]
+        body = bean ? (
           <>
             {errorLine}
             <Section title="Các mục" note={dragNote(true)}>
-              <ItemList label="Các mục" items={tocList(toc, toc.items.filter((r) => r.parent_id === null))} add={addPortPage(bean ? beanHome : undefined)} />
+              <ItemList label="Các mục" items={tocList(toc, toc.items.filter((r) => r.parent_id === null))} add={addPortPage(beanHome)} />
+            </Section>
+          </>
+        ) : (
+          <>
+            {errorLine}
+            <Section title="Các trang" note="mỗi trang dùng được làm mẫu khi thêm trang mới">
+              <ItemList label="Các trang" items={rows} add={addPortPage(undefined)} />
             </Section>
           </>
         )

@@ -43,6 +43,17 @@
   chủ của nó: bấm dòng là mở thẳng, không còn thẻ con; port #2 bỏ "Danh mục con". Breadcrumb "Cấu hình › Quản trị port › …".
   Port mở trước khi trang chủ của nó tải xong thì tự chuyển sang trang chủ khi tải xong (`ConfigTree`, effect theo `bizHome`/`beanHome`).
 
+- **[ĐỔI HÀNH VI]** "Quản trị port" đổi tên **port archives**.
+- **[ĐỔI HÀNH VI]** port archives › Template liệt kê **mọi** trang port: bibi, bibe và trang chủ của từng port, mỗi dòng ghi trạng thái
+  ("lưu trữ" / "đã đăng" / "nháp") và "trang chủ port #n" nếu có; trang chủ không có nút xoá ở đây.
+- **[ĐỔI HÀNH VI]** "Thêm trang": trước đây chọn "mẫu bibi / mẫu bibe / trang trống" — hai mẫu đầu là bộ khối viết sẵn trong code
+  (`blocks.ts:preset`), không phải trang bibi, bibe thật. Nay: "trang trống" hoặc "bản sao <trang>" cho mọi trang trong Template,
+  lưu trữ hay đã đăng (`PortEditors.tsx:createFromPage`): chép khối, giao diện (look), lời dẫn, màu, ảnh; luôn là nháp, không thuộc
+  trang chủ site nào (tức là một template mới). "+ Thêm khối" ở trang chủ beanweirdo vẫn dùng bộ khối viết sẵn — chưa đổi.
+- **[SỬA LỖI]** Bấm lại dòng của site đang mở trong thanh bên không đưa về trang đầu của site (vì site không đổi). Nay mỗi lần bấm dòng
+  site là về trang đầu (`AdminShell.tsx:clickSite`, `Frame.round`; effect trong `ConfigTree`). Lệnh mở site từ bên trong
+  ConfigTree (vd. từ menu sang journal) không bị ảnh hưởng.
+
 ## Giới hạn
 
 "Cơ chế cho port tiếp theo" mới ở mức tên: thêm một id vào `PORT_SITES` là nó thành "port #3: …". **Tạo một site port mới thì
@@ -62,3 +73,6 @@ journal · practice"; thẻ: beanweirdo = Trang chủ · Menu chính · Đầu &
 Trang chủ · Mục lục · Dàn trang; practice không có thẻ con, mở thẳng cấu hình (breadcrumb "… › practice", xem trước `/practice`).
 - Quản trị port trên trình duyệt: Template mở bibi, bibe; port #1 mở trang chủ biz, port #2 mở "art & culture"; chỉ dòng đang mở
   sáng; beanweirdo = Trang chủ · Thông tin chung. Không lệnh ghi nào.
+- Thêm trang trên trình duyệt (chặn lệnh ghi): lựa chọn hiện "trang trống, bản sao bibi · lưu trữ, bản sao bibe · lưu trữ, bản sao
+  strat & ops · đã đăng, bản sao art & culture · đã đăng"; tên "thử" + bản sao bibe → đúng một `POST /api/tags?vocab=nodes`
+  {site: port, slug: thu, parent_id: null, blocks: <của bibe>, status: draft}; màn mở trang mới. Không tạo gì thật.
