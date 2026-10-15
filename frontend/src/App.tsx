@@ -24,7 +24,7 @@ import {
 import { Editor } from './admin/screens/Editor'
 import { AdminShell } from './admin/AdminShell'
 import { NewPostDialog } from './admin/components/NewPostDialog'
-import { Preview } from './admin/screens/Preview'
+import { Preview, TEMPLATE_PREVIEW } from './admin/screens/Preview'
 import { Archive } from './screens/Archive'
 import { PostPage } from './screens/PostPage'
 import { Cms } from './screens/Cms'
@@ -128,6 +128,8 @@ function Routed({ where, go }: { where: Where; go: (next: Where) => void }) {
   const moduleId = where.moduleId ?? FIRST_MODULE
   // The address carries the post's slug; the screens below work in ids.
   const postId = where.slug ? posts.idOf(where.slug) : null
+  // A stored template previews at its own `tpl-…` name, which no post's address book knows.
+  const previewId = where.slug?.startsWith(TEMPLATE_PREVIEW) ? where.slug : postId
 
   /*
    * An address a post used to have still opens it, and the bar is then
@@ -211,11 +213,15 @@ function Routed({ where, go }: { where: Where; go: (next: Where) => void }) {
 
   // The back office wears its own frame (AdminShell) instead of the site's rail.
   const admin = shown === 'cms' || shown === 'postEdit' || shown === 'postPreview'
-  const body = admin ? (
+  // A template's preview is only opened inside Biên tập › Template's preview frame: drawn bare, without a second admin frame in it.
+  const bareTemplate = shown === 'postPreview' && previewId?.startsWith(TEMPLATE_PREVIEW) ? previewId : null
+  const body = bareTemplate ? (
+    <Preview postId={bareTemplate} />
+  ) : admin ? (
     <AdminShell>
       {shown === 'cms' && <Cms />}
       {shown === 'postEdit' && postId && <Editor postId={postId} />}
-      {shown === 'postPreview' && postId && <Preview postId={postId} />}
+      {shown === 'postPreview' && previewId && <Preview postId={previewId} />}
     </AdminShell>
   ) : (
     /*

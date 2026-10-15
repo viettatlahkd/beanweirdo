@@ -67,8 +67,8 @@ export function useAdminFrame(): Frame {
 }
 
 /**
- * Biên tập: the posts and the lists that file them, four rows of one level in
- * the owner's order (2026-10-15) — Tác giả, Nội dung, Chuyên mục, Tag — under a
+ * Biên tập: the posts and the lists that file them, five rows of one level in
+ * the owner's order (2026-10-16) — Nội dung, Tác giả, Chuyên mục, Tag, Template — under a
  * section name of their own, like Cấu hình and Hiển thị. They are not filed
  * under a site in Cấu hình: every site's posts wear them. Chuyên mục is the
  * subject › topic tree itself — added, renamed, merged away — the CMS word for
@@ -77,8 +77,9 @@ export function useAdminFrame(): Frame {
  * The admin still opens on Nội dung (`/ad` → posts).
  */
 const CONTENT_LISTS = [
-  { tab: 'authors', label: 'Tác giả' },
+  // Nội dung first, Tác giả after it (owner, 2026-10-16).
   { tab: 'posts', label: 'Nội dung' },
+  { tab: 'authors', label: 'Tác giả' },
   { tab: 'topics', label: 'Chuyên mục' },
   { tab: 'tags', label: 'Tag' },
   // The post templates, listed as port archives lists its page templates (owner, 2026-10-16).

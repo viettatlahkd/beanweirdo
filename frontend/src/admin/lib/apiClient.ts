@@ -553,6 +553,11 @@ export type TemplateSummary = {
   sort_order: number
 }
 
+/** GET /api/templates?id=… — one stored template, with the body a new post starts from. */
+export async function getTemplate(id: string): Promise<TemplateSummary & { body: unknown }> {
+  return (await request<{ template: TemplateSummary & { body: unknown } }>(`/api/templates?id=${encodeURIComponent(id)}`)).template
+}
+
 /** GET /api/templates — the choices, without their bodies. */
 export async function listTemplates(): Promise<TemplateSummary[]> {
   const result = await request<{ templates: TemplateSummary[] }>('/api/templates')
