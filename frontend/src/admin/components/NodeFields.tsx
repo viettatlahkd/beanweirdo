@@ -110,7 +110,7 @@ export function TopicFields({
         </select>
       </Row>
       <Row label="Trạng thái">
-        <Choice label="Trạng thái" options={STATUS_CHOICES} value={topic.status} onChange={(status) => save({ status })} />
+        <Choice label="Trạng thái" tone="status" options={STATUS_CHOICES} value={topic.status} onChange={(status) => save({ status })} />
       </Row>
     </>
   )

@@ -3,7 +3,7 @@ import { BLOG_COLORS, BLOG_FONTS, blogFontHref, blogVars, type BlogDesign } from
 import { ink, paper, sans, serif } from '../../design/tokens'
 import { DesignTab, sectionHead, usePortAdmin, useSplit } from './PortEditors'
 import { ScaledPreview, useWidth } from './ScaledPreview'
-import { SiteTabs, useRememberedTab } from './SiteTabs'
+import { DISPLAY_TAB_KEY, SiteTabs, useRememberedTab } from './SiteTabs'
 import { desk } from './Detail'
 import { radius } from '../../design/controls'
 import { Button, IconButton } from '../../design/Button'
@@ -34,7 +34,7 @@ export function DisplaySettings({
   design: BlogDesign | undefined
   onSaveDesign: (patch: BlogDesign) => Promise<void>
 }) {
-  const [site, setSite] = useRememberedTab('beanweirdo.display.site', SITES)
+  const [site, setSite] = useRememberedTab(DISPLAY_TAB_KEY, SITES)
   return (
     <div>
       <div style={{ margin: '26px 28px 0' }}>

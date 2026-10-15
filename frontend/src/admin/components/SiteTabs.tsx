@@ -18,6 +18,9 @@ export function SiteTabs<T extends string>({ tabs, labels, value, onChange }: { 
 }
 
 /** The tab last open on this screen; storage is a convenience, so any failure falls back to the first tab. */
+/** Where Cài đặt hiển thị keeps its open tab (Journal, Port, Đường dẫn). */
+export const DISPLAY_TAB_KEY = 'beanweirdo.display.site'
+
 export function useRememberedTab<T extends string>(key: string, tabs: readonly T[]): [T, (t: T) => void] {
   const [tab, setTab] = useState<T>(() => {
     try {

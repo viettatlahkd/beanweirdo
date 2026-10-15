@@ -229,9 +229,22 @@ export function Row({ label, children }: { label: string; children: ReactNode })
 }
 
 /** A short set of choices as joined buttons; the one in force is filled. */
-export function Choice<T extends string>({ label, options, value, onChange }: { label: string; options: { value: T; label: string }[]; value: T; onChange: (v: T) => void }) {
+export function Choice<T extends string>({
+  label,
+  options,
+  value,
+  onChange,
+  tone,
+}: {
+  label: string
+  options: { value: T; label: string }[]
+  value: T
+  onChange: (v: T) => void
+  /** Status: the chosen one wears its state's colour, larger — it decides what readers see (owner, 2026-10-16). */
+  tone?: 'status'
+}) {
   return (
-    <span role="group" aria-label={label} className="ab-seg">
+    <span role="group" aria-label={label} className={tone ? 'ab-seg ab-seg-status' : 'ab-seg'} data-value={tone ? value : undefined}>
       {options.map((o) => (
         <button key={o.value} type="button" aria-pressed={o.value === value} onClick={() => o.value !== value && onChange(o.value)}>
           {o.label}

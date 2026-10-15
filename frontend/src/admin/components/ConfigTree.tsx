@@ -478,7 +478,7 @@ export function ConfigTree({
   }
   const openPortPage = (pg: Node) => {
     keepPick.current = true
-    frame.openSite(pg.status === 'archived' ? 'template' : (portOf(pg) ?? 'template'))
+    frame.openSite('template')
     setPicked({ kind: 'port-page', id: pg.id })
   }
   // About's "Tạo chữ kí" goes to Thông tin chung with a new signature open.
@@ -1007,12 +1007,12 @@ export function ConfigTree({
       const p = port.pages.find((x) => x.id === picked.id)
       if (!p) break
       const kids = port.pages.filter((x) => x.parent_id === p.id)
-      const own = portOf(p)
       const toc = tocOfPage(p)
+      // Every port page is opened from port archives' list now, so that is the way back (owner, 2026-10-16).
       crumbs = p.home_of
-        ? [siteCrumb(p.home_of)]
+        ? [siteCrumb('template')]
         : [
-            ...(toc.id === 'biz-pages' ? [siteCrumb('template')] : [siteCrumb(own)]),
+            siteCrumb('template'),
             ...ancestorsOf(shownPort, p.id).filter((x) => !x.home_of).map((x): Crumb => ({ label: x.title, open: pick({ kind: 'port-page', id: x.id }) }))]
       title = p.title
       rename = (v) => run(async () => {
