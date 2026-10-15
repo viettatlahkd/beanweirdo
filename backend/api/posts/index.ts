@@ -5,7 +5,6 @@ import { getSupabase } from '../../lib/supabase.js'
 import {
   bodyPreview,
   firstImageIn,
-  withoutImages,
   POST_STATUSES,
   POST_SUMMARY_COLUMNS,
   POST_TEMPLATES,
@@ -201,7 +200,7 @@ async function handleCreate(req: VercelRequest, res: VercelResponse): Promise<vo
   if (fromPostId) {
     const { data: src, error: srcError } = await supabase
       .from('posts')
-      .select('template, body, lead, pull_quote, further_reading, topic_id')
+      .select('template, body, lead, pull_quote, further_reading, topic_id, hero_image_url, hero_caption, plate_images')
       .eq('id', fromPostId)
       .maybeSingle()
 
@@ -224,13 +223,17 @@ async function handleCreate(req: VercelRequest, res: VercelResponse): Promise<vo
       return
     }
     const merged: Record<string, unknown> = { ...(src as Record<string, unknown>) }
-    for (const key of ['body', 'lead', 'pull_quote', 'further_reading'] as const) {
+    for (const key of ['body', 'lead', 'pull_quote', 'further_reading', 'hero_image_url', 'hero_caption', 'plate_images'] as const) {
       if (pendingEdits.data && Object.prototype.hasOwnProperty.call(pendingEdits.data, key)) merged[key] = pendingEdits.data[key]
     }
     const row = merged as { template: string; body: unknown }
     template = row.template
-    // Pictures stay with the original — see `withoutImages`.
-    startingBody = withoutImages(row.body ?? null)
+    /*
+     * Pictures come across with the text. Both posts then point at the same
+     * stored files, which is safe because nothing ever deletes an upload; a
+     * copy that dropped them left the owner re-uploading every photo.
+     */
+    startingBody = row.body ?? null
     copied = merged
     // What a post is about is part of its content, so a copy keeps its topic
     // unless the caller filed it somewhere else.
@@ -281,9 +284,9 @@ async function handleCreate(req: VercelRequest, res: VercelResponse): Promise<vo
       lead: copied?.lead ?? null,
       theme_color,
       topic_id,
-      // The cover and the line describing it both belong to the original's photo.
-      hero_image_url: null,
-      hero_caption: null,
+      hero_image_url: copied?.hero_image_url ?? null,
+      hero_caption: copied?.hero_caption ?? null,
+      plate_images: copied?.plate_images ?? null,
       pull_quote: copied?.pull_quote ?? null,
       further_reading: copied?.further_reading ?? null,
     })

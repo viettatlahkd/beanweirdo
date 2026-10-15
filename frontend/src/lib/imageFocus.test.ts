@@ -108,4 +108,12 @@ describe('crop', () => {
     expect(readFocus('/a.jpg#crop=50,0,50,100,1')).toEqual({ x: 100, y: 50 })
     expect(coverStyle('/a.jpg#crop=0,0,50,100,1').backgroundImage).toBe('url(/a.jpg)')
   })
+
+  it('a cell drawn by coverStyle shows the zoom of a crop, not just its position', () => {
+    const s = coverStyle('/a.jpg#crop=25,25,50,50,1.5')
+    expect(s.backgroundSize).toBe('200% auto')
+    expect(s.backgroundPosition).toBe('50% 50%')
+    expect(s).not.toHaveProperty('aspectRatio')
+    expect(coverStyle('/a.jpg#crop=0,0,100,100,1.5').backgroundSize).toBe('cover')
+  })
 })

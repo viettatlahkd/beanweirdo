@@ -4,7 +4,7 @@ import { ink, paper, sans, serif } from '../../design/tokens'
 import { Button } from '../../design/Button'
 import { useSlotSwap } from '../lib/useSlotSwap'
 import { coverStyle } from '../../lib/imageFocus'
-import { FocusPicker } from './FocusPicker'
+import { useFraming } from './framing'
 
 const groupLabel: CSSProperties = {
   fontFamily: sans,
@@ -67,11 +67,17 @@ export function FeatureCellsEditor({
   onUpload: (n: number, f: File) => Promise<string | null>
 }) {
   const drawn = withOverrides(featureCells, overrides)
-  const [placing, setPlacing] = useState<{ n: number; url: string; ratio: number; name: string } | null>(null)
+  const frame = useFraming()
 
   const ratioOf = (col: string, h: string): number => cellRatio({ col, h })
 
   const set = (n: number, patch: Partial<FeatureOverride>) => onChange(patchOverride(overrides, n, patch))
+
+  // Cancel hands back the same address: nothing to save.
+  const place = async (f: { n: number; col: string; h: string }, url: string) => {
+    const next = await frame({ url, ratio: ratioOf(f.col, f.h), name: `Ảnh feature · F${f.n}` })
+    if (next !== url) set(f.n, { img: next })
+  }
 
   const [linking, setLinking] = useState<number | null>(null)
   /*
@@ -195,13 +201,7 @@ export function FeatureCellsEditor({
                         e.target.value = ''
                         if (!file) return
                         void onUpload(f.n, file).then((next) => {
-                          if (next)
-                            setPlacing({
-                              n: f.n,
-                              url: next,
-                              ratio: ratioOf(f.col, f.h),
-                              name: `Ảnh feature · F${f.n}`,
-                            })
+                          if (next) void place(f, next)
                         })
                       }}
                       style={{ display: 'none' }}
@@ -209,14 +209,7 @@ export function FeatureCellsEditor({
                   </label>
                   {f.img && (
                     <Button
-                      onClick={() =>
-                        setPlacing({
-                          n: f.n,
-                          url: f.img!,
-                          ratio: ratioOf(f.col, f.h),
-                          name: `Ảnh feature · F${f.n}`,
-                        })
-                      }
+                      onClick={() => void place(f, f.img!)}
                       size="sm"
                     >
                       đặt vào khung
@@ -255,7 +248,7 @@ export function FeatureCellsEditor({
                       const v = (e.target as HTMLInputElement).value.trim()
                       setLinking(null)
                       set(f.n, { img: v || null })
-                      if (v) setPlacing({ n: f.n, url: v, ratio: ratioOf(f.col, f.h), name: `Ảnh feature · F${f.n}` })
+                      if (v) void place(f, v)
                     }}
                     onBlur={() => setLinking(null)}
                     style={{ ...textInput, marginTop: 6 }}
@@ -267,18 +260,6 @@ export function FeatureCellsEditor({
         })}
       </div>
 
-      {placing && (
-        <FocusPicker
-          url={placing.url}
-          ratio={placing.ratio}
-          name={placing.name}
-          onCancel={() => setPlacing(null)}
-          onSave={(next) => {
-            set(placing.n, { img: next })
-            setPlacing(null)
-          }}
-        />
-      )}
     </div>
   )
 }

@@ -5,6 +5,7 @@ import { goToArea } from '../lib/area'
 import { useIsMobile } from '../lib/useIsMobile'
 import { serif } from '../design/tokens'
 import { useRememberedTab } from './components/SiteTabs'
+import { FramingProvider } from './components/framing'
 
 /** The four sites Cấu hình edits, in the order the sidebar lists them. */
 export const CONFIG_SITES = ['root', 'biz', 'bean', 'blog'] as const
@@ -139,7 +140,12 @@ export function AdminShell({ children }: { children: ReactNode }) {
               Xem site ↗
             </a>
           </div>
-          {children}
+          {/*
+            One crop dialog for the whole back office, not one per screen: the
+            owner wants every picture slot — post, Cấu hình, author — to open
+            the same dialog, and a single provider cannot drift.
+          */}
+          <FramingProvider>{children}</FramingProvider>
         </main>
       </div>
     </FrameContext.Provider>

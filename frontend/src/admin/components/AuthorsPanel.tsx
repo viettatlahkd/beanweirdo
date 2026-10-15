@@ -8,6 +8,8 @@ import { radius } from '../../design/controls'
 import { ink, paper, sans, serif } from '../../design/tokens'
 import { useToast } from '../../design/Toaster'
 import { Menu, type DetailAction } from './Detail'
+import { useFraming } from './framing'
+import { coverStyle } from '../../lib/imageFocus'
 
 /**
  * Tab Tác giả: ai được đứng tên bài trên trang.
@@ -112,7 +114,8 @@ function Quiet({ children }: { children: ReactNode }) {
 
 export function Avatar({ author, size }: { author: Pick<Author, 'name' | 'avatar_url'>; size: number }) {
   const box = { width: size, height: size, borderRadius: 999, flex: 'none' as const }
-  if (author.avatar_url) return <img src={author.avatar_url} alt="" style={{ ...box, objectFit: 'cover' }} />
+    // A background, not an <img>: only `coverStyle` reads the crop off the address.
+  if (author.avatar_url) return <span aria-hidden style={{ ...box, display: 'inline-block', ...coverStyle(author.avatar_url) }} />
   return (
     <span
       aria-hidden
@@ -231,6 +234,7 @@ function AuthorDialog({
   const file = useRef<HTMLInputElement>(null)
   const open = author !== null
   const creating = author === 'new'
+  const frame = useFraming()
 
   useEffect(() => {
     if (!author) return
@@ -279,7 +283,10 @@ function AuthorDialog({
   const upload = async (f: File) => {
     setUploading(true)
     try {
-      set('avatar_url', (await uploadImage(f)).url)
+      const { url } = await uploadImage(f)
+      set('avatar_url', url)
+      // A face is drawn in a circle, so the dialog opens on a square.
+      set('avatar_url', await frame({ url, name: 'Ảnh tác giả', ratio: 1 }))
     } catch (e) {
       setError({ field: 'avatar_url', message: (e as Error).message })
     } finally {

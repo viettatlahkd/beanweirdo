@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react'
 import type { AuthorRef } from 'api-contract'
 import { serif, sans } from '../design/tokens'
+import { coverStyle } from '../lib/imageFocus'
 
 /** The public read adds the bio for the card at the end; the admin's author list does not carry one. */
 export type BylineAuthor = AuthorRef & { bio?: string | null }
@@ -14,12 +15,13 @@ export function Avatar({ author, size, ring }: { author: BylineAuthor; size: num
     objectFit: 'cover',
     // Opaque on purpose: stacked faces overlap, and a see-through disc (or a
     // transparent PNG) lets the face underneath show through.
-    background: '#E4E0D8',
+    backgroundColor: '#E4E0D8',
     color: '#3A3833',
     // The ring keeps overlapping faces apart on any band colour.
     boxShadow: ring ? '0 0 0 2px #fff' : undefined,
   }
-  if (author.avatar_url) return <img src={author.avatar_url} alt="" style={style} />
+  // A background, not an <img>: only `coverStyle` reads the crop off the address.
+  if (author.avatar_url) return <span aria-hidden style={{ ...style, display: 'inline-block', ...coverStyle(author.avatar_url) }} />
   return (
     <span
       aria-hidden

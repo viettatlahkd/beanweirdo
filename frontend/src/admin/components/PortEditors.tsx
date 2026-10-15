@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { ScaledPreview } from './ScaledPreview'
+import { useCropping } from './framing'
+import { coverStyle } from '../../lib/imageFocus'
 import { Choice, Row, Section, desk } from './Detail'
 import { Button, IconButton } from '../../design/Button'
 import { IconClose, IconGrip, IconPlus } from '../../design/icons'
@@ -691,12 +693,20 @@ function ImageField({ label, value, onChange }: { label: string; value: string; 
   const ref = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
+  const crop = useCropping()
   const upload = async (f: File | undefined) => {
     if (!f) return
     setBusy(true)
     setErr(null)
     try {
-      onChange((await uploadImage(f)).url)
+      const { url } = await uploadImage(f)
+      onChange(url)
+      /*
+       * The same crop dialog as every other picture slot. Free-shape, because
+       * these cells change shape with the screen; the page keeps the crop's
+       * window as the focal point (`imageOf`).
+       */
+      onChange(await crop({ url, name: label }))
     } catch (e) {
       setErr((e as Error).message)
     } finally {
@@ -707,7 +717,7 @@ function ImageField({ label, value, onChange }: { label: string; value: string; 
   return (
     <Field label={label}>
       <div style={{ display: 'grid', gridTemplateColumns: '56px minmax(0,1fr) auto', gap: 8, alignItems: 'center' }}>
-        <div style={{ width: 56, height: 56, background: value ? `center/cover no-repeat url("${value.split('#')[0]}")` : paper.rule, border: `1px solid ${paper.rule}` }} />
+        <div style={{ width: 56, height: 56, ...(value ? coverStyle(value) : { background: paper.rule }), border: `1px solid ${paper.rule}` }} />
         <input style={small} value={value} placeholder="URL ảnh" onChange={(e) => onChange(e.target.value)} />
         <Button size="sm" disabled={busy} onClick={() => ref.current?.click()}>
           {busy ? 'Đang tải…' : 'Tải ảnh'}

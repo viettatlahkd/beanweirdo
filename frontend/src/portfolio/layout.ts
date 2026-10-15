@@ -7,6 +7,8 @@
  * always a fibonacci ratio.
  */
 
+import { readFocus, stripFocus } from '../lib/imageFocus'
+
 /** Squares in the 13 × 8 frame, base orientation: [column, row, side]. */
 const CELLS = {
   '8': [1, 1, 8],
@@ -77,11 +79,10 @@ export const gridArea = (p: Placed) => `${p.row} / ${p.col} / span ${p.size} / s
 /**
  * The focal point is stored on the URL (`…jpg#focus=50,25`), the same way post
  * cover images already store it. Returns the clean URL and an
- * `object-position`.
+ * `object-position`; a hand-drawn crop becomes the focal point of its window.
  */
-export function imageOf(url: string | null | undefined): { src: string; position?: string } | null {
+export function imageOf(url: string | null | undefined): { src: string; position: string } | null {
   if (!url) return null
-  const [src, frag] = url.split('#')
-  const m = /focus=([\d.]+),([\d.]+)/.exec(frag ?? '')
-  return { src, position: m ? `${m[1]}% ${m[2]}%` : undefined }
+  const f = readFocus(url)
+  return { src: stripFocus(url), position: `${f.x}% ${f.y}%` }
 }

@@ -123,13 +123,18 @@ export function cropStyle(url: string | null | undefined): CSSProperties | null 
  * the focal point. Everything that draws an uploaded image goes through here,
  * so a photo lands the same way on the homepage, in the preview and in the
  * editor's thumbnail.
+ *
+ * A hand-drawn crop is honoured too, zoom included: every upload slot opens the
+ * crop dialog with the cell's own shape picked ("Vừa ô"), so the kept rectangle
+ * has the cell's shape and filling the width with it fills the cell. A crop
+ * that keeps the whole photo is just the photo, and stays on `cover`.
  */
-export function coverStyle(url: string): {
-  backgroundImage: string
-  backgroundPosition: string
-  backgroundSize: 'cover'
-  backgroundRepeat: 'no-repeat'
-} {
+export function coverStyle(url: string): CSSProperties {
+  const c = readCrop(url)
+  if (c && (c.w < 100 || c.h < 100)) {
+    const { aspectRatio: _shape, ...zoomed } = cropStyle(url)!
+    return zoomed
+  }
   const f = readFocus(url)
   return {
     backgroundImage: `url(${stripFocus(url)})`,

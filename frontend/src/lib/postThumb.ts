@@ -1,4 +1,5 @@
 import type { PostRow } from '../data/usePublishedPosts'
+import { readFocus, withFocus } from './imageFocus'
 
 /** Anything shaped enough to know what picture stands for it. */
 type Thumbable = Pick<PostRow, 'hero_image_url' | 'thumbnail_url'>
@@ -19,5 +20,11 @@ export function postThumbnail(post: Thumbable): string | null {
   // `?? null` ở cuối: một hàng lấy về bằng `withBody` hay một hàng dựng trong
   // bài kiểm có thể không mang cột này, và chỗ gọi phân biệt "không có ảnh"
   // bằng `null` chứ không bằng `undefined`.
-  return post.hero_image_url || post.thumbnail_url || null
+  const url = post.hero_image_url || post.thumbnail_url || null
+  /*
+   * A listing cell has its own shape, not the one the photo was cut for, so a
+   * crop's zoom would leave it half empty. It keeps the crop's window as a
+   * focal point instead and fills the cell.
+   */
+  return url && withFocus(url, readFocus(url))
 }

@@ -7,7 +7,7 @@ import { useSlotSwap } from '../lib/useSlotSwap'
 import { captionColumn, imageColumn, type ImageGroup, type ModuleImageFields, type PreviewKind } from '../moduleForm'
 import { coverStyle } from '../../lib/imageFocus'
 import { isBorrowed, pageImage } from '../../lib/modulePageImages'
-import { FocusPicker } from './FocusPicker'
+import { useFraming } from './framing'
 
 /**
  * Sidebar plus page padding — everything the content does not get. Measured
@@ -246,7 +246,12 @@ export function ModuleImages({
 }) {
   const swap = useSlotSwap((a, b) => onSwap?.(a as 1 | 2 | 3 | 4, b as 1 | 2 | 3 | 4))
   const grid = useRef<HTMLDivElement>(null)
-  const [placing, setPlacing] = useState<{ slot: 1 | 2 | 3 | 4; url: string } | null>(null)
+  const frame = useFraming()
+  // Cancel hands back the same address: nothing to save.
+  const place = async (slot: 1 | 2 | 3 | 4, url: string) => {
+    const next = await frame({ url, ratio: ratioOf(slot), name: `${group.label} · ${group.names[group.slots.indexOf(slot)]}` })
+    if (next !== url) onPlace(slot, next)
+  }
   const [linking, setLinking] = useState<1 | 2 | 3 | 4 | null>(null)
 
   /**
@@ -366,7 +371,7 @@ export function ModuleImages({
                           // Straight from the upload into placing it, because a
                           // photo that has not been placed is only half added.
                           void onUpload(slot, f).then((next) => {
-                            if (next) setPlacing({ slot, url: next })
+                            if (next) void place(slot, next)
                           })
                         }}
                         style={{ display: 'none' }}
@@ -386,7 +391,7 @@ export function ModuleImages({
                        * thì ảnh thành của riêng ô này, mang theo điểm căn.
                        */
                       <Button
-                        onClick={() => setPlacing({ slot, url: shown })}
+                        onClick={() => void place(slot, shown)}
                         size="sm"
                       >
                         đặt vào khung
@@ -431,7 +436,7 @@ export function ModuleImages({
                         setLinking(null)
                         if (!v) return onClear(slot)
                         onPlace(slot, v)
-                        setPlacing({ slot, url: v })
+                        void place(slot, v)
                       }}
                       onBlur={() => setLinking(null)}
                       style={{
@@ -465,18 +470,6 @@ export function ModuleImages({
         ))}
       </div>
 
-      {placing && (
-        <FocusPicker
-          url={placing.url}
-          ratio={ratioOf(placing.slot)}
-          name={`${group.label} · ${group.names[group.slots.indexOf(placing.slot)]}`}
-          onCancel={() => setPlacing(null)}
-          onSave={(next) => {
-            onPlace(placing.slot, next)
-            setPlacing(null)
-          }}
-        />
-      )}
     </div>
   )
 }

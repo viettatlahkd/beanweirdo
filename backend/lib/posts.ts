@@ -216,28 +216,6 @@ export function bodyPreview(body: unknown): { excerpt: string; read_minutes: num
   return { excerpt: cut, read_minutes: words === 0 ? null : Math.max(1, Math.ceil(words / 200)) }
 }
 
-/** Keys a template stores a picture under — see `firstImageIn` and bitesize's `poster`. */
-const IMAGE_KEYS = new Set(['src', 'imageUrl', 'poster'])
-
-/**
- * The same block tree with every picture taken out, the text left alone.
- *
- * For a copied post. A copy used to carry the source's pictures, so a clone of
- * one long-form piece opened on that piece's coffee-bean photo, and the listing
- * card showed it too because `thumbnail_url` is read from the body. A copy is a
- * new piece that still needs its own pictures: an empty picture cell draws the
- * tinted frame, which says so.
- */
-export function withoutImages(value: unknown, depth = 0): unknown {
-  if (depth > 8 || value === null || typeof value !== 'object') return value
-  if (Array.isArray(value)) return value.map((item) => withoutImages(item, depth + 1))
-  const out: Record<string, unknown> = {}
-  for (const [key, v] of Object.entries(value as Record<string, unknown>)) {
-    out[key] = IMAGE_KEYS.has(key) && typeof v === 'string' ? null : withoutImages(v, depth + 1)
-  }
-  return out
-}
-
 /**
  * What the API hands back for a post.
  *

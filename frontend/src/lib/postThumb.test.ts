@@ -22,6 +22,10 @@ describe('postThumbnail', () => {
     expect(thumb(null, '/first.png')).toBe('/first.png')
   })
 
+  it('turns a crop into a focal point, since a listing cell has its own shape', () => {
+    expect(thumb('/hero.png#crop=50,0,50,100,1', null)).toBe('/hero.png#focus=100,50')
+  })
+
   it('returns null when the post genuinely has no picture', () => {
     // The lexicon is all text; the caller draws its tint instead.
     expect(thumb(null, null)).toBeNull()

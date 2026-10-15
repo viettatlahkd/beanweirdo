@@ -295,6 +295,7 @@ describe('POST /api/posts — starting from a template', () => {
             lead: 'dẫn',
             hero_image_url: '/a.jpg',
             hero_caption: 'chú thích',
+            plate_images: { a: '/o.jpg' },
             pull_quote: 'trích',
             further_reading: ['x'],
           },
@@ -315,12 +316,13 @@ describe('POST /api/posts — starting from a template', () => {
 
     const row = insert.insert.mock.calls[0][0] as Record<string, unknown>
     expect(row.template).toBe('memo')
-    // Text comes across; pictures stay with the original, leaving tinted frames.
-    expect(row.body).toEqual([{ k: 'p', t: 'thân bài' }, { k: 'fig', src: null, ar: '1.5' }])
+    // Text and pictures both come across.
+    expect(row.body).toEqual([{ k: 'p', t: 'thân bài' }, { k: 'fig', src: '/hat-ca-phe.jpg', ar: '1.5' }])
     expect(row.lead).toBe('dẫn')
-    expect(row.hero_image_url).toBeNull()
-    expect(row.hero_caption).toBeNull()
-    expect(row.thumbnail_url).toBeNull()
+    expect(row.hero_image_url).toBe('/a.jpg')
+    expect(row.hero_caption).toBe('chú thích')
+    expect(row.plate_images).toEqual({ a: '/o.jpg' })
+    expect(row.thumbnail_url).toBe('/hat-ca-phe.jpg')
     // A copy is a draft nobody has published or placed.
     expect(row.sort_order).toBeNull()
     expect(row).not.toHaveProperty('status')

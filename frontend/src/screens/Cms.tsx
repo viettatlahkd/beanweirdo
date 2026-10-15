@@ -13,7 +13,7 @@ import { RoutesPanel } from '../admin/components/RoutesPanel'
 import type { SystemPage } from '../admin/components/PageSettings'
 import { ModuleImages } from '../admin/components/ModuleImages'
 import { captionColumn, formShapeOf, imageColumn } from '../admin/moduleForm'
-import { FocusPicker } from '../admin/components/FocusPicker'
+import { useFraming } from '../admin/components/framing'
 import { coverStyle } from '../lib/imageFocus'
 import { useSlotSwap, type SlotSwap } from '../admin/lib/useSlotSwap'
 import { FeatureCellsEditor } from '../admin/components/FeatureCellsEditor'
@@ -150,7 +150,12 @@ function ImageSlot({
   /** Kéo sang khung khác để hai ảnh đổi chỗ. */
   drag?: SlotDragProps
 }) {
-  const [placing, setPlacing] = useState<string | null>(null)
+  const frame = useFraming()
+  // Cancel hands back the same address: nothing to save.
+  const place = async (url: string) => {
+    const next = await frame({ url, ratio, name: label })
+    if (next !== url) onPlace(next)
+  }
   const [linking, setLinking] = useState(false)
   const { marked, handle, ...dragProps } = drag ?? { marked: false, handle: undefined }
   return (
@@ -232,8 +237,9 @@ function ImageSlot({
             accept="image/*"
             onChange={(e) => {
               const f = e.target.files?.[0]
-              if (f) onUpload(f)
               e.target.value = ''
+              // Straight from the upload into the crop dialog, like every other picture slot.
+              if (f) void onUpload(f).then((u) => (u ? place(u) : undefined))
             }}
             style={{ display: 'none' }}
           />
@@ -241,7 +247,7 @@ function ImageSlot({
         {url && (
           <Hover
             as="button"
-            onClick={() => setPlacing(url)}
+            onClick={() => void place(url)}
             style={{
               fontFamily: sans,
               fontSize: 13,
@@ -302,25 +308,13 @@ function ImageSlot({
             setLinking(false)
             if (!v) return onClear()
             onPlace(v)
-            setPlacing(v)
+            void place(v)
           }}
           onBlur={() => setLinking(false)}
           style={{ ...boxed, padding: '7px 10px', marginTop: 7, fontSize: 12 }}
         />
       )}
 
-      {placing && (
-        <FocusPicker
-          url={placing}
-          ratio={ratio}
-          name={label}
-          onCancel={() => setPlacing(null)}
-          onSave={(next) => {
-            onPlace(next)
-            setPlacing(null)
-          }}
-        />
-      )}
     </div>
   )
 }

@@ -133,13 +133,10 @@ const corner = (h: Handle): CSSProperties => ({
 })
 
 /**
- * Cắt tay một tấm ảnh cho khối ảnh trong thân bài.
- *
- * Khác `FocusPicker`: ô ảnh cố định của khuôn bài có hình dạng do khuôn quyết,
- * nên ở đó chỉ chọn được phần nào nằm trong khung. Khối ảnh trong thân bài thì
- * không có hình dạng nào áp xuống, nên ở đây người dùng kéo chính cái khung —
- * dời, co, giãn từ bốn góc, hoặc khoá vào một tỉ lệ có sẵn — và trang vẽ ảnh
- * đúng bằng hình đã cắt.
+ * Cắt tay một tấm ảnh — hộp thoại duy nhất cho mọi chỗ đăng ảnh của khu quản
+ * trị (xem `framing.tsx`). Người dùng kéo chính cái khung — dời, co, giãn từ
+ * bốn góc, hoặc khoá vào một tỉ lệ có sẵn — và trang vẽ ảnh đúng bằng hình đã
+ * cắt.
  *
  * Kết quả ghi lên địa chỉ ảnh (`#crop=…`), cùng cách điểm căn đi theo địa chỉ,
  * nên không có cột nào phải thêm và ảnh vẫn đi qua markdown nguyên vẹn.

@@ -55,7 +55,7 @@ import { Button, ButtonLink } from '../../design/Button'
 import { useToast } from '../../design/Toaster'
 import type { AuthorRef } from 'api-contract'
 import { CoverBand } from '../components/CoverBand'
-import { FramingProvider, useCropping, useFraming } from '../components/framing'
+import { useCropping, useFraming } from '../components/framing'
 import { PlateImageUpload, PlateUpload } from '../components/PlateUpload'
 import { PostSettings, SETTINGS_WIDTH, topicPath, type SettingsPatch } from '../components/PostSettings'
 import { blankReportBlock, getBody, ORDERED_LIST, resolveTemplate } from '../lib/postData'
@@ -197,19 +197,6 @@ const REPORT_BLUE = '#6FA8C0'
 const SETTINGS_KEY = 'beanweirdo.editor.settingsOpen'
 
 export function Editor({ postId }: { postId: string }) {
-  return (
-    /*
-     * Khung cắt ảnh bọc cả màn, chứ không dựng riêng ở từng chỗ đăng ảnh: chủ
-     * site muốn mọi chỗ đăng ảnh ra cùng một hộp thoại, và một hộp cho cả màn
-     * thì không có cách nào lệch nhau được.
-     */
-    <FramingProvider>
-      <EditorContent postId={postId} />
-    </FramingProvider>
-  )
-}
-
-function EditorContent({ postId }: { postId: string }) {
   const nav = useNav()
   const addresses = usePostAddresses()
   const [post, setPost] = useState<PostDetail | null>(null)

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { bodyPreview, computeStatusTransition, firstImageIn, InvalidStatusTransitionError, toPostDetail, toPostSummary, withoutImages, type PostRow } from './posts.js'
+import { bodyPreview, computeStatusTransition, firstImageIn, InvalidStatusTransitionError, toPostDetail, toPostSummary, type PostRow } from './posts.js'
 
 function row(overrides: Partial<PostRow> = {}): PostRow {
   return {
@@ -106,30 +106,6 @@ describe('computeStatusTransition', () => {
     expect(() => computeStatusTransition(row({ status: 'published' }), 'permanently-delete')).toThrow(
       InvalidStatusTransitionError,
     )
-  })
-})
-
-describe('withoutImages', () => {
-  it('empties every picture, however deep, and keeps the words', () => {
-    const body = {
-      poster: '/poster.jpg',
-      blocks: [
-        { k: 'p', runs: [{ t: 'chữ' }] },
-        { k: 'aside', items: [{ k: 'fig', src: '/a.png' }] },
-        { type: 'image', imageUrl: '/b.png', caption: 'giữ' },
-      ],
-    }
-    const out = withoutImages(body)
-    expect(firstImageIn((out as { blocks: unknown }).blocks)).toBeNull()
-    expect(out).toEqual({
-      poster: null,
-      blocks: [
-        { k: 'p', runs: [{ t: 'chữ' }] },
-        { k: 'aside', items: [{ k: 'fig', src: null }] },
-        { type: 'image', imageUrl: null, caption: 'giữ' },
-      ],
-    })
-    expect(withoutImages(null)).toBeNull()
   })
 })
 
