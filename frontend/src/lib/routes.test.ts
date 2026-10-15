@@ -83,7 +83,9 @@ describe('routes — tên trong địa chỉ', () => {
     expect(parsePath('/ad-config').tab).toBe('pages')
     expect(parsePath('/ad-page-content').tab).toBe('pages')
     // Phân loại folded into Nội dung; its old address still lands there.
-    expect(parsePath('/ad-taxonomy').tab).toBe('posts')
+    // Phân loại's old address is Nội dung › Chuyên mục, the tree it used to manage; Tag has its own.
+    expect(parsePath('/ad-taxonomy').tab).toBe('topics')
+    expect(parsePath('/ad-tags').tab).toBe('tags')
     expect(parsePath('/ad-display').tab).toBe('display')
     expect(parsePath('/ad-authors').tab).toBe('authors')
     // Quản lý trang and Cấu hình are one tab, written at /ad-cau-hinh; the old address still reads.

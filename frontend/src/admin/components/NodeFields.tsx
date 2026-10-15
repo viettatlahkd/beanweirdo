@@ -124,15 +124,20 @@ function Panel({ children }: { children: ReactNode }) {
   )
 }
 
-/** Deleting a topic: its children must move first; its own posts go where the owner says. */
+/**
+ * Deleting a topic is merging it: its posts — and its topics, if it has any —
+ * go into the one the owner picks, then it goes. The tree is two levels, so a
+ * topic with topics under it can only merge into another top-level one.
+ */
 export function RetireTopic({ topic, tree, kids, count, onRetire, onCancel }: { topic: Node; tree: Node[]; kids: number; count: number; onRetire: (to: Node | null) => void; onCancel: () => void }) {
-  const targets = tree.filter((t) => t.id !== topic.id && t.parent_id !== topic.id)
-  const [to, setTo] = useState(topic.parent_id ?? targets[0]?.id ?? '')
-  if (kids > 0)
+  const targets = tree.filter((t) => t.id !== topic.id && t.parent_id !== topic.id && (kids === 0 || t.parent_id === null))
+  const [to, setTo] = useState(kids === 0 && topic.parent_id ? topic.parent_id : targets[0]?.id ?? '')
+  const moving = [kids ? `${kids} mục con` : '', count ? `${count} bài` : ''].filter(Boolean).join(' và ')
+  if (kids > 0 && targets.length === 0)
     return (
       <Panel>
         <span>
-          {topic.title} còn {kids} mục con. Chuyển hay xoá chúng trước rồi mới xoá được mục này.
+          {topic.title} còn {kids} mục con và không có chủ đề nào khác để gộp vào.
         </span>
         <span style={{ justifySelf: 'start' }}>
           <Button level="quiet" size="sm" onClick={onCancel}>
@@ -143,9 +148,9 @@ export function RetireTopic({ topic, tree, kids, count, onRetire, onCancel }: { 
     )
   return (
     <Panel>
-      {count > 0 && (
-        <Row label={`Chuyển ${count} bài sang`}>
-          <select aria-label={`Chuyển ${count} bài sang`} value={to} onChange={(e) => setTo(e.target.value)} style={{ font: 'inherit', color: 'inherit', width: '100%' }}>
+      {moving && (
+        <Row label={`Gộp ${moving} vào`}>
+          <select aria-label={`Gộp ${moving} vào`} value={to} onChange={(e) => setTo(e.target.value)} style={{ font: 'inherit', color: 'inherit', width: '100%' }}>
             {targets.map((t) => (
               <option key={t.id} value={t.id}>
                 {'  '.repeat(ancestorsOf(tree, t.id).length)}
@@ -156,8 +161,8 @@ export function RetireTopic({ topic, tree, kids, count, onRetire, onCancel }: { 
         </Row>
       )}
       <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-        <Button level="danger" size="sm" disabled={count > 0 && !to} onClick={() => onRetire(count > 0 ? tree.find((t) => t.id === to) ?? null : null)}>
-          {count > 0 ? `Chuyển bài và xoá ${topic.title}` : `Xoá ${topic.title}`}
+        <Button level="danger" size="sm" disabled={!!moving && !to} onClick={() => onRetire(moving ? tree.find((t) => t.id === to) ?? null : null)}>
+          {moving ? `Gộp và xoá ${topic.title}` : `Xoá ${topic.title}`}
         </Button>
         <Button level="quiet" size="sm" onClick={onCancel}>
           Huỷ

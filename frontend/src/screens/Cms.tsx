@@ -804,7 +804,7 @@ export function Cms() {
 
       {tab === 'posts' && <ContentWorkspace onChanged={() => void load()} />}
 
-      {(tab === 'pages' || tab === 'authors' || tab === 'tags') && (
+      {(tab === 'pages' || tab === 'authors' || tab === 'topics' || tab === 'tags') && (
         <ConfigTree
           key={tab === 'pages' ? 'pages' : tab}
           only={tab === 'pages' ? undefined : tab}

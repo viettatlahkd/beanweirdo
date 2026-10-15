@@ -48,15 +48,19 @@ async function forward(type: 'topic' | 'keyword', from: string, to: string): Pro
 export async function retireTopic(t: Node, to: { id: string; title: string } | null, topics: Node[]): Promise<Retired> {
   const moved = (await listPosts('all')).filter((p) => p.topic_id === t.id)
   const siblings = topics.filter((x) => x.parent_id === t.parent_id).sort((a, b) => a.sort_order - b.sort_order).map((s) => s.id)
+  // Its topics go with its posts: merging a subject into another moves the branch, it does not orphan it.
+  const kids = to ? topics.filter((x) => x.parent_id === t.id) : []
+  await Promise.all(kids.map((k) => updateNode(k.id, { parent_id: to!.id })))
   await Promise.all(moved.map((p) => updatePost(p.id, { topic_id: to?.id ?? null })))
   const unforward = to ? await forward('topic', t.id, to.id) : null
   await deleteNode(t.id)
   return {
-    msg: to ? `${moved.length} bài → ${to.title} · đã xoá ${t.title}` : `Đã xoá ${t.title}`,
+    msg: to ? `${[kids.length ? `${kids.length} mục con` : '', `${moved.length} bài`].filter(Boolean).join(', ')} → ${to.title} · đã xoá ${t.title}` : `Đã xoá ${t.title}`,
     revert: async () => {
       const back = await createNode({ site: 'blog', title: t.title, parent_id: t.parent_id })
       await updateNode(back.id, { intro: t.intro, status: t.status, accent: t.accent, on_color: t.on_color, tint: t.tint, tint2: t.tint2, image_url: t.image_url })
       await reorderNodes(siblings.map((s) => (s === t.id ? back.id : s)))
+      await Promise.all(kids.map((k) => updateNode(k.id, { parent_id: back.id })))
       await Promise.all(moved.map((p) => updatePost(p.id, { topic_id: back.id })))
       await unforward?.()
     },
