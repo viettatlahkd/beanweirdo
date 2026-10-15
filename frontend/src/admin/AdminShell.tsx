@@ -47,14 +47,18 @@ export function useAdminFrame(): Frame {
 }
 
 /**
- * The lists that file posts, under Nội dung (owner, 2026-10-15) rather than
+ * Biên tập: the posts and the lists that file them, four rows of one level in
+ * the owner's order (2026-10-15) — Tác giả, Nội dung, Chuyên mục, Tag — under a
+ * section name of their own, like Cấu hình and Hiển thị. They are not filed
  * under a site in Cấu hình: every site's posts wear them. Chuyên mục is the
  * subject › topic tree itself — added, renamed, merged away — the CMS word for
  * a hierarchical taxonomy (WordPress's Categories), beside Tag, the flat one.
  * Mục lục, the journal page that shows that tree, stays in Cấu hình › journal.
+ * The admin still opens on Nội dung (`/ad` → posts).
  */
 const CONTENT_LISTS = [
   { tab: 'authors', label: 'Tác giả' },
+  { tab: 'posts', label: 'Nội dung' },
   { tab: 'topics', label: 'Chuyên mục' },
   { tab: 'tags', label: 'Tag' },
 ] as const
@@ -93,7 +97,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
         : tab === 'posts'
           ? 'Nội dung'
           : tab === 'authors' || tab === 'topics' || tab === 'tags'
-            ? `Nội dung › ${CONTENT_LISTS.find((l) => l.tab === tab)?.label}`
+            ? CONTENT_LISTS.find((l) => l.tab === tab)?.label
             : tab === 'display'
               ? 'Cài đặt hiển thị'
               : `Cấu hình › ${CONFIG_SITE_LABELS[site]}`
@@ -118,11 +122,14 @@ export function AdminShell({ children }: { children: ReactNode }) {
       <a href="/" style={{ fontFamily: serif, fontSize: 20, color: SHELL.sideInk, textDecoration: 'none', padding: '2px 10px 16px' }}>
         bæn. <span style={{ fontFamily: SHELL.font, fontSize: SHELL.size, color: SHELL.sideMuted }}>quản trị</span>
       </a>
-      <Item on={tab === 'posts' || nav.screen !== 'cms'} onClick={() => nav.goCms('posts')}>
-        Nội dung
-      </Item>
+      <Heading>Biên tập</Heading>
       {CONTENT_LISTS.map((l) => (
-        <Item key={l.tab} depth={1} on={tab === l.tab && nav.screen === 'cms'} onClick={() => nav.goCms(l.tab)}>
+        <Item
+          key={l.tab}
+          // Nội dung stays lit while a post is open in the editor or its preview.
+          on={l.tab === 'posts' ? tab === 'posts' || nav.screen !== 'cms' : tab === l.tab && nav.screen === 'cms'}
+          onClick={() => nav.goCms(l.tab)}
+        >
           {l.label}
         </Item>
       ))}
