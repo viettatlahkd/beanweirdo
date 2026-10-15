@@ -1,22 +1,5 @@
 import { useState } from 'react'
 
-/**
- * The row of site tabs (Journal | Port | …) that splits an admin screen
- * by site. Cài đặt hiển thị had it first; the owner asked for the same bar on
- * Cấu hình, so both screens draw this one and they cannot drift apart.
- */
-export function SiteTabs<T extends string>({ tabs, labels, value, onChange }: { tabs: readonly T[]; labels: Record<T, string>; value: T; onChange: (t: T) => void }) {
-  return (
-    <div role="tablist" className="ab-seg">
-      {tabs.map((s) => (
-        <button key={s} type="button" role="tab" aria-selected={value === s} onClick={() => onChange(s)}>
-          {labels[s]}
-        </button>
-      ))}
-    </div>
-  )
-}
-
 /** Hiển thị's three rows in the sidebar (owner, 2026-10-16), once the tabs of Cài đặt hiển thị; the open one is remembered. */
 export const DISPLAY_TABS = ['blog', 'port', 'routes'] as const
 export type DisplayTab = (typeof DISPLAY_TABS)[number]
