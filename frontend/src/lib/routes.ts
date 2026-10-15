@@ -69,8 +69,8 @@ const adminPages = (w: RouteWords): Record<string, Screen> => ({
   [`${w.admin}-${w.adPortDesign}`]: 'cms',
 })
 
-/** Nội dung (posts and the vocabularies filing them) · Cấu hình (every page and its settings) · Cài đặt hiển thị. `authors` is Cấu hình opened on its Tác giả card. */
-export type CmsTab = 'posts' | 'pages' | 'display' | 'authors'
+/** Nội dung and its lists — Tác giả, Tag — · Cấu hình (every page and its settings) · Cài đặt hiển thị. */
+export type CmsTab = 'posts' | 'authors' | 'tags' | 'pages' | 'display'
 
 /**
  * Which tab of Content management an `/ad-…` address opens on.
@@ -91,6 +91,7 @@ const cmsTabs = (w: RouteWords = activeWords()): Record<string, CmsTab> => ({
   [`${w.admin}-${w.adAuthors}`]: 'authors',
   // Phân loại folded into Nội dung; its old address still lands there.
   [`${w.admin}-${w.adTaxonomy}`]: 'posts',
+  [`${w.admin}-${w.adTags}`]: 'tags',
   [`${w.admin}-${w.adSitemap}`]: 'pages',
   // Nội dung trang folded into Quản lý trang, now Cấu hình; its old address still lands there.
   [`${w.admin}-${w.adPageContent}`]: 'pages',
@@ -104,6 +105,7 @@ const pageOfTab = (w: RouteWords): Record<CmsTab, string> => ({
   pages: `${w.admin}-${w.adTree}`,
   display: `${w.admin}-${w.adDisplay}`,
   authors: `${w.admin}-${w.adAuthors}`,
+  tags: `${w.admin}-${w.adTags}`,
 })
 
 const screenPage = (w: RouteWords): Partial<Record<Screen, string>> => ({

@@ -188,10 +188,14 @@ export function ConfigTree({
   renderCopy,
   renderModule,
   renderPractice,
-  openAuthors = false,
+  only,
 }: {
-  /** `/ad-authors` lands here, on the authors card, since Tác giả stopped being a tab of its own. */
-  openAuthors?: boolean
+  /**
+   * One of Nội dung's lists (Tác giả, Tag) on its own: that list
+   * and what opens from it, with no site tree in the sidebar and no crumb back
+   * into a site — they belong to every site's posts, not to one site's pages.
+   */
+  only?: 'authors' | 'tags'
   modules: Module[]
   /** The fixed copy of a page the site draws with a screen of its own. */
   renderCopy: (key: SystemPage) => ReactNode
@@ -217,19 +221,13 @@ export function ConfigTree({
     if (home) return { kind: 'port-page', id: home.id }
     return { kind: 'group', id: id === 'bean' ? 'bean-pages' : 'biz-pages' }
   }
-  const [picked, setPicked] = useState<Picked>(() => (openAuthors ? { kind: 'group', id: 'authors' } : homeOf(site)))
+  const [picked, setPicked] = useState<Picked>(() => (only ? { kind: 'group', id: only } : homeOf(site)))
   // The site is picked in the sidebar; opening another one starts on its home.
   // `/ad-authors` lands on the root site's authors card, which a site change must not reset.
   const shownSite = useRef(site)
   const keepPick = useRef(false)
   useEffect(() => {
-    if (openAuthors && site !== 'root') {
-      keepPick.current = true
-      frame.openSite('root')
-    }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    if (shownSite.current === site) return
+    if (only || shownSite.current === site) return
     shownSite.current = site
     if (keepPick.current) {
       keepPick.current = false
@@ -533,9 +531,7 @@ export function ConfigTree({
     toc: rootToc,
     cards: [
       { title: 'Khung chung', note: 'thanh trên, chân trang: mọi trang đều mang', picked: { kind: 'group', id: 'frame' } },
-      // Tags and authors are filed on posts of both sites (owner, 2026-10-13 and -14): one list, at the root.
-      { title: 'Tag', note: `${vocab.keywords.length} tag, dùng chung cho mọi site`, picked: { kind: 'group', id: 'tags' } },
-      { title: 'Tác giả', note: 'người đứng tên bài, dùng chung cho mọi site', picked: { kind: 'group', id: 'authors' } },
+      // Tag and Tác giả moved up to Nội dung (owner, 2026-10-15): they file posts, not pages of this site.
       { title: 'Ghi 02', note: 'Practice · nhật ký giờ luyện, sau đăng nhập', picked: { kind: 'practice' } },
     ],
   }
@@ -582,7 +578,7 @@ export function ConfigTree({
   }
 
   // Drawn in the sidebar, under the open site.
-  const tree = frame.slot
+  const tree = !only && frame.slot
     ? createPortal(
         <nav aria-label="Cây cấu hình" onKeyDown={walk} style={{ display: 'flex', flexDirection: 'column', gap: 2, padding: '2px 0 6px' }}>
           {siteTree(spec)}
@@ -1019,6 +1015,11 @@ export function ConfigTree({
     }
   }
 
+  if (only) {
+    // A Nội dung list leads nowhere into a site: drop the site crumb, and name the list as its tab does.
+    const siteNames = Object.values(SITE_LABELS) as string[]
+    crumbs = crumbs.filter((c) => !siteNames.includes(c.label))
+  }
   const header = <DetailHead crumbs={crumbs} title={title} rename={rename} address={address} facts={facts} actions={actions} />
 
   // The port builder draws its own preview into the slot; everything else gets the public page.

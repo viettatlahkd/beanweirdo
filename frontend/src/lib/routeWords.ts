@@ -34,6 +34,8 @@ export type RouteWords = {
   /** Cấu hình: mọi trang và cài đặt của site, cây bên trái, chi tiết bên phải — `/ad-cau-hinh`. */
   adTree: string
   adAuthors: string
+  /** Nội dung › Tag — `/ad-tags`. */
+  adTags: string
   /**
    * Hai trang con đã gộp lại thành `adConfig`. Chúng không còn được sinh ra,
    * nhưng vẫn đọc được: link cũ phải mở ra đúng chỗ.
@@ -75,6 +77,7 @@ export const DEFAULT_WORDS: RouteWords = {
   adConfig: 'config',
   adTree: 'cau-hinh',
   adAuthors: 'authors',
+  adTags: 'tags',
   adSitemap: 'sitemap',
   adPageContent: 'page-content',
   adTaxonomy: 'taxonomy',
@@ -109,6 +112,7 @@ export const WORD_LABELS: Record<Exclude<keyof RouteWords, 'dateOrder' | 'module
   adConfig: 'Cấu hình (địa chỉ cũ)',
   adTree: 'Cấu hình',
   adAuthors: 'Tác giả',
+  adTags: 'Tag',
   adSitemap: 'Sitemap (địa chỉ cũ)',
   adPageContent: 'Quản lý trang (địa chỉ cũ)',
   adTaxonomy: 'Phân loại',
@@ -148,7 +152,7 @@ const MUST_DIFFER: (keyof RouteWords)[][] = [
   // Các trang của blog đứng cùng một chỗ, ngay sau `/journal/`.
   ['post', 'module', 'tag', 'index', 'notes', 'details'],
   // Bảy trang con đứng cùng một chỗ, ngay sau `ad-`.
-  ['adPost', 'adConfig', 'adTree', 'adAuthors', 'adSitemap', 'adPageContent', 'adTaxonomy', 'adDisplay', 'adArchive', 'adPortfolio', 'adPortContent', 'adPortDesign'],
+  ['adPost', 'adConfig', 'adTree', 'adAuthors', 'adTags', 'adSitemap', 'adPageContent', 'adTaxonomy', 'adDisplay', 'adArchive', 'adPortfolio', 'adPortContent', 'adPortDesign'],
   // Ba động từ đứng cùng một chỗ, ngay sau `/ad-post/`.
   ['create', 'edit', 'view'],
 ]
