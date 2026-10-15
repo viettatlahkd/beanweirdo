@@ -128,8 +128,9 @@
   `#b8505a` thay `var(--signal)` (`.pf .over.ctx`, `styles.ts`). Đo trên ảnh about (thu nhỏ 60×37, tương phản WCAG từng điểm):
   #b8505a trung bình 3.26:1, 60% điểm ≥3:1; #f19ea3 2.45:1, 19%; màu cũ 3.35:1, 60% — màu cũ chìm vì cùng tông xám-xanh với ảnh
   đen trắng chứ không vì độ sáng.
-- **[ĐỔI HÀNH VI]** `/about`: văn bản lớp phủ có nền bôi luôn bật sau từng dòng chữ (`.pf .over.ctx p>span`): giấy `#fefdfb` độ
-  mờ 72%, phủ từ 12% đến 92% chiều cao dòng. Bản đầu dùng hồng `#fbd6d8` kiểu `.mk` — chủ site thấy nhức mắt, đã thay.
+- **[ĐỔI HÀNH VI]** `/about`: văn bản lớp phủ có nền bôi luôn bật sau từng dòng chữ (`.pf .over.ctx p>span`): hồng `#fbd6d8` độ
+  mờ 60%, phủ nửa dưới dòng (từ 50%). Đã thử: hồng đặc từ 40% (chủ site: nhức mắt), giấy `#fefdfb` mờ 72% gần kín dòng (chủ site:
+  không chấp nhận được).
   `PortAbout` tách từng dòng: phần thụt đầu dòng để trống, chỉ chữ được bôi.
 - Thứ tự khối trên trang chủ vẫn theo thứ tự port trên Thanh menu (`featuresFollowingMenu` khi kéo).
 - Trình duyệt (chặn lệnh ghi): Trang chủ chỉ còn Nội dung trang, Thanh menu; "Cập nhật nội dung" ở bizops mở Hiện ở trang chủ ·
