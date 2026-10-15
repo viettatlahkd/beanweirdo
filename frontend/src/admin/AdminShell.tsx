@@ -46,7 +46,12 @@ export function useAdminFrame(): Frame {
   return f
 }
 
-const SIDE_W = 248
+/**
+ * Wide enough for the longest entry ("Mở nhật ký Ghi 02 ↗" ends at 148px) and a
+ * nested page under it, no wider: at 248 a third of the column was empty
+ * margin on the right of every row (owner, 2026-10-15).
+ */
+const SIDE_W = 196
 
 /**
  * The back office's one frame: a sidebar holding every place to work
