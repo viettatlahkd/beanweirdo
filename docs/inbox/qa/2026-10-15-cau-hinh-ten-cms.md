@@ -169,6 +169,13 @@
   khung · dán link · ✕". Khung cắt vẫn tự do (`useCropping`) như trước; huỷ khung không lưu. Khung ngoài là `div`, không phải
   `label` của `Field`. Trình duyệt: bizops hiện ảnh + 4 lệnh; "đặt vào khung" mở hộp "Ảnh", Esc đóng; "dán link" mở ô; không
   lệnh ghi nào.
+- **[ĐỔI HÀNH VI] Biên tập › Template** (mới, `/ad-templates`; `CmsTab` 'templates', `routeWords.adTemplates`, `AdminShell`
+  `CONTENT_LISTS`, `Cms.tsx`, `RoutesPanel`): danh sách 6 khuôn bài (`POST_TEMPLATES`) kèm số bài dùng (mọi trạng thái trừ thùng
+  rác, `listPosts('all')`). Mở một khuôn: danh sách bài dùng nó (mới sửa trước), xem trước bên phải là bài đã đăng mới nhất;
+  bấm một bài đã đăng khác thì xem trên bài đó ("đang xem"). Xem trước theo id bài (`/p/<id>`) vì sổ địa chỉ công khai chỉ có
+  bài đã đăng, slug tính ở admin có thể khác. Khuôn không xoá được.
+- Trình duyệt (tab riêng): thanh bên Biên tập có Template; Article 2 · Cards 2 · Report 1 · Long-form 13 · Memo 1 · Bitesize note
+  14 bài; Long-form xem trước pt.2, bấm pt.1 → xem pt.1. Chỉ đọc.
 - Thứ tự khối trên trang chủ vẫn theo thứ tự port trên Thanh menu (`featuresFollowingMenu` khi kéo).
 - Trình duyệt (chặn lệnh ghi): Trang chủ chỉ còn Nội dung trang, Thanh menu; "Cập nhật nội dung" ở bizops mở Hiện ở trang chủ ·
   Nhãn "beæn bizops" · Ảnh; sửa nhãn → một `PATCH /api/site` `portfolio.home.features`; "Xem dàn trang" ở beæn weirdo → port
