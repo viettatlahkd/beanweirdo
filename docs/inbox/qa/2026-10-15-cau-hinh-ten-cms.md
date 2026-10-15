@@ -112,6 +112,11 @@
 - Trình duyệt (chặn lệnh ghi): dropdown about hiện đủ ô + Chữ kí "a soliloquise"; "Tạo chữ kí" → Thông tin chung, hộp thoại mở,
   con trỏ ở ô tên; lưu "thử" + email → một `PATCH /api/site` `portfolio.about` với `signatures` [chữ kí 1 kèm 4 liên hệ cũ, thử],
   `signId` sign-1. `/about` công khai vẫn ký "a soliloquise", liên hệ email + linkedin.
+- **[ĐỔI HÀNH VI]** Dropdown about: thứ tự Ảnh hẹp · Ảnh chính → Nhãn trên ảnh → "Văn bản lớp phủ" (đổi tên từ "Đoạn chữ phủ
+  ảnh") → Chữ kí. "Tạo chữ kí" thành lựa chọn cuối "+ Tạo chữ kí mới…" trong danh sách Chữ kí (`NEW_SIGN`, `PortEditors.tsx`).
+- **[ĐỔI HÀNH VI]** Bấm vào thân dòng ở Thanh menu không còn mở trang nào; dòng chỉ làm việc qua nút của nó và ⋮
+  (`ListItem.onOpen` thành tuỳ chọn, `RowBody` trong `Detail.tsx`). Trình duyệt: bấm tên bizops → vẫn ở Trang chủ; chọn
+  "+ Tạo chữ kí mới…" → Thông tin chung, hộp thoại Thêm chữ kí mở, không lệnh ghi nào.
 - Thứ tự khối trên trang chủ vẫn theo thứ tự port trên Thanh menu (`featuresFollowingMenu` khi kéo).
 - Trình duyệt (chặn lệnh ghi): Trang chủ chỉ còn Nội dung trang, Thanh menu; "Cập nhật nội dung" ở bizops mở Hiện ở trang chủ ·
   Nhãn "beæn bizops" · Ảnh; sửa nhãn → một `PATCH /api/site` `portfolio.home.features`; "Xem dàn trang" ở beæn weirdo → port

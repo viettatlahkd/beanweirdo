@@ -747,6 +747,8 @@ const rowBox: CSSProperties = { borderTop: `1px solid ${paper.rule}`, padding: '
 /** `feature` is one port's block, opened from its row in Trang chủ's Thanh menu (owner, 2026-10-15). */
 export type PortPart = 'home' | 'feature' | 'about' | 'header' | 'footer'
 
+const NEW_SIGN = '__new-sign'
+
 export function ContentTab({
   content,
   setStored,
@@ -871,9 +873,13 @@ export function ContentTab({
         )
       })()}
 
+      {/* Top to bottom as the page draws them: the images, the labels on them, the words over them (owner, 2026-10-15). */}
       {show('about') && (
         <>
-      {text('Đoạn chữ phủ ảnh', about.text, (v) => setGroup('about', { ...about, text: v }), true)}
+      <div style={two}>
+        <ImageField label="Ảnh hẹp" value={about.imageLeft} onChange={(v) => setGroup('about', { ...about, imageLeft: v })} />
+        <ImageField label="Ảnh chính" value={about.imageRight} onChange={(v) => setGroup('about', { ...about, imageRight: v })} />
+      </div>
       <div style={fieldLabel}>Nhãn trên ảnh</div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,minmax(0,1fr))', gap: 8, marginBottom: 12 }}>
         {[0, 1, 2, 3].map((i) => (
@@ -888,30 +894,21 @@ export function ContentTab({
           />
         ))}
       </div>
-        </>
-      )}
-
-      {show('about') && (
-        <>
-      <div style={two}>
-        <ImageField label="Ảnh hẹp" value={about.imageLeft} onChange={(v) => setGroup('about', { ...about, imageLeft: v })} />
-        <ImageField label="Ảnh chính" value={about.imageRight} onChange={(v) => setGroup('about', { ...about, imageRight: v })} />
-      </div>
+      {text('Văn bản lớp phủ', about.text, (v) => setGroup('about', { ...about, text: v }), true)}
       <Row label="Chữ kí">
-        <span style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          <select aria-label="Chữ kí" value={aboutSign(about)?.id ?? ''} onChange={(e) => setGroup('about', { ...about, signId: e.target.value })}>
-            {about.signatures.map((sg) => (
-              <option key={sg.id} value={sg.id}>
-                {sg.name || 'chưa đặt tên'}
-              </option>
-            ))}
-          </select>
-          {onNewSign && (
-            <Button level="add" size="sm" icon={<IconPlus size={14} />} onClick={onNewSign}>
-              Tạo chữ kí
-            </Button>
-          )}
-        </span>
+        {/* Making one is the list's last choice; it goes to Thông tin chung, where signatures are kept. */}
+        <select
+          aria-label="Chữ kí"
+          value={aboutSign(about)?.id ?? ''}
+          onChange={(e) => (e.target.value === NEW_SIGN ? onNewSign?.() : setGroup('about', { ...about, signId: e.target.value }))}
+        >
+          {about.signatures.map((sg) => (
+            <option key={sg.id} value={sg.id}>
+              {sg.name || 'chưa đặt tên'}
+            </option>
+          ))}
+          {onNewSign && <option value={NEW_SIGN}>+ Tạo chữ kí mới…</option>}
+        </select>
       </Row>
         </>
       )}
