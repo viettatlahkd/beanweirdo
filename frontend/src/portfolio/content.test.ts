@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { aboutSign, navLinks, resolveContent } from './content'
+import { aboutSign, featuresFollowingMenu, menuFollowingFeatures, navLinks, resolveContent } from './content'
 import { parsePath, toPath } from '../lib/routes'
 import { DEFAULT_WORDS } from '../lib/routeWords'
 
@@ -55,5 +55,28 @@ describe('Portfolio addresses', () => {
       expect(parsePath(path, '', DEFAULT_WORDS)).toEqual(where)
       expect(toPath(where, DEFAULT_WORDS)).toBe(path)
     }
+  })
+})
+
+describe('one order for the ports: home blocks and menu', () => {
+  const f = (pageId: string) => ({ pageId, label: '', intro: '', image: '' })
+
+  it('reorders the menu ports to the home blocks, leaving About and the journal where they are', () => {
+    const links = [{ key: 'home' }, { key: 'page:biz' }, { key: 'about' }, { key: 'page:bean' }, { key: 'journal:home' }]
+    expect(menuFollowingFeatures(links, ['bean', 'biz']).map((l) => l.key)).toEqual(['home', 'page:bean', 'about', 'page:biz', 'journal:home'])
+  })
+
+  it('reorders the home blocks to the ports dragged in the menu', () => {
+    const menu = ['home', 'about', 'page:bean', 'page:biz', 'journal:home']
+    expect(featuresFollowingMenu([f('biz'), f('bean')], menu).map((x) => x.pageId)).toEqual(['bean', 'biz'])
+  })
+
+  it('lists ports in the home blocks order when the menu was never arranged', () => {
+    const content = resolveContent({ home: { features: [f('b'), f('a')] } })
+    const pages = [
+      { id: 'a', slug: 'a', title: 'A', status: 'published', home_of: null, parent_id: null },
+      { id: 'b', slug: 'b', title: 'B', status: 'published', home_of: null, parent_id: null },
+    ]
+    expect(navLinks(content, pages as never).map((l) => l.key)).toEqual(['home', 'page:b', 'page:a', 'about'])
   })
 })

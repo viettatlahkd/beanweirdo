@@ -88,10 +88,18 @@ export const JOURNAL_LINKS: Record<string, { label: string; href: () => string }
  * drops out even if it was renamed.
  */
 export function navLinks(content: PortContent, pages: NavPage[]): NavLink[] {
+  // Untouched, the menu lists the ports in the order the home page shows them (owner, 2026-10-15).
+  const rank = (id: string) => {
+    const i = content.home.features.findIndex((f) => f.pageId === id)
+    return i < 0 ? Number.MAX_SAFE_INTEGER : i
+  }
   const auto: NavLink[] = [
     { key: 'home', label: content.home.title || 'portfolio', href: toPath({ area: 'public', screen: 'portfolioHome' }), hidden: false },
     ...pages
       .filter((p) => p.status === 'published')
+      .map((p, i) => ({ p, i }))
+      .sort((a, b) => rank(a.p.id) - rank(b.p.id) || a.i - b.i)
+      .map(({ p }) => p)
       .map((p) => ({ key: `page:${p.id}`, label: p.title, href: portPagePath(p, pages), hidden: false })),
     { key: 'about', label: 'about', href: toPath({ area: 'public', screen: 'portfolioAbout' }), hidden: false },
   ]
@@ -105,4 +113,28 @@ export function navLinks(content: PortContent, pages: NavPage[]): NavLink[] {
     byKey.delete(o.key)
   }
   return [...out, ...byKey.values()]
+}
+
+/*
+ * One order for the ports, kept in two places: the home page's blocks
+ * (`home.features`) and the menu (`header.links`). Moving a port in either
+ * moves it in the other (owner, 2026-10-15). The menu keeps its own places for
+ * everything that is not a port — About, the journal — so only the ports
+ * trade places among themselves.
+ */
+const PAGE = 'page:'
+
+/** The menu with its ports in the home page's order, each port slot refilled in turn. */
+export function menuFollowingFeatures(links: NavOverride[], featureIds: string[]): NavOverride[] {
+  const listed = links.filter((l) => l.key.startsWith(PAGE) && featureIds.includes(l.key.slice(PAGE.length)))
+  const queue = featureIds.map((id) => listed.find((l) => l.key === PAGE + id)).filter((l): l is NavOverride => !!l)
+  return links.map((l) => (listed.includes(l) ? (queue.shift() as NavOverride) : l))
+}
+
+/** The home page's blocks in the order the menu now lists their ports; blocks the menu does not list keep their place. */
+export function featuresFollowingMenu(features: Feature[], menuKeys: string[]): Feature[] {
+  const inMenu = menuKeys.filter((k) => k.startsWith(PAGE)).map((k) => k.slice(PAGE.length))
+  const listed = features.filter((f) => inMenu.includes(f.pageId))
+  const queue = inMenu.map((id) => listed.find((f) => f.pageId === id)).filter((f): f is Feature => !!f)
+  return features.map((f) => (listed.includes(f) ? (queue.shift() as Feature) : f))
 }

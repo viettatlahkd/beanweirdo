@@ -23,7 +23,7 @@ import { bySiteOrder } from '../../lib/moduleOrder'
 import { TAG_PAGE, portPagePath, portSiteOf, toPath } from '../../lib/routes'
 import { findPage, useModules } from '../../data/useModules'
 import { usePortSources } from '../../portfolio/data'
-import { JOURNAL_LINKS, navLinks, type NavOverride, type PortContent } from '../../portfolio/content'
+import { JOURNAL_LINKS, navLinks, type NavOverride, type PortContent, featuresFollowingMenu } from '../../portfolio/content'
 import type { PresetKey } from '../../portfolio/blocks'
 import { ink, paper, sans } from '../../design/tokens'
 import { radius } from '../../design/controls'
@@ -345,15 +345,18 @@ export function ConfigTree({
   const setHeader = (header: PortContent['header']) => port.setContentStored((s) => ({ ...s, header }))
   const movePortLink = (_id: string, p: MovePlan) => {
     const before = port.content.header
+    const beforeHome = port.content.home
     const keys = p.order.filter((k) => k !== 'home' && portLinks.some((l) => l.key === k))
     keys.splice(Math.max(0, portLinks.findIndex((l) => l.key === 'home')), 0, 'home')
     const header = { ...before, links: keys.map((key) => before.links.find((o) => o.key === key) ?? { key }) }
-    setHeader(header)
+    // A port moved in the menu moves its block on the home page too: one order, two places (owner, 2026-10-15).
+    const home = { ...beforeHome, features: featuresFollowingMenu(beforeHome.features, keys) }
+    port.setContentStored((s) => ({ ...s, header, home }))
     return {
-      apply: () => updateSite({ portfolio: { header } } as never),
+      apply: () => updateSite({ portfolio: { header, home } } as never),
       revert: async () => {
-        setHeader(before)
-        await updateSite({ portfolio: { header: before } } as never)
+        port.setContentStored((s) => ({ ...s, header: before, home: beforeHome }))
+        await updateSite({ portfolio: { header: before, home: beforeHome } } as never)
       },
     }
   }
@@ -493,7 +496,8 @@ export function ConfigTree({
   const portHome = (title: string, home: Node | undefined): CardSpec | undefined =>
     home && { title, note: `${portPagePath(home)} · ${home.title}`, picked: { kind: 'port-page', id: home.id } }
 
-  const bizSite: SiteSpec = { id: 'biz', path: '/biz/…', home: portHome('Trang chủ biz', bizHome), toc: bizToc }
+  // Its page list moved up to beanweirdo as Template/Archive (owner, 2026-10-15): the pages under no site's home.
+  const bizSite: SiteSpec = { id: 'biz', path: '/biz/…', home: portHome('Trang chủ biz', bizHome) }
   const beanSite: SiteSpec = { id: 'bean', path: `${toPath({ area: 'public', screen: 'portfolioPage', site: 'bean' })}/…`, home: portHome('Trang chủ bean', beanHome), toc: beanToc }
 
   const blogPath = toPath({ area: 'public', screen: 'landing' })
@@ -514,7 +518,7 @@ export function ConfigTree({
     nest: false,
     move: movePortLink,
     items: portLinks.flatMap((l): TocItem[] => {
-      if (l.key === 'about') return [{ id: l.key, parent_id: null, name: 'About', dot: null, meta: tocMeta('published', '/about', l.hidden), picked: { kind: 'port-part', part: 'about' }, movable: true }]
+      if (l.key === 'about') return [{ id: l.key, parent_id: null, name: 'About', dot: null, meta: tocMeta('published', '/about', l.hidden), picked: { kind: 'group', id: 'frame' }, movable: true }]
       const j = JOURNAL_LINKS[l.key]
       if (j) {
         const to: Picked = l.key === 'journal:index' ? { kind: 'group', id: 'topics' } : { kind: 'system', key: 'landing' }
@@ -528,10 +532,11 @@ export function ConfigTree({
   const rootSite: SiteSpec = {
     id: 'root',
     path: '/',
-    home: { title: 'Trang chủ', note: 'Lời chào và các khối của trang /', picked: { kind: 'port-part', part: 'home' } },
-    toc: rootToc,
+    // The menu is part of Trang chủ now (owner, 2026-10-15): its words, its port blocks, and the menu's order.
+    home: { title: 'Trang chủ', note: 'nội dung, các port trên trang /, thứ tự thanh menu', picked: { kind: 'port-part', part: 'home' } },
     cards: [
-      { title: 'Đầu & chân trang', note: 'đầu trang, chân trang: mọi trang đều mang', picked: { kind: 'group', id: 'frame' } },
+      { title: 'Thông tin chung', note: 'đầu trang, chân trang, About: mọi trang đều mang', picked: { kind: 'group', id: 'frame' } },
+      { title: 'Template/Archive', note: 'trang port không thuộc trang chủ site nào', picked: { kind: 'group', id: 'biz-pages' } },
       // Tag and Tác giả moved up to Nội dung (owner, 2026-10-15): they file posts, not pages of this site.
     ],
   }
@@ -554,12 +559,12 @@ export function ConfigTree({
         return 'modules'
       case 'port-page':
       {
-        if (site === 'root') return 'root-toc'
         const pg = port.pages.find((x) => x.id === p.id)
+        if (site === 'root') return pg && !pg.home_of && tocOfPage(pg).id === 'biz-pages' ? 'biz-pages' : null
         return !pg || pg.home_of ? null : tocOfPage(pg).id
       }
       case 'port-part':
-        return p.part === 'about' ? 'root-toc' : p.part === 'home' ? null : 'frame'
+        return p.part === 'home' ? null : 'frame'
       default:
         return null
     }
@@ -751,7 +756,7 @@ export function ConfigTree({
       const about = picked.part === 'about'
       const part = (only: PortPart) => <ContentTab key={only} only={only} content={port.content} setStored={port.setContentStored} pages={port.pages} onNewPage={newPortPage} />
       title = about ? 'About' : 'Trang chủ'
-      crumbs = [siteCrumb('root'), ...(about ? [groupCrumb('root-toc', 'Menu chính')] : [])]
+      crumbs = [siteCrumb('root'), ...(about ? [groupCrumb('frame', 'Thông tin chung')] : [])]
       preview = toPath({ area: 'public', screen: about ? 'portfolioAbout' : 'portfolioHome' })
       address = preview
       actions = fixed('trang hệ thống, không xoá được')
@@ -760,6 +765,12 @@ export function ConfigTree({
         <>
           <Section title="Nội dung trang">{part(about ? 'about' : 'home')}</Section>
           {about && <Section title="Signature">{part('sign')}</Section>}
+          {!about && <Section title="Port trên trang chủ">{part('blocks')}</Section>}
+          {!about && (
+            <Section title="Thanh menu" note={`mặc định: các port theo thứ tự trên, rồi About, journal · ${dragNote(false)}`}>
+              <ItemList label="Thanh menu" items={tocList(rootToc, rootToc.items)} add={{ ...addPortPage(undefined), label: 'Thêm mục', existing: { options: linkChoices, onPick: addLink } }} />
+            </Section>
+          )}
         </>
       ) : null
       break
@@ -772,7 +783,9 @@ export function ConfigTree({
       const toc = tocOfPage(p)
       crumbs = p.home_of
         ? [siteCrumb(p.home_of)]
-        : [siteCrumb(own), groupCrumb(toc.id, toc.id === 'root-toc' ? 'Menu chính' : 'Danh mục con'), ...ancestorsOf(shownPort, p.id).filter((x) => !x.home_of).map((x): Crumb => ({ label: x.title, open: pick({ kind: 'port-page', id: x.id }) }))]
+        : [
+            ...(toc.id === 'biz-pages' ? [siteCrumb('root'), groupCrumb('biz-pages', 'Template/Archive')] : [siteCrumb(own), groupCrumb(toc.id, 'Danh mục con')]),
+            ...ancestorsOf(shownPort, p.id).filter((x) => !x.home_of).map((x): Crumb => ({ label: x.title, open: pick({ kind: 'port-page', id: x.id }) }))]
       title = p.title
       rename = (v) => run(async () => {
         const next = await updateNode(p.id, { title: v })
@@ -944,8 +957,8 @@ export function ConfigTree({
       } else if (g === 'biz-pages' || g === 'bean-pages') {
         const bean = g === 'bean-pages'
         const toc = bean ? beanToc : bizToc
-        crumbs = [siteCrumb(bean ? 'bean' : 'biz')]
-        title = 'Danh mục con'
+        crumbs = [siteCrumb(bean ? 'bean' : 'root')]
+        title = bean ? 'Danh mục con' : 'Template/Archive'
         facts = [`${toc.items.length} trang`]
         body = (
           <>
@@ -1007,7 +1020,7 @@ export function ConfigTree({
         body = <AuthorsPanel />
       } else if (g === 'frame') {
         crumbs = [siteCrumb('root')]
-        title = 'Đầu & chân trang'
+        title = 'Thông tin chung'
         preview = '/'
         previewKey = portRound
         body = port.loaded ? (
@@ -1017,6 +1030,13 @@ export function ConfigTree({
             </Section>
             <Section title="Chân trang">
               <ContentTab key="footer" only="footer" content={port.content} setStored={port.setContentStored} pages={port.pages} onNewPage={newPortPage} />
+            </Section>
+            {/* About moved here from the menu (owner, 2026-10-15): a page every site links, set once. */}
+            <Section title="About">
+              <ContentTab key="about" only="about" content={port.content} setStored={port.setContentStored} pages={port.pages} onNewPage={newPortPage} />
+            </Section>
+            <Section title="Signature">
+              <ContentTab key="sign" only="sign" content={port.content} setStored={port.setContentStored} pages={port.pages} onNewPage={newPortPage} />
             </Section>
           </>
         ) : null
