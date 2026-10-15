@@ -37,6 +37,12 @@
     **Template/Archive**, thẻ cuối. port #1: biz chỉ còn Trang chủ biz. Trang trong đó có breadcrumb "beanweirdo › Template/Archive".
     port #2: bean giữ "Danh mục con".
 
+- **[ĐỔI HÀNH VI]** Quản trị port (chủ site, 2026-10-15): dòng mới trong Cấu hình, giữa beanweirdo và journal, với ba dòng con
+  **Template · port #1: biz · port #2: bean** (`AdminShell.tsx:PORT_GROUP`; `CONFIG_SITES` thêm `template`). Bấm Quản trị port mở
+  Template. Template = Template/Archive cũ (rời khỏi beanweirdo, nay beanweirdo = Trang chủ · Thông tin chung). Mỗi port là trang
+  chủ của nó: bấm dòng là mở thẳng, không còn thẻ con; port #2 bỏ "Danh mục con". Breadcrumb "Cấu hình › Quản trị port › …".
+  Port mở trước khi trang chủ của nó tải xong thì tự chuyển sang trang chủ khi tải xong (`ConfigTree`, effect theo `bizHome`/`beanHome`).
+
 ## Giới hạn
 
 "Cơ chế cho port tiếp theo" mới ở mức tên: thêm một id vào `PORT_SITES` là nó thành "port #3: …". **Tạo một site port mới thì
@@ -54,3 +60,5 @@ dựng từ danh sách site port lấy từ dữ liệu.
 - Trình duyệt (dữ liệu hosted, chặn mọi lệnh ghi, không lệnh nào phát ra): thanh bên "beanweirdo · port #1: biz · port #2: bean ·
 journal · practice"; thẻ: beanweirdo = Trang chủ · Menu chính · Đầu & chân trang; biz/bean = Trang chủ … · Danh mục con; journal =
 Trang chủ · Mục lục · Dàn trang; practice không có thẻ con, mở thẳng cấu hình (breadcrumb "… › practice", xem trước `/practice`).
+- Quản trị port trên trình duyệt: Template mở bibi, bibe; port #1 mở trang chủ biz, port #2 mở "art & culture"; chỉ dòng đang mở
+  sáng; beanweirdo = Trang chủ · Thông tin chung. Không lệnh ghi nào.

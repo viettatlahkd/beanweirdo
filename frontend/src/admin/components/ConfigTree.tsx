@@ -218,11 +218,18 @@ export function ConfigTree({
     if (id === 'root') return { kind: 'port-part', part: 'home' }
     if (id === 'blog') return { kind: 'system', key: 'landing' }
     if (id === 'practice') return { kind: 'practice' }
+    if (id === 'template') return { kind: 'group', id: 'biz-pages' }
     const home = id === 'biz' ? bizHome : beanHome
     if (home) return { kind: 'port-page', id: home.id }
     return { kind: 'group', id: id === 'bean' ? 'bean-pages' : 'biz-pages' }
   }
   const [picked, setPicked] = useState<Picked>(() => (only ? { kind: 'group', id: only } : homeOf(site)))
+  // A port site opened before its home page loaded fell back to a page list; once the home is there, open it.
+  useEffect(() => {
+    if (only || (site !== 'biz' && site !== 'bean')) return
+    const home = site === 'biz' ? bizHome : beanHome
+    if (home && picked.kind === 'group') setPicked({ kind: 'port-page', id: home.id })
+  }, [bizHome, beanHome]) // eslint-disable-line react-hooks/exhaustive-deps
   // The site is picked in the sidebar; opening another one starts on its home.
   // `/ad-authors` lands on the root site's authors card, which a site change must not reset.
   const shownSite = useRef(site)
@@ -493,12 +500,12 @@ export function ConfigTree({
   const bizToc = portToc('biz-pages', 'biz', shownBiz, bizHome, movePortPage)
   const beanToc = portToc('bean-pages', 'bean', shownBean, beanHome, moveBeanPage)
   const tocOfPage = (pg: Node) => (portOf(pg) === 'bean' ? beanToc : bizToc)
-  const portHome = (title: string, home: Node | undefined): CardSpec | undefined =>
-    home && { title, note: `${portPagePath(home)} · ${home.title}`, picked: { kind: 'port-page', id: home.id } }
-
-  // Its page list moved up to beanweirdo as Template/Archive (owner, 2026-10-15): the pages under no site's home.
-  const bizSite: SiteSpec = { id: 'biz', path: '/biz/…', home: portHome('Trang chủ biz', bizHome) }
-  const beanSite: SiteSpec = { id: 'bean', path: `${toPath({ area: 'public', screen: 'portfolioPage', site: 'bean' })}/…`, home: portHome('Trang chủ bean', beanHome), toc: beanToc }
+  // Its page list became Quản trị port › Template (owner, 2026-10-15): the pages under no site's home.
+  const bizSite: SiteSpec = { id: 'biz', path: '/biz/…' }
+  // Quản trị port › Template: the port pages under no site's home (bibi, bibe), once beanweirdo's Template/Archive.
+  const templateSite: SiteSpec = { id: 'template', path: '/biz/…' }
+  // A port site is its home page (owner, 2026-10-15): Danh mục con went, the row in the sidebar opens the home.
+  const beanSite: SiteSpec = { id: 'bean', path: `${toPath({ area: 'public', screen: 'portfolioPage', site: 'bean' })}/…` }
 
   const blogPath = toPath({ area: 'public', screen: 'landing' })
   const blogSite: SiteSpec = {
@@ -536,7 +543,6 @@ export function ConfigTree({
     home: { title: 'Trang chủ', note: 'nội dung, các port trên trang /, thứ tự thanh menu', picked: { kind: 'port-part', part: 'home' } },
     cards: [
       { title: 'Thông tin chung', note: 'đầu trang, chân trang, About: mọi trang đều mang', picked: { kind: 'group', id: 'frame' } },
-      { title: 'Template/Archive', note: 'trang port không thuộc trang chủ site nào', picked: { kind: 'group', id: 'biz-pages' } },
       // Tag and Tác giả moved up to Nội dung (owner, 2026-10-15): they file posts, not pages of this site.
     ],
   }
@@ -544,7 +550,7 @@ export function ConfigTree({
   // Practice is the Ghi 02 journal itself (owner, 2026-10-15): one row in the sidebar, no card under it — opening it is opening its settings.
   const practiceSite: SiteSpec = { id: 'practice', path: toPath({ area: 'practice', screen: 'hours' }) }
 
-  const spec = { root: rootSite, biz: bizSite, bean: beanSite, blog: blogSite, practice: practiceSite }[site]
+  const spec = { root: rootSite, template: templateSite, biz: bizSite, bean: beanSite, blog: blogSite, practice: practiceSite }[site]
 
   /** The card a pick belongs to, lit while anything inside it is open on the right. */
   const groupOf = (p: Picked): Group | null => {
@@ -560,7 +566,7 @@ export function ConfigTree({
       case 'port-page':
       {
         const pg = port.pages.find((x) => x.id === p.id)
-        if (site === 'root') return pg && !pg.home_of && tocOfPage(pg).id === 'biz-pages' ? 'biz-pages' : null
+        if (site === 'root') return null
         return !pg || pg.home_of ? null : tocOfPage(pg).id
       }
       case 'port-part':
@@ -784,7 +790,7 @@ export function ConfigTree({
       crumbs = p.home_of
         ? [siteCrumb(p.home_of)]
         : [
-            ...(toc.id === 'biz-pages' ? [siteCrumb('root'), groupCrumb('biz-pages', 'Template/Archive')] : [siteCrumb(own), groupCrumb(toc.id, 'Danh mục con')]),
+            ...(toc.id === 'biz-pages' ? [siteCrumb('template')] : [siteCrumb(own)]),
             ...ancestorsOf(shownPort, p.id).filter((x) => !x.home_of).map((x): Crumb => ({ label: x.title, open: pick({ kind: 'port-page', id: x.id }) }))]
       title = p.title
       rename = (v) => run(async () => {
@@ -957,8 +963,8 @@ export function ConfigTree({
       } else if (g === 'biz-pages' || g === 'bean-pages') {
         const bean = g === 'bean-pages'
         const toc = bean ? beanToc : bizToc
-        crumbs = [siteCrumb(bean ? 'bean' : 'root')]
-        title = bean ? 'Danh mục con' : 'Template/Archive'
+        crumbs = bean ? [siteCrumb('bean')] : []
+        title = bean ? 'Danh mục con' : 'Template'
         facts = [`${toc.items.length} trang`]
         body = (
           <>
