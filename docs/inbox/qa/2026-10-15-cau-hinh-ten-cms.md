@@ -81,6 +81,8 @@
     (`ContentTab only="feature" pageId=…`). Vẫn ghi vào `site_settings.data.portfolio.home.features` như trước.
   - "Xem dàn trang": mở trang đó trong port archives (port #1/#2 theo `portSiteOf`, trang lưu trữ thì Template).
   - Dòng about và journal không có hai nút này. (`ListItem.buttons`, `ListItem.below` trong `Detail.tsx`.)
+  - Hai nút vẽ như ô thông tin bài ở Nội dung (`.cw-fact`): chữ + icon nhỏ, không viền; rê chuột hoặc đang mở thì nền trắng
+    viền mảnh (`.cfg-fact` trong `Detail.tsx`).
 - Thứ tự khối trên trang chủ vẫn theo thứ tự port trên Thanh menu (`featuresFollowingMenu` khi kéo).
 - Trình duyệt (chặn lệnh ghi): Trang chủ chỉ còn Nội dung trang, Thanh menu; "Cập nhật nội dung" ở bizops mở Hiện ở trang chủ ·
   Nhãn "beæn bizops" · Ảnh; sửa nhãn → một `PATCH /api/site` `portfolio.home.features`; "Xem dàn trang" ở beæn weirdo → port

@@ -279,8 +279,8 @@ export type ListItem = {
   drag?: ItemDrag
   /** The row's own ⋮: the same actions its detail's ⋮ holds. */
   actions?: DetailAction[]
-  /** Buttons on the row itself, before its ⋮; `on` lights one whose panel is open. */
-  buttons?: { label: string; onClick: () => void; on?: boolean }[]
+  /** Quiet links on the row itself, before its ⋮, drawn like Nội dung's facts; `on` holds one whose panel is open. */
+  buttons?: { label: string; icon?: ReactNode; onClick: () => void; on?: boolean }[]
   /** Drawn under the row, inside the list: a row's own settings opened in place. */
   below?: ReactNode
 }
@@ -464,11 +464,16 @@ export function ItemList({ label, items, add, empty }: { label: string; items: L
                   it.meta && <span style={{ fontFamily: sans, fontSize: 13, color: ink.strong, whiteSpace: 'nowrap' }}>{it.meta}</span>
                 )}
               </button>
-              {it.buttons?.map((b) => (
-                <Button key={b.label} level={b.on ? 'primary' : 'secondary'} size="sm" aria-pressed={b.on} onClick={b.onClick}>
-                  {b.label}
-                </Button>
-              ))}
+              {it.buttons && (
+                <span style={{ display: 'flex', gap: 4, flex: 'none' }}>
+                  {it.buttons.map((b) => (
+                    <button key={b.label} type="button" className="cfg-fact" aria-pressed={!!b.on} onClick={b.onClick}>
+                      {b.icon}
+                      {b.label}
+                    </button>
+                  ))}
+                </span>
+              )}
               {it.actions ? <Menu actions={it.actions} label={`Thao tác ${it.name}`} small /> : <span style={{ width: 28, flex: 'none' }} />}
             </li>,
             it.below && (
@@ -506,6 +511,10 @@ export const DETAIL_CSS = `
 .cfg-detail .cfg-field + .cfg-field { border-top: 1px solid ${desk.line}; }
 .cfg-detail .cfg-item:focus-visible, .cfg-detail .cfg-crumb:focus-visible { outline: 2px solid ${ctl.accent}; outline-offset: 2px; }
 .cfg-detail .cfg-item:hover { background: ${ctl.hover}; }
+.cfg-detail .cfg-fact { all: unset; box-sizing: border-box; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; padding: 4px 8px; border: 1px solid transparent; border-radius: 6px; font-family: ${sans}; font-size: 13.5px; color: ${ink.strong}; }
+.cfg-detail .cfg-fact svg { color: ${ink.muted}; flex: none; }
+.cfg-detail .cfg-fact:hover, .cfg-detail .cfg-fact[aria-pressed=true] { background: #fff; border-color: ${desk.line}; color: ${ink.base}; }
+.cfg-detail .cfg-fact:focus-visible { outline: 2px solid ${ctl.accent}; outline-offset: 2px; }
 .cfg-detail .cfg-crumb { all: unset; cursor: pointer; color: ${ink.strong}; text-decoration: underline; text-decoration-color: ${ink.faint}; text-underline-offset: 3px; }
 .cfg-detail .cfg-crumb:hover { color: ${ctl.accentDeep}; text-decoration-color: currentColor; }
 .cfg-detail label, .cfg-detail .cfg-sec { font-family: ${sans}; }
