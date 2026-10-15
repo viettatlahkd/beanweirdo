@@ -23,7 +23,7 @@ import { bySiteOrder } from '../../lib/moduleOrder'
 import { TAG_PAGE, portPagePath, portSiteOf, toPath } from '../../lib/routes'
 import { findPage, useModules } from '../../data/useModules'
 import { usePortSources } from '../../portfolio/data'
-import { JOURNAL_LINKS, navLinks, type NavOverride, type PortContent, featuresFollowingMenu } from '../../portfolio/content'
+import { JOURNAL_LINKS, navLinks, type Feature, type NavOverride, type PortContent, featuresFollowingMenu } from '../../portfolio/content'
 import type { PresetKey } from '../../portfolio/blocks'
 import { ink, paper, sans } from '../../design/tokens'
 import { radius } from '../../design/controls'
@@ -419,6 +419,23 @@ export function ConfigTree({
   }
   // A port row in Thanh menu opens its home block in place, or its page in port archives (owner, 2026-10-15).
   const [featOpen, setFeatOpen] = useState<string | null>(null)
+  // A block switched off keeps its words and image until switched back on, so off-then-on never empties it.
+  const offFeatures = useRef(new Map<string, Feature>())
+  const homeFeatures = (): Feature[] => {
+    const { home } = port.content
+    return home.features.length ? home.features : port.pages.filter((x) => x.status === 'published').map((x) => ({ pageId: x.id, label: '', intro: '', image: '' }))
+  }
+  const setOnHome = (pageId: string, on: boolean) => {
+    const features = homeFeatures()
+    const was = features.find((f) => f.pageId === pageId)
+    if (!on && was) offFeatures.current.set(pageId, was)
+    // Back on, the block takes its place by the menu's order, not the end of the home page.
+    const back = () => featuresFollowingMenu([...features, offFeatures.current.get(pageId) ?? { pageId, label: '', intro: '', image: '' }], portLinks.map((l) => l.key))
+    const home = { ...port.content.home, features: on ? back() : features.filter((f) => f.pageId !== pageId) }
+    if (!on && featOpen === pageId) setFeatOpen(null)
+    port.setContentStored((st) => ({ ...st, home }))
+    run(() => updateSite({ portfolio: { home } } as never))
+  }
   const openPortPage = (pg: Node) => {
     keepPick.current = true
     frame.openSite(pg.status === 'archived' ? 'template' : (portOf(pg) ?? 'template'))
@@ -783,8 +800,7 @@ export function ConfigTree({
     }
     const setMenu = (on: boolean) =>
       save({ header: { ...header, links: portLinks.map((l) => ({ key: l.key, label: l.label, hidden: l.key === `page:${p.id}` ? !on : l.hidden })) } })
-    const setHome = (on: boolean) =>
-      save({ home: { ...home, features: on ? [...features, { pageId: p.id, label: '', intro: '', image: '' }] : features.filter((f) => f.pageId !== p.id) } })
+    const setHome = (on: boolean) => setOnHome(p.id, on)
     // A draft can already hold its home block (added from Trang chủ port's "+ Thêm khối"),
     // so its switch shows the same list; the public home waits for it to be published.
     return (
@@ -819,10 +835,12 @@ export function ConfigTree({
         if (it.id === 'about')
           return { ...it, buttons: [edit('about')], below: featOpen === 'about' ? <ContentTab only="sign" content={port.content} setStored={port.setContentStored} pages={port.pages} /> : undefined }
         if (!pg) return it
+        const onHome = homeFeatures().some((f) => f.pageId === pg.id)
         return {
           ...it,
+          control: <Switch label={`${pg.title}: hiện ở trang chủ`} value={onHome} onChange={(on) => setOnHome(pg.id, on)} />,
           buttons: [
-            edit(pg.id),
+            { ...edit(pg.id), off: !onHome },
             { label: 'Xem dàn trang', icon: <IconPage size={14} />, onClick: () => openPortPage(pg) },
           ],
           below: featOpen === pg.id ? <ContentTab only="feature" pageId={pg.id} content={port.content} setStored={port.setContentStored} pages={port.pages} /> : undefined,

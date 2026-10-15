@@ -89,9 +89,13 @@
   khỏi `home.features`). Giờ khối tắt được giữ trong phiên (`offFeatures` trong `PortEditors.tsx`), bật lại thì nhãn, mô tả, ảnh
   quay về. Đã xảy ra trên dữ liệu thật lúc 2026-10-15 16:20 UTC: khối beæn weirdo mất nhãn "beæn weirdo" và ảnh
   `post-images/7026093d-7936-4936-9b16-e1391f7eeb42.jpeg`. Chưa khôi phục — chờ chủ site đồng ý.
-  Công tắc cùng tên trong trang port (`ConfigTree.tsx:portFlags`, `setHome`) vẫn bỏ hẳn khối như trước.
 - **[ĐỔI HÀNH VI]** Dòng about ở Thanh menu có "Cập nhật nội dung", mở ngay dưới dòng phần ký tên (`ContentTab only="sign"`).
   Phần Signature bỏ khỏi Thông tin chung; ở đó còn Đầu trang · Chân trang · about (tiêu đề đổi "About" → "about").
+- **[ĐỔI HÀNH VI]** Công tắc "Hiện ở trang chủ" lên thẳng dòng port ở Thanh menu (`ListItem.control`), không còn trong panel.
+  Tắt thì "Cập nhật nội dung" mờ đi và panel đóng. Công tắc này và công tắc cùng tên trong trang port dùng chung
+  `ConfigTree.tsx:setOnHome`: khối tắt được nhớ trong phiên (`offFeatures`), bật lại thì về đúng vị trí theo thứ tự menu
+  (`featuresFollowingMenu`) với nhãn, mô tả, ảnh cũ. Trình duyệt (chặn lệnh ghi): tắt bizops → features chỉ còn beæn weirdo; bật
+  lại → "beæn bizops"+ảnh ở vị trí 01.
 - Thứ tự khối trên trang chủ vẫn theo thứ tự port trên Thanh menu (`featuresFollowingMenu` khi kéo).
 - Trình duyệt (chặn lệnh ghi): Trang chủ chỉ còn Nội dung trang, Thanh menu; "Cập nhật nội dung" ở bizops mở Hiện ở trang chủ ·
   Nhãn "beæn bizops" · Ảnh; sửa nhãn → một `PATCH /api/site` `portfolio.home.features`; "Xem dàn trang" ở beæn weirdo → port

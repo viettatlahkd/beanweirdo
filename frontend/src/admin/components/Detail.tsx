@@ -288,7 +288,9 @@ export type ListItem = {
   /** The row's own ⋮: the same actions its detail's ⋮ holds. */
   actions?: DetailAction[]
   /** Quiet links on the row itself, before its ⋮, drawn like Nội dung's facts; `on` holds one whose panel is open. */
-  buttons?: { label: string; icon?: ReactNode; onClick: () => void; on?: boolean }[]
+  buttons?: { label: string; icon?: ReactNode; onClick: () => void; on?: boolean; off?: boolean }[]
+  /** A control on the row itself, before its buttons: a switch the owner flips without opening anything. */
+  control?: ReactNode
   /** Drawn under the row, inside the list: a row's own settings opened in place. */
   below?: ReactNode
 }
@@ -472,10 +474,11 @@ export function ItemList({ label, items, add, empty }: { label: string; items: L
                   it.meta && <span style={{ fontFamily: sans, fontSize: 13, color: ink.strong, whiteSpace: 'nowrap' }}>{it.meta}</span>
                 )}
               </button>
+              {it.control}
               {it.buttons && (
                 <span style={{ display: 'flex', gap: 4, flex: 'none' }}>
                   {it.buttons.map((b) => (
-                    <button key={b.label} type="button" className="cfg-fact" aria-pressed={!!b.on} onClick={b.onClick}>
+                    <button key={b.label} type="button" className="cfg-fact" aria-pressed={!!b.on} disabled={b.off} onClick={b.onClick}>
                       {b.icon}
                       {b.label}
                     </button>
@@ -526,6 +529,7 @@ export const DETAIL_CSS = `
 .cfg-detail .cfg-fact { all: unset; box-sizing: border-box; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; padding: 4px 8px; border: 1px solid transparent; border-radius: 6px; font-family: ${sans}; font-size: 13.5px; color: ${ink.strong}; }
 .cfg-detail .cfg-fact svg { color: ${ink.muted}; flex: none; }
 .cfg-detail .cfg-fact:hover, .cfg-detail .cfg-fact[aria-pressed=true] { background: #fff; border-color: ${desk.line}; color: ${ink.base}; }
+.cfg-detail .cfg-fact:disabled { cursor: default; opacity: .4; background: none; border-color: transparent; }
 .cfg-detail .cfg-fact:focus-visible { outline: 2px solid ${ctl.accent}; outline-offset: 2px; }
 .cfg-detail .cfg-crumb { all: unset; cursor: pointer; color: ${ink.strong}; text-decoration: underline; text-decoration-color: ${ink.faint}; text-underline-offset: 3px; }
 .cfg-detail .cfg-crumb:hover { color: ${ctl.accentDeep}; text-decoration-color: currentColor; }
