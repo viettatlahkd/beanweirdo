@@ -293,6 +293,14 @@ export type AddSpec = {
    * that was already there, like the journal).
    */
   existing?: { options: { value: string; label: string }[]; onPick: (value: string) => void }
+  /**
+   * A new page is not made here but somewhere else (the menu's new pages are
+   * made in port archives › Template, owner 2026-10-15): "Trang mới" is then
+   * a way there instead of a name field, and "Trang có sẵn" comes first.
+   */
+  newAt?: { label: string; onGo: () => void }
+  /** Opened, not folded to its button — when the owner was sent here to add. */
+  startOpen?: boolean
 }
 
 type AddMode = 'new' | 'existing'
@@ -302,15 +310,16 @@ const ADD_MODES: { value: AddMode; label: string }[] = [
 ]
 
 function AddLine({ spec }: { spec: AddSpec }) {
-  const [open, setOpen] = useState(false)
-  const [mode, setMode] = useState<AddMode>('new')
+  const [open, setOpen] = useState(spec.startOpen ?? false)
+  const first: AddMode = spec.newAt ? 'existing' : 'new'
+  const [mode, setMode] = useState<AddMode>(first)
   const [name, setName] = useState('')
   const [choice, setChoice] = useState(spec.choose?.options[0]?.value ?? '')
   const [target, setTarget] = useState('')
   const existing = mode === 'existing' && spec.existing
   const close = () => {
     setOpen(false)
-    setMode('new')
+    setMode(first)
     setName('')
     setTarget('')
   }
@@ -332,7 +341,7 @@ function AddLine({ spec }: { spec: AddSpec }) {
     )
   return (
     <div style={{ display: 'grid', gap: 12, padding: '12px 0 2px' }}>
-      {spec.existing && <Choice label="Thêm" options={ADD_MODES} value={mode} onChange={setMode} />}
+      {spec.existing && <Choice label="Thêm" options={spec.newAt ? [...ADD_MODES].reverse() : ADD_MODES} value={mode} onChange={setMode} />}
       {existing ? (
         existing.options.length ? (
           <select autoFocus aria-label="Trang có sẵn" value={target} onChange={(e) => setTarget(e.target.value)} style={{ fontFamily: sans, fontSize: 14.5, color: ink.base, maxWidth: 420 }}>
@@ -348,6 +357,18 @@ function AddLine({ spec }: { spec: AddSpec }) {
         ) : (
           <p style={{ fontFamily: sans, fontSize: 13.5, color: ink.soft, margin: 0 }}>Mọi trang có sẵn đều đã ở đây.</p>
         )
+      ) : spec.newAt ? (
+        <span>
+          <Button
+            level="secondary"
+            onClick={() => {
+              close()
+              spec.newAt?.onGo()
+            }}
+          >
+            {spec.newAt.label}
+          </Button>
+        </span>
       ) : (
         <>
           <input
@@ -367,9 +388,11 @@ function AddLine({ spec }: { spec: AddSpec }) {
         </>
       )}
       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-        <Button level="primary" disabled={!ready} onClick={save}>
-          Lưu
-        </Button>
+        {!(spec.newAt && mode === 'new') && (
+          <Button level="primary" disabled={!ready} onClick={save}>
+            Lưu
+          </Button>
+        )}
         <Button level="quiet" onClick={close}>
           Huỷ
         </Button>

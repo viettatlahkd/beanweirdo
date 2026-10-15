@@ -241,6 +241,11 @@ export function ConfigTree({
   // `/ad-authors` lands on the root site's authors card, which a site change must not reset.
   const shownSite = useRef(site)
   const keepPick = useRef(false)
+  // Set when the menu sends the owner to Template to make a page: its add form opens once, on arrival.
+  const wantAdd = useRef(false)
+  useEffect(() => {
+    if (site === 'template' && picked.kind === 'group' && picked.id === 'biz-pages') wantAdd.current = false
+  })
   useEffect(() => {
     if (only || shownSite.current === site) return
     shownSite.current = site
@@ -360,8 +365,10 @@ export function ConfigTree({
   const movePortLink = (_id: string, p: MovePlan) => {
     const before = port.content.header
     const beforeHome = port.content.home
-    const keys = p.order.filter((k) => k !== 'home' && portLinks.some((l) => l.key === k))
-    keys.splice(Math.max(0, portLinks.findIndex((l) => l.key === 'home')), 0, 'home')
+    const keys = p.order.filter((k) => k !== 'home' && portLinks.some((l) => l.key === k && !l.hidden))
+    keys.splice(Math.max(0, portLinks.filter((l) => !l.hidden).findIndex((l) => l.key === 'home')), 0, 'home')
+    // Hidden links are not rows to drag, but their hidden flag must outlive the drop, or they come back.
+    keys.push(...portLinks.filter((l) => l.hidden).map((l) => l.key))
     const header = { ...before, links: keys.map((key) => before.links.find((o) => o.key === key) ?? { key }) }
     // A port moved in the menu moves its block on the home page too: one order, two places (owner, 2026-10-15).
     const home = { ...beforeHome, features: featuresFollowingMenu(beforeHome.features, keys) }
@@ -385,12 +392,29 @@ export function ConfigTree({
   const addLink = (key: string) =>
     saveLinks(portLinks.some((l) => l.key === key) ? storedLinks().map((o) => (o.key === key ? { ...o, hidden: false } : o)) : [...storedLinks(), { key }])
   const dropLink = (key: string) => saveLinks(storedLinks().filter((o) => o.key !== key))
+  // A port page or about is put back by navLinks when dropped, so off the menu means hidden — never deleted (owner, 2026-10-15).
+  const hideLink = (key: string) => saveLinks(storedLinks().map((o) => (o.key === key ? { ...o, hidden: true } : o)))
+  const offMenu = (key: string, journal: boolean): DetailAction[] => [{ label: 'Gỡ khỏi thanh menu', danger: true, onPick: () => (journal ? dropLink(key) : hideLink(key)) }]
   const linkChoices = [
     ...Object.entries(JOURNAL_LINKS)
       .filter(([key]) => !portLinks.some((l) => l.key === key))
       .map(([key, j]) => ({ value: key, label: `${j.label} · ${j.href()}` })),
     ...portLinks.filter((l) => l.hidden && l.key !== 'home').map((l) => ({ value: l.key, label: `${l.label} · ${l.href} · đang ẩn` })),
   ]
+  // The menu only calls up pages that exist; a new one is made in port archives › Template, its add form open on arrival.
+  const menuAdd: AddSpec = {
+    label: 'Thêm mục',
+    placeholder: '',
+    onSave: () => {},
+    existing: { options: linkChoices, onPick: addLink },
+    newAt: {
+      label: 'Tạo trang ở Template',
+      onGo: () => {
+        wantAdd.current = true
+        frame.openSite('template')
+      },
+    },
+  }
   // A journal row opens the journal's own tab, on the page it links.
   const openJournal = (to: Picked) => () => {
     keepPick.current = true
@@ -532,14 +556,15 @@ export function ConfigTree({
     nest: false,
     move: movePortLink,
     items: portLinks.flatMap((l): TocItem[] => {
-      if (l.key === 'about') return [{ id: l.key, parent_id: null, name: 'About', dot: null, meta: tocMeta('published', '/about', l.hidden), picked: { kind: 'group', id: 'frame' }, movable: true }]
+      if (l.hidden) return []
+    if (l.key === 'about') return [{ id: l.key, parent_id: null, name: l.label, dot: null, meta: tocMeta('published', '/about', l.hidden), picked: { kind: 'group', id: 'frame' }, movable: true, actions: offMenu(l.key, false) }]
       const j = JOURNAL_LINKS[l.key]
       if (j) {
         const to: Picked = l.key === 'journal:index' ? { kind: 'group', id: 'topics' } : { kind: 'system', key: 'landing' }
-        return [{ id: l.key, parent_id: null, name: l.label, dot: null, meta: tocMeta('published', l.href, l.hidden), picked: to, movable: true, open: openJournal(to), actions: [{ label: 'Gỡ khỏi menu chính', danger: true, onPick: () => dropLink(l.key) }] }]
+        return [{ id: l.key, parent_id: null, name: l.label, dot: null, meta: tocMeta('published', l.href, l.hidden), picked: to, movable: true, open: openJournal(to), actions: offMenu(l.key, true) }]
       }
       const pg = port.pages.find((x) => `page:${x.id}` === l.key)
-      return pg ? [{ id: l.key, parent_id: null, name: l.label, dot: portDot(pg), meta: tocMeta(pg.status, portPagePath(pg), l.hidden), picked: { kind: 'port-page', id: pg.id }, movable: true }] : []
+      return pg ? [{ id: l.key, parent_id: null, name: l.label, dot: portDot(pg), meta: tocMeta(pg.status, portPagePath(pg), l.hidden), picked: { kind: 'port-page', id: pg.id }, movable: true, actions: offMenu(l.key, false) }] : []
     }),
   }
 
@@ -549,7 +574,7 @@ export function ConfigTree({
     // The menu is part of Trang chủ now (owner, 2026-10-15): its words, its port blocks, and the menu's order.
     home: { title: 'Trang chủ', note: 'nội dung, các port trên trang /, thứ tự thanh menu', picked: { kind: 'port-part', part: 'home' } },
     cards: [
-      { title: 'Thông tin chung', note: 'đầu trang, chân trang, About: mọi trang đều mang', picked: { kind: 'group', id: 'frame' } },
+      { title: 'Thông tin chung', note: 'đầu trang, chân trang, about: mọi trang đều mang', picked: { kind: 'group', id: 'frame' } },
       // Tag and Tác giả moved up to Nội dung (owner, 2026-10-15): they file posts, not pages of this site.
     ],
   }
@@ -777,7 +802,7 @@ export function ConfigTree({
       // the signature, which only About shows, opens with About.
       const about = picked.part === 'about'
       const part = (only: PortPart) => <ContentTab key={only} only={only} content={port.content} setStored={port.setContentStored} pages={port.pages} onNewPage={newPortPage} />
-      title = about ? 'About' : 'Trang chủ'
+      title = about ? 'about' : 'Trang chủ'
       crumbs = [siteCrumb('root'), ...(about ? [groupCrumb('frame', 'Thông tin chung')] : [])]
       preview = toPath({ area: 'public', screen: about ? 'portfolioAbout' : 'portfolioHome' })
       address = preview
@@ -789,8 +814,8 @@ export function ConfigTree({
           {about && <Section title="Signature">{part('sign')}</Section>}
           {!about && <Section title="Port trên trang chủ">{part('blocks')}</Section>}
           {!about && (
-            <Section title="Thanh menu" note={`mặc định: các port theo thứ tự trên, rồi About, journal · ${dragNote(false)}`}>
-              <ItemList label="Thanh menu" items={tocList(rootToc, rootToc.items)} add={{ ...addPortPage(undefined), label: 'Thêm mục', existing: { options: linkChoices, onPick: addLink } }} />
+            <Section title="Thanh menu" note={`mặc định: các port theo thứ tự trên, rồi about, journal · ${dragNote(false)}`}>
+              <ItemList label="Thanh menu" items={tocList(rootToc, rootToc.items)} add={menuAdd} />
             </Section>
           )}
         </>
@@ -972,7 +997,7 @@ export function ConfigTree({
           <>
             {errorLine}
             <Section title="Các mục" note={`theo thứ tự trên đầu trang · ${dragNote(false)}`}>
-              <ItemList label="Menu chính" items={tocList(rootToc, rootToc.items)} add={{ ...addPortPage(undefined), label: 'Thêm mục', existing: { options: linkChoices, onPick: addLink } }} />
+              <ItemList label="Menu chính" items={tocList(rootToc, rootToc.items)} add={menuAdd} />
             </Section>
           </>
         )
@@ -1005,7 +1030,7 @@ export function ConfigTree({
           <>
             {errorLine}
             <Section title="Các trang" note="mỗi trang dùng được làm mẫu khi thêm trang mới">
-              <ItemList label="Các trang" items={rows} add={addPortPage(undefined)} />
+              <ItemList label="Các trang" items={rows} add={{ ...addPortPage(undefined), startOpen: wantAdd.current }} />
             </Section>
           </>
         )
