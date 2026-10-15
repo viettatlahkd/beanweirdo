@@ -745,7 +745,8 @@ const rowBox: CSSProperties = { borderTop: `1px solid ${paper.rule}`, padding: '
  */
 /** The parts of the fixed port copy, each a node of its own in the CMS page tree. */
 /** `feature` is one port's block, opened from its row in Trang chủ's Thanh menu (owner, 2026-10-15). */
-export type PortPart = 'home' | 'feature' | 'about' | 'header' | 'footer'
+/** `header` is the header and footer words together; `links` the header's links. */
+export type PortPart = 'home' | 'feature' | 'about' | 'header' | 'links'
 
 const NEW_SIGN = '__new-sign'
 
@@ -832,41 +833,37 @@ export function ContentTab({
     <div style={{ padding: '6px 0 0', maxWidth: 1080 }}>
       {error && <div style={{ color: '#8E1E42', fontFamily: sans, fontSize: 12.5, marginBottom: 12 }}>{error}</div>}
 
+      {/* Header and footer words sit together; the header's links are their own part (owner, 2026-10-16). */}
       {show('header') && (
         <>
       <div style={two}>
-        {text('Chữ thương hiệu', header.brand, (v) => setGroup('header', { ...header, brand: v }))}
-        {text('Chữ bên phải', header.right, (v) => setGroup('header', { ...header, right: v }))}
+        {text('Đầu trang · chữ thương hiệu', header.brand, (v) => setGroup('header', { ...header, brand: v }))}
+        {text('Đầu trang · chữ bên phải', header.right, (v) => setGroup('header', { ...header, right: v }))}
       </div>
-      {/* The order is set by dragging in Mục lục, as the blog's sidebar is; here only the words and whether each shows. */}
-      <div style={fieldLabel}>Link trên thanh · thứ tự kéo ở Mục lục</div>
-      {links.map((l) => (
-        <div key={l.key} style={{ ...rowBox, display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 200px 80px', gap: 10, alignItems: 'center' }}>
-          <input
-            style={small}
-            value={l.label}
-            onChange={(e) => saveLinks(links.map((x) => (x.key === l.key ? { ...x, label: e.target.value } : x)))}
-          />
-          <span style={{ fontFamily: sans, fontSize: 12, color: ink.soft }}>{l.href}</span>
-          <label style={{ fontFamily: sans, fontSize: 12, display: 'flex', gap: 6, alignItems: 'center' }}>
-            <input type="checkbox" checked={!l.hidden} onChange={() => saveLinks(links.map((x) => (x.key === l.key ? { ...x, hidden: !x.hidden } : x)))} />
-            Hiện
-          </label>
-        </div>
-      ))}
-
-        </>
-      )}
-
-      {show('footer') && (
-        <>
       <div style={two}>
-        {text('Chữ bên trái', footer.left, (v) => setGroup('footer', { ...footer, left: v }))}
-        {text('Chữ bên phải', footer.right, (v) => setGroup('footer', { ...footer, right: v }))}
+        {text('Chân trang · chữ bên trái', footer.left, (v) => setGroup('footer', { ...footer, left: v }))}
+        {text('Chân trang · chữ bên phải', footer.right, (v) => setGroup('footer', { ...footer, right: v }))}
       </div>
-
         </>
       )}
+
+      {/* Only the words and whether each shows; the order is dragged in Trang chủ › Thanh menu. */}
+      {show('links') &&
+        links.map((l, i) => (
+          <div key={l.key} style={{ ...rowBox, ...(i === 0 ? { borderTop: 'none' } : {}), display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 200px 80px', gap: 10, alignItems: 'center' }}>
+            <input
+              style={small}
+              aria-label={`Nhãn ${l.href}`}
+              value={l.label}
+              onChange={(e) => saveLinks(links.map((x) => (x.key === l.key ? { ...x, label: e.target.value } : x)))}
+            />
+            <span style={{ fontFamily: sans, fontSize: 12, color: ink.soft }}>{l.href}</span>
+            <label style={{ fontFamily: sans, fontSize: 12, display: 'flex', gap: 6, alignItems: 'center' }}>
+              <input type="checkbox" checked={!l.hidden} onChange={() => saveLinks(links.map((x) => (x.key === l.key ? { ...x, hidden: !x.hidden } : x)))} />
+              Hiện
+            </label>
+          </div>
+        ))}
 
       {show('home') && (
       <div style={two}>
