@@ -446,7 +446,7 @@ export function PageEditor({
       {error}
 
       {rule && (
-        <Section title="Quy chế" note="trang này liệt kê bài nào">
+        <Section title="Quy tắc liệt kê" note="trang này liệt kê bài nào">
           <RuleEditor rule={rule} vocab={vocab} onChange={saveRule} />
         </Section>
       )}
@@ -459,7 +459,7 @@ export function PageEditor({
 
       {linked && <Section title="Giao diện">{renderModule(linked)}</Section>}
 
-      {copyKey && <Section title="Chữ cố định">{renderCopy(copyKey)}</Section>}
+      {copyKey && <Section title="Nội dung tĩnh">{renderCopy(copyKey)}</Section>}
 
       {selected.kind === 'override' && (
         <div style={{ marginTop: 30 }}>

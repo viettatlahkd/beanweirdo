@@ -217,6 +217,7 @@ export function ConfigTree({
   const homeOf = (id: SiteId): Picked => {
     if (id === 'root') return { kind: 'port-part', part: 'home' }
     if (id === 'blog') return { kind: 'system', key: 'landing' }
+    if (id === 'practice') return { kind: 'practice' }
     const home = id === 'biz' ? bizHome : beanHome
     if (home) return { kind: 'port-page', id: home.id }
     return { kind: 'group', id: id === 'bean' ? 'bean-pages' : 'biz-pages' }
@@ -484,7 +485,7 @@ export function ConfigTree({
     const items = rows
       .filter((pg) => !pg.home_of)
       .map((pg): TocItem => ({ id: pg.id, parent_id: home && pg.parent_id === home.id ? null : pg.parent_id, name: pg.title, dot: portDot(pg), meta: tocMeta(pg.status, portPagePath(pg, port.pages)), picked: { kind: 'port-page', id: pg.id }, movable: true }))
-    return { id, title: 'Mục lục', note: `${items.filter((r) => r.parent_id === null).length} mục · cây trang của ${name}`, nest: true, move, items }
+    return { id, title: 'Danh mục con', note: `${items.filter((r) => r.parent_id === null).length} mục · cây trang của ${name}`, nest: true, move, items }
   }
   const bizToc = portToc('biz-pages', 'biz', shownBiz, bizHome, movePortPage)
   const beanToc = portToc('bean-pages', 'bean', shownBean, beanHome, moveBeanPage)
@@ -502,14 +503,14 @@ export function ConfigTree({
     // The blog's front page, called details until it got its own address (2026-10-15).
     home: { title: 'Trang chủ', note: `${blogPath} · nhãn trên cùng, tên lớn, hai đoạn dẫn`, picked: { kind: 'system', key: 'landing' } },
     toc: topicToc,
-    cards: [{ title: 'Hình trang', note: 'dàn trang, ảnh và chữ mà một trang mượn', picked: { kind: 'group', id: 'modules' } }],
+    cards: [{ title: 'Dàn trang', note: 'bố cục, ảnh và chữ mà một trang dùng lại', picked: { kind: 'group', id: 'modules' } }],
   }
 
   // beanweirdo's Mục lục is its top bar: the doors to the sites, then About, in the bar's order.
   const rootToc: Toc = {
     id: 'root-toc',
-    title: 'Mục lục',
-    note: 'các mục trên thanh trên, theo thứ tự của thanh',
+    title: 'Menu chính',
+    note: 'các mục trên đầu trang, theo thứ tự hiện',
     nest: false,
     move: movePortLink,
     items: portLinks.flatMap((l): TocItem[] => {
@@ -517,7 +518,7 @@ export function ConfigTree({
       const j = JOURNAL_LINKS[l.key]
       if (j) {
         const to: Picked = l.key === 'journal:index' ? { kind: 'group', id: 'topics' } : { kind: 'system', key: 'landing' }
-        return [{ id: l.key, parent_id: null, name: l.label, dot: null, meta: tocMeta('published', l.href, l.hidden), picked: to, movable: true, open: openJournal(to), actions: [{ label: 'Gỡ khỏi thanh trên', danger: true, onPick: () => dropLink(l.key) }] }]
+        return [{ id: l.key, parent_id: null, name: l.label, dot: null, meta: tocMeta('published', l.href, l.hidden), picked: to, movable: true, open: openJournal(to), actions: [{ label: 'Gỡ khỏi menu chính', danger: true, onPick: () => dropLink(l.key) }] }]
       }
       const pg = port.pages.find((x) => `page:${x.id}` === l.key)
       return pg ? [{ id: l.key, parent_id: null, name: l.label, dot: portDot(pg), meta: tocMeta(pg.status, portPagePath(pg), l.hidden), picked: { kind: 'port-page', id: pg.id }, movable: true }] : []
@@ -530,13 +531,15 @@ export function ConfigTree({
     home: { title: 'Trang chủ', note: 'Lời chào và các khối của trang /', picked: { kind: 'port-part', part: 'home' } },
     toc: rootToc,
     cards: [
-      { title: 'Khung chung', note: 'thanh trên, chân trang: mọi trang đều mang', picked: { kind: 'group', id: 'frame' } },
+      { title: 'Đầu & chân trang', note: 'đầu trang, chân trang: mọi trang đều mang', picked: { kind: 'group', id: 'frame' } },
       // Tag and Tác giả moved up to Nội dung (owner, 2026-10-15): they file posts, not pages of this site.
-      { title: 'Ghi 02', note: 'Practice · nhật ký giờ luyện, sau đăng nhập', picked: { kind: 'practice' } },
     ],
   }
 
-  const spec = { root: rootSite, biz: bizSite, bean: beanSite, blog: blogSite }[site]
+  // Practice is the Ghi 02 journal itself (owner, 2026-10-15): one row in the sidebar, no card under it — opening it is opening its settings.
+  const practiceSite: SiteSpec = { id: 'practice', path: toPath({ area: 'practice', screen: 'hours' }) }
+
+  const spec = { root: rootSite, biz: bizSite, bean: beanSite, blog: blogSite, practice: practiceSite }[site]
 
   /** The card a pick belongs to, lit while anything inside it is open on the right. */
   const groupOf = (p: Picked): Group | null => {
@@ -706,7 +709,7 @@ export function ConfigTree({
     if (p.status === 'archived')
       return (
         <Row label="Hiện trên menu">
-          <span style={{ color: ink.soft }}>chỉ trang đã đăng mới lên thanh trên và trang chủ</span>
+          <span style={{ color: ink.soft }}>chỉ trang đã đăng mới lên menu chính và trang chủ</span>
         </Row>
       )
     const { header, home } = port.content
@@ -731,7 +734,7 @@ export function ConfigTree({
           </Row>
         ) : (
           <Row label="Hiện trên menu">
-            <span style={{ color: ink.soft }}>lên thanh trên khi trang được đăng</span>
+            <span style={{ color: ink.soft }}>lên menu chính khi trang được đăng</span>
           </Row>
         )}
         <Row label="Hiện ở trang chủ">
@@ -748,7 +751,7 @@ export function ConfigTree({
       const about = picked.part === 'about'
       const part = (only: PortPart) => <ContentTab key={only} only={only} content={port.content} setStored={port.setContentStored} pages={port.pages} onNewPage={newPortPage} />
       title = about ? 'About' : 'Trang chủ'
-      crumbs = [siteCrumb('root'), ...(about ? [groupCrumb('root-toc', 'Mục lục')] : [])]
+      crumbs = [siteCrumb('root'), ...(about ? [groupCrumb('root-toc', 'Menu chính')] : [])]
       preview = toPath({ area: 'public', screen: about ? 'portfolioAbout' : 'portfolioHome' })
       address = preview
       actions = fixed('trang hệ thống, không xoá được')
@@ -769,7 +772,7 @@ export function ConfigTree({
       const toc = tocOfPage(p)
       crumbs = p.home_of
         ? [siteCrumb(p.home_of)]
-        : [siteCrumb(own), groupCrumb(toc.id, 'Mục lục'), ...ancestorsOf(shownPort, p.id).filter((x) => !x.home_of).map((x): Crumb => ({ label: x.title, open: pick({ kind: 'port-page', id: x.id }) }))]
+        : [siteCrumb(own), groupCrumb(toc.id, toc.id === 'root-toc' ? 'Menu chính' : 'Danh mục con'), ...ancestorsOf(shownPort, p.id).filter((x) => !x.home_of).map((x): Crumb => ({ label: x.title, open: pick({ kind: 'port-page', id: x.id }) }))]
       title = p.title
       rename = (v) => run(async () => {
         const next = await updateNode(p.id, { title: v })
@@ -903,7 +906,7 @@ export function ConfigTree({
       break
     }
     case 'module': {
-      crumbs = [siteCrumb('blog'), groupCrumb('modules', 'Hình trang')]
+      crumbs = [siteCrumb('blog'), groupCrumb('modules', 'Dàn trang')]
       title = modules.find((m) => m.id === picked.id)?.title ?? picked.id
       actions = fixed('hình trang chỉ sửa được; trang nào mượn thì đổi ở trang ấy')
       // A module is not a page of its own since the pages moved onto the topic
@@ -915,8 +918,8 @@ export function ConfigTree({
       break
     }
     case 'practice':
-      crumbs = [siteCrumb('root')]
-      title = 'Ghi 02'
+      crumbs = []
+      title = 'practice'
       preview = toPath({ area: 'practice', screen: 'hours' })
       address = preview
       actions = fixed('trang hệ thống, không xoá được')
@@ -927,14 +930,14 @@ export function ConfigTree({
       actions = fixed('nhóm của site, không xoá được; xoá từng mục bên trong')
       if (g === 'root-toc') {
         crumbs = [siteCrumb('root')]
-        title = 'Mục lục'
+        title = 'Menu chính'
         preview = '/'
         facts = [`${rootToc.items.length} mục`]
         body = (
           <>
             {errorLine}
-            <Section title="Thanh trên" note={`theo thứ tự thanh trên · ${dragNote(false)}`}>
-              <ItemList label="Thanh trên" items={tocList(rootToc, rootToc.items)} add={{ ...addPortPage(undefined), label: 'Thêm mục', existing: { options: linkChoices, onPick: addLink } }} />
+            <Section title="Các mục" note={`theo thứ tự trên đầu trang · ${dragNote(false)}`}>
+              <ItemList label="Menu chính" items={tocList(rootToc, rootToc.items)} add={{ ...addPortPage(undefined), label: 'Thêm mục', existing: { options: linkChoices, onPick: addLink } }} />
             </Section>
           </>
         )
@@ -942,7 +945,7 @@ export function ConfigTree({
         const bean = g === 'bean-pages'
         const toc = bean ? beanToc : bizToc
         crumbs = [siteCrumb(bean ? 'bean' : 'biz')]
-        title = 'Mục lục'
+        title = 'Danh mục con'
         facts = [`${toc.items.length} trang`]
         body = (
           <>
@@ -979,7 +982,7 @@ export function ConfigTree({
             <Section title="Các mục" note={`theo thứ tự thanh bên · ${dragNote(true)}`}>
               <ItemList label="Các mục" items={tocList(topicToc, topicToc.items.filter((r) => r.parent_id === null))} add={addTopic(null)} />
             </Section>
-            <Section title="Chữ cố định">{renderCopy('index')}</Section>
+            <Section title="Nội dung tĩnh">{renderCopy('index')}</Section>
           </>
         )
       } else if (g === 'tags') {
@@ -1004,12 +1007,12 @@ export function ConfigTree({
         body = <AuthorsPanel />
       } else if (g === 'frame') {
         crumbs = [siteCrumb('root')]
-        title = 'Khung chung'
+        title = 'Đầu & chân trang'
         preview = '/'
         previewKey = portRound
         body = port.loaded ? (
           <>
-            <Section title="Thanh trên">
+            <Section title="Đầu trang">
               <ContentTab key="header" only="header" content={port.content} setStored={port.setContentStored} pages={port.pages} onNewPage={newPortPage} />
             </Section>
             <Section title="Chân trang">
@@ -1019,10 +1022,10 @@ export function ConfigTree({
         ) : null
       } else {
         crumbs = [siteCrumb('blog')]
-        title = 'Hình trang'
+        title = 'Dàn trang'
         body = (
-          <Section title="Hình trang" note="dàn trang, ảnh và chữ mà một trang mượn">
-            <ItemList label="Hình trang" items={moduleRows.map(({ row, depth }) => ({ id: row.id, name: row.title, depth, dot: row.accent, meta: wearer(row.id) ? undefined : 'chưa dùng', onOpen: pick({ kind: 'module', id: row.id }) }))} />
+          <Section title="Dàn trang" note="bố cục, ảnh và chữ mà một trang dùng lại">
+            <ItemList label="Dàn trang" items={moduleRows.map(({ row, depth }) => ({ id: row.id, name: row.title, depth, dot: row.accent, meta: wearer(row.id) ? undefined : 'chưa dùng', onOpen: pick({ kind: 'module', id: row.id }) }))} />
           </Section>
         )
       }

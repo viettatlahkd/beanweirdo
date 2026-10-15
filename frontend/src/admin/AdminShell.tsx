@@ -7,10 +7,20 @@ import { serif } from '../design/tokens'
 import { useRememberedTab } from './components/SiteTabs'
 import { FramingProvider } from './components/framing'
 
-/** The four sites Cấu hình edits, in the order the sidebar lists them. */
-export const CONFIG_SITES = ['root', 'biz', 'bean', 'blog'] as const
+/** The sites Cấu hình edits, in the order the sidebar lists them; practice is the journal behind the login. */
+export const CONFIG_SITES = ['root', 'biz', 'bean', 'blog', 'practice'] as const
 export type ConfigSite = (typeof CONFIG_SITES)[number]
-export const CONFIG_SITE_LABELS: Record<ConfigSite, string> = { root: 'beanweirdo', biz: 'biz', bean: 'bean', blog: 'journal' }
+/**
+ * The port sites, in order. Each is named "port #n: <name>" by its place here
+ * (owner, 2026-10-15), so a port site added to this list takes the next number
+ * in the sidebar, the crumbs and everywhere a site is named, with nothing else
+ * to rename.
+ */
+const PORT_SITES: readonly ConfigSite[] = ['biz', 'bean']
+const SITE_NAMES: Record<ConfigSite, string> = { root: 'beanweirdo', biz: 'biz', bean: 'bean', blog: 'journal', practice: 'practice' }
+export const CONFIG_SITE_LABELS = Object.fromEntries(
+  CONFIG_SITES.map((s) => [s, PORT_SITES.includes(s) ? `port #${PORT_SITES.indexOf(s) + 1}: ${SITE_NAMES[s]}` : SITE_NAMES[s]]),
+) as Record<ConfigSite, string>
 
 /**
  * The admin's colours and type, in one place so a palette is one edit. Owner
@@ -64,8 +74,8 @@ const CONTENT_LISTS = [
 ] as const
 
 /**
- * Wide enough for the longest entry ("Mở nhật ký Ghi 02 ↗" ends at 148px) and a
- * nested page under it, no wider: at 248 a third of the column was empty
+ * Wide enough for the longest entries (about 150px, a nested page included),
+ * no wider: at 248 a third of the column was empty
  * margin on the right of every row (owner, 2026-10-15).
  */
 const SIDE_W = 196
@@ -155,7 +165,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
 
       <div style={{ marginTop: 'auto', paddingTop: 24, display: 'flex', flexDirection: 'column', gap: 2 }}>
         <Item bare onClick={() => goToArea('practice', 'hours')}>
-          Mở nhật ký Ghi 02 ↗
+          Mở practice ↗
         </Item>
         <Item
           bare
