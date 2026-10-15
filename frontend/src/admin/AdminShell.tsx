@@ -9,7 +9,7 @@ import { useRememberedTab } from './components/SiteTabs'
 /** The four sites Cấu hình edits, in the order the sidebar lists them. */
 export const CONFIG_SITES = ['root', 'biz', 'bean', 'blog'] as const
 export type ConfigSite = (typeof CONFIG_SITES)[number]
-export const CONFIG_SITE_LABELS: Record<ConfigSite, string> = { root: 'beanweirdo', biz: 'biz', bean: 'bean', blog: 'personal blog' }
+export const CONFIG_SITE_LABELS: Record<ConfigSite, string> = { root: 'beanweirdo', biz: 'biz', bean: 'bean', blog: 'journal' }
 
 /**
  * The admin's colours and type, in one place so a palette is one edit. Owner

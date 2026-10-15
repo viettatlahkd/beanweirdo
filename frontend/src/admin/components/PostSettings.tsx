@@ -51,7 +51,7 @@ export const SETTINGS_WIDTH = 380
 const SITES: { id: PostSite; label: string }[] = [
   { id: 'biz', label: 'biz' },
   { id: 'bean', label: 'bean' },
-  { id: 'blog', label: 'personal blog' },
+  { id: 'blog', label: 'journal' },
 ]
 
 /**
@@ -137,7 +137,7 @@ export function PostSettings({
   onPublish: () => Promise<void>
 }) {
   const [keywords, setKeywords] = useState<Keyword[]>([])
-  // A post read before 0038 has no list: it is shown where every post was, on personal blog.
+  // A post read before 0038 has no list: it is shown where every post was, on the journal.
   const shownOn = post.shown_on ?? ['blog']
   const [slugError, setSlugError] = useState<string | null>(null)
   /*

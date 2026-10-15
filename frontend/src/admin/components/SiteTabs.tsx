@@ -1,7 +1,7 @@
 import { useState } from 'react'
 
 /**
- * The row of site tabs (Personal Blog | Port | …) that splits an admin screen
+ * The row of site tabs (Journal | Port | …) that splits an admin screen
  * by site. Cài đặt hiển thị had it first; the owner asked for the same bar on
  * Cấu hình, so both screens draw this one and they cannot drift apart.
  */

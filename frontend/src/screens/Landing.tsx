@@ -394,7 +394,7 @@ export function Landing() {
   const { data: allModules, postsOf } = useModules()
   const modules = landingModules(allModules)
   // Each page lists what its rule pulls (migration 0028), not what is filed under it.
-  // This is the personal blog's home, so only posts ticked to show here (0038);
+  // This is the journal's home, so only posts ticked to show here (0038);
   // the topic pages themselves still list everything filed under them.
   const postsByModule = useMemo(
     () => new Map(modules.map((m) => [m.id, postsOf(m.id).filter((p) => shownOn(p).includes('blog'))])),

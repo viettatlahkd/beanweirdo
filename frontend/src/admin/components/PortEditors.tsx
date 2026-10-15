@@ -452,7 +452,7 @@ function sourceText(s: Source, modules: Record<string, string>): string {
   }
 }
 
-const SITE_NAMES: Record<PostSite, string> = { biz: 'biz', bean: 'bean', blog: 'personal blog' }
+const SITE_NAMES: Record<PostSite, string> = { biz: 'biz', bean: 'bean', blog: 'journal' }
 
 const MODE_NAMES: Record<SourceMode, string> = {
   site: 'Bài tick trang này',

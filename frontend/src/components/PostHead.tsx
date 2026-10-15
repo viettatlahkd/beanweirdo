@@ -11,7 +11,7 @@ import { TagBadges } from './TagBadges'
 export const SITE_CHIPS: Record<PostSite, { name: string; color: string }> = {
   biz: { name: 'biz', color: '#5B7DB1' },
   bean: { name: 'bean', color: '#B7795A' },
-  blog: { name: 'personal blog', color: '#2B4B33' },
+  blog: { name: 'journal', color: '#2B4B33' },
 }
 
 const dayOf = (iso: string): string | null => {

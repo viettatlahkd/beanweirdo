@@ -26,6 +26,14 @@ describe('Header links', () => {
     const content = resolveContent({ header: { links: [{ key: 'page:c', label: 'x' }] } })
     expect(navLinks(content, pages).some((l) => l.key === 'page:c')).toBe(false)
   })
+
+  it('shows a journal page only once the owner added it, at /journal', () => {
+    expect(navLinks(resolveContent({}), pages).some((l) => l.key.startsWith('journal:'))).toBe(false)
+    const content = resolveContent({ header: { links: [{ key: 'page:a' }, { key: 'journal:home' }] } })
+    const links = navLinks(content, pages)
+    expect(links.map((l) => l.key)).toEqual(['page:a', 'journal:home', 'home', 'page:b', 'about'])
+    expect(links[1]).toMatchObject({ label: 'journal', href: '/journal' })
+  })
 })
 
 describe('About signature', () => {

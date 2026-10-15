@@ -133,17 +133,18 @@ const ABOUT = 'about'
 const BIZ = 'biz'
 
 /**
- * The personal blog, a site beside biz and bean (owner, 2026-10-15): its front
- * page is `/personal-blog`, everything else of the blog under it. Before, the
- * blog lived under bean's prefix (`/bean/details`, `/bean/post/…`); those
- * addresses still read and are rewritten here.
+ * The journal, a site beside biz and bean (owner, 2026-10-15): its front page
+ * is `/journal`, everything else of it under it. Before, the blog lived under
+ * bean's prefix (`/bean/details`, `/bean/post/…`); those addresses still read
+ * and are rewritten here. Its short-lived `/personal-blog` prefix does not:
+ * the owner keeps no alias for a renamed address.
  */
-const BLOG = 'personal-blog'
+const BLOG = 'journal'
 
 /**
  * A post's own page, `/p/<slug>` (owner, 2026-10-15): posts are one store shown
  * on biz, bean and the blog, so their page belongs to none of them. The blog's
- * `/personal-blog/post/<slug>` still reads and is rewritten here.
+ * `/journal/post/<slug>` still reads and is rewritten here.
  */
 const POST = 'p'
 
@@ -157,7 +158,7 @@ const OLD_PORTFOLIO = 'portfolio'
  * Where an address points.
  *
  * The site is a tree: beanweirdo at `/` (home and `/about`), then the child
- * sites, biz at `/biz/…`, bean at `/bean/…` and the blog at `/personal-blog/…`,
+ * sites, biz at `/biz/…`, bean at `/bean/…` and the journal at `/journal/…`,
  * each with its home at its own prefix. biz's pages were at `/<slug>` before; anything that is not another
  * address is still read as one, and `useRoute` writes it back as `/biz/<slug>`.
  * One that does not exist says so, rather than quietly opening something else.
@@ -223,7 +224,7 @@ function readPath(pathname: string, search: string, w: RouteWords): Where | null
   return readBlog(seg, search, w, false)
 }
 
-/** The blog's pages, read from what follows `/personal-blog/` (or the old `/bean/`). */
+/** The blog's pages, read from what follows `/journal/` (or the old `/bean/`). */
 function readBlog(seg: string[], search: string, w: RouteWords, underBean: boolean): Where | null {
   const [head, arg] = seg
   // `/bean/details` was the blog's front page until it got its own prefix.

@@ -10,13 +10,13 @@ import { Button, IconButton } from '../../design/Button'
 import { IconClose } from '../../design/icons'
 
 /**
- * Cài đặt hiển thị — one half per site. Personal Blog: its addresses, the
+ * Cài đặt hiển thị — one half per site. Journal: its addresses, the
  * admin headings, and its design system; Port: the design system port pages
  * are drawn with (it was the third tab of the separate Portfolio screen).
  */
 
 const SITES = ['blog', 'port', 'routes'] as const
-const SITE_LABELS = { blog: 'Personal Blog', port: 'Port', routes: 'Đường dẫn' }
+const SITE_LABELS = { blog: 'Journal', port: 'Port', routes: 'Đường dẫn' }
 
 const label: CSSProperties = { fontFamily: sans, fontSize: 13, color: ink.soft, marginBottom: 6 }
 const box: CSSProperties = { boxSizing: 'border-box', width: '100%', background: paper.white, border: `1px solid ${paper.rule}`, color: ink.base, fontFamily: sans, fontSize: 12.5, padding: '6px 8px', outline: 'none' }
@@ -124,7 +124,7 @@ function BlogDesignPanel({ stored, onSave }: { stored: BlogDesign; onSave: (patc
     <div ref={root} style={{ display: 'grid', gridTemplateColumns: stacked ? 'minmax(0,1fr)' : split.columns, alignItems: 'start', margin: '16px 28px 0' }}>
       <div style={{ background: paper.white, border: `1px solid ${desk.line}`, borderRadius: radius, overflow: 'hidden', pointerEvents: split.dragging ? 'none' : undefined, ...(stacked ? { height: '55vh', order: 2 } : { height: 'calc(100vh - 220px)', position: 'sticky', top: 0 }) }}>
         <ScaledPreview>
-          <iframe ref={frame} title="xem trước Personal Blog" src="/" onLoad={dress} style={{ width: '100%', height: '100%', border: 0, display: 'block' }} />
+          <iframe ref={frame} title="xem trước Journal" src="/" onLoad={dress} style={{ width: '100%', height: '100%', border: 0, display: 'block' }} />
         </ScaledPreview>
       </div>
       {!stacked && split.handle}

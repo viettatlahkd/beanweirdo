@@ -142,8 +142,8 @@ const toPortPage = (row: Record<string, unknown>): PortPage => ({
 })
 
 /**
- * The way from bean's home (`/bean`) to the personal blog's front page
- * (`/personal-blog`), which used to sit under it; no other page has one.
+ * The way from bean's home (`/bean`) to the journal's front page
+ * (`/journal`), which used to sit under it; no other page has one.
  */
 export function onwardOf(page: Pick<PortPage, 'home_of'>): { href: string; label: string } | undefined {
   if (page.home_of !== 'bean') return undefined

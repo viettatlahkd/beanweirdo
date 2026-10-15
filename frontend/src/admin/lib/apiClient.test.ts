@@ -20,6 +20,8 @@ const {
   TOKEN_KEY,
   ApiError,
 } = await import('./apiClient')
+// jsdom's File has no `arrayBuffer()`; Node's does, and uploadImage sends raw bytes.
+const { File: NodeFile } = await import('node:buffer')
 
 function mockJsonResponse(body: unknown, status = 200) {
   return { ok: status >= 200 && status < 300, status, text: async () => JSON.stringify(body) }
@@ -142,7 +144,7 @@ describe('apiClient authenticated calls', () => {
     )
     uploadToSignedUrl.mockResolvedValue({ error: null })
 
-    const file = new File(['data'], 'photo.png', { type: 'image/png' })
+    const file = new NodeFile(['data'], 'photo.png', { type: 'image/png' }) as unknown as File
     const result = await uploadImage(file)
 
     const [, init] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0]
@@ -151,7 +153,11 @@ describe('apiClient authenticated calls', () => {
     expect(JSON.parse(init.body as string)).toEqual({ filename: 'photo.png', contentType: 'image/png' })
     expect(init.body).not.toBeInstanceOf(FormData)
 
-    expect(uploadToSignedUrl).toHaveBeenCalledWith('uuid.png', 'signed', file)
+    // Byte trơn kèm header cache một năm — FormData làm Storage bỏ qua cacheControl.
+    expect(uploadToSignedUrl).toHaveBeenCalledWith('uuid.png', 'signed', expect.anything(), {
+      contentType: 'image/png',
+      cacheControl: '31536000',
+    })
     expect(result).toEqual({ url: 'https://cdn/uuid.png' })
   })
 
@@ -161,7 +167,7 @@ describe('apiClient authenticated calls', () => {
     )
     uploadToSignedUrl.mockResolvedValue({ error: { message: 'payload too large' } })
 
-    const file = new File(['data'], 'photo.png', { type: 'image/png' })
+    const file = new NodeFile(['data'], 'photo.png', { type: 'image/png' }) as unknown as File
     await expect(uploadImage(file)).rejects.toThrow(/payload too large/)
   })
 

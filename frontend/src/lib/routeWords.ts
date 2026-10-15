@@ -145,7 +145,7 @@ const SHAPE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 const MUST_DIFFER: (keyof RouteWords)[][] = [
   // Đoạn đầu địa chỉ: khu bean, nhật ký và khu quản trị nằm cùng một chỗ.
   ['admin', 'practice', 'bean'],
-  // Các trang của blog đứng cùng một chỗ, ngay sau `/personal-blog/`.
+  // Các trang của blog đứng cùng một chỗ, ngay sau `/journal/`.
   ['post', 'module', 'tag', 'index', 'notes', 'details'],
   // Bảy trang con đứng cùng một chỗ, ngay sau `ad-`.
   ['adPost', 'adConfig', 'adTree', 'adAuthors', 'adSitemap', 'adPageContent', 'adTaxonomy', 'adDisplay', 'adArchive', 'adPortfolio', 'adPortContent', 'adPortDesign'],

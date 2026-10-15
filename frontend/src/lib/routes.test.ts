@@ -46,8 +46,8 @@ describe('routes — đi một vòng rồi về đúng chỗ cũ', () => {
 describe('routes — tên trong địa chỉ', () => {
   it('spells out the module ids that are abbreviated in the database', () => {
     // `biochem` là tên cột, `biochemistry` là tên người đọc thấy.
-    expect(toPath({ area: 'public', screen: 'module', moduleId: 'biochem' })).toBe('/personal-blog/module/biochemistry')
-    expect(toPath({ area: 'public', screen: 'module', moduleId: 'ghi01' })).toBe('/personal-blog/module/ghi')
+    expect(toPath({ area: 'public', screen: 'module', moduleId: 'biochem' })).toBe('/journal/module/biochemistry')
+    expect(toPath({ area: 'public', screen: 'module', moduleId: 'ghi01' })).toBe('/journal/module/ghi')
     expect(moduleToUrl('sensory')).toBe('sensory')
   })
 
@@ -89,7 +89,7 @@ describe('routes — tên trong địa chỉ', () => {
     // Quản lý trang and Cấu hình are one tab, written at /ad-cau-hinh; the old address still reads.
     expect(parsePath('/ad-cau-hinh')).toMatchObject({ area: 'admin', screen: 'cms', tab: 'pages' })
     expect(toPath({ area: 'admin', screen: 'cms', tab: 'pages' })).toBe('/ad-cau-hinh')
-    expect(toPath({ area: 'public', screen: 'module', moduleId: 'tag-heat' })).toBe('/personal-blog/tag/heat')
+    expect(toPath({ area: 'public', screen: 'module', moduleId: 'tag-heat' })).toBe('/journal/tag/heat')
     // `/ad` names the screen and not a tab, so it opens on the first one
     // without rewriting itself to another address on arrival.
     expect(parsePath('/ad').tab).toBeUndefined()
@@ -136,16 +136,16 @@ describe('routes — địa chỉ cũ', () => {
   })
 })
 
-describe('routes — cây site: beanweirdo ở gốc, biz dưới /biz, bean dưới /bean, blog dưới /personal-blog', () => {
+describe('routes — cây site: beanweirdo ở gốc, biz dưới /biz, bean dưới /bean, journal dưới /journal', () => {
   it('đặt từng trang vào chỗ mới của nó', () => {
     expect(toPath({ area: 'public', screen: 'portfolioHome' })).toBe('/')
     expect(toPath({ area: 'public', screen: 'portfolioAbout' })).toBe('/about')
     expect(toPath({ area: 'public', screen: 'portfolioPage', site: 'biz' })).toBe('/biz')
     expect(toPath({ area: 'public', screen: 'portfolioPage', site: 'bean' })).toBe('/bean')
     expect(toPath({ area: 'public', screen: 'portfolioPage', slug: 'business' })).toBe('/biz/business')
-    expect(toPath({ area: 'public', screen: 'landing' })).toBe('/personal-blog')
-    expect(toPath({ area: 'public', screen: 'home' })).toBe('/personal-blog/muc-luc')
-    expect(toPath({ area: 'public', screen: 'notes' })).toBe('/personal-blog/ghi')
+    expect(toPath({ area: 'public', screen: 'landing' })).toBe('/journal')
+    expect(toPath({ area: 'public', screen: 'home' })).toBe('/journal/muc-luc')
+    expect(toPath({ area: 'public', screen: 'notes' })).toBe('/journal/ghi')
   })
 
   it('đọc lại đúng các địa chỉ mới', () => {
@@ -154,7 +154,9 @@ describe('routes — cây site: beanweirdo ở gốc, biz dưới /biz, bean dư
     expect(parsePath('/biz')).toMatchObject({ screen: 'portfolioPage', site: 'biz' })
     expect(parsePath('/biz/business')).toMatchObject({ screen: 'portfolioPage', slug: 'business' })
     expect(parsePath('/bean')).toMatchObject({ screen: 'portfolioPage', site: 'bean' })
-    expect(parsePath('/personal-blog')).toMatchObject({ screen: 'landing' })
+    expect(parsePath('/journal')).toMatchObject({ screen: 'landing' })
+    // The owner keeps no alias for a renamed address: the old prefix is just an unknown page.
+    expect(parsePath('/personal-blog')).toMatchObject({ screen: 'portfolioPage', slug: 'personal-blog' })
     expect(parsePath('/p/x-p260817')).toMatchObject({ screen: 'article', slug: 'x-p260817' })
     expect(parsePath('/bean/roasting')).toMatchObject({ screen: 'portfolioPage', slug: 'roasting', site: 'bean' })
     expect(toPath(parsePath('/bean/roasting'))).toBe('/bean/roasting')
@@ -181,16 +183,16 @@ describe('routes — cây site: beanweirdo ở gốc, biz dưới /biz, bean dư
       ['/portfolio/business', '/biz/business'],
       // biz's pages sat at the root until 2026-10-14.
       ['/business', '/biz/business'],
-      ['/muc-luc', '/personal-blog/muc-luc'],
-      ['/ghi', '/personal-blog/ghi'],
-      ['/module/biochemistry', '/personal-blog/module/biochemistry'],
-      ['/tag/heat', '/personal-blog/tag/heat'],
+      ['/muc-luc', '/journal/muc-luc'],
+      ['/ghi', '/journal/ghi'],
+      ['/module/biochemistry', '/journal/module/biochemistry'],
+      ['/tag/heat', '/journal/tag/heat'],
       ['/post/sensory-p260817', '/p/sensory-p260817'],
       // A post's page left the blog on 2026-10-15: it is shown on biz and bean too.
-      ['/personal-blog/post/sensory-p260817', '/p/sensory-p260817'],
+      ['/journal/post/sensory-p260817', '/p/sensory-p260817'],
       // The blog sat under bean until 2026-10-15.
-      ['/bean/details', '/personal-blog'],
-      ['/bean/muc-luc', '/personal-blog/muc-luc'],
+      ['/bean/details', '/journal'],
+      ['/bean/muc-luc', '/journal/muc-luc'],
       ['/bean/post/sensory-p260817', '/p/sensory-p260817'],
     ]
     for (const [from, to] of old) expect(toPath(parsePath(from)), from).toBe(to)

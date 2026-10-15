@@ -63,7 +63,7 @@ const SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/
  * a slug must not shadow a root word; and the blog's old addresses under
  * /bean/ (/bean/details…) win over a bean page of the same name.
  */
-const RESERVED_SLUGS = ['about', 'portfolio', 'practice', 'ad', 'admin', 'post', 'module', 'tag', 'muc-luc', 'ghi', 'details', 'biz', 'bean', 'personal-blog', 'p']
+const RESERVED_SLUGS = ['about', 'portfolio', 'practice', 'ad', 'admin', 'post', 'module', 'tag', 'muc-luc', 'ghi', 'details', 'biz', 'bean', 'journal', 'p']
 
 const NULLABLE = ['parent_id', 'look', 'accent', 'on_color', 'tint', 'tint2', 'image_url'] as const
 

@@ -30,7 +30,7 @@ describe('useRoute — nút back của trình duyệt', () => {
     act(() => result.current[1]({ area: 'public', screen: 'home' }))
     act(() => result.current[1]({ area: 'public', screen: 'module', moduleId: 'biochem' }))
 
-    expect(at()).toBe('/personal-blog/module/biochemistry')
+    expect(at()).toBe('/journal/module/biochemistry')
     expect(window.history.length - before).toBe(2)
   })
 

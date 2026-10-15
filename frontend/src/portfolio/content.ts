@@ -71,9 +71,21 @@ export type NavPage = { id: string; slug: string; title: string; status: string;
 export type NavLink = { key: string; label: string; href: string; hidden: boolean }
 
 /**
+ * The journal's pages the owner can put on the top bar (2026-10-15). Unlike a
+ * port page they are not there by default: only once added from Mục lục, and
+ * gone again when removed. The key names the screen, not its address, so a
+ * renamed prefix moves the link with it.
+ */
+export const JOURNAL_LINKS: Record<string, { label: string; href: () => string }> = {
+  'journal:home': { label: 'journal', href: () => toPath({ area: 'public', screen: 'landing' }) },
+  'journal:index': { label: 'mục lục journal', href: () => toPath({ area: 'public', screen: 'home' }) },
+}
+
+/**
  * The header links: the main page, every published port page, and about —
- * in that order unless the owner reordered them. A newly published page
- * appears on its own; an unpublished one drops out even if it was renamed.
+ * in that order unless the owner reordered them — plus the journal pages the
+ * owner added. A newly published page appears on its own; an unpublished one
+ * drops out even if it was renamed.
  */
 export function navLinks(content: PortContent, pages: NavPage[]): NavLink[] {
   const auto: NavLink[] = [
@@ -86,7 +98,8 @@ export function navLinks(content: PortContent, pages: NavPage[]): NavLink[] {
   const byKey = new Map(auto.map((l) => [l.key, l]))
   const out: NavLink[] = []
   for (const o of content.header.links) {
-    const l = byKey.get(o.key)
+    const j = JOURNAL_LINKS[o.key]
+    const l = byKey.get(o.key) ?? (j && { key: o.key, label: j.label, href: j.href(), hidden: false })
     if (!l) continue
     out.push({ ...l, label: o.label?.trim() ? o.label : l.label, hidden: !!o.hidden })
     byKey.delete(o.key)

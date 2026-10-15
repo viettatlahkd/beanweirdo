@@ -12,7 +12,7 @@ describe('nodeColumns', () => {
 
   it('keeps root words and the sites’ own prefixes away from port pages only', () => {
     // A port page's old address is /<slug>, and a bean page's is /bean/<slug>; these belong to other pages.
-    for (const slug of ['about', 'portfolio', 'post', 'muc-luc', 'practice', 'ad-post', 'biz', 'bean', 'personal-blog', 'details']) {
+    for (const slug of ['about', 'portfolio', 'post', 'muc-luc', 'practice', 'ad-post', 'biz', 'bean', 'journal', 'details']) {
       expect(nodeColumns({ slug }, 'port'), slug).toBeTypeOf('string')
       expect(nodeColumns({ slug }, 'blog'), slug).toEqual({ slug })
     }

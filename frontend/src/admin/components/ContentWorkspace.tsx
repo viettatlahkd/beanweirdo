@@ -57,8 +57,8 @@ const isUndo = (u: unknown): u is Undo => !!u && typeof u === 'object' && typeof
 /** Posts with no place on the tree yet — a filter of their own so none goes unseen. */
 const UNPLACED = '__unplaced'
 
-const SITE_LABEL: Record<PostSite, string> = { biz: 'biz', bean: 'bean', blog: 'personal blog' }
-// A post read before 0038 carries no list; it shows where every post did, on personal blog.
+const SITE_LABEL: Record<PostSite, string> = { biz: 'biz', bean: 'bean', blog: 'journal' }
+// A post read before 0038 carries no list; it shows where every post did, on the journal.
 const shownOn = (p: PostSummary) => p.shown_on ?? ['blog']
 const STATUS_LABEL: Record<PostStatus, string> = { draft: 'Nháp', published: 'Đã đăng', archived: 'Lưu trữ', deleted: 'Thùng rác' }
 

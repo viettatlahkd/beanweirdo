@@ -26,6 +26,7 @@ import type {
   Site,
 } from 'api-contract'
 import { supabase } from '../../lib/supabaseClient'
+import { shrinkImage } from './shrinkImage'
 import type { SiteOverrides } from '../../content/site'
 import type { LogEntry } from '../../content/hours'
 import type { ListingRule } from '../../lib/listingRule'
@@ -378,11 +379,16 @@ export async function transitionStatus(
  * Trước đây tệp đi qua serverless function: trình duyệt → Vercel → Supabase.
  * Người dùng chờ hết lượt đầu rồi mới bắt đầu lượt sau. Nay máy chủ chỉ ký một
  * vé — `POST /api/upload` không nhận byte nào — và tệp đi thẳng từ trình duyệt
- * lên Storage.
+ * lên Storage, sau khi `shrinkImage` đã thu nó về cỡ trang thật sự cần.
  *
- * Chữ ký của hàm này không đổi, nên bảy chỗ đang gọi nó không phải sửa gì.
+ * Tệp đi dạng byte trơn chứ không bọc FormData: lối ký vé của Storage bỏ qua ô
+ * `cacheControl` trong FormData, nên mọi ảnh từng tải lên đều mang `no-cache`
+ * và trình duyệt hỏi lại máy chủ mỗi lần mở trang. Gửi byte trơn thì header
+ * `cache-control` được giữ. Tên tệp là UUID mới mỗi lần và điểm cắt nằm ở
+ * `#fragment`, nên một địa chỉ không bao giờ đổi nội dung — cache một năm.
  */
-export async function uploadImage(file: File): Promise<{ url: string }> {
+export async function uploadImage(original: File): Promise<{ url: string }> {
+  const file = await shrinkImage(original)
   const ticket = await request<{ path: string; token: string; url: string }>('/api/upload', {
     method: 'POST',
     body: JSON.stringify({ filename: file.name, contentType: file.type }),
@@ -390,7 +396,10 @@ export async function uploadImage(file: File): Promise<{ url: string }> {
 
   const { error } = await supabase.storage
     .from(IMAGE_BUCKET)
-    .uploadToSignedUrl(ticket.path, ticket.token, file)
+    .uploadToSignedUrl(ticket.path, ticket.token, await file.arrayBuffer(), {
+      contentType: file.type || 'application/octet-stream',
+      cacheControl: '31536000',
+    })
 
   // Vé ký được nhưng tệp không lên được là một lỗi khác hẳn, nên nó nói tên
   // mình ra chứ không đội lốt lỗi của `/api/upload`.

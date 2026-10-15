@@ -287,21 +287,41 @@ export type AddSpec = {
   placeholder: string
   choose?: { label: string; options: { value: string; label: string }[] }
   onSave: (name: string, choice?: string) => void
+  /**
+   * A page that already exists, offered beside making a new one (owner,
+   * 2026-10-15: the top bar could only grow by new pages, never link one
+   * that was already there, like the journal).
+   */
+  existing?: { options: { value: string; label: string }[]; onPick: (value: string) => void }
 }
+
+type AddMode = 'new' | 'existing'
+const ADD_MODES: { value: AddMode; label: string }[] = [
+  { value: 'new', label: 'Trang mới' },
+  { value: 'existing', label: 'Trang có sẵn' },
+]
 
 function AddLine({ spec }: { spec: AddSpec }) {
   const [open, setOpen] = useState(false)
+  const [mode, setMode] = useState<AddMode>('new')
   const [name, setName] = useState('')
   const [choice, setChoice] = useState(spec.choose?.options[0]?.value ?? '')
+  const [target, setTarget] = useState('')
+  const existing = mode === 'existing' && spec.existing
   const close = () => {
     setOpen(false)
+    setMode('new')
     setName('')
+    setTarget('')
   }
+  const ready = existing ? !!target : !!name.trim()
   const save = () => {
-    if (!name.trim()) return
-    spec.onSave(name.trim(), spec.choose ? choice : undefined)
+    if (!ready) return
+    if (existing) existing.onPick(target)
+    else spec.onSave(name.trim(), spec.choose ? choice : undefined)
     close()
   }
+  const row = { display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 10, fontFamily: sans, fontSize: 13, fontWeight: 600, color: ink.strong } as const
   if (!open)
     return (
       <div style={{ paddingTop: 12 }}>
@@ -312,22 +332,42 @@ function AddLine({ spec }: { spec: AddSpec }) {
     )
   return (
     <div style={{ display: 'grid', gap: 12, padding: '12px 0 2px' }}>
-      <input
-        autoFocus
-        aria-label={spec.label}
-        placeholder={spec.placeholder}
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        onKeyDown={(e) => (e.key === 'Enter' ? save() : e.key === 'Escape' && close())}
-        style={{ fontFamily: sans, fontSize: 14.5, color: ink.base, maxWidth: 420 }}
-      />
-      {spec.choose && (
-        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 10, fontFamily: sans, fontSize: 13, fontWeight: 600, color: ink.strong }}>
-          {spec.choose.label} <Choice label={spec.choose.label} options={spec.choose.options} value={choice} onChange={setChoice} />
-        </div>
+      {spec.existing && <Choice label="Thêm" options={ADD_MODES} value={mode} onChange={setMode} />}
+      {existing ? (
+        existing.options.length ? (
+          <select autoFocus aria-label="Trang có sẵn" value={target} onChange={(e) => setTarget(e.target.value)} style={{ fontFamily: sans, fontSize: 14.5, color: ink.base, maxWidth: 420 }}>
+            <option value="" disabled>
+              chọn một trang
+            </option>
+            {existing.options.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <p style={{ fontFamily: sans, fontSize: 13.5, color: ink.soft, margin: 0 }}>Mọi trang có sẵn đều đã ở đây.</p>
+        )
+      ) : (
+        <>
+          <input
+            autoFocus
+            aria-label={spec.label}
+            placeholder={spec.placeholder}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => (e.key === 'Enter' ? save() : e.key === 'Escape' && close())}
+            style={{ fontFamily: sans, fontSize: 14.5, color: ink.base, maxWidth: 420 }}
+          />
+          {spec.choose && (
+            <div style={row}>
+              {spec.choose.label} <Choice label={spec.choose.label} options={spec.choose.options} value={choice} onChange={setChoice} />
+            </div>
+          )}
+        </>
       )}
       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-        <Button level="primary" disabled={!name.trim()} onClick={save}>
+        <Button level="primary" disabled={!ready} onClick={save}>
           Lưu
         </Button>
         <Button level="quiet" onClick={close}>

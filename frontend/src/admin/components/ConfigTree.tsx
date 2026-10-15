@@ -23,7 +23,7 @@ import { bySiteOrder } from '../../lib/moduleOrder'
 import { TAG_PAGE, portPagePath, portSiteOf, toPath } from '../../lib/routes'
 import { findPage, useModules } from '../../data/useModules'
 import { usePortSources } from '../../portfolio/data'
-import { navLinks, type PortContent } from '../../portfolio/content'
+import { JOURNAL_LINKS, navLinks, type NavOverride, type PortContent } from '../../portfolio/content'
 import type { PresetKey } from '../../portfolio/blocks'
 import { ink, paper, sans } from '../../design/tokens'
 import { radius } from '../../design/controls'
@@ -91,7 +91,7 @@ import {
  * `nodes` with site 'port'; each child site's home is the block page flagged `home_of` (0035).
  *
  * On 2026-10-15 the owner took the blog out of bean into a tab of its own,
- * personal blog, at `/personal-blog`: its front page is its home, the topic
+ * the journal, at `/journal`: its front page is its home, the topic
  * tree its Mục lục. bean became a block-page site like biz, its pages filed
  * under its home.
  */
@@ -145,7 +145,18 @@ function whereIn(e: { clientY: number; currentTarget: HTMLElement }, nest: boole
 type MovePlan = Exclude<ReturnType<typeof planMove>, { error: string }>
 
 /** One row of a site's Mục lục; `parent_id` is null on a flat list. */
-type TocItem = { id: string; parent_id: string | null; name: string; dot?: string | null; meta?: string; picked: Picked; movable: boolean }
+type TocItem = {
+  id: string
+  parent_id: string | null
+  name: string
+  dot?: string | null
+  meta?: string
+  picked: Picked
+  movable: boolean
+  /** A row that opens or is removed some other way than its pick: a journal link on beanweirdo's top bar. */
+  open?: () => void
+  actions?: DetailAction[]
+}
 
 type Toc = NonNullable<SiteSpec['toc']>
 
@@ -348,6 +359,29 @@ export function ConfigTree({
     }
   }
 
+  // Adding to the top bar: a journal page joins it, a page or About hidden from it shows again.
+  const saveLinks = (links: NavOverride[]) => {
+    const header = { ...port.content.header, links }
+    setHeader(header)
+    run(() => updateSite({ portfolio: { header } } as never))
+  }
+  const storedLinks = () => portLinks.map((l) => port.content.header.links.find((o) => o.key === l.key) ?? { key: l.key })
+  const addLink = (key: string) =>
+    saveLinks(portLinks.some((l) => l.key === key) ? storedLinks().map((o) => (o.key === key ? { ...o, hidden: false } : o)) : [...storedLinks(), { key }])
+  const dropLink = (key: string) => saveLinks(storedLinks().filter((o) => o.key !== key))
+  const linkChoices = [
+    ...Object.entries(JOURNAL_LINKS)
+      .filter(([key]) => !portLinks.some((l) => l.key === key))
+      .map(([key, j]) => ({ value: key, label: `${j.label} · ${j.href()}` })),
+    ...portLinks.filter((l) => l.hidden && l.key !== 'home').map((l) => ({ value: l.key, label: `${l.label} · ${l.href} · đang ẩn` })),
+  ]
+  // A journal row opens the journal's own tab, on the page it links.
+  const openJournal = (to: Picked) => () => {
+    keepPick.current = true
+    frame.openSite('blog')
+    setPicked(to)
+  }
+
   const titleOf = (items: TocItem[], id: string | null) => (id ? (items.find((t) => t.id === id)?.name ?? id) : 'tầng trên cùng')
 
   /** `shown` is the whole Mục lục in drawn order, even where only one level of it is listed. */
@@ -482,6 +516,11 @@ export function ConfigTree({
     move: movePortLink,
     items: portLinks.flatMap((l): TocItem[] => {
       if (l.key === 'about') return [{ id: l.key, parent_id: null, name: 'About', dot: null, meta: tocMeta('published', '/about', l.hidden), picked: { kind: 'port-part', part: 'about' }, movable: true }]
+      const j = JOURNAL_LINKS[l.key]
+      if (j) {
+        const to: Picked = l.key === 'journal:index' ? { kind: 'group', id: 'topics' } : { kind: 'system', key: 'landing' }
+        return [{ id: l.key, parent_id: null, name: l.label, dot: null, meta: tocMeta('published', l.href, l.hidden), picked: to, movable: true, open: openJournal(to), actions: [{ label: 'Gỡ khỏi thanh trên', danger: true, onPick: () => dropLink(l.key) }] }]
+      }
       const pg = port.pages.find((x) => `page:${x.id}` === l.key)
       return pg ? [{ id: l.key, parent_id: null, name: l.label, dot: portDot(pg), meta: tocMeta(pg.status, portPagePath(pg), l.hidden), picked: { kind: 'port-page', id: pg.id }, movable: true }] : []
     }),
@@ -638,7 +677,7 @@ export function ConfigTree({
 
   /** Rows of a Mục lục as the right-hand list draws them: dragged by their grip, deleted from their ⋮. */
   const tocList = (toc: Toc, rows: TocItem[]): ListItem[] =>
-    rows.map((r) => ({ id: r.id, name: r.name, meta: r.meta, dot: r.dot, onOpen: pick(r.picked), drag: r.movable ? dragOf(toc, toc.items.filter((x) => x.movable), r.id) : undefined, actions: deleteOf(r.picked) }))
+    rows.map((r) => ({ id: r.id, name: r.name, meta: r.meta, dot: r.dot, onOpen: r.open ?? pick(r.picked), drag: r.movable ? dragOf(toc, toc.items.filter((x) => x.movable), r.id) : undefined, actions: r.actions ?? deleteOf(r.picked) }))
   const dragNote = (nest: boolean) => (nest ? 'kéo ⠿ để đổi chỗ hay đưa vào trong' : 'kéo ⠿ để đổi chỗ')
   const newPortPage = async (name: string, key: PresetKey, parentId: string | null = null) => {
     const p = await createFromPreset(key, name, port.pages, src.moduleIds, parentId)
@@ -861,7 +900,7 @@ export function ConfigTree({
             {/* The tag's own page and its menu switches are the blog's; the block-page sites only wear the badge. */}
             {<NavFlags layout={layout} navRef={`tag:${k.id}`} defaults={{ sidebar: false, home: false }} run={run} />}
           </Section>
-          <Section title="Trang của tag trên personal blog">{nodePage('keyword', k.id)}</Section>
+          <Section title="Trang của tag trên journal">{nodePage('keyword', k.id)}</Section>
         </>
       )
       break
@@ -898,7 +937,7 @@ export function ConfigTree({
           <>
             {errorLine}
             <Section title="Thanh trên" note={`theo thứ tự thanh trên · ${dragNote(false)}`}>
-              <ItemList label="Thanh trên" items={tocList(rootToc, rootToc.items)} add={addPortPage(undefined)} />
+              <ItemList label="Thanh trên" items={tocList(rootToc, rootToc.items)} add={{ ...addPortPage(undefined), label: 'Thêm mục', existing: { options: linkChoices, onPick: addLink } }} />
             </Section>
           </>
         )
