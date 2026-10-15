@@ -117,8 +117,9 @@
 - **[ĐỔI HÀNH VI]** Bấm vào thân dòng ở Thanh menu không còn mở trang nào; dòng chỉ làm việc qua nút của nó và ⋮
   (`ListItem.onOpen` thành tuỳ chọn, `RowBody` trong `Detail.tsx`). Trình duyệt: bấm tên bizops → vẫn ở Trang chủ; chọn
   "+ Tạo chữ kí mới…" → Thông tin chung, hộp thoại Thêm chữ kí mở, không lệnh ghi nào.
-- **[ĐỔI HÀNH VI]** Ô chữ nhiều dòng trong `ContentTab` (Văn bản lớp phủ, Giới thiệu trang chủ…) giãn theo toàn bộ nội dung khi bấm
-  vào, gõ thêm thì giãn tiếp, rời ô thì thu lại (`fitText`, `PortEditors.tsx`). Lựa chọn "Tạo chữ kí mới…" bỏ dấu "+".
+- **[ĐỔI HÀNH VI]** Ô chữ nhiều dòng trong `ContentTab` (Văn bản lớp phủ, Giới thiệu trang chủ…) cao vừa chữ: lúc nghỉ tối đa
+  120px (`REST_MAX`), bấm vào thì hiện hết, gõ thêm thì giãn tiếp, rời ô thì về lại (`fitText`, `PortEditors.tsx`; bỏ
+  `minHeight: 70`). Khung `ContentTab` bỏ 20px đệm dưới, khung ngoài ôm sát ô cuối. Lựa chọn "Tạo chữ kí mới…" bỏ dấu "+".
 - **[SỬA LỖI]** `/about` công khai: văn bản lớp phủ dính thành một đoạn vì `.pf .over p` không giữ xuống dòng. Thêm
   `white-space: pre-wrap` (`portfolio/styles.ts`). Giữ xuống dòng thì bài 31 dòng tràn khỏi khung ảnh (458px) đè lên reach/post, nên
   riêng `.pf .over.ctx p` (chỉ about dùng) chuyển sang 2 cột, chữ `clamp(13px,1.5cqw,17px)`, line-height 1.4: vừa khung, chữ kí ở
