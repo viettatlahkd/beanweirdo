@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { PostRenderer } from 'post-renderer'
-import { getPost, type Module, type PostDetail } from '../lib/apiClient'
+import { getPost, getTemplate, type Module, type PostDetail } from '../lib/apiClient'
 import { listModulesCached } from '../lib/lists'
 import { ink, paper } from '../../design/tokens'
 import { Hover } from '../../lib/Hover'
@@ -38,19 +38,63 @@ export function Preview({ postId }: { postId: string }) {
   )
 }
 
+/**
+ * `/ad-post/view=tpl-<id>`: a stored template drawn as a new post written in it
+ * opens — its body, its name as the title — for Biên tập › Template (owner, 2026-10-16).
+ */
+export const TEMPLATE_PREVIEW = 'tpl-'
+
+/** A post that is only a template's starting content: what the editor opens on "Bài mới". */
+const fromTemplate = (t: Awaited<ReturnType<typeof getTemplate>>): PostDetail => ({
+  id: `${TEMPLATE_PREVIEW}${t.id}`,
+  module_id: '',
+  en: t.name,
+  vi: t.description,
+  lead: null,
+  kind: 'note',
+  date_label: '',
+  status: 'draft',
+  template: t.renderer,
+  hero_image_url: null,
+  theme_color: null,
+  thumbnail_url: null,
+  sort_order: null,
+  pinned: false,
+  topic_id: null,
+  visibility: 'private',
+  slug: null,
+  created_at: '',
+  updated_at: '',
+  published_at: null,
+  keywords: [],
+  // Stored as the post body is (memo and bitesize keep an object, the rest a list), so it goes over as it is.
+  body: t.body as PostDetail['body'],
+  hero_caption: null,
+  plate_images: null,
+  pull_quote: null,
+  further_reading: null,
+  deleted_at: null,
+  previous_status: null,
+})
+
 function PreviewContent({ postId }: { postId: string }) {
   const nav = useNav()
   const [post, setPost] = useState<PostDetail | null>(null)
   const [authors, setAuthors] = useState<AuthorRef[]>([])
   const [modules, setModules] = useState<Module[]>([])
+  const isTemplate = postId.startsWith(TEMPLATE_PREVIEW)
 
   useEffect(() => {
+    if (isTemplate) {
+      void getTemplate(postId.slice(TEMPLATE_PREVIEW.length)).then((t) => setPost(fromTemplate(t)))
+      return
+    }
     Promise.all([getPost(postId), listModulesCached()]).then(([{ authors: byline, ...p }, mods]) => {
       setAuthors(byline)
       setPost(p)
       setModules(mods)
     })
-  }, [postId])
+  }, [postId, isTemplate])
 
   if (!post) return <div style={{ padding: 32, color: ink.muted, fontSize: 13 }}>Đang tải...</div>
 
@@ -83,6 +127,7 @@ function PreviewContent({ postId }: { postId: string }) {
         * về Content management. Chủ site gặp đúng chỗ đó. Điều hướng trong app
         * là trạng thái chứ không phải URL, nên đường về phải tự dựng ở đây.
         */}
+      {!isTemplate && (
       <div style={{ maxWidth: 1320, margin: '0 auto 14px', display: 'flex', alignItems: 'baseline', gap: 14 }}>
         <Hover
           onClick={() => nav.editPost(postId)}
@@ -95,6 +140,7 @@ function PreviewContent({ postId }: { postId: string }) {
           Bài đang ở <b style={{ color: ink.strong, fontWeight: 500 }}>{post.status}</b>, chỉ bạn xem được link này — render bằng đúng component công khai, không có ô sửa nào.
         </div>
       </div>
+      )}
       <div style={{ maxWidth: 1320, margin: '0 auto', border: `1px solid ${paper.rule}`, overflow: 'hidden', background: paper.white }}>
         {/* Every template, through the same adapters the public journal uses.
             Two of the five used to fall through to `article` here, so a memo

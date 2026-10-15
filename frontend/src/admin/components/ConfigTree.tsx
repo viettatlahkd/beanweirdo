@@ -9,6 +9,7 @@ import {
   listTags,
   listNodes,
   listPosts,
+  listTemplates,
   colorKeyword,
   renameKeyword,
   reorderNodes,
@@ -18,8 +19,10 @@ import {
   type Node,
   type NodeStatus,
   type PostSummary,
+  type TemplateSummary,
 } from '../lib/apiClient'
-import { POST_TEMPLATES, type PostTemplate } from '../../content/templates'
+import { TEMPLATE_LABEL } from '../../content/templates'
+import { TEMPLATE_PREVIEW } from '../screens/Preview'
 import { ancestorsOf, buildTree, flattenTree } from '../../lib/contentTree'
 import { planMove, type DropWhere } from '../../lib/treeMove'
 import { bySiteOrder } from '../../lib/moduleOrder'
@@ -120,7 +123,7 @@ type Picked =
   | { kind: 'tag'; id: string }
   | { kind: 'module'; id: string }
   | { kind: 'practice' }
-  | { kind: 'template'; key: PostTemplate }
+  | { kind: 'template'; id: string }
 
 const same = (a: Picked, b: Picked) => JSON.stringify(a) === JSON.stringify(b)
 
@@ -219,14 +222,16 @@ export function ConfigTree({
   renderPractice: () => ReactNode
 }) {
   const { data: pages, postsOf, reload: reloadPages } = useModules()
-  // Biên tập › Template counts every post a template is used by, drafts too, as Nội dung's rail does.
+  // Biên tập › Template: the stored templates "Bài mới" offers, and the posts drawn by each one's renderer, drafts too.
+  const [templates, setTemplates] = useState<TemplateSummary[]>([])
   const [allPosts, setAllPosts] = useState<PostSummary[]>([])
-  const [sample, setSample] = useState<string | null>(null)
   useEffect(() => {
-    if (only === 'templates') void listPosts('all').then(setAllPosts, () => setAllPosts([]))
+    if (only !== 'templates') return
+    void listTemplates().then(setTemplates, () => setTemplates([]))
+    void listPosts('all').then(setAllPosts, () => setAllPosts([]))
   }, [only])
-  const postsIn = (key: PostTemplate) =>
-    allPosts.filter((p) => p.template === key && p.status !== 'deleted').sort((a, b) => b.updated_at.localeCompare(a.updated_at))
+  const postsIn = (t: TemplateSummary) =>
+    allPosts.filter((p) => p.template === t.renderer && p.status !== 'deleted').sort((a, b) => b.updated_at.localeCompare(a.updated_at))
   const port = usePortAdmin()
   const bizHome = port.pages.find((p) => p.home_of === 'biz')
   const beanHome = port.pages.find((p) => p.home_of === 'bean')
@@ -751,7 +756,13 @@ export function ConfigTree({
       renderModule={renderModule}
     />
   )
-  const siteCrumb = (id: SiteId): Crumb => ({ label: SITE_LABELS[id], open: pick(homeOf(id)) })
+  // Known by identity, not by name: port archives' Template and Biên tập's Template share a word.
+  const siteCrumbs = new WeakSet<Crumb>()
+  const siteCrumb = (id: SiteId): Crumb => {
+    const c = { label: SITE_LABELS[id], open: pick(homeOf(id)) }
+    siteCrumbs.add(c)
+    return c
+  }
   const groupCrumb = (id: Group, label: string): Crumb => ({ label, open: pick({ kind: 'group', id }) })
 
   /**
@@ -1149,29 +1160,33 @@ export function ConfigTree({
       break
     }
     case 'template': {
-      const key = picked.key
-      const used = postsIn(key)
-      const shown = used.find((p) => p.id === sample && p.status === 'published') ?? used.find((p) => p.status === 'published')
+      const t = templates.find((x) => x.id === picked.id)
+      if (!t) break
+      const used = postsIn(t)
       crumbs = [groupCrumb('templates', 'Template')]
-      title = POST_TEMPLATES.find((t) => t.key === key)?.label ?? key
-      facts = [posts(used.length)]
+      title = t.name
+      facts = [TEMPLATE_LABEL[t.renderer], posts(used.length)]
       actions = fixed('template của hệ thống, không xoá được')
-      // A template has no page of its own: it is previewed on a published post written in it, the newest unless one is picked.
-      // By id: the public address book holds published posts only, so a slug worked out here could differ from the site's.
-      if (shown) preview = toPath({ area: 'public', screen: 'article', slug: shown.id })
+      // The template itself, as "Bài mới" opens it: its stored body through the public renderer (owner, 2026-10-16).
+      preview = toPath({ area: 'admin', screen: 'postPreview', slug: `${TEMPLATE_PREVIEW}${t.id}` })
       body = (
-        <Section title="Bài dùng template">
-          <ItemList
-            label="Bài dùng template"
-            empty="chưa có bài"
-            items={used.map((p) => ({
-              id: p.id,
-              name: p.en,
-              meta: [p.id === shown?.id ? 'đang xem' : '', p.status === 'published' ? 'đã đăng' : p.status === 'draft' ? 'nháp' : 'lưu trữ'].filter(Boolean).join(' · '),
-              onOpen: p.status === 'published' ? () => setSample(p.id) : undefined,
-            }))}
-          />
-        </Section>
+        <>
+          <Section title="Mô tả">
+            <p style={{ fontFamily: sans, fontSize: 14, lineHeight: 1.55, color: ink.base, margin: '12px 0' }}>{t.description}</p>
+          </Section>
+          <Section title="Bài dùng template">
+            <ItemList
+              label="Bài dùng template"
+              empty="chưa có bài"
+              items={used.map((p) => ({
+                id: p.id,
+                name: p.en,
+                meta: p.status === 'published' ? 'đã đăng' : p.status === 'draft' ? 'nháp' : 'lưu trữ',
+                onOpen: () => nav.editPost(p.id),
+              }))}
+            />
+          </Section>
+        </>
       )
       break
     }
@@ -1259,8 +1274,8 @@ export function ConfigTree({
         body = (
           <>
             {errorLine}
-            <Section title="Cây chủ đề" note={dragNote(true)}>
-              <ItemList label="Cây chủ đề" items={tocList(topicToc, rows).map((it, i) => ({ ...it, depth: rows[i].parent_id ? 1 : 0 }))} add={{ ...addTopic(null), startOpen: startNew }} />
+            <Section title="Danh mục chủ đề" note={dragNote(true)}>
+              <ItemList label="Danh mục chủ đề" items={tocList(topicToc, rows).map((it, i) => ({ ...it, depth: rows[i].parent_id ? 1 : 0 }))} add={{ ...addTopic(null), startOpen: startNew }} />
             </Section>
           </>
         )
@@ -1283,13 +1298,13 @@ export function ConfigTree({
       } else if (g === 'templates') {
         crumbs = []
         title = 'Template'
-        facts = [`${POST_TEMPLATES.length} template`]
+        facts = [`${templates.length} template`]
         // Listed as port archives lists its page templates: each with how far it is in use, opened for a preview (owner, 2026-10-16).
         body = (
           <Section title="Các template">
             <ItemList
               label="Các template"
-              items={POST_TEMPLATES.map((t) => ({ id: t.key, name: t.label, meta: posts(postsIn(t.key).length), onOpen: () => (setSample(null), setPicked({ kind: 'template', key: t.key })) }))}
+              items={templates.map((t) => ({ id: t.id, name: t.name, meta: `${TEMPLATE_LABEL[t.renderer]} · ${posts(postsIn(t).length)}`, onOpen: pick({ kind: 'template', id: t.id }) }))}
             />
           </Section>
         )
@@ -1347,9 +1362,8 @@ export function ConfigTree({
 
   if (only) {
     // A Nội dung list leads nowhere into a site: drop the site crumb, and name the list as its tab does.
-    const siteNames = Object.values(SITE_LABELS) as string[]
     crumbs = crumbs
-      .filter((c) => !siteNames.includes(c.label))
+      .filter((c) => !siteCrumbs.has(c))
       .map((c) => (only === 'topics' && c.label === 'Mục lục' ? { ...c, label: 'Chuyên mục' } : c))
   }
   const header = <DetailHead crumbs={crumbs} title={title} rename={rename} address={address} facts={facts} actions={actions} />

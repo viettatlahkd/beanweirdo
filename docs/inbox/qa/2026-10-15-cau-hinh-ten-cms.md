@@ -170,12 +170,17 @@
   `label` của `Field`. Trình duyệt: bizops hiện ảnh + 4 lệnh; "đặt vào khung" mở hộp "Ảnh", Esc đóng; "dán link" mở ô; không
   lệnh ghi nào.
 - **[ĐỔI HÀNH VI] Biên tập › Template** (mới, `/ad-templates`; `CmsTab` 'templates', `routeWords.adTemplates`, `AdminShell`
-  `CONTENT_LISTS`, `Cms.tsx`, `RoutesPanel`): danh sách 6 khuôn bài (`POST_TEMPLATES`) kèm số bài dùng (mọi trạng thái trừ thùng
-  rác, `listPosts('all')`). Mở một khuôn: danh sách bài dùng nó (mới sửa trước), xem trước bên phải là bài đã đăng mới nhất;
-  bấm một bài đã đăng khác thì xem trên bài đó ("đang xem"). Xem trước theo id bài (`/p/<id>`) vì sổ địa chỉ công khai chỉ có
-  bài đã đăng, slug tính ở admin có thể khác. Khuôn không xoá được.
-- Trình duyệt (tab riêng): thanh bên Biên tập có Template; Article 2 · Cards 2 · Report 1 · Long-form 13 · Memo 1 · Bitesize note
-  14 bài; Long-form xem trước pt.2, bấm pt.1 → xem pt.1. Chỉ đọc.
+  `CONTENT_LISTS`, `Cms.tsx`, `RoutesPanel`): liệt kê 6 template lưu sẵn mà "Bài mới" đưa ra (`listTemplates`, bảng `templates`:
+  Article · Long-form · Info cards · Field report · Memo · Bitesize note), kèm renderer và số bài theo renderer (mọi trạng thái
+  trừ thùng rác). Mở một template: mô tả, các bài dùng renderer đó (bấm → mở bài trong trình sửa), xem trước bên phải là **chính
+  template** — body lưu sẵn vẽ qua `PostRenderer` như bài mới mở ra (`/ad-post/view=tpl-<id>`, `TEMPLATE_PREVIEW` +
+  `fromTemplate` trong `Preview.tsx`, `getTemplate` mới trong `apiClient.ts`; `App.tsx` vẽ trang này không kèm khung admin).
+  Template không xoá được. Endpoint đọc: `GET /api/templates`, `GET /api/templates?id=`.
+- **[SỬA LỖI]** Ở các tab Biên tập, dòng dẫn đường bỏ mục site theo tên, nên "Template" (trùng tên site port archives ›
+  Template) bị bỏ nhầm; giờ bỏ theo đúng đối tượng `siteCrumb` (`siteCrumbs`).
+- **[ĐỔI HÀNH VI]** Thứ tự Biên tập: Nội dung · Tác giả · Chuyên mục · Tag · Template. "Cây chủ đề" (Chuyên mục) → "Danh mục chủ đề".
+- Trình duyệt (tab riêng, chỉ đọc): 6 template; xem trước Long-form, Memo, Bitesize note, Info cards, Field report, Article đều vẽ
+  được body của template.
 - Thứ tự khối trên trang chủ vẫn theo thứ tự port trên Thanh menu (`featuresFollowingMenu` khi kéo).
 - Trình duyệt (chặn lệnh ghi): Trang chủ chỉ còn Nội dung trang, Thanh menu; "Cập nhật nội dung" ở bizops mở Hiện ở trang chủ ·
   Nhãn "beæn bizops" · Ảnh; sửa nhãn → một `PATCH /api/site` `portfolio.home.features`; "Xem dàn trang" ở beæn weirdo → port
