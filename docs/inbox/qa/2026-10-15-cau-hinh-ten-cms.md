@@ -137,6 +137,8 @@
   "Đầu trang · …"/"Chân trang · …"); link trên thanh đầu trang tách thành mục "Link trang con" (ⓘ: thứ tự ở Trang chủ › Thanh
   menu). `PortPart`: `header` = chữ đầu + chân trang, `links` = các link; bỏ `footer`. Dữ liệu ghi vẫn là `portfolio.header` /
   `portfolio.footer` như cũ.
+- **[ĐỔI HÀNH VI]** Bấm vào thân dòng ở Thanh menu giờ mở/đóng "Cập nhật nội dung" của dòng đó (port đang hiện ở trang chủ,
+  about); port đang tắt "Hiện ở trang chủ" và journal thì bấm không làm gì. Không dòng nào còn mở trang khác khi bấm.
 - Thứ tự khối trên trang chủ vẫn theo thứ tự port trên Thanh menu (`featuresFollowingMenu` khi kéo).
 - Trình duyệt (chặn lệnh ghi): Trang chủ chỉ còn Nội dung trang, Thanh menu; "Cập nhật nội dung" ở bizops mở Hiện ở trang chủ ·
   Nhãn "beæn bizops" · Ảnh; sửa nhãn → một `PATCH /api/site` `portfolio.home.features`; "Xem dàn trang" ở beæn weirdo → port
