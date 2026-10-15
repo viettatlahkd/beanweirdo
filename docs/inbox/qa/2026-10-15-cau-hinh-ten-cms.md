@@ -133,6 +133,10 @@
   mờ 60%, phủ nửa dưới dòng (từ 50%). Đã thử: hồng đặc từ 40% (chủ site: nhức mắt), giấy `#fefdfb` mờ 72% gần kín dòng (chủ site:
   không chấp nhận được).
   `PortAbout` tách từng dòng: phần thụt đầu dòng để trống, chỉ chữ được bôi.
+- **[ĐỔI HÀNH VI]** Thông tin chung: "Đầu trang" + "Chân trang" gộp thành một mục "Đầu trang và chân trang" (4 ô, nhãn ghi rõ
+  "Đầu trang · …"/"Chân trang · …"); link trên thanh đầu trang tách thành mục "Link trang con" (ⓘ: thứ tự ở Trang chủ › Thanh
+  menu). `PortPart`: `header` = chữ đầu + chân trang, `links` = các link; bỏ `footer`. Dữ liệu ghi vẫn là `portfolio.header` /
+  `portfolio.footer` như cũ.
 - Thứ tự khối trên trang chủ vẫn theo thứ tự port trên Thanh menu (`featuresFollowingMenu` khi kéo).
 - Trình duyệt (chặn lệnh ghi): Trang chủ chỉ còn Nội dung trang, Thanh menu; "Cập nhật nội dung" ở bizops mở Hiện ở trang chủ ·
   Nhãn "beæn bizops" · Ảnh; sửa nhãn → một `PATCH /api/site` `portfolio.home.features`; "Xem dàn trang" ở beæn weirdo → port

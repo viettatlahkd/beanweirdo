@@ -1145,11 +1145,11 @@ export function ConfigTree({
         previewKey = portRound
         body = port.loaded ? (
           <>
-            <Section title="Đầu trang">
+            <Section title="Đầu trang và chân trang">
               <ContentTab key="header" only="header" content={port.content} setStored={port.setContentStored} pages={port.pages} />
             </Section>
-            <Section title="Chân trang">
-              <ContentTab key="footer" only="footer" content={port.content} setStored={port.setContentStored} pages={port.pages} />
+            <Section title="Link trang con" tip="Đổi nhãn và bật tắt từng link trên thanh đầu trang. Thứ tự sắp xếp ở Trang chủ › Thanh menu.">
+              <ContentTab key="links" only="links" content={port.content} setStored={port.setContentStored} pages={port.pages} />
             </Section>
             {/* About's words moved to its Thanh menu row; what stays is the signatures it can sign with (owner, 2026-10-15). */}
             <Section title="Quản lý chữ kí">
