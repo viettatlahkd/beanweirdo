@@ -470,7 +470,22 @@ export function PortAbout({ design, chrome, posts }: { design: Design; chrome: C
               ))}
             </div>
             {/* No signature line under the words: the owner dropped it (2026-10-15); the chosen signature still gives the contacts. */}
-            {about.text && <p>{about.text}</p>}
+            {/* Marked like the home page's links, always on, so the words hold up over a busy photo (owner, 2026-10-15). */}
+            {about.text && (
+              <p>
+                {/* Line by line, so an indent stays blank paper instead of a marked gap. */}
+                {about.text.split('\n').map((line, i) => {
+                  const [, indent, words] = /^(\s*)(.*?)\s*$/.exec(line) ?? ['', '', line]
+                  return (
+                    <Fragment key={i}>
+                      {i > 0 && '\n'}
+                      {indent}
+                      {words && <span>{words}</span>}
+                    </Fragment>
+                  )
+                })}
+              </p>
+            )}
           </div>
         </div>
       </div>
