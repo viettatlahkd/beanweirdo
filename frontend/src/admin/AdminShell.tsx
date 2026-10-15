@@ -81,6 +81,8 @@ const CONTENT_LISTS = [
   { tab: 'posts', label: 'Nội dung' },
   { tab: 'topics', label: 'Chuyên mục' },
   { tab: 'tags', label: 'Tag' },
+  // The post templates, listed as port archives lists its page templates (owner, 2026-10-16).
+  { tab: 'templates', label: 'Template' },
 ] as const
 
 /**
@@ -121,7 +123,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
         ? 'Nội dung › Xem trước'
         : tab === 'posts'
           ? 'Nội dung'
-          : tab === 'authors' || tab === 'topics' || tab === 'tags'
+          : tab === 'authors' || tab === 'topics' || tab === 'tags' || tab === 'templates'
             ? CONTENT_LISTS.find((l) => l.tab === tab)?.label
             : tab === 'display'
               ? 'Cài đặt hiển thị'

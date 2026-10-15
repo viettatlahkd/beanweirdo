@@ -8,6 +8,7 @@ import {
   listKeywords,
   listTags,
   listNodes,
+  listPosts,
   colorKeyword,
   renameKeyword,
   reorderNodes,
@@ -16,7 +17,9 @@ import {
   type Module,
   type Node,
   type NodeStatus,
+  type PostSummary,
 } from '../lib/apiClient'
+import { POST_TEMPLATES, type PostTemplate } from '../../content/templates'
 import { ancestorsOf, buildTree, flattenTree } from '../../lib/contentTree'
 import { planMove, type DropWhere } from '../../lib/treeMove'
 import { bySiteOrder } from '../../lib/moduleOrder'
@@ -104,7 +107,7 @@ let sentNew = false
  * under its home.
  */
 
-type Group = 'root-toc' | 'biz-pages' | 'bean-pages' | 'frame' | 'topics' | 'tags' | 'authors' | 'modules'
+type Group = 'root-toc' | 'biz-pages' | 'bean-pages' | 'frame' | 'topics' | 'tags' | 'authors' | 'modules' | 'templates'
 
 type SiteId = ConfigSite
 
@@ -117,6 +120,7 @@ type Picked =
   | { kind: 'tag'; id: string }
   | { kind: 'module'; id: string }
   | { kind: 'practice' }
+  | { kind: 'template'; key: PostTemplate }
 
 const same = (a: Picked, b: Picked) => JSON.stringify(a) === JSON.stringify(b)
 
@@ -205,7 +209,7 @@ export function ConfigTree({
    * and what opens from it, with no site tree in the sidebar and no crumb back
    * into a site — they belong to every site's posts, not to one site's pages.
    */
-  only?: 'authors' | 'topics' | 'tags'
+  only?: 'authors' | 'topics' | 'tags' | 'templates'
   modules: Module[]
   /** The fixed copy of a page the site draws with a screen of its own. */
   renderCopy: (key: SystemPage) => ReactNode
@@ -215,6 +219,14 @@ export function ConfigTree({
   renderPractice: () => ReactNode
 }) {
   const { data: pages, postsOf, reload: reloadPages } = useModules()
+  // Biên tập › Template counts every post a template is used by, drafts too, as Nội dung's rail does.
+  const [allPosts, setAllPosts] = useState<PostSummary[]>([])
+  const [sample, setSample] = useState<string | null>(null)
+  useEffect(() => {
+    if (only === 'templates') void listPosts('all').then(setAllPosts, () => setAllPosts([]))
+  }, [only])
+  const postsIn = (key: PostTemplate) =>
+    allPosts.filter((p) => p.template === key && p.status !== 'deleted').sort((a, b) => b.updated_at.localeCompare(a.updated_at))
   const port = usePortAdmin()
   const bizHome = port.pages.find((p) => p.home_of === 'biz')
   const beanHome = port.pages.find((p) => p.home_of === 'bean')
@@ -1136,6 +1148,33 @@ export function ConfigTree({
       )
       break
     }
+    case 'template': {
+      const key = picked.key
+      const used = postsIn(key)
+      const shown = used.find((p) => p.id === sample && p.status === 'published') ?? used.find((p) => p.status === 'published')
+      crumbs = [groupCrumb('templates', 'Template')]
+      title = POST_TEMPLATES.find((t) => t.key === key)?.label ?? key
+      facts = [posts(used.length)]
+      actions = fixed('template của hệ thống, không xoá được')
+      // A template has no page of its own: it is previewed on a published post written in it, the newest unless one is picked.
+      // By id: the public address book holds published posts only, so a slug worked out here could differ from the site's.
+      if (shown) preview = toPath({ area: 'public', screen: 'article', slug: shown.id })
+      body = (
+        <Section title="Bài dùng template">
+          <ItemList
+            label="Bài dùng template"
+            empty="chưa có bài"
+            items={used.map((p) => ({
+              id: p.id,
+              name: p.en,
+              meta: [p.id === shown?.id ? 'đang xem' : '', p.status === 'published' ? 'đã đăng' : p.status === 'draft' ? 'nháp' : 'lưu trữ'].filter(Boolean).join(' · '),
+              onOpen: p.status === 'published' ? () => setSample(p.id) : undefined,
+            }))}
+          />
+        </Section>
+      )
+      break
+    }
     case 'module': {
       crumbs = [siteCrumb('blog'), groupCrumb('modules', 'Dàn trang')]
       title = modules.find((m) => m.id === picked.id)?.title ?? picked.id
@@ -1240,6 +1279,19 @@ export function ConfigTree({
             </Section>
             <Section title="Nội dung tĩnh">{renderCopy('index')}</Section>
           </>
+        )
+      } else if (g === 'templates') {
+        crumbs = []
+        title = 'Template'
+        facts = [`${POST_TEMPLATES.length} template`]
+        // Listed as port archives lists its page templates: each with how far it is in use, opened for a preview (owner, 2026-10-16).
+        body = (
+          <Section title="Các template">
+            <ItemList
+              label="Các template"
+              items={POST_TEMPLATES.map((t) => ({ id: t.key, name: t.label, meta: posts(postsIn(t.key).length), onOpen: () => (setSample(null), setPicked({ kind: 'template', key: t.key })) }))}
+            />
+          </Section>
         )
       } else if (g === 'tags') {
         crumbs = [siteCrumb('root')]
