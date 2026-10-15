@@ -1,12 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { uploadImage } from '../lib/apiClient'
 import { Button, IconButton } from '../../design/Button'
-import { IconClose, IconPlus, IconUpload } from '../../design/icons'
+import { IconClose, IconPlus } from '../../design/icons'
 import { radius } from '../../design/controls'
 import { ink, paper, sans, serif } from '../../design/tokens'
 import { Menu, type DetailAction } from './Detail'
-import { Avatar } from './AuthorsPanel'
-import { useFraming } from './framing'
+import { Avatar, AvatarPicker } from './AuthorsPanel'
 import { aboutSign, type PortContent, type Signature } from '../../portfolio/content'
 
 type About = PortContent['about']
@@ -90,8 +88,6 @@ function SignDialog({ sign, onClose, onSave }: { sign: Signature | 'new'; onClos
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const panel = useRef<HTMLDivElement>(null)
-  const file = useRef<HTMLInputElement>(null)
-  const frame = useFraming()
 
   useEffect(() => {
     const escape = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
@@ -100,20 +96,6 @@ function SignDialog({ sign, onClose, onSave }: { sign: Signature | 'new'; onClos
     return () => document.removeEventListener('keydown', escape)
   }, [onClose])
 
-  const upload = async (f: File) => {
-    setUploading(true)
-    try {
-      const { url } = await uploadImage(f)
-      // Drawn in a circle like an author's face, so it is framed square.
-      setForm((x) => ({ ...x, image: url }))
-      const framed = await frame({ url, name: 'Ảnh chữ kí', ratio: 1 })
-      setForm((x) => ({ ...x, image: framed }))
-    } catch (e) {
-      setError((e as Error).message)
-    } finally {
-      setUploading(false)
-    }
-  }
   const setLink = (i: number, patch: Partial<Signature['reach'][number]>) => setForm((x) => ({ ...x, reach: x.reach.map((l, j) => (j === i ? { ...l, ...patch } : l)) }))
   const label = { display: 'block', fontFamily: sans, fontSize: 13, color: ink.soft, marginBottom: 6 }
 
@@ -142,28 +124,7 @@ function SignDialog({ sign, onClose, onSave }: { sign: Signature | 'new'; onClos
           }}
           style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <Avatar author={{ name: form.name || '?', avatar_url: form.image || null }} size={56} />
-            <input
-              ref={file}
-              type="file"
-              accept="image/*"
-              hidden
-              onChange={(e) => {
-                const f = e.target.files?.[0]
-                if (f) void upload(f)
-                e.target.value = ''
-              }}
-            />
-            <Button size="sm" icon={<IconUpload size={14} />} disabled={uploading} onClick={() => file.current?.click()}>
-              {uploading ? 'Đang tải…' : 'Tải ảnh'}
-            </Button>
-            {form.image && (
-              <Button size="sm" onClick={() => setForm((x) => ({ ...x, image: '' }))}>
-                Bỏ ảnh
-              </Button>
-            )}
-          </div>
+          <AvatarPicker name={form.name} url={form.image || null} frameName="Ảnh chữ kí" onChange={(u) => setForm((x) => ({ ...x, image: u ?? '' }))} onError={setError} onBusy={setUploading} />
           <div>
             <label htmlFor="sign-name" style={label}>
               Tên chữ kí
