@@ -21,7 +21,7 @@ const chipBase: CSSProperties = {
  * told apart before they're read, and colour alone can't do that when either
  * system may hold any hue — the shape has to carry it.
  */
-export function ProjectChip({ name, color, onClick }: { name: string; color: string; onClick?: () => void }) {
+function ProjectChip({ name, color, onClick }: { name: string; color: string; onClick?: () => void }) {
   return (
     <div
       onClick={onClick}
@@ -33,7 +33,7 @@ export function ProjectChip({ name, color, onClick }: { name: string; color: str
   )
 }
 
-export function TaskChip({ name, color, onClick }: { name: string; color: string; onClick?: () => void }) {
+function TaskChip({ name, color, onClick }: { name: string; color: string; onClick?: () => void }) {
   return (
     <div
       onClick={onClick}
@@ -118,13 +118,13 @@ function InlinePicker({
 }
 
 /** `HH:MM` → minutes since midnight. */
-export const atToMin = (at: string): number => {
+const atToMin = (at: string): number => {
   const [h, m] = at.split(':')
   return Number(h) * 60 + (Number(m) || 0)
 }
 
 /** Minutes since midnight → `HH:MM`, wrapping past midnight. */
-export const minToAt = (mins: number): string => {
+const minToAt = (mins: number): string => {
   const wrapped = ((mins % 1440) + 1440) % 1440
   return (
     String(Math.floor(wrapped / 60)).padStart(2, '0') + ':' + String(wrapped % 60).padStart(2, '0')
@@ -140,15 +140,15 @@ export const minToAt = (mins: number): string => {
  * length gives way. That is the only reading that doesn't silently move an
  * activity to a different time of day while you were changing how long it took.
  */
-export const endOf = (log: Pick<LogEntry, 'at' | 'mins'>): string => minToAt(atToMin(log.at) + log.mins)
+const endOf = (log: Pick<LogEntry, 'at' | 'mins'>): string => minToAt(atToMin(log.at) + log.mins)
 
 /** `95` → `{ h: 1, m: 35 }`. */
-export const splitHm = (mins: number) => ({ h: Math.floor(mins / 60), m: mins % 60 })
+const splitHm = (mins: number) => ({ h: Math.floor(mins / 60), m: mins % 60 })
 
 /** The three numbers on a row. Only two are stored; the third is worked out. */
-export type TimeField = 'at' | 'end' | 'mins'
+type TimeField = 'at' | 'end' | 'mins'
 
-export const TIME_ORDER: TimeField[] = ['at', 'end', 'mins']
+const TIME_ORDER: TimeField[] = ['at', 'end', 'mins']
 
 /**
  * Start, end and length, given which two the owner touched last.
@@ -175,7 +175,7 @@ export const TIME_ORDER: TimeField[] = ['at', 'end', 'mins']
  * an end before its start. Midnight is the only way that happens honestly, and
  * an activity crossing midnight belongs to two days rather than one.
  */
-export function resolveTimes(
+function resolveTimes(
   next: { at: string; end: string; mins: number },
   recent: TimeField[],
 ): { at: string; mins: number } | null {
@@ -202,7 +202,7 @@ export function resolveTimes(
 }
 
 /** Remember a field as the most recent edit, keeping only the last two. */
-export const rememberEdit = (recent: TimeField[], field: TimeField): TimeField[] =>
+const rememberEdit = (recent: TimeField[], field: TimeField): TimeField[] =>
   [field, ...recent.filter((f) => f !== field)].slice(0, 2)
 
 const clockField: CSSProperties = {
@@ -389,7 +389,7 @@ function DurationField({
   )
 }
 
-export type ActivityRowProps = {
+type ActivityRowProps = {
   log: LogEntry
   /** Within the editable window — older days are a closed record. */
   editable: boolean

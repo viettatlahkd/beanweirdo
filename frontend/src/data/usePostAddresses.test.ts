@@ -36,20 +36,17 @@ describe('addressBook — bài trong thùng rác', () => {
   })
 })
 
-describe('addressBook — địa chỉ cố định (migration 0027)', () => {
-  it('still reaches a post at an address it used to have, and says it forwards', () => {
-    const fixed = [{ ...rows[1], slug: 'lipid-tong-quan' }]
-    const book = addressBook(fixed, [{ slug: 'biochemistry-p260817', post_id: rows[1].id }])
-    expect(book.slugOf(rows[1].id)).toBe('lipid-tong-quan')
-    expect(book.idOf('biochemistry-p260817')).toBe(rows[1].id)
-    expect(book.forwards('biochemistry-p260817')).toBe(true)
-    expect(book.forwards('lipid-tong-quan')).toBe(false)
-  })
-
-  it('fixes a draft at its published address, stepping around one still forwarding', () => {
-    const book = addressBook(rows, [{ slug: 'ghi-p260824', post_id: 'someone-else' }])
-    expect(book.slugToPublish(rows[0].id)).toBe('ghi-p260824-b')
-    // A post that already has an address keeps it.
-    expect(addressBook([{ ...rows[1], slug: 'x' }]).slugToPublish(rows[1].id)).toBeUndefined()
+describe('addressBook — địa chỉ theo tên bài', () => {
+  it('names a post by its title, a hand-typed address winning and reserving its name', () => {
+    const book = addressBook([
+      { ...rows[1], en: 'Cà phê Đặc!' },
+      { ...rows[1], id: 'typed', created_at: '2026-08-30T09:00:00Z', slug: 'duong-sua' },
+      { ...rows[1], id: 'newer', created_at: '2026-09-01T09:00:00Z', en: 'Đường & sữa' },
+      { ...rows[0], en: 'Cà phê đặc' },
+    ])
+    expect(book.slugOf(rows[1].id)).toBe('ca-phe-dac')
+    expect(book.slugOf('newer')).toBe('duong-sua-b')
+    expect(book.slugOf(rows[0].id)).toBe('ca-phe-dac.draft')
+    expect(book.idOf('ca-phe-dac')).toBe(rows[1].id)
   })
 })

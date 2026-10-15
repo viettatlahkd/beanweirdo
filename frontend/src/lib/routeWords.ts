@@ -20,16 +20,29 @@ export type RouteWords = {
   index: string
   notes: string
   practice: string
-  /** Public port page: `/portfolio/<slug>`. */
-  portfolio: string
+  /**
+   * The bean site's prefix: `/bean` is bean's home (the port page flagged
+   * `home_of` bean), `/bean/<slug>` its pages. The blog lived under it until
+   * 2026-10-15 (`/bean/details`, `/bean/post/…`); those still read.
+   */
+  bean: string
+  /** The blog's old front page, `/bean/details`, still read; and the label of bean home's button to the blog. */
+  details: string
   /** Bảy trang con của khu quản trị — phần đứng sau `ad-`. */
   adPost: string
+  adConfig: string
+  /** Cấu hình: mọi trang và cài đặt của site, cây bên trái, chi tiết bên phải — `/ad-cau-hinh`. */
+  adTree: string
+  adAuthors: string
+  /**
+   * Hai trang con đã gộp lại thành `adConfig`. Chúng không còn được sinh ra,
+   * nhưng vẫn đọc được: link cũ phải mở ra đúng chỗ.
+   */
   adSitemap: string
   adPageContent: string
   /** Content management · Phân loại và Cài đặt hiển thị. */
   adTaxonomy: string
   adDisplay: string
-  adConvention: string
   adArchive: string
   /** Portfolio's two tabs: `/ad-portfolio`, `/ad-portfolio-design`. */
   adPortfolio: string
@@ -56,13 +69,16 @@ export const DEFAULT_WORDS: RouteWords = {
   index: 'muc-luc',
   notes: 'ghi',
   practice: 'practice',
-  portfolio: 'portfolio',
+  bean: 'bean',
+  details: 'details',
   adPost: 'post',
+  adConfig: 'config',
+  adTree: 'cau-hinh',
+  adAuthors: 'authors',
   adSitemap: 'sitemap',
   adPageContent: 'page-content',
   adTaxonomy: 'taxonomy',
   adDisplay: 'display',
-  adConvention: 'convention',
   adArchive: 'archive',
   adPortfolio: 'portfolio',
   adPortContent: 'portfolio-content',
@@ -87,13 +103,16 @@ export const WORD_LABELS: Record<Exclude<keyof RouteWords, 'dateOrder' | 'module
   index: 'Mục lục',
   notes: 'Ghi 01',
   practice: 'Nhật ký',
-  portfolio: 'Portfolio',
+  bean: 'Khu bean',
+  details: 'Nút sang blog ở trang chủ bean',
   adPost: 'Nội dung',
-  adSitemap: 'Quản lý trang',
+  adConfig: 'Cấu hình (địa chỉ cũ)',
+  adTree: 'Cấu hình',
+  adAuthors: 'Tác giả',
+  adSitemap: 'Sitemap (địa chỉ cũ)',
   adPageContent: 'Quản lý trang (địa chỉ cũ)',
   adTaxonomy: 'Phân loại',
   adDisplay: 'Cài đặt hiển thị',
-  adConvention: 'System conventions',
   adArchive: 'Archive',
   adPortfolio: 'Portfolio · Quản lý port',
   adPortContent: 'Portfolio · Nội dung trang',
@@ -124,15 +143,17 @@ const SHAPE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
  * chúng trong địa chỉ quyết định, không phải do sở thích.
  */
 const MUST_DIFFER: (keyof RouteWords)[][] = [
-  // Đoạn đầu địa chỉ: mọi trang công khai và khu quản trị nằm cùng một chỗ.
-  ['admin', 'post', 'module', 'tag', 'index', 'notes', 'practice', 'portfolio'],
+  // Đoạn đầu địa chỉ: khu bean, nhật ký và khu quản trị nằm cùng một chỗ.
+  ['admin', 'practice', 'bean'],
+  // Các trang của blog đứng cùng một chỗ, ngay sau `/personal-blog/`.
+  ['post', 'module', 'tag', 'index', 'notes', 'details'],
   // Bảy trang con đứng cùng một chỗ, ngay sau `ad-`.
-  ['adPost', 'adSitemap', 'adPageContent', 'adTaxonomy', 'adDisplay', 'adConvention', 'adArchive', 'adPortfolio', 'adPortContent', 'adPortDesign'],
+  ['adPost', 'adConfig', 'adTree', 'adAuthors', 'adSitemap', 'adPageContent', 'adTaxonomy', 'adDisplay', 'adArchive', 'adPortfolio', 'adPortContent', 'adPortDesign'],
   // Ba động từ đứng cùng một chỗ, ngay sau `/ad-post/`.
   ['create', 'edit', 'view'],
 ]
 
-export type WordErrors = Partial<Record<keyof RouteWords, string>>
+type WordErrors = Partial<Record<keyof RouteWords, string>>
 
 /** Chỗ nào sai, và sai vì gì. Rỗng nghĩa là lưu được. */
 export function checkWords(words: RouteWords): WordErrors {
@@ -204,7 +225,7 @@ export function resolveWords(stored: StoredRoutes | null | undefined): RouteWord
 /*
  * Bộ từ đang dùng.
  *
- * Địa chỉ phải đọc được **trước** khi React chạy — `areaFromPath` chọn cổng vào
+ * Địa chỉ phải đọc được **trước** khi React chạy — app chọn cổng vào theo địa chỉ
  * ngay lúc dựng app — mà bộ từ thì nằm dưới cơ sở dữ liệu, về sau một nhịp
  * mạng. Nên bản vừa dùng được cất trong `localStorage`: người đã ghé một lần
  * đọc đúng địa chỉ ngay từ nhịp đầu, và khi bản thật về mà khác thì địa chỉ

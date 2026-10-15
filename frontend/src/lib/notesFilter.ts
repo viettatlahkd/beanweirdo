@@ -10,19 +10,19 @@ import { noteColor, noteBlock } from '../content/notes'
  * ghi chép dưới Ghi 01 chính là một bài đăng dưới Ghi 01. Nên thanh này chỉ còn
  * đếm và lọc bài.
  */
-export type NoteFilter = 'tất cả' | string
+type NoteFilter = 'tất cả' | string
 
 /**
  * Bài đăng đủ để xếp vào một tag: các tag theme nó mang (`post_keywords`).
  * Trước đây là dạng bài (`posts.kind`); dạng bài đã bỏ, thanh lọc đọc tag.
  */
-export type TaggedPost = { tags?: readonly string[] }
+type TaggedPost = { tags?: readonly string[] }
 
 /**
  * `f` is the tag id — what `post_keywords` stores and what the filter compares.
  * `label` is what the chip shows; ids are slugs and read badly on the page.
  */
-export type FilterChip = { f: NoteFilter; label: string; on: boolean; n: number; color: string; wash: string }
+type FilterChip = { f: NoteFilter; label: string; on: boolean; n: number; color: string; wash: string }
 
 /**
  * Màu của một tag.

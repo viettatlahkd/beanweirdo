@@ -10,9 +10,7 @@ import type { getSupabase } from './supabase.js'
  *   GET    ?vocab=layout                        pages, overrides, rules in one go
  *   POST   ?vocab=rules                         a new rule (defaults filled by the DB)
  *   PATCH  ?vocab=rules&id=…                    change a rule
- *   POST   ?vocab=pages                         a new curated page with its own rule
  *   PATCH  ?vocab=pages&id=…                    title, presentation, copy, blocks, aliases, visibility
- *   DELETE ?vocab=pages&id=…                    a curated page and its rules
  *   PUT    ?vocab=overrides                     upsert one node's override
  *   DELETE ?vocab=overrides&type=…&node=…       drop it (and the rule it owned)
  */
@@ -24,7 +22,6 @@ const RULE_FIELDS = [
   'group_by', 'sort', 'new_first', 'manual_order', 'pinned', 'limit_n', 'display',
 ] as const
 const PAGE_FIELDS = ['title', 'presentation', 'copy', 'blocks', 'aliases', 'visibility'] as const
-const SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/
 
 function pick(body: unknown, fields: readonly string[]): Record<string, unknown> {
   const b = (body ?? {}) as Record<string, unknown>
@@ -78,28 +75,6 @@ export async function handleLayout(req: VercelRequest, res: VercelResponse, supa
   }
 
   if (vocab === 'pages') {
-    if (req.method === 'POST') {
-      const body = (req.body ?? {}) as { id?: unknown; title?: unknown }
-      const pageId = typeof body.id === 'string' ? body.id : ''
-      if (!SLUG.test(pageId)) {
-        res.status(400).json({ error: 'id must be lowercase letters and digits joined by hyphens' })
-        return
-      }
-      // A curated page starts with one block: everything, newest first.
-      const { data: rule, error: ruleError } = await supabase.from('listing_rules').insert({ tier: 'all', sort: 'newest' }).select('id').single()
-      if (ruleError) return fail(res, ruleError)
-      const { data, error } = await supabase
-        .from('pages')
-        .insert({ id: pageId, kind: 'curated', title: typeof body.title === 'string' ? body.title : pageId, blocks: [(rule as { id: string }).id] })
-        .select('*')
-        .single()
-      if (error) {
-        await supabase.from('listing_rules').delete().eq('id', (rule as { id: string }).id)
-        return fail(res, error)
-      }
-      res.status(201).json({ page: data, rule })
-      return
-    }
     if (req.method === 'PATCH' && id) {
       const patch = pick(req.body, PAGE_FIELDS)
       if (Object.keys(patch).length === 0) {
@@ -113,25 +88,6 @@ export async function handleLayout(req: VercelRequest, res: VercelResponse, supa
         return
       }
       res.status(200).json({ page: data })
-      return
-    }
-    if (req.method === 'DELETE' && id) {
-      const { data: page } = await supabase.from('pages').select('kind, blocks').eq('id', id).maybeSingle()
-      if (!page) {
-        res.status(404).json({ error: `Page '${id}' not found` })
-        return
-      }
-      // Templates and the navigation hold up every tier page; only a page
-      // someone made by hand can go.
-      if ((page as { kind: string }).kind !== 'curated') {
-        res.status(400).json({ error: 'only curated pages can be deleted' })
-        return
-      }
-      const { error } = await supabase.from('pages').delete().eq('id', id)
-      if (error) return fail(res, error)
-      const blocks = (page as { blocks: string[] }).blocks
-      if (blocks.length > 0) await supabase.from('listing_rules').delete().in('id', blocks)
-      res.status(200).json({ deleted: id })
       return
     }
   }

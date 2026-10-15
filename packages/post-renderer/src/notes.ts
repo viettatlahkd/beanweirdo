@@ -45,8 +45,6 @@ export type PostNotes = {
   fieldNotes: FieldNote[]
 }
 
-export const EMPTY_NOTES: PostNotes = { explorations: [], fieldNotes: [] }
-
 /** Written-in entries only — a bullet holding nothing but spaces is not content. */
 const written = <T extends { text: string }>(items: T[]): T[] =>
   items.filter((i) => i.text.trim().length > 0)
@@ -55,7 +53,7 @@ export function liveExplorations(notes: PostNotes | undefined): Exploration[] {
   return written(notes?.explorations ?? [])
 }
 
-export function liveFieldNotes(notes: PostNotes | undefined): FieldNote[] {
+function liveFieldNotes(notes: PostNotes | undefined): FieldNote[] {
   return written(notes?.fieldNotes ?? [])
 }
 
@@ -63,12 +61,6 @@ export function liveFieldNotes(notes: PostNotes | undefined): FieldNote[] {
 export function notesOn(notes: PostNotes | undefined, blockId: string | undefined): FieldNote[] {
   if (!blockId) return []
   return liveFieldNotes(notes).filter((n) => n.anchor === blockId)
-}
-
-/** Notes whose block is gone — the editor asks the writer where to put these. */
-export function orphanNotes(notes: PostNotes | undefined, blockIds: string[]): FieldNote[] {
-  const alive = new Set(blockIds)
-  return liveFieldNotes(notes).filter((n) => !alive.has(n.anchor))
 }
 
 /** True when anything at all is written — decides whether the column draws. */

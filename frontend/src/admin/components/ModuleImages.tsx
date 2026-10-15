@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties, type RefObject } from 
 import { ImageBand } from '../../screens/Landing'
 import { ModulePlates, PLATE_HEIGHT, PLATE_WIDTH, plateRatio } from '../../screens/ModuleScreen'
 import { ink, layout, paper, sans } from '../../design/tokens'
-import { Hover } from '../../lib/Hover'
+import { Button } from '../../design/Button'
 import { useSlotSwap } from '../lib/useSlotSwap'
 import { captionColumn, imageColumn, type ImageGroup, type ModuleImageFields, type PreviewKind } from '../moduleForm'
 import { coverStyle } from '../../lib/imageFocus'
@@ -68,13 +68,6 @@ const rowBox: CSSProperties = {
   gridTemplateColumns: '72px minmax(0,1fr)',
   gap: 12,
   alignItems: 'center',
-}
-
-const action: CSSProperties = {
-  fontFamily: sans,
-  fontSize: 10.5,
-  color: ink.green,
-  cursor: 'pointer',
 }
 
 /** Renders the real public layout at page scale, then shrinks it to fit. */
@@ -359,8 +352,9 @@ export function ModuleImages({
                       outline: 'none',
                     }}
                   />
-                  <div style={{ display: 'flex', gap: 12, marginTop: 6 }}>
-                    <Hover as="label" style={action} hoverStyle={{ color: ink.base }}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
+                    {/* A label, not a `Button`: only a label opens the hidden file input, so it wears the button's classes. */}
+                    <label className="ab ab-secondary ab-sm">
                       {url ? 'đổi ảnh' : 'tải ảnh lên'}
                       <input
                         type="file"
@@ -377,15 +371,13 @@ export function ModuleImages({
                         }}
                         style={{ display: 'none' }}
                       />
-                    </Hover>
-                    <Hover
-                      as="button"
+                    </label>
+                    <Button
                       onClick={() => setLinking(linking === slot ? null : slot)}
-                      style={{ ...action, background: 'none', border: 'none', padding: 0 }}
-                      hoverStyle={{ color: ink.base }}
+                      size="sm"
                     >
                       dán link
-                    </Hover>
+                    </Button>
                     {shown && (
                       /*
                        * Đặt được khung cả với ảnh đang mượn từ trang chủ — và
@@ -393,14 +385,12 @@ export function ModuleImages({
                        * hình dạng khác, nên ảnh mượn thường cắt lệch. Đặt xong
                        * thì ảnh thành của riêng ô này, mang theo điểm căn.
                        */
-                      <Hover
-                        as="button"
+                      <Button
                         onClick={() => setPlacing({ slot, url: shown })}
-                        style={{ ...action, background: 'none', border: 'none', padding: 0 }}
-                        hoverStyle={{ color: ink.base }}
+                        size="sm"
                       >
                         đặt vào khung
-                      </Hover>
+                      </Button>
                     )}
                     {(url || borrowed) && (
                       /*
@@ -413,14 +403,13 @@ export function ModuleImages({
                        * rỗng: "ô này cố ý để trống", khác với "chưa đặt gì".
                        * Ảnh trang chủ không bị đụng tới.
                        */
-                      <Hover
-                        as="button"
+                      <Button
                         onClick={() => (borrowed ? onPlace(slot, '') : onClear(slot))}
-                        style={{ ...action, background: 'none', border: 'none', padding: 0 }}
-                        hoverStyle={{ color: '#C25C7C' }}
+                        size="sm"
+                        level="danger"
                       >
                         {borrowed ? 'bỏ mượn' : 'xoá'}
-                      </Hover>
+                      </Button>
                     )}
                   </div>
 

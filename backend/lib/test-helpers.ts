@@ -13,7 +13,7 @@ import { vi } from 'vitest'
  */
 export function queryBuilder(result: { data?: unknown; error?: unknown; count?: number | null }) {
   const builder: any = {}
-  for (const method of ['select', 'eq', 'in', 'gte', 'order', 'insert', 'upsert', 'update', 'delete', 'limit', 'maybeSingle', 'single']) {
+  for (const method of ['select', 'eq', 'is', 'in', 'gte', 'order', 'insert', 'upsert', 'update', 'delete', 'limit', 'maybeSingle', 'single']) {
     builder[method] = vi.fn(() => builder)
   }
   builder.then = (resolve: (v: unknown) => unknown, reject?: (e: unknown) => unknown) =>

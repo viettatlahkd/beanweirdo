@@ -8,6 +8,8 @@
  */
 
 import { newest } from '../lib/listingRule'
+import type { Tag } from '../lib/tagColor'
+import type { PostSite } from 'api-contract'
 
 export type Source =
   | { mode: 'latest'; limit: number }
@@ -15,6 +17,8 @@ export type Source =
   | { mode: 'tag'; tag: string; limit: number }
   | { mode: 'pinned'; limit: number }
   | { mode: 'pick'; ids: string[] }
+  /** Posts ticked "Hiện ở" this site in Thông tin bài — the one store, filtered per home. */
+  | { mode: 'site'; site: PostSite; limit: number }
 
 export type SourceMode = Source['mode']
 
@@ -66,7 +70,14 @@ export type PortPost = {
    * 0028) — so a block that takes "a module" takes what that page shows.
    */
   pages?: string[]
+  /** Its tags, shown as #badges on its card and its summary. */
+  tags?: Tag[]
+  /** The homes it is ticked for; missing on rows older than migration 0038, which mean the blog. */
+  shown_on?: PostSite[] | null
 }
+
+/** The sites a post is ticked for; posts from before the ticks existed belong to the blog. */
+export const shownOn = (p: { shown_on?: PostSite[] | null }): PostSite[] => p.shown_on ?? ['blog']
 
 // The same "newest" every site page uses: the date on the post, then publish time.
 const newestFirst = newest
@@ -87,13 +98,15 @@ export function resolvePosts(source: Source, posts: PortPost[]): PortPost[] {
       return posts.filter((p) => p.kind === source.tag).sort(newestFirst).slice(0, source.limit)
     case 'pinned':
       return posts.filter((p) => p.pinned).sort(newestFirst).slice(0, source.limit)
+    case 'site':
+      return posts.filter((p) => shownOn(p).includes(source.site)).sort(newestFirst).slice(0, source.limit)
     default:
       return [...posts].sort(newestFirst).slice(0, source.limit)
   }
 }
 
 let seq = 0
-export const blockId = () => `b${Date.now().toString(36)}${(seq++).toString(36)}`
+const blockId = () => `b${Date.now().toString(36)}${(seq++).toString(36)}`
 
 /** A new block with sensible starting values. */
 export function newBlock(type: BlockType, firstModule = ''): Block {

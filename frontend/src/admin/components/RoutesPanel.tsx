@@ -15,6 +15,7 @@ import {
   type StoredRoutes,
 } from '../../lib/routeWords'
 import type { Module } from '../lib/apiClient'
+import { Button } from '../../design/Button'
 
 /** Ô nào đứng cạnh ô nào, và cái gì chúng làm ra. */
 type Block = {
@@ -27,7 +28,7 @@ type Block = {
 const BLOCKS: Block[] = [
   {
     title: 'Trang công khai',
-    keys: ['index', 'notes', 'module', 'tag', 'post', 'practice', 'portfolio'],
+    keys: ['bean', 'details', 'index', 'notes', 'module', 'tag', 'post', 'practice'],
     sample: (w) => toPath({ area: 'public', screen: 'module', moduleId: 'biochem' }, w),
   },
   {
@@ -37,7 +38,7 @@ const BLOCKS: Block[] = [
   },
   {
     title: 'Trang con của khu quản trị',
-    keys: ['adPost', 'adSitemap', 'adPageContent', 'adTaxonomy', 'adDisplay', 'adConvention', 'adArchive', 'adPortfolio', 'adPortContent', 'adPortDesign'],
+    keys: ['adPost', 'adConfig', 'adTree', 'adAuthors', 'adSitemap', 'adPageContent', 'adTaxonomy', 'adDisplay', 'adArchive', 'adPortfolio', 'adPortContent', 'adPortDesign'],
     sample: (w) => toPath({ area: 'admin', screen: 'archive' }, w),
   },
   {
@@ -48,7 +49,7 @@ const BLOCKS: Block[] = [
   {
     title: 'Địa chỉ của một bài',
     keys: ['postMark', 'draftMark'],
-    sample: (w) => `/${w.post}/${buildSlug({ moduleId: 'ghi01', createdAt: '2026-08-24T09:00:00Z', status: 'draft' }, w)}`,
+    sample: (w) => toPath({ area: 'public', screen: 'article', slug: buildSlug({ moduleId: 'ghi01', createdAt: '2026-08-24T09:00:00Z', status: 'draft' }, w) }, w),
   },
 ]
 
@@ -56,7 +57,7 @@ const OPEN_KEY = 'cms_routes_open'
 
 const label: React.CSSProperties = {
   fontFamily: sans,
-  fontWeight: 300,
+  fontWeight: 400,
   fontSize: 12,
   color: ink.soft,
   minWidth: 168,
@@ -160,30 +161,25 @@ export function RoutesPanel({
           <span
             aria-label={open ? 'Co lại' : 'Mở ra'}
             role="button"
-            style={{ fontFamily: sans, fontSize: 13, color: ink.muted, width: 12 }}
+            style={{ fontFamily: sans, fontSize: 13, color: ink.soft, width: 12 }}
           >
             {open ? '−' : '+'}
           </span>
           Đường dẫn
           {!open && (
-            <code style={{ fontFamily: 'ui-monospace, monospace', fontSize: 12, color: ink.muted }}>
-              {toPath({ area: 'admin', screen: 'cms' }, live)} · {`/${live.post}/…`}
+            <code style={{ fontFamily: 'ui-monospace, monospace', fontSize: 12, color: ink.soft }}>
+              {toPath({ area: 'admin', screen: 'cms' }, live)} · {`${toPath({ area: 'public', screen: 'landing' }, live)}/${live.post}/…`}
             </code>
           )}
         </h2>
         {open && (
           <div style={{ display: 'flex', alignItems: 'center', gap: space.gap }}>
             {saved && !changed && (
-              <span style={{ fontFamily: sans, fontSize: 11.5, color: ink.muted }}>đã lưu</span>
+              <span style={{ fontFamily: sans, fontSize: 13, color: ink.soft }}>đã lưu</span>
             )}
-            <button
-              className="admin-btn-ghost"
-              disabled={!changed || bad}
-              onClick={save}
-              style={{ opacity: !changed || bad ? 0.4 : 1 }}
-            >
+            <Button level="primary" disabled={!changed || bad} onClick={save}>
               Lưu đường dẫn
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -203,10 +199,9 @@ export function RoutesPanel({
             <div
               style={{
                 fontFamily: sans,
-                fontSize: 10.5,
+                fontSize: 13,
                 fontWeight: 500,
                 letterSpacing: '.2em',
-                textTransform: 'uppercase',
                 color: ink.soft,
               }}
             >
@@ -229,17 +224,13 @@ export function RoutesPanel({
                   style={field(Boolean(errors[k]))}
                 />
                 {draft[k] !== DEFAULT_WORDS[k] && (
-                  <button
-                    className="admin-btn-ghost"
-                    onClick={() => set(k, DEFAULT_WORDS[k])}
-                    style={{ fontSize: 11 }}
-                  >
+                  <Button size="sm" onClick={() => set(k, DEFAULT_WORDS[k])}>
                     {DEFAULT_WORDS[k]}
-                  </button>
+                  </Button>
                 )}
               </div>
               {errors[k] && (
-                <div style={{ fontFamily: sans, fontSize: 11.5, color: '#8E1E42', marginTop: 4, marginLeft: 168 + space.gap }}>
+                <div style={{ fontFamily: sans, fontSize: 13, color: '#8E1E42', marginTop: 4, marginLeft: 168 + space.gap }}>
                   {errors[k]}
                 </div>
               )}
@@ -281,17 +272,16 @@ export function RoutesPanel({
           <div
             style={{
               fontFamily: sans,
-              fontSize: 10.5,
+              fontSize: 13,
               fontWeight: 500,
               letterSpacing: '.2em',
-              textTransform: 'uppercase',
               color: ink.soft,
             }}
           >
             Tên module trong địa chỉ
           </div>
           {errors.modules && (
-            <span style={{ fontFamily: sans, fontSize: 11.5, color: '#8E1E42' }}>{errors.modules}</span>
+            <span style={{ fontFamily: sans, fontSize: 13, color: '#8E1E42' }}>{errors.modules}</span>
           )}
         </div>
         {modules.map((m) => (

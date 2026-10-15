@@ -7,13 +7,40 @@
  * authenticated call.
  */
 import type { SectionData } from 'post-renderer'
+import type {
+  Author,
+  AuthorCreateRequest,
+  AuthorDeleteResponse,
+  AuthorListResponse,
+  AuthorRef,
+  AuthorResponse,
+  AuthorUpdateRequest,
+  Node,
+  NodeCreateRequest,
+  NodeListResponse,
+  NodePatch,
+  NodeResponse,
+  PostAuthorsRequest,
+  PostAuthorsResponse,
+  PostSite,
+  Site,
+} from 'api-contract'
+import { supabase } from '../../lib/supabaseClient'
 import type { SiteOverrides } from '../../content/site'
 import type { LogEntry } from '../../content/hours'
 import type { ListingRule } from '../../lib/listingRule'
 
-/** The 3 real post templates (the old `templates` table is gone). */
-export const TEMPLATES = ['article', 'cards', 'report', 'longform', 'memo', 'bitesize'] as const
-export type PostTemplate = (typeof TEMPLATES)[number]
+/** Kho ảnh của bài — cùng tên với migration 0004, và bucket ấy là public. */
+const IMAGE_BUCKET = 'post-images'
+
+/**
+ * The post templates, kept in `content/templates.ts` with every other place
+ * that names them. Re-exported because this module is what the admin screens
+ * import their types from.
+ */
+import type { PostTemplate } from '../../content/templates'
+
+export type { PostTemplate }
 
 export type PostKind = 'note' | 'essay' | 'ref' | 'log'
 export type PostStatus = 'draft' | 'published' | 'archived' | 'deleted'
@@ -31,6 +58,8 @@ export type PostSummary = {
   module_id: string
   en: string
   vi: string
+  /** Câu mở đầu bài — dòng preview dưới tiêu đề ở mọi danh sách. */
+  lead: string | null
   kind: PostKind
   date_label: string
   status: PostStatus
@@ -46,14 +75,24 @@ export type PostSummary = {
   pinned: boolean
   /** Chỗ trên cây chủ đề (migration 0027); null khi chưa xếp. */
   topic_id: string | null
+  /** Trang chủ nào hiện bài này (0038). Thiếu khi database chưa chạy 0038. */
+  shown_on?: PostSite[]
   /** Tag theme ids; only the list endpoint fills it (GET /api/posts). */
   keywords?: string[]
+  /** Author ids in byline order; only the list endpoint fills it (GET /api/posts). */
+  authors?: string[]
   visibility: PostVisibility
   /** Địa chỉ đã cố định; null với bài nháp, vốn được gọi bằng địa chỉ suy ra. */
   slug: string | null
   created_at: string
   updated_at: string
   published_at: string | null
+  /** Bài đã đăng có chỗ sửa đang chờ bấm "Đăng thay đổi" — xem migration 0028. */
+  has_draft?: boolean
+  /** The body's opening words, cut with "…"; only the list endpoint fills it. */
+  excerpt?: string
+  /** Minutes to read the body; only the list endpoint fills it. */
+  read_minutes?: number | null
 }
 
 export type PostVisibility = 'public' | 'private'
@@ -61,15 +100,27 @@ export type PostVisibility = 'public' | 'private'
 export type PostDetail = PostSummary & {
   /** Tag theme (post_keywords). */
   keywords: string[]
-  /** Địa chỉ cũ vẫn chuyển tiếp về bài (post_slugs). */
-  old_slugs?: string[]
   body: SectionData[] | null
   hero_caption: string | null
-  lead: string | null
+  /**
+   * Ảnh của các ô ảnh cố định do template đặt tên — migration 0027.
+   *
+   * Bắt buộc có mặt, dù có thể là `null`: `toPostDetail` bên backend trả
+   * `row.plate_images ?? null`, kể cả khi database chưa chạy 0027 và cột vắng
+   * hẳn. Khai tuỳ chọn thì bước hoàn tác của màn sửa dựng ra
+   * `{ plate_images: undefined }`, mà `JSON.stringify` bỏ khoá ấy đi — PATCH
+   * rỗng, và một lần Cmd+Z im lặng không làm gì.
+   */
+  plate_images: Record<string, string | null> | null
   pull_quote: string | null
   further_reading: string[] | null
   deleted_at: string | null
   previous_status: PostStatus | null
+  /**
+   * Bài đã đăng mà có chỗ sửa chưa đăng — migration 0028. Khi đó các cột ở
+   * trên là **bản nháp**, không phải bản trên trang. Vắng khi API cũ trả lời.
+   */
+  has_draft?: boolean
 }
 
 export type Module = {
@@ -80,6 +131,13 @@ export type Module = {
   tint: string
   tint2: string
   layout: string
+  /**
+   * The module this one sits inside; null at the top level — migration 0025.
+   *
+   * Optional because a database that has not run 0025 answers without the
+   * column at all. Read it through `lib/contentTree`, never directly.
+   */
+  parent_id?: string | null
   concept: string
   blurb: string
   long_desc: string
@@ -187,8 +245,8 @@ export async function listPosts(status: PostStatus | 'all' = 'all'): Promise<Pos
 /** POST /api/posts — create a draft. Server derives n and date_label; status defaults to 'draft'. */
 export async function createPost(input: {
   module_id: string
-  /** The tag, free text since migration 0020 — see backend/api/tags.ts. */
-  kind: string
+  /** Dạng bài — retired, sent empty. */
+  kind?: string
   en: string
   vi: string
   /** The stored template to start from; its body is copied into the new post. */
@@ -212,43 +270,53 @@ export async function listTags(): Promise<Tag[]> {
   return result.tags
 }
 
-/** POST /api/tags — add one, or get back the one that already says this. */
-export async function createTag(label: string): Promise<Tag> {
-  return request<Tag>('/api/tags', { method: 'POST', body: JSON.stringify({ label }) })
-}
-
-/** PATCH /api/tags?id= — đổi tên hiển thị; `id` giữ nguyên nên bài không mất chỗ dựa. */
-export async function renameTag(id: string, label: string): Promise<Tag> {
-  return request<Tag>(`/api/tags?id=${encodeURIComponent(id)}`, {
-    method: 'PATCH',
-    body: JSON.stringify({ label }),
-  })
-}
-
-/**
- * DELETE /api/tags?id= — xoá một tag.
- *
- * `to` là tag thay thế cho những gì đang đeo nó; `null` là cố ý bỏ trống.
- * Không truyền gì thì máy chủ từ chối và trả về danh sách đang đeo — xoá lặng
- * lẽ là để lại bài trỏ vào một tag không còn tồn tại.
- */
-export async function deleteTag(
-  id: string,
-  to?: string | null,
-): Promise<{ deleted: string; moved: { posts: string[]; notes: string[] } }> {
-  return request(`/api/tags?id=${encodeURIComponent(id)}`, {
-    method: 'DELETE',
-    body: JSON.stringify(to === undefined ? {} : { to }),
-  })
-}
-
-/** GET /api/posts/:id — full post detail. */
-export async function getPost(id: string): Promise<PostDetail> {
-  const result = await request<{ post: PostDetail }>(`/api/posts/${id}`)
+/** GET /api/posts/:id — full post detail, with its byline in order. */
+export async function getPost(id: string): Promise<PostDetail & { authors: AuthorRef[] }> {
+  const result = await request<{ post: PostDetail & { authors: AuthorRef[] } }>(`/api/posts/${id}`)
   return result.post
 }
 
-/** PATCH /api/posts/:id — partial update of editable fields; returns the full updated detail. */
+/** PUT /api/posts/:id?part=authors — thay cả danh sách tác giả của bài, theo thứ tự. */
+export async function setPostAuthors(id: string, author_ids: string[]): Promise<AuthorRef[]> {
+  const body: PostAuthorsRequest = { author_ids }
+  const result = await request<PostAuthorsResponse>(`/api/posts/${id}?part=authors`, {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  })
+  return result.authors
+}
+
+/** GET /api/tags?vocab=authors — mọi tác giả, người đang hoạt động trước. */
+export async function listAuthors(): Promise<Author[]> {
+  return (await request<AuthorListResponse>('/api/tags?vocab=authors')).authors
+}
+
+/** POST /api/tags?vocab=authors — bỏ trống `slug` thì máy chủ tự đặt theo tên. */
+export async function createAuthor(input: AuthorCreateRequest): Promise<Author> {
+  return (await request<AuthorResponse>('/api/tags?vocab=authors', { method: 'POST', body: JSON.stringify(input) })).author
+}
+
+/** PATCH /api/tags?vocab=authors&id=… */
+export async function updateAuthor(id: string, patch: AuthorUpdateRequest): Promise<Author> {
+  return (await request<AuthorResponse>(`/api/tags?vocab=authors&id=${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(patch) }))
+    .author
+}
+
+/**
+ * DELETE /api/tags?vocab=authors&id=… — máy chủ từ chối (409, `details.post_count`) khi
+ * còn bài đứng tên người này; khi ấy tắt họ đi thay vì xoá.
+ */
+export async function deleteAuthor(id: string): Promise<AuthorDeleteResponse> {
+  return request<AuthorDeleteResponse>(`/api/tags?vocab=authors&id=${encodeURIComponent(id)}`, { method: 'DELETE' })
+}
+
+/**
+ * PATCH /api/posts/:id — partial update of editable fields.
+ *
+ * Trả về đúng những cột vừa vá, trừ `body`, chứ không phải cả bài — xem chú
+ * thích trong backend/api/posts/[id]/index.ts. Mọi chỗ gọi hàm này đều đã cập
+ * nhật state lạc quan trước rồi, không chỗ nào đọc giá trị trả về.
+ */
 export async function updatePost(
   id: string,
   patch: Partial<{
@@ -257,6 +325,8 @@ export async function updatePost(
     body: SectionData[]
     hero_image_url: string
     hero_caption: string
+    /** Ảnh của các ô ảnh cố định do khuôn bài đặt tên — migration 0027. */
+    plate_images: Record<string, string | null> | null
     lead: string
     pull_quote: string
     further_reading: string[]
@@ -266,19 +336,18 @@ export async function updatePost(
       pinned: boolean
       topic_id: string | null
       visibility: PostVisibility
+      shown_on: PostSite[]
       template: PostTemplate
       module_id: string
       /** Dạng bài. */
       kind: string
-      /** Địa chỉ mới; địa chỉ cũ được giữ để chuyển tiếp. */
-      slug: string
+      /** Địa chỉ gõ tay; null là quay về địa chỉ theo tên bài. Địa chỉ cũ không giữ lại. */
+      slug: string | null
       /** Thay cả bộ tag theme. */
       keywords: string[]
-      /** Thôi chuyển tiếp các địa chỉ cũ này. */
-      forget_slugs: string[]
   }>,
-): Promise<PostDetail> {
-  const result = await request<{ post: PostDetail }>(`/api/posts/${id}`, {
+): Promise<Partial<PostDetail> & { id: string }> {
+  const result = await request<{ post: Partial<PostDetail> & { id: string } }>(`/api/posts/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(patch),
   })
@@ -286,52 +355,54 @@ export async function updatePost(
 }
 
 /**
- * POST /api/posts/:id/status — applies one lifecycle transition. Returns the
- * full updated detail, except for 'permanently-delete' which hard-deletes
- * the row and returns `{ deleted: true }` instead.
+ * POST /api/posts/:id/status — applies one lifecycle transition.
+ *
+ * Trả về đúng những cột lần đổi này ghi, cộng `id` — không phải cả bài. Ba chỗ
+ * gọi (`PostsPanel`, `Editor`, `Cms.removeEntry`) đều bỏ qua giá trị trả về.
+ * 'permanently-delete' xoá cứng và trả `{ deleted: true }`.
  */
 export async function transitionStatus(
   id: string,
   action: StatusAction,
-  /** Với 'publish': địa chỉ cố định cho bài chưa có — xem usePostAddresses.slugToPublish. */
-  slug?: string,
-): Promise<PostDetail | { deleted: true }> {
-  const result = await request<{ post: PostDetail } | { deleted: true }>(`/api/posts/${id}/status`, {
-    method: 'POST',
-    body: JSON.stringify(slug ? { action, slug } : { action }),
-  })
+): Promise<(Partial<PostDetail> & { id: string }) | { deleted: true }> {
+  const result = await request<{ post: Partial<PostDetail> & { id: string } } | { deleted: true }>(
+    `/api/posts/${id}/status`,
+    { method: 'POST', body: JSON.stringify({ action }) },
+  )
   return 'deleted' in result ? result : result.post
 }
 
-/** POST /api/upload — multipart upload, field name 'file'. */
+/**
+ * Tải một ảnh lên, bằng một lượt chứ không phải hai.
+ *
+ * Trước đây tệp đi qua serverless function: trình duyệt → Vercel → Supabase.
+ * Người dùng chờ hết lượt đầu rồi mới bắt đầu lượt sau. Nay máy chủ chỉ ký một
+ * vé — `POST /api/upload` không nhận byte nào — và tệp đi thẳng từ trình duyệt
+ * lên Storage.
+ *
+ * Chữ ký của hàm này không đổi, nên bảy chỗ đang gọi nó không phải sửa gì.
+ */
 export async function uploadImage(file: File): Promise<{ url: string }> {
-  const form = new FormData()
-  form.set('file', file)
-  return request<{ url: string }>('/api/upload', { method: 'POST', body: form })
+  const ticket = await request<{ path: string; token: string; url: string }>('/api/upload', {
+    method: 'POST',
+    body: JSON.stringify({ filename: file.name, contentType: file.type }),
+  })
+
+  const { error } = await supabase.storage
+    .from(IMAGE_BUCKET)
+    .uploadToSignedUrl(ticket.path, ticket.token, file)
+
+  // Vé ký được nhưng tệp không lên được là một lỗi khác hẳn, nên nó nói tên
+  // mình ra chứ không đội lốt lỗi của `/api/upload`.
+  if (error) throw new ApiError(`Không tải được ảnh lên kho: ${error.message}`, 502, error)
+
+  return { url: ticket.url }
 }
 
 /** GET /api/modules — for the admin's module-select dropdown. */
 export async function listModules(): Promise<Module[]> {
   const result = await request<{ modules: Module[] }>('/api/modules')
   return result.modules
-}
-
-/** PUT /api/posts — reorder one module's posts; also renumbers their `n`. */
-export async function reorderPosts(module_id: string, order: string[]): Promise<PostSummary[]> {
-  const result = await request<{ posts: PostSummary[] }>('/api/posts', {
-    method: 'PUT',
-    body: JSON.stringify({ module_id, order }),
-  })
-  return result.posts
-}
-
-/** POST /api/modules — the CMS's "+ module mới"; server fills in placeholders. */
-export async function createModule(id?: string): Promise<Module> {
-  const result = await request<{ module: Module }>('/api/modules', {
-    method: 'POST',
-    body: JSON.stringify(id ? { id } : {}),
-  })
-  return result.module
 }
 
 /** PATCH /api/modules/:id — partial update of one module. */
@@ -341,20 +412,6 @@ export async function updateModule(id: string, patch: Partial<Omit<Module, 'id' 
     body: JSON.stringify(patch),
   })
   return result.module
-}
-
-/** DELETE /api/modules/:id — removes the module and (by cascade) its posts. */
-export async function deleteModule(id: string): Promise<void> {
-  await request<Record<string, never>>(`/api/modules/${id}`, { method: 'DELETE' })
-}
-
-/** PUT /api/modules — reorder every module by id. */
-export async function reorderModules(order: string[]): Promise<Module[]> {
-  const result = await request<{ modules: Module[] }>('/api/modules', {
-    method: 'PUT',
-    body: JSON.stringify({ order }),
-  })
-  return result.modules
 }
 
 /** GET /api/site — the stored site-copy overrides (`{}` on a fresh install). */
@@ -408,12 +465,18 @@ export async function deleteLog(id: string): Promise<void> {
   await request<Record<string, never>>(`/api/hours?id=${id}`, { method: 'DELETE' })
 }
 
-/** POST /api/hours?resource=kinds — add a tag to one system; both lists come back. */
+/**
+ * POST /api/hours?resource=kinds — add a tag to one system.
+ *
+ * Trả về đúng tag vừa thêm, không phải cả hai danh sách. Máy chủ từng đọc lại
+ * cả bảng `activity_kinds` để trả lời, mà `useHours` thì đã tự thêm vào danh
+ * sách của nó trước khi gọi — nên lượt đọc ấy chỉ để ghi đè một giá trị y hệt.
+ */
 export async function addKind(
   name: string,
   system: 'task' | 'project' = 'task',
-): Promise<{ kinds: string[]; projects: string[] }> {
-  return request<{ kinds: string[]; projects: string[] }>('/api/hours?resource=kinds', {
+): Promise<{ name: string; system: 'task' | 'project' }> {
+  return request<{ name: string; system: 'task' | 'project' }>('/api/hours?resource=kinds', {
     method: 'POST',
     body: JSON.stringify({ name, system }),
   })
@@ -422,13 +485,17 @@ export async function addKind(
 /** Which activities a tag is being taken off, and what they get instead. */
 export type TagMove = { to: string | null; ids: string[] }
 
-/** PATCH /api/hours?resource=kinds — rename a tag and everything filed under it. */
+/**
+ * PATCH /api/hours?resource=kinds — rename a tag and everything filed under it.
+ *
+ * Trả về tên mới, không phải cả hai danh sách — cùng lý do với `addKind`.
+ */
 export async function renameKind(
   name: string,
   next: string,
   system: 'task' | 'project' = 'task',
-): Promise<{ kinds: string[]; projects: string[] }> {
-  return request<{ kinds: string[]; projects: string[] }>(
+): Promise<{ name: string; system: 'task' | 'project' }> {
+  return request<{ name: string; system: 'task' | 'project' }>(
     `/api/hours?resource=kinds&name=${encodeURIComponent(name)}&system=${system}`,
     { method: 'PATCH', body: JSON.stringify({ name: next }) },
   )
@@ -440,14 +507,15 @@ export async function renameKind(
  * `moves` are the reassignments chosen for the activities wearing it; `rest`
  * catches whatever those did not cover. Leaving `rest` undefined files the
  * remainder as unclassified. `affected` comes back holding every activity that
- * wore the tag — undo needs the ones older than the span on screen too.
+ * wore the tag — undo needs the ones older than the span on screen too, so it
+ * is the one thing this route still reads the database to answer.
  */
 export async function deleteKind(
   name: string,
   system: 'task' | 'project' = 'task',
   body: { moves?: TagMove[]; rest?: string | null } = {},
-): Promise<{ kinds: string[]; projects: string[]; affected: string[] }> {
-  return request<{ kinds: string[]; projects: string[]; affected: string[] }>(
+): Promise<{ affected: string[] }> {
+  return request<{ affected: string[] }>(
     `/api/hours?resource=kinds&name=${encodeURIComponent(name)}&system=${system}`,
     { method: 'DELETE', body: JSON.stringify(body) },
   )
@@ -476,69 +544,17 @@ export type TemplateSummary = {
   sort_order: number
 }
 
-export type StoredTemplate = TemplateSummary & { body: unknown | null }
-
 /** GET /api/templates — the choices, without their bodies. */
 export async function listTemplates(): Promise<TemplateSummary[]> {
   const result = await request<{ templates: TemplateSummary[] }>('/api/templates')
   return result.templates
 }
 
-/** GET /api/templates?id=… — one template, body included. */
-export async function getTemplate(id: string): Promise<StoredTemplate> {
-  const result = await request<{ template: StoredTemplate }>(`/api/templates?id=${encodeURIComponent(id)}`)
-  return result.template
-}
-
-/** PATCH /api/templates?id=… — save an edited template back. */
-export async function updateTemplate(
-  id: string,
-  patch: Partial<Pick<StoredTemplate, 'name' | 'description' | 'body' | 'sort_order'>>,
-): Promise<StoredTemplate> {
-  const result = await request<{ template: StoredTemplate }>(`/api/templates?id=${encodeURIComponent(id)}`, {
-    method: 'PATCH',
-    body: JSON.stringify(patch),
-  })
-  return result.template
-}
-
 // ── Portfolio ───────────────────────────────────────────────────────────────
 
-/** Portfolio page lifecycle — see migrations 0025 and 0026. */
-export type PortStatus = 'draft' | 'published' | 'archived'
-
-export type PortPageInput = {
-  slug: string
-  title: string
-  intro?: string
-  palette?: string
-  blocks?: unknown[]
-  status?: PortStatus
-  sortOrder?: number
-}
-
-export type PortPageRecord = Required<PortPageInput> & { id: string; updatedAt: string }
-
-/** GET /api/portfolio — every port page (drafts included) and the saved design tokens. */
-export async function getPortfolio(): Promise<{ pages: PortPageRecord[]; design: Record<string, unknown> }> {
-  return request<{ pages: PortPageRecord[]; design: Record<string, unknown> }>('/api/portfolio')
-}
-
-export async function createPortPage(input: PortPageInput): Promise<PortPageRecord> {
-  const r = await request<{ page: PortPageRecord }>('/api/portfolio', { method: 'POST', body: JSON.stringify(input) })
-  return r.page
-}
-
-export async function updatePortPage(id: string, patch: Partial<PortPageInput>): Promise<PortPageRecord> {
-  const r = await request<{ page: PortPageRecord }>(`/api/portfolio?id=${encodeURIComponent(id)}`, {
-    method: 'PATCH',
-    body: JSON.stringify(patch),
-  })
-  return r.page
-}
-
-export async function deletePortPage(id: string): Promise<void> {
-  await request(`/api/portfolio?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
+/** GET /api/portfolio — the saved design tokens. Port pages are nodes (below). */
+export async function getPortDesign(): Promise<Record<string, unknown>> {
+  return (await request<{ design: Record<string, unknown> }>('/api/portfolio')).design
 }
 
 /** PATCH /api/portfolio?part=design — merges one level deep; `null` resets a key to its default. */
@@ -550,55 +566,38 @@ export async function updatePortDesign(patch: Record<string, unknown>): Promise<
   return r.design
 }
 
-// ── Tầng nội dung: cây chủ đề và tag theme (migration 0027) ──────────────────
+// ── Trang của mọi site (0032) và tag theme (0027) ────────────────────────────
 
-export type Topic = {
-  id: string
-  /** null = subject; còn lại là topic con của subject đó. */
-  parent_id: string | null
-  title: string
-  intro: string
-  accent: string | null
-  on_color: string | null
-  tint: string | null
-  tint2: string | null
-  image_url: string | null
-  sort_order: number
-  visibility: PostVisibility
-  /** Số bài (trừ thùng rác) đang nằm ở nút này. */
-  posts: number
+export type { Node, NodeStatus } from 'api-contract'
+
+/** `color`: the badge colour the owner picked, null for the automatic one (`tagColor`); absent before migration 0033. */
+export type Keyword = { id: string; label: string; color?: string | null; posts: number }
+
+/** Without `site`: every site's nodes. */
+export async function listNodes(site?: Site): Promise<Node[]> {
+  return (await request<NodeListResponse>(`/api/tags?vocab=nodes${site ? `&site=${site}` : ''}`)).nodes
 }
 
-export type Keyword = { id: string; label: string; posts: number }
-
-export async function listTopics(): Promise<Topic[]> {
-  return (await request<{ topics: Topic[] }>('/api/tags?vocab=topics')).topics
+export async function createNode(input: NodeCreateRequest): Promise<Node> {
+  return (await request<NodeResponse>('/api/tags?vocab=nodes', { method: 'POST', body: JSON.stringify(input) })).node
 }
 
-export async function createTopic(title: string, parent_id: string | null): Promise<Topic> {
-  const r = await request<{ topic: Topic }>('/api/tags?vocab=topics', { method: 'POST', body: JSON.stringify({ title, parent_id }) })
-  return r.topic
-}
-
-export async function updateTopic(
-  id: string,
-  patch: Partial<Pick<Topic, 'title' | 'intro' | 'parent_id' | 'visibility' | 'accent' | 'on_color' | 'tint' | 'tint2' | 'image_url'>>,
-): Promise<Topic> {
-  const r = await request<{ topic: Topic }>(`/api/tags?vocab=topics&id=${encodeURIComponent(id)}`, {
+export async function updateNode(id: string, patch: NodePatch): Promise<Node> {
+  const r = await request<NodeResponse>(`/api/tags?vocab=nodes&id=${encodeURIComponent(id)}`, {
     method: 'PATCH',
     body: JSON.stringify(patch),
   })
-  return r.topic
+  return r.node
 }
 
 /** Thứ tự mới của một tầng: các id theo thứ tự. */
-export async function reorderTopics(order: string[]): Promise<void> {
-  await request('/api/tags?vocab=topics', { method: 'PUT', body: JSON.stringify({ order }) })
+export async function reorderNodes(order: string[]): Promise<void> {
+  await request('/api/tags?vocab=nodes', { method: 'PUT', body: JSON.stringify({ order }) })
 }
 
-/** Máy chủ từ chối (409) khi nút còn bài hoặc còn topic con. */
-export async function deleteTopic(id: string): Promise<void> {
-  await request(`/api/tags?vocab=topics&id=${encodeURIComponent(id)}`, { method: 'DELETE' })
+/** Máy chủ từ chối (409) khi nút còn bài hoặc còn mục con. */
+export async function deleteNode(id: string): Promise<void> {
+  await request(`/api/tags?vocab=nodes&id=${encodeURIComponent(id)}`, { method: 'DELETE' })
 }
 
 export async function listKeywords(): Promise<Keyword[]> {
@@ -612,6 +611,11 @@ export async function createKeyword(label: string): Promise<Keyword> {
 
 export async function renameKeyword(id: string, label: string): Promise<void> {
   await request(`/api/tags?vocab=keywords&id=${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify({ label }) })
+}
+
+/** null hands the tag back its automatic colour. */
+export async function colorKeyword(id: string, color: string | null): Promise<void> {
+  await request(`/api/tags?vocab=keywords&id=${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify({ color }) })
 }
 
 /** `to`: merge into that tag — its posts wear `to` before this one goes. */
@@ -654,17 +658,9 @@ export async function updateRule(id: string, patch: Partial<ListingRule>): Promi
   return r.rule
 }
 
-export async function createPage(id: string, title: string): Promise<{ page: LayoutPage; rule: { id: string } }> {
-  return request('/api/tags?vocab=pages', { method: 'POST', body: JSON.stringify({ id, title }) })
-}
-
 export async function updatePage(id: string, patch: Partial<Omit<LayoutPage, 'id' | 'kind'>>): Promise<LayoutPage> {
   const r = await request<{ page: LayoutPage }>(`/api/tags?vocab=pages&id=${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(patch) })
   return r.page
-}
-
-export async function deletePage(id: string): Promise<void> {
-  await request(`/api/tags?vocab=pages&id=${encodeURIComponent(id)}`, { method: 'DELETE' })
 }
 
 export async function saveOverride(row: Pick<LayoutOverride, 'node_type' | 'node_id'> & Partial<LayoutOverride>): Promise<LayoutOverride> {

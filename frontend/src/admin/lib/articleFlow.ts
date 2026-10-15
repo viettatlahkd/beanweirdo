@@ -12,6 +12,7 @@
  * Cách lưu không đổi: vẫn là `SectionData[]`, `Article.tsx` không phải biết gì.
  */
 import type { SectionData } from 'post-renderer'
+import { splitAtLine } from './mdBlocks'
 
 /**
  * A body entry taken from the shared element store, not article's own
@@ -26,10 +27,10 @@ export const isStoredElement = (s: SectionData | undefined): boolean =>
  * unchanged, so a stored element stands on its own the way `fig` does — fold
  * it into the run of prose and it disappears from the editing surface.
  */
-export const flowsSection = (s: SectionData | undefined) =>
+const flowsSection = (s: SectionData | undefined) =>
   s !== undefined && !s.fig && !isStoredElement(s)
 
-export type SectionRun =
+type SectionRun =
   | { kind: 'text'; at: [number, number]; text: string }
   | { kind: 'thing'; at: number }
 
@@ -38,7 +39,7 @@ function sectionToMarkdown(s: SectionData): string {
   return [heading, s.p].filter((part) => part !== '').join('\n\n')
 }
 
-export function runToMarkdown(sections: SectionData[]): string {
+function runToMarkdown(sections: SectionData[]): string {
   return sections.map(sectionToMarkdown).join('\n\n')
 }
 
@@ -50,7 +51,7 @@ const HEADING = /^##\s+(.*)$/
  * Mỗi `## ` mở một phần mới; chữ trước cái `## ` đầu tiên thành một phần không
  * tiêu đề, vì viết vài dòng dẫn trước khi đặt đề mục là chuyện bình thường.
  */
-export function markdownToRun(markdown: string): SectionData[] {
+function markdownToRun(markdown: string): SectionData[] {
   const out: SectionData[] = []
   let current: SectionData | null = null
   for (const line of markdown.split('\n')) {
@@ -94,6 +95,33 @@ export function writeSectionRun(
   markdown: string,
 ): SectionData[] {
   return [...sections.slice(0, at[0]), ...markdownToRun(markdown), ...sections.slice(at[1] + 1)]
+}
+
+/**
+ * Chèn một thứ vào giữa một dải, ngay sau khối con trỏ đang đứng.
+ *
+ * Đây là chỗ lỗi nặng nhất của phép cộng chỉ số cũ: một `section` vẽ ra **hai**
+ * khối trên mặt soạn (`## tiêu đề` rồi đoạn văn), nên con trỏ ở khối thứ ba
+ * của một dải hai phần cho ra chỉ số 4 — rơi ra ngoài dải, xuống tận cuối bài.
+ * Chủ site: *"nó không thêm vào vị trí con trỏ edit mà lại thêm ở tít các vị
+ * trí nào bên dưới"*.
+ */
+export function insertSectionThing(
+  sections: SectionData[],
+  at: [number, number],
+  text: string,
+  /** Số dòng có chữ của dải đứng trên chỗ chèn — xem `linesThrough`. */
+  lines: number,
+  thing: SectionData,
+): SectionData[] {
+  const [before, after] = splitAtLine(text, lines)
+  return [
+    ...sections.slice(0, at[0]),
+    ...markdownToRun(before),
+    thing,
+    ...markdownToRun(after),
+    ...sections.slice(at[1] + 1),
+  ]
 }
 
 export function runAtSection(runs: SectionRun[], i: number): SectionRun | undefined {

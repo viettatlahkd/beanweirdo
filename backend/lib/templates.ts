@@ -18,7 +18,7 @@ export interface TemplateRow {
   updated_at: string
 }
 
-export interface Template {
+interface Template {
   id: string
   name: string
   description: string

@@ -8,7 +8,7 @@
  */
 
 /** Squares in the 13 × 8 frame, base orientation: [column, row, side]. */
-export const CELLS = {
+const CELLS = {
   '8': [1, 1, 8],
   '5': [9, 1, 5],
   '3': [11, 6, 3],
@@ -17,7 +17,7 @@ export const CELLS = {
   '1b': [10, 6, 1],
 } as const satisfies Record<string, readonly [number, number, number]>
 
-export type CellKey = keyof typeof CELLS
+type CellKey = keyof typeof CELLS
 
 /** 0 base · 1 flip horizontally · 2 flip vertically · 3 flip both. */
 const ORIENT = [0, 3, 1, 2] as const
@@ -35,7 +35,9 @@ export function seriesLayout(i: number): [Placed, Placed] {
   const flip = ORIENT[i % 4]
   const pair = PAIRS[i % 5]
   return pair.map((k) => {
-    let [col, row, size] = CELLS[k]
+    const [c, r, size] = CELLS[k]
+    let col = c
+    let row = r
     if (flip & 1) col = 15 - col - size
     if (flip & 2) row = 10 - row - size
     return { col, row, size }

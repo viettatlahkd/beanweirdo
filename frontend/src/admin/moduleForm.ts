@@ -1,4 +1,5 @@
 import { pageSlotCount } from '../lib/modulePageImages'
+import { layoutSpec } from '../content/layouts'
 
 /**
  * The image columns, described structurally so both shapes of the module row
@@ -35,7 +36,7 @@ export function captionColumn(group: Pick<ImageGroup, 'columns'>, slot: number):
 }
 
 /** Just enough to decide a module's form shape. */
-export type ModuleIdentity = { id: string; kind: 'normal' | 'special'; layout?: string }
+type ModuleIdentity = { id: string; kind: 'normal' | 'special'; layout?: string }
 
 /**
  * Which fields the Sửa nội dung editor shows for one module.
@@ -50,7 +51,7 @@ export type ModuleIdentity = { id: string; kind: 'normal' | 'special'; layout?: 
  * its own screens reads that field. Adding a module kind means adding a row
  * here, not editing the editor.
  */
-export type ModuleFormShape = {
+type ModuleFormShape = {
   /** Presentation copy — only modules that appear as a card need these. */
   concept: boolean
   blurb: boolean
@@ -113,16 +114,9 @@ function modulePageImages(layout: string): ImageGroup {
     columns: 'module-page',
     label: 'Ảnh trên trang module',
     slots,
-    names: NAMES_BY_LAYOUT[layout] ?? slots.map((n) => `Ảnh ${n}`),
+    names: layoutSpec(layout).pageImageNames,
     preview: ['module-page'],
   }
-}
-
-/** The design names these cells; the editor should call them the same thing. */
-const NAMES_BY_LAYOUT: Record<string, readonly string[]> = {
-  band: ['Ảnh hero'],
-  specimen: ['Ảnh lớn', 'Ảnh giữa', 'Ảnh dưới trái', 'Ảnh dưới phải'],
-  sequence: ['01 — nhân xanh', '02 — vàng', '03 — first crack', '04 — phát triển'],
 }
 
 /** Ghi 01 closes with two images — a small one, then a larger one. */
@@ -179,15 +173,4 @@ const HOURS: ModuleFormShape = {
 export function formShapeOf(m: ModuleIdentity): ModuleFormShape {
   if (m.kind !== 'special') return normalShape(m.layout ?? 'band')
   return m.id === 'ghi01' ? NOTES : HOURS
-}
-
-/**
- * A slot with no photo is not an empty slot — it is a colour box, and it does
- * not count as an image. That is what the public screens already do, and it is
- * why the editor never reflows: the layout keeps its shape, each cell just
- * switches between a photo and its tint.
- */
-export function imageCount(m: ModuleImageFields, group: ImageGroup): number {
-  const row = m as unknown as Record<string, unknown>
-  return group.slots.filter((s) => row[imageColumn(group, s)]).length
 }

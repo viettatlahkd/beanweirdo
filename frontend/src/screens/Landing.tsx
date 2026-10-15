@@ -4,8 +4,10 @@ import { landingModules, useModules } from '../data/useModules'
 import type { ModuleImageFields } from '../admin/moduleForm'
 import { coverStyle } from '../lib/imageFocus'
 import { usePublishedPosts } from '../data/usePublishedPosts'
+import { shownOn } from '../portfolio/blocks'
 import { useSiteCopy } from '../data/useSiteCopy'
 import { garden, ink, layout, paper, prose, sans, serif, wrapTitle } from '../design/tokens'
+import type { ModuleLayout } from '../content/layouts'
 import { Hover } from '../lib/Hover'
 import { Rise } from '../lib/Rise'
 import { useNav } from '../lib/nav'
@@ -100,7 +102,9 @@ export function ImageBand({ m }: { m: ModuleImageFields }) {
    */
   const mm = (desktop: string, mobile: string) => (mob ? mobile : desktop)
 
-  if (m.layout === 'band') {
+  const band = BAND_OF[m.layout as ModuleLayout] ?? 'sequence'
+
+  if (band === 'band') {
     return (
       <div style={bandGrid(mob ? 'minmax(0,1.6fr) minmax(0,1fr)' : 'minmax(0,1.9fr) minmax(0,1fr) 30px', '1.5fr 1fr', mob)}>
         <Rise
@@ -164,7 +168,7 @@ export function ImageBand({ m }: { m: ModuleImageFields }) {
     )
   }
 
-  if (m.layout === 'specimen') {
+  if (band === 'specimen') {
     return (
       <div style={bandGrid('minmax(0,1.7fr) minmax(0,1fr)', '1fr 1.4fr', mob)}>
         <Rise
@@ -247,6 +251,26 @@ export function ImageBand({ m }: { m: ModuleImageFields }) {
       </Rise>
     </div>
   )
+}
+
+/**
+ * Which of the three bands above a layout draws.
+ *
+ * The blocks are a chain of `if`s rather than a component map because they
+ * share `mm` and their cell margins are deliberately uneven — see the note on
+ * `ImageBand`. A chain falls through silently, so before this record a fourth
+ * layout would simply have drawn as `sequence`, on the homepage, without a
+ * word from anyone.
+ *
+ * `Record<ModuleLayout, …>` is the guard: add a row to `content/layouts.ts`
+ * and the compiler stops here until someone decides what the homepage does
+ * with it. Which is the point of the whole registry — a new layout should
+ * make the compiler ask the questions, not make the site answer them wrongly.
+ */
+const BAND_OF: Record<ModuleLayout, 'band' | 'specimen' | 'sequence'> = {
+  band: 'band',
+  specimen: 'specimen',
+  sequence: 'sequence',
 }
 
 /**
@@ -370,16 +394,31 @@ export function Landing() {
   const { data: allModules, postsOf } = useModules()
   const modules = landingModules(allModules)
   // Each page lists what its rule pulls (migration 0028), not what is filed under it.
-  const postsByModule = useMemo(() => new Map(modules.map((m) => [m.id, postsOf(m.id)])), [modules, postsOf])
+  // This is the personal blog's home, so only posts ticked to show here (0038);
+  // the topic pages themselves still list everything filed under them.
+  const postsByModule = useMemo(
+    () => new Map(modules.map((m) => [m.id, postsOf(m.id).filter((p) => shownOn(p).includes('blog'))])),
+    [modules, postsOf],
+  )
   // The call to action counts every post on the site, wherever it is shown.
   const { data: posts } = usePublishedPosts()
-  const { site } = useSiteCopy()
+  const { site, ready } = useSiteCopy()
   const title = splitAesc(site.lTitle1)
   const mob = useIsMobile()
 
   return (
     <div>
-      <div style={{ padding: mob ? '30px 20px 44px' : '80px 56px 64px', maxWidth: layout.page }}>
+      <div
+        style={{
+          padding: mob ? '30px 20px 44px' : '80px 56px 64px',
+          maxWidth: layout.page,
+          // Every line in this block is editable in the CMS. Until the owner's
+          // copy is known, drawing the shipped defaults means showing a
+          // headline that is then replaced in front of the reader. Hidden, not
+          // unmounted, so the page below does not jump when it appears.
+          visibility: ready === false ? 'hidden' : undefined,
+        }}
+      >
         {/*
           * Nhãn trên cùng ngắt dòng ngay sau dấu gạch ngang.
           *

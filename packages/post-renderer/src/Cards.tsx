@@ -2,7 +2,7 @@ import { Fragment, type ReactNode } from 'react'
 import { useMemo, useState } from 'react'
 import { ElementList } from './elements'
 import { paletteFrom } from './palette'
-import { ink, paper, sans, serif, wrapTitle } from './tokens'
+import { frame, ink, paper, sans, serif, wrapTitle } from './tokens'
 import type { CardData, CardPart, CardsPostData } from './types'
 
 export type CardsOverrides = {
@@ -36,11 +36,10 @@ export type CardsProps = CardsOverrides & {
    * `PostRenderer`.
    */
   mobile?: boolean
-  /**
-   * The trail back to where this post is filed. Supplied by the app, so the
-   * renderer package stays independent of how routing works.
-   */
-  breadcrumb?: ReactNode
+  /** The page's own head; replaces the band and title. See `ArticleProps.head`. */
+  head?: ReactNode
+  /** Closes the reading column — the app's author card. Supplied by the app, like `head`. */
+  footer?: ReactNode
   post: CardsPostData
 }
 
@@ -139,7 +138,10 @@ function groupsOf(cards: CardData[], hues: Record<string, string> = {}): Group[]
  * filter bar and a sticky table of contents. Modeled on the "isCards"
  * section of the design source.
  */
-export function Cards({ post, breadcrumb, mobile = false, ...overrides }: CardsProps) {
+/** What sits between the side margins: the card list and its contents column. */
+const CONTENT_W = 1208
+
+export function Cards({ post, head, footer, mobile = false, ...overrides }: CardsProps) {
   const [openIndexes, setOpenIndexes] = useState<Set<number>>(() => new Set())
   const [activeGroup, setActiveGroup] = useState<string | null>(null)
   const [hoverCard, setHoverCard] = useState<number | null>(null)
@@ -173,6 +175,11 @@ export function Cards({ post, breadcrumb, mobile = false, ...overrides }: CardsP
 
   return (
     <div style={{ background: paper.cream, color: ink.base, minHeight: '100vh' }}>
+      {head !== undefined ? (
+        <div style={{ padding: mobile ? '28px 20px 4px' : '40px 56px 24px' }}>
+          <div style={frame(CONTENT_W)}>{head}</div>
+        </div>
+      ) : (
       <div
         style={{
           background: post.band?.bg ?? '#E4F0DF',
@@ -180,7 +187,7 @@ export function Cards({ post, breadcrumb, mobile = false, ...overrides }: CardsP
           padding: mobile ? '28px 20px 26px' : '40px 56px 32px',
         }}
       >
-        {breadcrumb}
+        <div style={frame(CONTENT_W)}>
         <div
           style={{
             display: 'flex',
@@ -213,7 +220,9 @@ export function Cards({ post, breadcrumb, mobile = false, ...overrides }: CardsP
             ))}
           </div>
         </div>
+        </div>
       </div>
+      )}
 
       <div
         style={{
@@ -221,6 +230,11 @@ export function Cards({ post, breadcrumb, mobile = false, ...overrides }: CardsP
           borderBottom: `1px solid ${paper.rule}`,
           // B54 — thanh chip đã tự xuống dòng sẵn; chỉ cần lề hẹp lại.
           padding: mobile ? '14px 20px' : '16px 56px 17px',
+        }}
+      >
+      <div
+        style={{
+          ...frame(CONTENT_W),
           display: 'flex',
           alignItems: 'center',
           gap: 9,
@@ -295,6 +309,7 @@ export function Cards({ post, breadcrumb, mobile = false, ...overrides }: CardsP
           </div>
         )}
       </div>
+      </div>
 
       <div
         style={{
@@ -303,7 +318,8 @@ export function Cards({ post, breadcrumb, mobile = false, ...overrides }: CardsP
           gridTemplateColumns: mobile ? 'minmax(0,1fr)' : 'minmax(0,1fr) minmax(220px,272px)',
           gap: 52,
           padding: '32px 56px 140px',
-          maxWidth: 1320,
+          maxWidth: CONTENT_W + 112, // plus its 56px side margins
+          margin: '0 auto',
           alignItems: 'start',
         }}
       >
@@ -395,6 +411,7 @@ export function Cards({ post, breadcrumb, mobile = false, ...overrides }: CardsP
             )
           })}
           {overrides.renderAfterCards?.()}
+          {footer}
         </div>
 
         <div style={{ position: 'sticky', top: 24 }}>

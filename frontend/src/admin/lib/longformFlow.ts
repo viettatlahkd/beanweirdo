@@ -14,13 +14,14 @@
  * đang chạy trên trang thật, và đây thuần tuý là cách bày ra để sửa.
  */
 import { longformRunsToText, longformTextToRuns, type LongformBlock } from 'post-renderer'
+import { splitAtLine } from './mdBlocks'
 
 /** Khối nào markdown viết ra rồi đọc lại được mà không mất gì. */
 const FLOWING = new Set(['p', 'h1', 'h2', 'h3', 'h4', 'li'])
 
-export const flowsLongform = (b: LongformBlock | undefined) => b !== undefined && FLOWING.has(b.k)
+const flowsLongform = (b: LongformBlock | undefined) => b !== undefined && FLOWING.has(b.k)
 
-export type FlowRun =
+type FlowRun =
   /** Một dải chữ liền, gộp từ các khối `at[0]`…`at[1]`. */
   | { kind: 'text'; at: [number, number]; text: string }
   /** Một thứ đứng riêng giữa dải chữ — `fig`, `note`, `aside`, `formula`. */
@@ -37,16 +38,36 @@ function blockToMarkdown(b: LongformBlock): string {
   // chúng gần như nhau, và mất một mức nhẹ hơn mất cả dòng tiêu đề.
   if (b.k === 'h3' || b.k === 'h4') return `### ${text}`
   if (b.k === 'li') return `${STEP.repeat(Math.max(0, (b.lvl ?? 1) - 1))}- ${text}`
+  if (b.quote) return `> ${text}`
   return text
 }
 
-/** Cả một dải khối thành một chuỗi markdown. */
+/**
+ * Cả một dải khối thành một chuỗi markdown.
+ *
+ * Mỗi khối một đoạn, cách nhau một dòng trống — trừ hai mục danh sách liền
+ * nhau, hay hai dòng trích dẫn liền nhau, vốn là một khối trên mặt soạn.
+ *
+ * Trước 2026-09-24 cả dải nối bằng **một** dấu xuống dòng, và Lexical gộp các
+ * dòng liền nhau thành một đoạn có ngắt dòng (`$importBlocks`): năm đoạn văn
+ * thành một khối, một đoạn ngay sau danh sách bị nuốt vào mục cuối. Nút `+`
+ * và chỗ thả khối vì thế chỉ đặt được sau cả cụm. Chủ site: *"nó phải chèn
+ * được vào line text chứ không phải là chèn vào từng khối paragraph"*.
+ */
 export function runToMarkdown(blocks: LongformBlock[]): string {
-  return blocks.map(blockToMarkdown).join('\n')
+  return blocks
+    .map((b, i) => {
+      const next = blocks[i + 1]
+      if (!next) return blockToMarkdown(b)
+      const tight = (b.k === 'li' && next.k === 'li') || (!!b.quote && !!next.quote)
+      return `${blockToMarkdown(b)}${tight ? '\n' : '\n\n'}`
+    })
+    .join('')
 }
 
 const HEADING = /^(#{1,3})\s+(.*)$/
 const ITEM = /^(\s*)-\s+(.*)$/
+const QUOTE = /^>\s?(.*)$/
 
 function lineToBlock(line: string): LongformBlock {
   const heading = HEADING.exec(line)
@@ -54,6 +75,8 @@ function lineToBlock(line: string): LongformBlock {
     const k = (['h1', 'h2', 'h3'] as const)[heading[1].length - 1]
     return { k, runs: longformTextToRuns(heading[2]) }
   }
+  const quote = QUOTE.exec(line)
+  if (quote) return { k: 'p', quote: true, runs: longformTextToRuns(quote[1]) }
   const item = ITEM.exec(line)
   if (item) {
     // Ba tầng là hết, như `stepIndent` vẫn giữ.
@@ -102,6 +125,32 @@ export function writeLongformRun(
 ): LongformBlock[] {
   const next = markdownToRun(markdown)
   return [...blocks.slice(0, at[0]), ...next, ...blocks.slice(at[1] + 1)]
+}
+
+/**
+ * Chèn một thứ vào giữa một dải, ngay sau khối con trỏ đang đứng.
+ *
+ * Ở đây `runToMarkdown` nối cả dải bằng **một** dấu xuống dòng, nên năm đoạn
+ * văn liền nhau vẽ ra *một* khối trên mặt soạn. Phép cộng chỉ số cũ vì thế
+ * luôn ra `run.at[0] + 1`, tức khối chèn vào luôn rơi ngay sau đoạn đầu dải
+ * bất kể con trỏ ở đâu.
+ */
+export function insertLongformThing(
+  blocks: LongformBlock[],
+  at: [number, number],
+  text: string,
+  /** Số dòng có chữ của dải đứng trên chỗ chèn — xem `linesThrough`. */
+  lines: number,
+  thing: LongformBlock,
+): LongformBlock[] {
+  const [before, after] = splitAtLine(text, lines)
+  return [
+    ...blocks.slice(0, at[0]),
+    ...markdownToRun(before),
+    thing,
+    ...markdownToRun(after),
+    ...blocks.slice(at[1] + 1),
+  ]
 }
 
 /** Dải nào chứa khối thứ `i`, để `wrapBlock` biết vẽ gì ở chỗ ấy. */

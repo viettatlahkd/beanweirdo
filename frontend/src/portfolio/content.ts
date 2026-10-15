@@ -1,6 +1,8 @@
+import { portPagePath, toPath, type PortSite } from '../lib/routes'
+
 /**
  * Fixed content shared by every portfolio page: header, footer, the main
- * portfolio page (/portfolio) and the about page (/portfolio/about).
+ * portfolio page (/) and the about page (/about).
  *
  * Stored under `site_settings.data.portfolio`, next to the copy that Content
  * management's "Nội dung trang" tab already edits — same row, same autosave,
@@ -31,7 +33,7 @@ export type PortContent = {
   }
 }
 
-export const DEFAULT_CONTENT: PortContent = {
+const DEFAULT_CONTENT: PortContent = {
   header: { brand: 'bæn.', right: 'inside the mind of hkd', links: [] },
   footer: { left: 'bæn. 2026', right: 'by hkd' },
   home: { title: 'bæn.', intro: 'inside the mind of hkd', features: [] },
@@ -65,7 +67,7 @@ export function aboutSign(about: PortContent['about']): string {
   return about.signs[about.signUse] ?? about.signs[0] ?? ''
 }
 
-export type NavPage = { id: string; slug: string; title: string; status: string }
+export type NavPage = { id: string; slug: string; title: string; status: string; home_of?: PortSite | null; parent_id?: string | null }
 export type NavLink = { key: string; label: string; href: string; hidden: boolean }
 
 /**
@@ -73,13 +75,13 @@ export type NavLink = { key: string; label: string; href: string; hidden: boolea
  * in that order unless the owner reordered them. A newly published page
  * appears on its own; an unpublished one drops out even if it was renamed.
  */
-export function navLinks(content: PortContent, pages: NavPage[], portfolioWord = 'portfolio'): NavLink[] {
+export function navLinks(content: PortContent, pages: NavPage[]): NavLink[] {
   const auto: NavLink[] = [
-    { key: 'home', label: content.home.title || 'portfolio', href: `/${portfolioWord}`, hidden: false },
+    { key: 'home', label: content.home.title || 'portfolio', href: toPath({ area: 'public', screen: 'portfolioHome' }), hidden: false },
     ...pages
       .filter((p) => p.status === 'published')
-      .map((p) => ({ key: `page:${p.id}`, label: p.title, href: `/${portfolioWord}/${p.slug}`, hidden: false })),
-    { key: 'about', label: 'about', href: `/${portfolioWord}/about`, hidden: false },
+      .map((p) => ({ key: `page:${p.id}`, label: p.title, href: portPagePath(p, pages), hidden: false })),
+    { key: 'about', label: 'about', href: toPath({ area: 'public', screen: 'portfolioAbout' }), hidden: false },
   ]
   const byKey = new Map(auto.map((l) => [l.key, l]))
   const out: NavLink[] = []

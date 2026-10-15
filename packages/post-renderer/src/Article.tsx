@@ -1,7 +1,9 @@
 import { Fragment, type CSSProperties, type ReactNode } from 'react'
-import { ElementList } from './elements'
+import { ElementList, Inline } from './elements'
 import { paletteFrom } from './palette'
-import { garden, ink, layout, paper, sans, serif, wrapTitle } from './tokens'
+import { frame, garden, ink, layout, paper, sans, serif, wrapTitle } from './tokens'
+import { fillStyle } from './focus'
+import { PlateCorner, plateHost, type PlateAction } from './plates'
 import type { ArticlePlateData, ArticlePostData, FigureData } from './types'
 
 /**
@@ -29,6 +31,15 @@ export type ArticleOverrides = {
   renderLead?: (lead: string) => ReactNode
   /** the four decorative tint plates: hero, opener-primary, opener-secondary, rail-detail */
   renderPlateCaption?: (plate: ArticlePlateData, slot: 'hero' | 'primary' | 'secondary' | 'detail') => ReactNode
+  /**
+   * A handle in the corner of each fixed picture cell — the four plates above
+   * and every section figure, keyed `fig-0`, `fig-1`, …
+   *
+   * Article draws more of these cells than any other template, and three of the
+   * four plates had nowhere at all to put a photo: `toArticleData` filled them
+   * with `imageUrl: null` and there was no field behind them.
+   */
+  renderPlateAction?: PlateAction
   renderSectionHeading?: (h: string, index: number) => ReactNode
   /**
    * Wraps one section, so the admin can hang its move / copy / delete handles
@@ -61,10 +72,14 @@ export type ArticleProps = ArticleOverrides & {
    */
   mobile?: boolean
   /**
-   * The trail back to where this post is filed. Supplied by the app, so the
-   * renderer package stays independent of how routing works.
+   * The page's own head (cover, title, properties), supplied by a page that
+   * draws them itself — the post page shared by every site. Given one, the
+   * template drops its coloured band and title and puts this at the top of
+   * its text column, so the head lines up with the words below it.
    */
-  breadcrumb?: ReactNode
+  head?: ReactNode
+  /** Closes the reading column — the app's author card. Supplied by the app, like `head`. */
+  footer?: ReactNode
   post: ArticlePostData
 }
 
@@ -75,12 +90,16 @@ export type ArticleProps = ArticleOverrides & {
  * of the piece. Ported from frontend/src/screens/Article.tsx, parameterized
  * over `post` instead of the static article/articleMeta content modules.
  */
-export function Article({ post, breadcrumb, mobile = false, ...overrides }: ArticleProps) {
+export function Article({ post, head, footer, mobile = false, ...overrides }: ArticleProps) {
   // Store elements paint themselves from the module's colours, the same way
   // they do on every other template; the band's fallback is repeated below.
   const palette = paletteFrom(post.band?.bg ?? garden.leaf, post.band?.fg)
+  // Under a page's own head the side column goes under the text, as on a
+  // phone: the page keeps one reading column, with its own rail on the left.
+  const stacked = mobile || head !== undefined
   return (
     <div>
+      {head === undefined && (
       <div
         style={{
           // The module's own colours, so a biochem essay and a sensory one do
@@ -88,11 +107,22 @@ export function Article({ post, breadcrumb, mobile = false, ...overrides }: Arti
           // sample under Admin › Templates, which belongs to no module.
           background: post.band?.bg ?? garden.leaf,
           color: post.band?.fg ?? '#1F3323',
-          padding: mobile ? '28px 20px 26px' : '46px 56px 124px',
+          /*
+           * The band ends where its words end. It used to keep 124px under the
+           * lead whatever the lead held, so a post with no description opened
+           * on a tall empty block; 72px is the design system's bottom padding
+           * for any section (`gridRules` → padding).
+           */
+          padding: mobile ? '28px 20px 26px' : '46px 56px 72px',
           position: 'relative',
         }}
       >
-        {breadcrumb}
+        {/*
+          * `measure` counts the band's 56px side margins; the frame is what sits
+          * between them. The colour runs edge to edge, while the words and the
+          * hero plate keep to the frame, so both line up with the body below.
+          */}
+        <div style={{ ...frame(layout.measure - 112), position: 'relative' }}>
         <div style={{ ...label, opacity: 0.7, marginBottom: 24 }}>
           {overrides.renderEyebrow ? overrides.renderEyebrow(post.moduleTitle) : `← ${post.moduleTitle}`}
         </div>
@@ -127,17 +157,21 @@ export function Article({ post, breadcrumb, mobile = false, ...overrides }: Arti
             </>
           )}
         </h1>
-        <div
-          style={{
-            fontFamily: serif,
-            fontStyle: 'italic',
-            fontSize: mobile ? 19 : 24,
-            lineHeight: 1.4,
-            maxWidth: mobile ? undefined : 'min(520px, 100% - 300px)',
-          }}
-        >
-          {overrides.renderLead ? overrides.renderLead(post.lead) : post.lead}
-        </div>
+        {/* No description, no line for it — the editor still gets its field. */}
+        {(overrides.renderLead || post.lead.trim() !== '') && (
+          <div
+            data-testid="article-lead"
+            style={{
+              fontFamily: serif,
+              fontStyle: 'italic',
+              fontSize: mobile ? 19 : 24,
+              lineHeight: 1.4,
+              maxWidth: mobile ? undefined : 'min(520px, 100% - 300px)',
+            }}
+          >
+            {overrides.renderLead ? overrides.renderLead(post.lead) : post.lead}
+          </div>
+        )}
 
         <div
           data-testid="article-hero-plate"
@@ -147,13 +181,13 @@ export function Article({ post, breadcrumb, mobile = false, ...overrides }: Arti
             // chữ chỉ còn 90px.
             position: mobile ? 'relative' : 'absolute',
             right: 0,
-            top: 0,
-            bottom: 0,
+            // Reaches through the band's own top and bottom padding, so the
+            // plate still fills the band's full height from inside the frame.
+            top: mobile ? 0 : -46,
+            bottom: mobile ? 0 : -72,
             width: mobile ? '100%' : 300,
             height: mobile ? 200 : undefined,
-            background: post.heroPlate.imageUrl ? undefined : post.heroPlate.tint,
-            backgroundImage: post.heroPlate.imageUrl ? `url(${post.heroPlate.imageUrl})` : undefined,
-            backgroundSize: 'cover',
+            ...fillStyle(post.heroPlate.imageUrl, post.heroPlate.tint),
             display: 'flex',
             alignItems: 'flex-end',
             padding: 14,
@@ -164,10 +198,18 @@ export function Article({ post, breadcrumb, mobile = false, ...overrides }: Arti
               ? overrides.renderPlateCaption(post.heroPlate, 'hero')
               : post.heroPlate.caption}
           </div>
+          {/* Already `absolute` (or `relative` on mobile), so it is its own
+              positioning context without `plateHost`. */}
+          <PlateCorner
+            action={overrides.renderPlateAction}
+            slot={{ key: 'hero', imageUrl: post.heroPlate.imageUrl ?? null }}
+          />
+        </div>
         </div>
       </div>
+      )}
 
-      <div style={{ padding: '56px 56px 140px', maxWidth: layout.measure }}>
+      <div style={head === undefined ? { padding: '56px 56px 140px', maxWidth: layout.measure, margin: '0 auto' } : { ...frame(layout.reading), padding: mobile ? '28px 20px 96px' : '48px 0 140px' }}>
         <div
           style={{
             display: 'grid',
@@ -175,7 +217,7 @@ export function Article({ post, breadcrumb, mobile = false, ...overrides }: Arti
              * B47 — cột phụ tháo xuống cuối bài. Cột 200–260px cạnh một cột
              * chữ trên màn 390 thì cả hai đều không đọc được.
              */
-            gridTemplateColumns: mobile
+            gridTemplateColumns: stacked
               ? 'minmax(0,1fr)'
               : `minmax(0,1fr) minmax(${layout.railMin}px,${layout.railMax}px)`,
             gap: 48,
@@ -183,7 +225,11 @@ export function Article({ post, breadcrumb, mobile = false, ...overrides }: Arti
           }}
         >
           <div>
-            {/* two plates of unequal height, bottom-aligned to a common edge */}
+            {head}
+            {/* Under a page's own head an empty plate is not drawn: the reader
+                would see a placeholder, not a picture. */}
+            {(head === undefined || post.platePrimary.imageUrl || post.plateSecondary.imageUrl) && (
+            /* two plates of unequal height, bottom-aligned to a common edge */
             <div
               style={{
                 display: 'grid',
@@ -194,10 +240,9 @@ export function Article({ post, breadcrumb, mobile = false, ...overrides }: Arti
             >
               <div
                 style={{
+                  ...plateHost,
                   height: 280,
-                  background: post.platePrimary.imageUrl ? undefined : post.platePrimary.tint,
-                  backgroundImage: post.platePrimary.imageUrl ? `url(${post.platePrimary.imageUrl})` : undefined,
-                  backgroundSize: 'cover',
+                  ...fillStyle(post.platePrimary.imageUrl, post.platePrimary.tint),
                   display: 'flex',
                   alignItems: 'flex-end',
                   padding: 14,
@@ -208,14 +253,17 @@ export function Article({ post, breadcrumb, mobile = false, ...overrides }: Arti
                     ? overrides.renderPlateCaption(post.platePrimary, 'primary')
                     : post.platePrimary.caption}
                 </div>
+                <PlateCorner
+                  action={overrides.renderPlateAction}
+                  slot={{ key: 'primary', imageUrl: post.platePrimary.imageUrl ?? null }}
+                />
               </div>
               <div
                 style={{
+                  ...plateHost,
                   height: 180,
                   alignSelf: 'end',
-                  background: post.plateSecondary.imageUrl ? undefined : post.plateSecondary.tint,
-                  backgroundImage: post.plateSecondary.imageUrl ? `url(${post.plateSecondary.imageUrl})` : undefined,
-                  backgroundSize: 'cover',
+                  ...fillStyle(post.plateSecondary.imageUrl, post.plateSecondary.tint),
                   display: 'flex',
                   alignItems: 'flex-end',
                   padding: 12,
@@ -226,8 +274,13 @@ export function Article({ post, breadcrumb, mobile = false, ...overrides }: Arti
                     ? overrides.renderPlateCaption(post.plateSecondary, 'secondary')
                     : post.plateSecondary.caption}
                 </div>
+                <PlateCorner
+                  action={overrides.renderPlateAction}
+                  slot={{ key: 'secondary', imageUrl: post.plateSecondary.imageUrl ?? null }}
+                />
               </div>
             </div>
+            )}
 
             {post.sections.map((s, i) => {
               /*
@@ -258,7 +311,13 @@ export function Article({ post, breadcrumb, mobile = false, ...overrides }: Arti
                   {overrides.renderSectionHeading ? overrides.renderSectionHeading(s.h, i) : s.h}
                 </h3>
                 <div style={{ fontSize: 16, lineHeight: 1.2, color: ink.body }}>
-                  {overrides.renderSectionBody ? overrides.renderSectionBody(s.p, i) : s.p}
+                  {/* Mặt soạn ghi đậm/nghiêng ra `**x**`, `*x*`; vẽ thẳng chuỗi
+                      thì bạn đọc thấy nguyên dấu sao. Màu giữ theo thân bài. */}
+                  {overrides.renderSectionBody ? (
+                    overrides.renderSectionBody(s.p, i)
+                  ) : (
+                    <Inline text={s.p} accentInk="inherit" />
+                  )}
                 </div>
 
                 {s.fig &&
@@ -288,10 +347,9 @@ export function Article({ post, breadcrumb, mobile = false, ...overrides }: Arti
                       <div style={{ width: s.fig.w, flex: 'none' }}>
                         <div
                           style={{
+                            ...plateHost,
                             height: s.fig.h,
-                            background: s.fig.imageUrl ? undefined : s.fig.tint,
-                            backgroundImage: s.fig.imageUrl ? `url(${s.fig.imageUrl})` : undefined,
-                            backgroundSize: 'cover',
+                            ...fillStyle(s.fig.imageUrl, s.fig.tint),
                             display: 'flex',
                             alignItems: 'flex-end',
                             padding: 12,
@@ -302,6 +360,10 @@ export function Article({ post, breadcrumb, mobile = false, ...overrides }: Arti
                               ? overrides.renderFigureCaption(s.fig.caption ?? '', i)
                               : s.fig.caption}
                           </div>
+                          <PlateCorner
+                            action={overrides.renderPlateAction}
+                            slot={{ key: `fig-${i}`, imageUrl: s.fig.imageUrl ?? null }}
+                          />
                         </div>
                       </div>
                     </div>
@@ -315,9 +377,13 @@ export function Article({ post, breadcrumb, mobile = false, ...overrides }: Arti
               )
             })}
             {overrides.renderAfterSections?.()}
+            {footer}
           </div>
 
+          {/* Under a page's own head the side column keeps only the pull quote:
+              the module's neighbours and its detail plate belong to the blog. */}
           <div style={{ position: 'sticky', top: 44, display: 'flex', flexDirection: 'column', gap: 20 }}>
+            {(head === undefined || post.pull.trim() !== '') && (
             <div
               style={{
                 background: ink.moss,
@@ -331,6 +397,10 @@ export function Article({ post, breadcrumb, mobile = false, ...overrides }: Arti
             >
               {overrides.renderPullQuote ? overrides.renderPullQuote(post.pull) : post.pull}
             </div>
+            )}
+
+            {head === undefined && (
+            <>
 
             <div style={{ borderTop: `2px solid ${ink.base}`, paddingTop: 14 }}>
               <div style={{ ...label, color: ink.muted, marginBottom: 8 }}>{post.relatedHeading}</div>
@@ -353,10 +423,9 @@ export function Article({ post, breadcrumb, mobile = false, ...overrides }: Arti
 
             <div
               style={{
+                ...plateHost,
                 aspectRatio: '1',
-                background: post.detailPlate.imageUrl ? undefined : post.detailPlate.tint,
-                backgroundImage: post.detailPlate.imageUrl ? `url(${post.detailPlate.imageUrl})` : undefined,
-                backgroundSize: 'cover',
+                ...fillStyle(post.detailPlate.imageUrl, post.detailPlate.tint),
                 display: 'flex',
                 alignItems: 'flex-end',
                 padding: 12,
@@ -367,6 +436,10 @@ export function Article({ post, breadcrumb, mobile = false, ...overrides }: Arti
                   ? overrides.renderPlateCaption(post.detailPlate, 'detail')
                   : post.detailPlate.caption}
               </div>
+              <PlateCorner
+                action={overrides.renderPlateAction}
+                slot={{ key: 'detail', imageUrl: post.detailPlate.imageUrl ?? null }}
+              />
             </div>
 
             <div style={{ fontFamily: sans, fontSize: 10, color: ink.muted, lineHeight: 1.6 }}>
@@ -377,6 +450,8 @@ export function Article({ post, breadcrumb, mobile = false, ...overrides }: Arti
                 </div>
               ))}
             </div>
+            </>
+            )}
           </div>
         </div>
       </div>

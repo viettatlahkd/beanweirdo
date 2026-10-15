@@ -7,10 +7,10 @@ import { MAX_SESSIONS, type SessionView, type TimerMode } from '../lib/useSessio
 import { TimerAddTag, type TagSystem } from './TagBar'
 
 /** Countdown lengths on the quarter-hour, matching a browser's own time control. */
-export const TIMER_PRESETS = [15, 30, 45, 60]
+const TIMER_PRESETS = [15, 30, 45, 60]
 
 /** Longest countdown the `+` beside the presets will take, in minutes. */
-export const MAX_TARGET_MINS = 12 * 60
+const MAX_TARGET_MINS = 12 * 60
 
 const clockFmt = (s: number) =>
   [Math.floor(s / 3600), Math.floor((s % 3600) / 60), s % 60]
@@ -679,7 +679,7 @@ function ExpandedSession({
   )
 }
 
-export type TimerRailProps = {
+type TimerRailProps = {
   sessions: SessionView[]
   /** The expanded session, or null when everything is collapsed. */
   open: SessionView | null

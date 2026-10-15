@@ -54,6 +54,21 @@ describe('listing rule — what it pulls', () => {
   })
 })
 
+describe('listing rule — deeper trees', () => {
+  // bean › roasting › maillard: a third level, which the tree allows since 0031.
+  const deep = [...topics, { id: 'maillard', parent_id: 'roasting', sort_order: 9, title: 'maillard' }]
+  const deepPosts = [...posts, post('m', 'maillard', '2026-04-01')]
+
+  it('reads the tree top to bottom at any depth', () => {
+    expect(treeOrder(deep)).toEqual(['biz', 'ops', 'bean', 'sensory', 'roasting', 'maillard'])
+  })
+
+  it('pulls posts from every level under a node when asked', () => {
+    expect(ids(resolveRule(toRule({ tier: 'topic', nodes: ['bean'], include_children: true }), deepPosts, { ...ctx, topics: deep }))).toContain('m')
+    expect(ids(resolveRule(toRule({ tier: 'topic', nodes: ['bean'], include_children: false }), deepPosts, { ...ctx, topics: deep }))).not.toContain('m')
+  })
+})
+
 describe('listing rule — order', () => {
   it('orders by time either way, and by the tree', () => {
     expect(ids(resolveRule(toRule({ sort: 'oldest' }), posts, ctx))).toEqual(['c', 'a', 'e', 'b', 'd'])

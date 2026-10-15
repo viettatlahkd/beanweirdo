@@ -64,7 +64,7 @@ function depths(lines: Line[]): Map<number, number> {
  * Pasted text as list items, or `null` when there is nothing a list can do
  * better than the field itself — one plain line is just typing.
  */
-export function pastedToItems(text: string): PastedList | null {
+function pastedToItems(text: string): PastedList | null {
   const lines = text.replace(/\r\n?/g, '\n').split('\n').map(read).filter((l): l is Line => l !== null)
   if (lines.length === 0) return null
   if (lines.length === 1 && !lines[0].marked) return null
@@ -104,6 +104,8 @@ export function pastedToItems(text: string): PastedList | null {
 
 const HEADING = /^(#{1,6})[ \t]+(.*)$/
 const IMAGE = /^!\[([^\]\n]*)\]\(\s*([^()\s]+)\s*\)$/
+/** `[![chú thích](ảnh)](link)` — một tấm ảnh bấm được. */
+const LINKED_IMAGE = /^\[!\[([^\]\n]*)\]\(\s*([^()\s]+)\s*\)\]\(\s*([^()\s]+)\s*\)$/
 const QUOTE = /^>[ \t]?(.*)$/
 /** `---`, `***`, `___` — một vạch ngăn; design không có element nào cho nó. */
 const RULE = /^(-{3,}|\*{3,}|_{3,})$/
@@ -187,6 +189,14 @@ export function markdownToBlocks(text: string): StoredElement[] {
       // Markdown có sáu cấp, design vẽ ba. Cấp sâu hơn về cấp ba chứ không
       // rơi mất — một tiêu đề mất cấp vẫn là một tiêu đề.
       out.push({ type: 'heading', text: heading[2], level: Math.min(3, heading[1].length) })
+      i++
+      continue
+    }
+
+    const linked = LINKED_IMAGE.exec(trimmed)
+    if (linked) {
+      flush()
+      out.push({ type: 'image', caption: linked[1], imageUrl: linked[2], href: linked[3] })
       i++
       continue
     }

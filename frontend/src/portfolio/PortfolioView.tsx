@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
-import { createPortal } from 'react-dom'
+import { Fragment, useEffect, useRef, type CSSProperties, type ReactNode } from 'react'
 import { resolvePosts, type Block, type PortPost } from './blocks'
+import { TagBadges } from '../components/TagBadges'
 import { gridArea, imageOf, seriesLayout, storyLayout, type Placed } from './layout'
 import { PF_CSS } from './styles'
+import { PostPeek, usePeek, type PeekTrigger } from './PostPeek'
 import { cssVars, fontFaceCss, fontHrefs, type Design } from './tokens'
 import { aboutSign, type NavLink, type PortContent } from './content'
 
@@ -12,7 +13,7 @@ import { aboutSign, type NavLink, type PortContent } from './content'
  * The same component serves the public page and the admin preview, so what the
  * site owner sees while arranging a page is exactly what readers will see.
  */
-export type PortfolioViewProps = {
+type PortfolioViewProps = {
   title: string
   intro: string
   palette: string
@@ -25,6 +26,11 @@ export type PortfolioViewProps = {
   postHref: (p: PortPost) => string
   /** Header and footer content (Portfolio › Nội dung trang). Without it the page shows a bare default. */
   chrome?: Chrome
+  /**
+   * A way one level down the site tree, drawn right under the page's hero.
+   * The bean port page carries one into the blog, which lives under it.
+   */
+  onward?: { href: string; label: string }
   /** The block selected in the page arranger — lightly outlined so it is easy to spot. */
   activeId?: string | null
   onPick?: (id: string) => void
@@ -82,37 +88,70 @@ const FALLBACK_CHROME = (title: string): Chrome => ({
   links: [],
 })
 
-/** 06.1 Header and 06.17 Footer around a page body — every portfolio page wears them. */
-export function PortFrame({ design, palette, chrome, children }: { design: Design; palette: string; chrome: Chrome; children: ReactNode }) {
-  useAssets(design.fonts.library, design.fonts.files)
-  const vars = cssVars(design, palette) as CSSProperties
-  const { header, footer } = chrome.content
+function TopBar({ chrome }: { chrome: Chrome }) {
+  const { header } = chrome.content
   const links = chrome.links.filter((l) => !l.hidden)
   return (
-    <div className="pf" style={vars}>
-      <header className="topbar">
-        <a className="brand" href={links[0]?.href ?? '#'}>{header.brand}</a>
-        <nav className="nav">
-          {links.map((l) => (
-            <a key={l.key} href={l.href} aria-current={l.key === chrome.current ? 'page' : undefined}>
-              <span className="mk">{l.label}</span>
-            </a>
-          ))}
-        </nav>
-        <span className="r">{header.right}</span>
-      </header>
+    <header className="topbar">
+      <a className="brand" href={links[0]?.href ?? '#'}>{header.brand}</a>
+      <nav className="nav">
+        {links.map((l) => (
+          <a key={l.key} href={l.href} aria-current={l.key === chrome.current ? 'page' : undefined}>
+            <span className="mk">{l.label}</span>
+          </a>
+        ))}
+      </nav>
+      <span className="r">{header.right}</span>
+    </header>
+  )
+}
+
+function Foot({ chrome }: { chrome: Chrome }) {
+  const { footer } = chrome.content
+  return (
+    <footer className="footer">
+      <span>{footer.left}</span>
+      <span>{footer.right}</span>
+    </footer>
+  )
+}
+
+/** 06.1 Header and 06.17 Footer around a page body — every portfolio page wears them. */
+function PortFrame({ design, palette, chrome, children }: { design: Design; palette: string; chrome: Chrome; children: ReactNode }) {
+  useAssets(design.fonts.library, design.fonts.files)
+  return (
+    <div className="pf" style={cssVars(design, palette) as CSSProperties}>
+      <TopBar chrome={chrome} />
       {children}
-      <footer className="footer">
-        <span>{footer.left}</span>
-        <span>{footer.right}</span>
-      </footer>
+      <Foot chrome={chrome} />
+    </div>
+  )
+}
+
+/**
+ * The same header and footer around a page that is not built from port blocks
+ * (a post). The body sits outside `.pf`: its reset (`margin:0`, no list
+ * padding) would strip the post templates of the spacing they rely on.
+ */
+export function PortBars({ design, palette, chrome, children }: { design: Design; palette: string; chrome: Chrome; children: ReactNode }) {
+  useAssets(design.fonts.library, design.fonts.files)
+  // The tokens sit on the outer box so the body can use them too (var(--ink-2)…).
+  return (
+    <div style={{ ...(cssVars(design, palette) as CSSProperties), background: 'var(--paper)', color: 'var(--ink)', minHeight: '100vh' }}>
+      <div className="pf">
+        <TopBar chrome={chrome} />
+      </div>
+      {children}
+      <div className="pf">
+        <Foot chrome={chrome} />
+      </div>
     </div>
   )
 }
 
 export function PortfolioView(props: PortfolioViewProps) {
-  const { design, palette, blocks, posts, moduleTitles, postHref, activeId, onPick } = props
-  const [open, setOpen] = useState<PortPost | null>(null)
+  const { design, palette, blocks, posts, moduleTitles, postHref, onward, activeId, onPick } = props
+  const { peek, trigger, card: peekCard, close } = usePeek()
   const vars = cssVars(design, palette) as CSSProperties
 
   const card = (p: PortPost, key: string, hidden = false) => (
@@ -121,10 +160,11 @@ export function PortfolioView(props: PortfolioViewProps) {
       className="card"
       tabIndex={hidden ? -1 : undefined}
       aria-hidden={hidden || undefined}
-      onClick={() => setOpen(p)}
+      {...trigger(p)}
     >
       <Img url={p.hero_image_url} />
       <span className="meta">{metaOf(p, moduleTitles)}</span>
+      <TagBadges tags={p.tags ?? []} style={{ margin: '6px 0 2px' }} />
       <h3 className="title">
         <span className="mk">{p.en}</span>
       </h3>
@@ -152,7 +192,7 @@ export function PortfolioView(props: PortfolioViewProps) {
         const cap = (p: PortPost | undefined, cls = '') =>
           p && (
             <figcaption className={cls}>
-              <button onClick={() => setOpen(p)}>
+              <button {...trigger(p)}>
                 <span className="mk">{moduleTitles[p.module_id] ?? p.module_id}</span>
               </button>
               <span className="meta">{p.en}</span>
@@ -232,7 +272,7 @@ export function PortfolioView(props: PortfolioViewProps) {
                   <ol>
                     {list.map((p, i) => (
                       <li key={p.id}>
-                        <button onClick={() => setOpen(p)}>
+                        <button {...trigger(p)}>
                           <span className="n">{String(i + 1).padStart(2, '0')}</span>
                           <span>
                             <span className="title">
@@ -245,7 +285,7 @@ export function PortfolioView(props: PortfolioViewProps) {
                     ))}
                   </ol>
                 </div>
-                <Fib places={places} list={list} onOpen={setOpen} />
+                <Fib places={places} list={list} trigger={trigger} />
               </div>
             </div>
           </section>
@@ -284,7 +324,7 @@ export function PortfolioView(props: PortfolioViewProps) {
                   )}
                 </div>
                 <div className="fib-wrap">
-                  <Fib places={places} list={list} onOpen={setOpen} tall />
+                  <Fib places={places} list={list} trigger={trigger} tall />
                 </div>
               </div>
             </div>
@@ -331,29 +371,44 @@ export function PortfolioView(props: PortfolioViewProps) {
 
   return (
     <PortFrame design={design} palette={palette} chrome={props.chrome ?? FALLBACK_CHROME(props.title)}>
-      {blocks.map((b) => (
-        <div
-          key={b.id}
-          data-block={b.id}
-          onClickCapture={onPick ? () => onPick(b.id) : undefined}
-          style={activeId === b.id ? { outline: `1px dashed ${design.colors.ink3}`, outlineOffset: -1 } : undefined}
-        >
-          {render(b)}
-        </div>
+      {/* Under the hero when the page opens with one, so it is seen before any scrolling. */}
+      {onward && blocks[0]?.type !== 'head' && <Onward {...onward} />}
+      {blocks.map((b, i) => (
+        <Fragment key={b.id}>
+          <div
+            data-block={b.id}
+            onClickCapture={onPick ? () => onPick(b.id) : undefined}
+            style={activeId === b.id ? { outline: `1px dashed ${design.colors.ink3}`, outlineOffset: -1 } : undefined}
+          >
+            {render(b)}
+          </div>
+          {onward && i === 0 && b.type === 'head' && <Onward {...onward} />}
+        </Fragment>
       ))}
-      {open &&
-        createPortal(
-          <Summary post={open} vars={vars} moduleTitles={moduleTitles} href={postHref(open)} onClose={() => setOpen(null)} />,
-          document.body,
-        )}
+      {peek && (
+        <PostPeek peek={peek} vars={vars} meta={metaOf(peek.post, moduleTitles)} cover={<Img url={peek.post.hero_image_url} />} href={postHref(peek.post)} card={peekCard} onClose={close} />
+      )}
     </PortFrame>
+  )
+}
+
+function Onward({ href, label }: { href: string; label: string }) {
+  return (
+    <section className="rg sec">
+      <div className="rail" />
+      <div className="main">
+        <a className="onward" href={href}>
+          <span className="mk">{label}</span> →
+        </a>
+      </div>
+    </section>
   )
 }
 
 /** A port page as the main page lists it. */
 export type HomeCard = { href: string; title: string; label: string; intro: string; image: string; palette: string }
 
-/** /portfolio — 06.2 Hero, then each featured port page as a two-column Card grid (06.4). */
+/** / — 06.2 Hero, then each featured port page as a two-column Card grid (06.4). */
 export function PortHome({ design, chrome, cards }: { design: Design; chrome: Chrome; cards: HomeCard[] }) {
   const { home } = chrome.content
   const first = Object.keys(design.palettes)[0] ?? 'biz'
@@ -388,7 +443,7 @@ export function PortHome({ design, chrome, cards }: { design: Design; chrome: Ch
   )
 }
 
-/** /portfolio/about — 06.12 About hero and 06.11 Link list. */
+/** /about — 06.12 About hero and 06.11 Link list. */
 export function PortAbout({ design, chrome, posts }: { design: Design; chrome: Chrome; posts: LinkItemOut[] }) {
   const { about } = chrome.content
   const first = Object.keys(design.palettes)[0] ?? 'biz'
@@ -454,16 +509,16 @@ export function PortAbout({ design, chrome, posts }: { design: Design; chrome: C
   )
 }
 
-export type LinkItemOut = { label: string; url: string }
+type LinkItemOut = { label: string; url: string }
 
-function Fib({ places, list, onOpen, tall }: { places: Placed[]; list: PortPost[]; onOpen: (p: PortPost) => void; tall?: boolean }) {
+function Fib({ places, list, trigger, tall }: { places: Placed[]; list: PortPost[]; trigger: PeekTrigger; tall?: boolean }) {
   return (
     <div className={`fib${tall ? ' tall' : ''}`}>
       {places.map((pl, i) => {
         const p = list[i]
         if (!p) return null
         return (
-          <button key={p.id} style={{ gridArea: gridArea(pl) }} onClick={() => onOpen(p)} aria-label={p.en}>
+          <button key={p.id} style={{ gridArea: gridArea(pl) }} {...trigger(p)} aria-label={p.en}>
             <Img url={p.hero_image_url} />
           </button>
         )
@@ -521,46 +576,5 @@ function Slider({
         </div>
       </div>
     </section>
-  )
-}
-
-function Summary({
-  post,
-  vars,
-  moduleTitles,
-  href,
-  onClose,
-}: {
-  post: PortPost
-  vars: CSSProperties
-  moduleTitles: Record<string, string>
-  href: string
-  onClose: () => void
-}) {
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
-  return (
-    <div className="pf-pop" style={vars} onClick={(e) => e.target === e.currentTarget && onClose()} role="dialog" aria-modal="true">
-      <div className="summary pf">
-        <button className="close" onClick={onClose} aria-label="đóng">
-          ×
-        </button>
-        <Img url={post.hero_image_url} />
-        <div className="txt">
-          <span className="meta">{metaOf(post, moduleTitles)}</span>
-          <h3 className="head">{post.en}</h3>
-          <span className="lbl">trước khi đọc</span>
-          <p className="read">{post.lead || post.vi}</p>
-          <div className="foot">
-            <a className="lbl" href={href}>
-              <span className="mk">đọc bài →</span>
-            </a>
-          </div>
-        </div>
-      </div>
-    </div>
   )
 }

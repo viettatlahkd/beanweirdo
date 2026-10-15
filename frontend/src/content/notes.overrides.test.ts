@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { featureCells, withOverrides } from './notes'
+import { featureCells, patchOverride, withOverrides } from './notes'
 
 describe('withOverrides', () => {
   it('returns the design cells untouched when nothing is set', () => {
@@ -32,5 +32,15 @@ describe('withOverrides', () => {
   it('leaves the caption alone when only a photo is set', () => {
     const out = withOverrides(featureCells, [{ n: 1, img: '/c.jpg' }])
     expect(out.find((c) => c.n === 1)!.t).toBe(featureCells.find((c) => c.n === 1)!.t)
+  })
+})
+
+describe('patchOverride', () => {
+  it('replaces one cell and keeps the others, sorted by n', () => {
+    const next = patchOverride([{ n: 3, img: 'a.jpg' }, { n: 1, t: 'x' }], 2, { t: 'câu mới' })
+    expect(next).toEqual([{ n: 1, t: 'x' }, { n: 2, t: 'câu mới' }, { n: 3, img: 'a.jpg' }])
+  })
+  it('keeps a photo already set on the cell it patches', () => {
+    expect(patchOverride([{ n: 1, img: 'a.jpg', t: 'cũ' }], 1, { t: 'mới' })).toEqual([{ n: 1, img: 'a.jpg', t: 'mới' }])
   })
 })

@@ -1,0 +1,36 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "ignoreBinaries": [
+    "tsc"
+  ],
+  "ignoreDependencies": [
+    "pg",
+    "playwright",
+    "vite"
+  ],
+  "ignore": [
+    "frontend/design/**"
+  ],
+  "workspaces": {
+    ".": {
+      "entry": [
+        "tools/**/*.mjs",
+        "scripts/*.mjs"
+      ]
+    },
+    "frontend": {
+      "entry": [
+        "src/harness.tsx",
+        "src/cmsHarness.tsx"
+      ]
+    },
+    "backend": {
+      "entry": [
+        "scripts/*.mjs"
+      ],
+      "ignoreDependencies": [
+        "api-contract"
+      ]
+    }
+  }
+}

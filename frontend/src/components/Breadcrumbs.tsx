@@ -1,6 +1,5 @@
 import type { CSSProperties } from 'react'
 import { useModules } from '../data/useModules'
-import { useSiteCopy } from '../data/useSiteCopy'
 import { sans } from '../design/tokens'
 import { buildCrumbs, crumbBack } from '../lib/crumbs'
 import { useNav } from '../lib/nav'
@@ -31,9 +30,7 @@ export function Breadcrumbs({
 }) {
   const nav = useNav()
   const { data: modules } = useModules()
-  const { site } = useSiteCopy()
-
-  const crumbs = buildCrumbs(nav, modules, site.sections, { trailing, moduleId, parentGo: onParent })
+  const crumbs = buildCrumbs(nav, modules, { trailing, moduleId, parentGo: onParent })
   const back = crumbBack(nav, moduleId, onParent, modules)
 
   return (

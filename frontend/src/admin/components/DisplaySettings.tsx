@@ -3,6 +3,11 @@ import { BLOG_COLORS, BLOG_FONTS, blogFontHref, blogVars, type BlogDesign } from
 import { ink, paper, sans, serif } from '../../design/tokens'
 import { DesignTab, sectionHead, usePortAdmin, useSplit } from './PortEditors'
 import { ScaledPreview, useWidth } from './ScaledPreview'
+import { SiteTabs, useRememberedTab } from './SiteTabs'
+import { desk } from './Detail'
+import { radius } from '../../design/controls'
+import { Button, IconButton } from '../../design/Button'
+import { IconClose } from '../../design/icons'
 
 /**
  * Cài đặt hiển thị — one half per site. Personal Blog: its addresses, the
@@ -10,18 +15,10 @@ import { ScaledPreview, useWidth } from './ScaledPreview'
  * are drawn with (it was the third tab of the separate Portfolio screen).
  */
 
-type Site = 'blog' | 'port' | 'routes'
-const KEY = 'beanweirdo.display.site'
-const remembered = (): Site => {
-  try {
-    const v = localStorage.getItem(KEY)
-    return v === 'port' || v === 'routes' ? v : 'blog'
-  } catch {
-    return 'blog'
-  }
-}
+const SITES = ['blog', 'port', 'routes'] as const
+const SITE_LABELS = { blog: 'Personal Blog', port: 'Port', routes: 'Đường dẫn' }
 
-const label: CSSProperties = { fontFamily: sans, fontSize: 10, letterSpacing: '.16em', textTransform: 'uppercase', color: ink.faint, marginBottom: 6 }
+const label: CSSProperties = { fontFamily: sans, fontSize: 13, color: ink.soft, marginBottom: 6 }
 const box: CSSProperties = { boxSizing: 'border-box', width: '100%', background: paper.white, border: `1px solid ${paper.rule}`, color: ink.base, fontFamily: sans, fontSize: 12.5, padding: '6px 8px', outline: 'none' }
 const HEX = /^#[0-9a-fA-F]{6}$/
 
@@ -37,39 +34,21 @@ export function DisplaySettings({
   design: BlogDesign | undefined
   onSaveDesign: (patch: BlogDesign) => Promise<void>
 }) {
-  const [site, setSiteState] = useState<Site>(remembered)
-  const setSite = (s: Site) => {
-    setSiteState(s)
-    try {
-      localStorage.setItem(KEY, s)
-    } catch {
-      /* a remembered half is a convenience */
-    }
-  }
+  const [site, setSite] = useRememberedTab('beanweirdo.display.site', SITES)
   return (
     <div>
-      <div role="tablist" style={{ display: 'inline-flex', border: `1px solid ${paper.rule}`, background: paper.white, margin: '26px 56px 0' }}>
-        {(['blog', 'port', 'routes'] as const).map((s, i) => (
-          <button
-            key={s}
-            role="tab"
-            aria-selected={site === s}
-            onClick={() => setSite(s)}
-            style={{ all: 'unset', cursor: 'pointer', fontFamily: sans, fontSize: 13, padding: '7px 18px', borderLeft: i ? `1px solid ${paper.rule}` : undefined, background: site === s ? ink.base : 'transparent', color: site === s ? paper.cream : ink.soft }}
-          >
-            {{ blog: 'Personal Blog', port: 'Port', routes: 'Đường dẫn' }[s]}
-          </button>
-        ))}
+      <div style={{ margin: '26px 28px 0' }}>
+        <SiteTabs tabs={SITES} labels={SITE_LABELS} value={site} onChange={setSite} />
       </div>
       {site === 'blog' ? (
         <>
           <BlogDesignPanel stored={design ?? {}} onSave={onSaveDesign} />
-          <div style={{ padding: '6px 56px 130px', maxWidth: 1180 }}>{blog}</div>
+          <div style={{ padding: '6px 28px 130px', maxWidth: 1180 }}>{blog}</div>
         </>
       ) : site === 'port' ? (
         <PortDesign />
       ) : (
-        <div style={{ padding: '26px 56px 130px', maxWidth: 1180 }}>{routes}</div>
+        <div style={{ padding: '26px 28px 130px', maxWidth: 1180 }}>{routes}</div>
       )}
     </div>
   )
@@ -77,7 +56,7 @@ export function DisplaySettings({
 
 function PortDesign() {
   const port = usePortAdmin()
-  if (port.error) return <div style={{ padding: '20px 56px', fontFamily: sans, fontSize: 12.5, color: '#8E1E42' }}>{port.error}</div>
+  if (port.error) return <div style={{ padding: '20px 28px', fontFamily: sans, fontSize: 12.5, color: '#8E1E42' }}>{port.error}</div>
   if (!port.loaded) return null
   return <DesignTab stored={port.stored} setStored={port.setStored} design={port.design} />
 }
@@ -132,7 +111,7 @@ function BlogDesignPanel({ stored, onSave }: { stored: BlogDesign; onSave: (patc
   const stacked = rootWidth > 0 && rootWidth < 860
   const group = (title: string, body: ReactNode, extra?: ReactNode) => (
     <>
-      <div style={{ ...sectionHead, display: 'flex', justifyContent: 'space-between' }}>
+      <div style={{ ...sectionHead, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span>{title}</span>
         {extra}
       </div>
@@ -142,14 +121,14 @@ function BlogDesignPanel({ stored, onSave }: { stored: BlogDesign; onSave: (patc
 
   // Port's layout, half for half: the page on the left, the tokens on the right.
   return (
-    <div ref={root} style={{ display: 'grid', gridTemplateColumns: stacked ? 'minmax(0,1fr)' : split.columns, alignItems: 'start', marginTop: 16 }}>
-      <div style={{ background: paper.white, pointerEvents: split.dragging ? 'none' : undefined, ...(stacked ? { height: '55vh', order: 2 } : { height: 'calc(100vh - 220px)', position: 'sticky', top: 0 }) }}>
+    <div ref={root} style={{ display: 'grid', gridTemplateColumns: stacked ? 'minmax(0,1fr)' : split.columns, alignItems: 'start', margin: '16px 28px 0' }}>
+      <div style={{ background: paper.white, border: `1px solid ${desk.line}`, borderRadius: radius, overflow: 'hidden', pointerEvents: split.dragging ? 'none' : undefined, ...(stacked ? { height: '55vh', order: 2 } : { height: 'calc(100vh - 220px)', position: 'sticky', top: 0 }) }}>
         <ScaledPreview>
           <iframe ref={frame} title="xem trước Personal Blog" src="/" onLoad={dress} style={{ width: '100%', height: '100%', border: 0, display: 'block' }} />
         </ScaledPreview>
       </div>
       {!stacked && split.handle}
-      <div style={stacked ? { padding: '6px 20px 24px' } : { padding: '6px 34px 80px 22px', height: 'calc(100vh - 220px)', overflowY: 'auto', position: 'sticky', top: 0 }}>
+      <div style={{ background: desk.panel, border: `1px solid ${desk.line}`, borderRadius: radius, ...(stacked ? { padding: '6px 20px 24px' } : { padding: '6px 22px 40px', height: 'calc(100vh - 220px)', overflowY: 'auto', position: 'sticky', top: 0 }) }}>
         {group(
           'Font',
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -171,9 +150,9 @@ function BlogDesignPanel({ stored, onSave }: { stored: BlogDesign; onSave: (patc
             ))}
           </div>,
           changed && (
-            <button type="button" onClick={() => save(Object.fromEntries(Object.keys(stored).map((k) => [k, null])))} style={{ all: 'unset', cursor: 'pointer', fontSize: 10, letterSpacing: '.16em', color: ink.faint }}>
+            <Button level="quiet" size="sm" onClick={() => save(Object.fromEntries(Object.keys(stored).map((k) => [k, null])))}>
               Trả về mặc định
-            </button>
+            </Button>
           ),
         )}
         {BLOG_COLORS.map((g) => (
@@ -194,14 +173,20 @@ function BlogDesignPanel({ stored, onSave }: { stored: BlogDesign; onSave: (patc
                         onChange={(e) => save({ [key]: e.target.value })}
                         style={{ width: 28, height: 28, padding: 0, border: `1px solid ${paper.rule}`, background: 'none' }}
                       />
-                      <span style={{ display: 'grid', fontFamily: sans, fontSize: 12, color: ink.soft, lineHeight: 1.3 }}>
+                      <span style={{ display: 'grid', fontFamily: sans, fontSize: 13, fontWeight: 500, color: ink.strong, lineHeight: 1.35 }}>
                         {g.names[name] ?? name}
-                        <span style={{ fontFamily: 'ui-monospace, Menlo, monospace', fontSize: 10.5, color: own ? ink.base : ink.faint }}>
+                        <span style={{ fontFamily: 'ui-monospace, Menlo, monospace', fontSize: 13, color: own ? ink.base : ink.soft }}>
                           {value.toUpperCase()}
                           {own && (
-                            <button type="button" aria-label={`${g.names[name] ?? name}: về mặc định`} onClick={(e) => (e.preventDefault(), save({ [key]: null }))} style={{ all: 'unset', cursor: 'pointer', marginLeft: 6, color: ink.faint }}>
-                              ×
-                            </button>
+                            // Shrunk to the line it sits in, so a reset colour does not make its row taller than the rest.
+                            <IconButton
+                              size="sm"
+                              label={`${g.names[name] ?? name}: về mặc định`}
+                              onClick={(e) => (e.preventDefault(), save({ [key]: null }))}
+                              style={{ width: 18, height: 18, marginLeft: 4, verticalAlign: 'middle' }}
+                            >
+                              <IconClose size={12} />
+                            </IconButton>
                           )}
                         </span>
                       </span>

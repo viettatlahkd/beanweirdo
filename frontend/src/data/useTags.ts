@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 
-export type Tag = { id: string; label: string }
+type Tag = { id: string; label: string }
 
 /**
  * Một bộ từ vựng cho cả trang.

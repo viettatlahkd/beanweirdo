@@ -29,7 +29,7 @@ export interface HourLogRow {
   created_at: string
 }
 
-export interface HourLog {
+interface HourLog {
   id: string
   date: string
   name: string

@@ -33,10 +33,6 @@ lần đã báo nhầm "giật 58.8px" và "43px→81px" chỉ vì đo nhầm th
 
 ## Trang thử
 
-`live.mjs` cần một trang mount `LiveText` ở `/harness.html`. Trang ấy **không
-nằm trong repo** — dựng tạm rồi xoá, để không có file chết trong `frontend/`:
-
-```
-frontend/harness.html   → <div id="root"></div> + script /src/harness.tsx
-frontend/src/harness.tsx → mount <LiveText text="" onCommit={...} />
-```
+`live.mjs` mở `/harness.html`. Trang ấy nằm sẵn trong repo
+(`frontend/harness.html` + `frontend/src/harness.tsx`), dựng `EditorCanvas`
+thật với một bài mẫu; `?t=<khuôn>` chọn một trong sáu khuôn, mặc định `report`.

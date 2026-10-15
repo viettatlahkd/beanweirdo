@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import type { PostRow } from './usePublishedPosts'
 
-export type UsePostResult = {
+type UsePostResult = {
   data: PostRow | null
   loading: boolean
   error: string | null

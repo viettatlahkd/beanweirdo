@@ -70,7 +70,7 @@ describe('chữ đi và về qua ô nhập', () => {
       { t: 'nghiêng', w: '300', s: 'italic' },
     ]
     const text = runsToText(runs)
-    expect(text).toBe('thường *đậm* và _nghiêng_')
+    expect(text).toBe('thường **đậm** và *nghiêng*')
     expect(textToRuns(text)).toEqual(runs)
   })
 
@@ -81,5 +81,63 @@ describe('chữ đi và về qua ô nhập', () => {
 
   it('dòng trống ra một run trống chứ không ra mảng rỗng', () => {
     expect(textToRuns('')).toEqual([{ t: '', w: '300', s: 'normal' }])
+  })
+})
+
+/*
+ * Trước 2026-09-24 long-form lưu `**x**` của mặt soạn thành "*" + đậm + "*", và
+ * `> ` thành chữ. Mặt soạn ghép lại được nên trông đúng; trang đăng thì hiện
+ * nguyên dấu. Đây là đúng dữ liệu của bài "5 ngày 1 ops review".
+ */
+describe('dấu bị lưu thành chữ', () => {
+  const P = '300'
+  const B = '600'
+  it('đọc lại dấu sao lẻ quanh chữ đậm', () => {
+    const [b] = normalizeBlocks([
+      {
+        k: 'p',
+        runs: [
+          { t: 'Điểm dễ nhầm nằm giữa *', w: P, s: 'normal' },
+          { t: 'documented và repeatable', w: B, s: 'normal' },
+          { t: '*. SOP có thể', w: P, s: 'normal' },
+        ],
+      },
+    ])
+    expect(b.runs).toEqual([
+      { t: 'Điểm dễ nhầm nằm giữa ', w: P, s: 'normal' },
+      { t: 'documented và repeatable', w: B, s: 'italic' },
+      { t: '. SOP có thể', w: P, s: 'normal' },
+    ])
+  })
+
+  it('`> ` ở đầu đoạn thành trích dẫn', () => {
+    const [b] = normalizeBlocks([
+      {
+        k: 'p',
+        runs: [
+          { t: '> *', w: P, s: 'normal' },
+          { t: 'Câu hỏi lõi:', w: B, s: 'normal' },
+          { t: '* Thứ gì đã được repeatable?', w: P, s: 'normal' },
+        ],
+      },
+    ])
+    expect(b.quote).toBe(true)
+    expect(b.runs).toEqual([
+      { t: 'Câu hỏi lõi:', w: B, s: 'italic' },
+      { t: ' Thứ gì đã được repeatable?', w: P, s: 'normal' },
+    ])
+  })
+
+  it('dòng không có cặp dấu nào giữ nguyên runs gốc, kể cả độ đậm lạ', () => {
+    const runs = [
+      { t: 'độ pha loãng FD* ', w: P, s: 'normal' },
+      { t: 'tăng', w: '500', s: 'normal' },
+    ]
+    expect(normalizeBlocks([{ k: 'p', runs }])[0].runs).toBe(runs)
+  })
+
+  it('dấu > giữa câu không phải trích dẫn', () => {
+    const [b] = normalizeBlocks([{ k: 'p', runs: [{ t: 'a > b', w: P, s: 'normal' }] }])
+    expect(b.quote).toBeUndefined()
   })
 })

@@ -1,7 +1,9 @@
 import { Fragment, type CSSProperties, type ReactNode } from 'react'
+import { fillStyle } from './focus'
 import { getElement, type StoredElement } from './elements'
+import { PlateCorner, plateHost, type PlateAction } from './plates'
 import { paletteFrom } from './palette'
-import { paper, sans, serif, wrapTitle } from './tokens'
+import { layout, paper, sans, serif, wrapTitle } from './tokens'
 
 /**
  * Bitesize note — dạng ghi ngắn của Ghi 01.
@@ -109,11 +111,20 @@ export type BitesizeOverrides = {
   wrapElement?: (element: ReactNode, index: number, attributes: { type: string }) => ReactNode
   /** Chỗ màn sửa đặt nút "thêm khối", dưới khối cuối cùng. */
   renderAfterElements?: () => ReactNode
+  /**
+   * Móc treo nút tải ảnh vào góc hai ô ảnh cố định: `hero` là ô phương tiện,
+   * `sub` là ô ảnh phụ. Thẻ thu trong lưới Ghi 01 không truyền — ở đó ô ảnh là
+   * một tấm để xem, không phải một chỗ để sửa.
+   */
+  renderPlateAction?: PlateAction
 }
 
 export type BitesizeProps = BitesizeOverrides & {
   post: BitesizePostData
-  breadcrumb?: ReactNode
+  /** The page's own head; replaces the title and its date line. See `ArticleProps.head`. */
+  head?: ReactNode
+  /** Closes the reading column — the app's author card. Supplied by the app, like `head`. */
+  footer?: ReactNode
   mobile?: boolean
 }
 
@@ -136,7 +147,7 @@ export type BitesizeCardProps = BitesizeOverrides & {
  * — gói này không phụ thuộc được vào `frontend/`, nên bốn dòng ấy nằm hai nơi;
  * đổi bên nào thì đổi cả bên kia.
  */
-export function frameOf(post: Pick<BitesizePostData, 'media' | 'portrait'>): string {
+function frameOf(post: Pick<BitesizePostData, 'media' | 'portrait'>): string {
   if (post.media === 'img') return post.portrait ? '3/4' : '4/3'
   return post.portrait ? '9/16' : '16/9'
 }
@@ -148,7 +159,7 @@ const SUB_GUTTER = SUB_W + 30
 const SUB_MIN_H = 330
 
 /** Cỡ tiêu đề đi theo độ dài bài — bài dài đội tiêu đề lớn hơn. */
-export function titleSize(len: BitesizeLength, portrait: boolean, open: boolean): number {
+function titleSize(len: BitesizeLength, portrait: boolean, open: boolean): number {
   if (open) return 52
   if (portrait) return 23
   return len === 'dài' ? 40 : len === 'vừa' ? 34 : 27
@@ -192,12 +203,14 @@ function Media({
   width,
   hint,
   style,
+  action,
 }: {
   post: BitesizePostData
   aspect: string
   width: string
   hint?: ReactNode
   style?: CSSProperties
+  action?: PlateAction
 }) {
   return (
     <div
@@ -205,17 +218,10 @@ function Media({
         flex: 'none',
         aspectRatio: aspect,
         width,
-        /*
-         * Viết tách từng thuộc tính chứ không dùng lối rút gọn `background`.
-         * Lối rút gọn kèm `url(...) center/cover` bị jsdom bỏ im lặng, nên bài
-         * kiểm không nhìn thấy ảnh nào cả — và một ô ảnh mất nền thì trên
-         * trình duyệt cũng chẳng có gì báo.
-         */
-        backgroundColor: post.image ? undefined : post.wash,
-        backgroundImage: post.image ? `url(${post.image})` : undefined,
-        backgroundSize: post.image ? 'cover' : undefined,
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
+        // The 14px padding below must sit inside `width`: at "100%" it pushed
+        // the box 28px past its column, on phones and in the Ghi 01 grid.
+        boxSizing: 'border-box',
+        ...fillStyle(post.image, post.wash),
         // Clip nằm phủ kín ô, nên ô phải là mốc toạ độ của nó.
         position: 'relative',
         overflow: 'hidden',
@@ -242,6 +248,7 @@ function Media({
         />
       ) : null}
       {post.image ? null : (hint ?? post.mediaHint)}
+      <PlateCorner action={action} slot={{ key: 'hero', imageUrl: post.image }} />
     </div>
   )
 }
@@ -428,7 +435,8 @@ export function BitesizeCard({
  */
 export function Bitesize({
   post,
-  breadcrumb,
+  head,
+  footer,
   mobile = false,
   renderTitle,
   renderText,
@@ -438,6 +446,7 @@ export function Bitesize({
   renderSub,
   wrapElement,
   renderAfterElements,
+  renderPlateAction,
 }: BitesizeProps) {
   const clip = post.media === 'vid'
   /*
@@ -453,7 +462,7 @@ export function Bitesize({
    */
   const clipDoc = clip && post.portrait && !mobile
   const clipNgang = clip && !post.portrait && !mobile
-  const title = (
+  const title = head ?? (
     <Title
       post={post}
       size={mobile ? 34 : titleSize(post.len, post.portrait, true)}
@@ -475,12 +484,9 @@ export function Bitesize({
     <div style={{ width: clipDoc ? 130 : SUB_W, flex: 'none' }}>
       <div
         style={{
+          ...plateHost,
           aspectRatio: '4/5',
-          backgroundColor: post.subImage ? undefined : post.wash,
-          backgroundImage: post.subImage ? `url(${post.subImage})` : undefined,
-          backgroundSize: post.subImage ? 'cover' : undefined,
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat',
+          ...fillStyle(post.subImage, post.wash),
           display: 'flex',
           alignItems: 'flex-end',
           padding: 12,
@@ -494,6 +500,7 @@ export function Bitesize({
         <span style={post.subImage ? { background: 'rgba(24,22,17,.55)', padding: '3px 7px' } : undefined}>
           {renderSub ? renderSub(post.sub) : post.sub}
         </span>
+        <PlateCorner action={renderPlateAction} slot={{ key: 'sub', imageUrl: post.subImage }} />
       </div>
     </div>
   ) : null
@@ -508,6 +515,7 @@ export function Bitesize({
        */
       width={mobile || clipNgang ? '100%' : clipDoc ? '250px' : '300px'}
       hint={renderMediaHint?.(post.mediaHint)}
+      action={renderPlateAction}
       style={
         mobile || clipNgang
           ? { marginBottom: clipNgang ? 26 : 22 }
@@ -571,10 +579,16 @@ export function Bitesize({
         display: 'flow-root',
         backgroundColor: '#FFFFFF',
         padding: mobile ? '24px 20px 28px' : '36px 40px 40px',
+        /*
+         * The sheet is one reading column wide, centred. It used to span the
+         * whole page while the words stopped at 660px, so on a wide screen its
+         * right half was bare paper. A sub plate widens it by its own gutter.
+         */
+        ...(mobile ? null : { maxWidth: layout.reading + 80 + (subBox ? SUB_GUTTER : 0), marginLeft: 'auto', marginRight: 'auto' }),
         boxShadow: '0 40px 80px -50px rgba(18,18,15,.55), 0 2px 0 rgba(18,18,15,.06)',
       }}
     >
-      {breadcrumb}
+      {/* The band is pulled up to the sheet's top edge, so it has to come first: drawn after the trail, it lay over it. */}
       {post.band ? (
         <div
           style={{
@@ -585,7 +599,7 @@ export function Bitesize({
           }}
         />
       ) : null}
-      <Meta post={post} wide renderTag={renderTag} renderDate={renderDate} />
+      {head === undefined && <Meta post={post} wide renderTag={renderTag} renderDate={renderDate} />}
       {/*
         * Lề phải của thân bài giữ nguyên một đường từ trên xuống dưới.
         *
@@ -622,7 +636,8 @@ export function Bitesize({
             style={{
               display: 'flow-root',
               position: 'relative',
-              paddingRight: mobile ? 0 : SUB_GUTTER,
+              // No sub plate, nothing to keep clear: the gutter would only be a white strip.
+              paddingRight: mobile || !subBox ? 0 : SUB_GUTTER,
               minHeight: mobile || !subBox ? undefined : SUB_MIN_H,
             }}
           >
@@ -632,6 +647,7 @@ export function Bitesize({
           {subBox && mobile ? <div style={{ marginTop: 22 }}>{subBox}</div> : null}
         </>
       )}
+      {footer}
     </div>
   )
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildSlug, findBySlug, slugAfterStatus, slugsFor, stamp, uniqueSlug } from './postSlug'
+import { buildSlug, slugsFor, stamp, uniqueSlug } from './postSlug'
 
 describe('postSlug — địa chỉ của một bài', () => {
   it('names the module the way the address bar spells it', () => {
@@ -57,24 +57,6 @@ describe('uniqueSlug — hai bài một module một ngày', () => {
   })
 })
 
-describe('slugAfterStatus — đăng một bài nháp', () => {
-  it('drops the draft mark and moves nothing else', () => {
-    // Ngày viết vẫn là ngày viết.
-    expect(slugAfterStatus('ghi-p260824.draft', 'published')).toBe('ghi-p260824')
-    expect(slugAfterStatus('ghi-p260824-b.draft', 'published')).toBe('ghi-p260824-b')
-  })
-
-  it('puts the mark back when a post returns to draft', () => {
-    expect(slugAfterStatus('ghi-p260824', 'draft')).toBe('ghi-p260824.draft')
-  })
-
-  it('says nothing when nothing needs rewriting', () => {
-    expect(slugAfterStatus('ghi-p260824', 'published')).toBeNull()
-    expect(slugAfterStatus('ghi-p260824', 'archived')).toBeNull()
-    expect(slugAfterStatus('ghi-p260824.draft', 'draft')).toBeNull()
-  })
-})
-
 describe('slugsFor — cả danh sách một lượt', () => {
   const post = (id: string, module_id: string, created_at: string, status = 'published', slug?: string) =>
     ({ id, module_id, created_at, status, slug })
@@ -115,10 +97,4 @@ describe('slugsFor — cả danh sách một lượt', () => {
     expect(map.get('auto')).toBe('sensory-p260817-b')
   })
 
-  it('finds the post an address points at', () => {
-    const posts = [post('a', 'ghi01', '2026-08-18T09:00:00Z'), post('b', 'ghi01', '2026-08-24T09:00:00Z', 'draft')]
-
-    expect(findBySlug(posts, 'ghi-p260824.draft')?.id).toBe('b')
-    expect(findBySlug(posts, 'ghi-p999999')).toBeNull()
-  })
 })

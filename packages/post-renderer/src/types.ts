@@ -1,7 +1,6 @@
 /**
- * Content shapes for the site's 3 real post templates.
+ * Content shapes for the post templates (`POST_TEMPLATES` in backend/lib/posts.ts).
  *
- * `posts.template` in the database is a fixed enum: 'article' | 'cards' | 'report'.
  * These are structurally distinct layouts, not a color-mix on one shape — each
  * gets its own body-content type below, matching what `posts.body` (jsonb)
  * holds for a post of that template.
@@ -12,8 +11,6 @@ import type { ChartAttrs, MetricsAttrs, TableAttrs } from './elements/data'
 import type { ImageAttrs } from './elements/media'
 import type { ListAttrs } from './elements/list'
 import type { CalloutAttrs, HeadingAttrs, MetaAttrs, ParagraphAttrs, QuoteAttrs } from './elements/text'
-
-export type Template = 'article' | 'cards' | 'report'
 
 // ---------------------------------------------------------------------------
 // article — ported 1:1 from frontend/src/screens/Article.tsx
@@ -199,6 +196,10 @@ export type LongformRun = {
   w?: string
   /** "normal" | "italic" */
   s?: string
+  /** Chữ máy, `x` trong markdown. */
+  code?: boolean
+  /** Gạch ngang, ~~x~~ trong markdown. */
+  del?: boolean
 }
 
 export type LongformBlockKind =
@@ -230,6 +231,13 @@ export type LongformBlock = {
    * as `p` with a step (see normalizeBlocks); `true` still reads as step 1.
    */
   ind?: number | boolean
+  /**
+   * A `p` the writer marked as a quote with `> ` — a hairline down its left
+   * edge. A flag on `p` rather than a kind of its own: it is still a paragraph,
+   * and every place that walks `p` (indent, fold, the flow editor) keeps
+   * working on it unchanged.
+   */
+  quote?: boolean
   /** fig */
   src?: string
   ar?: string
@@ -250,6 +258,8 @@ export type LongformPostData = {
   title: string
   /** Italic line under the title; empty on the standalone sample. */
   subtitle?: string
+  /** The post's cover image, drawn across the top of the reading column; none, nothing drawn. */
+  cover?: string | null
   blocks: LongformBlock[]
 }
 
@@ -258,10 +268,11 @@ export type LongformPostData = {
 // Unlike the other templates this one belongs to Ghi 01, not to a module.
 // ---------------------------------------------------------------------------
 
-/** A span inside a memo line; `em` is the design's amber emphasis. */
+/** A span inside a memo line; `em` nghiêng và `b` đậm, cùng màu nhấn của bài. */
 export type MemoRun = {
   t: string
   em?: boolean
+  b?: boolean
   /** a value worth pausing on — drawn with a hairline under it, not a colour */
   u?: boolean
 }

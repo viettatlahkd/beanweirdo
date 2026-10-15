@@ -29,7 +29,7 @@ function toListItem(item: MemoItem): ListItem {
  * A phase's own number is dropped: numbering is the template's job now, which
  * is why nobody has to keep them in step by hand after moving one.
  */
-export function sectionElements(section: MemoSection): StoredElement[] {
+function sectionElements(section: MemoSection): StoredElement[] {
   if (Array.isArray(section.elements)) return toElements(section.elements)
 
   const out: StoredElement[] = []

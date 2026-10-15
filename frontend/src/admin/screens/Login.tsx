@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { ApiError, login } from '../lib/apiClient'
 import { garden, ink, paper, sans, serif } from '../../design/tokens'
+import { Button } from '../../design/Button'
 
 /**
  * The password form for both private areas. It reports success upward rather
@@ -74,21 +75,15 @@ export function Login({ onSuccess }: { onSuccess: () => void }) {
           }}
         />
 
-        <button
+        <Button
           type="submit"
+          level="primary"
+          size="lg"
           disabled={pending || password.length === 0}
-          className="admin-btn"
-          style={{
-            marginTop: 26,
-            width: '100%',
-            fontSize: 11,
-            letterSpacing: '.14em',
-            textTransform: 'uppercase',
-            padding: 13,
-          }}
+          style={{ marginTop: 26, width: '100%' }}
         >
           {pending ? 'Đang đăng nhập…' : 'Đăng nhập'}
-        </button>
+        </Button>
 
         {error && (
           <p role="alert" style={{ fontSize: 12, color: '#B3413E', marginTop: 14 }}>

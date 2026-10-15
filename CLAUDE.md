@@ -9,8 +9,17 @@ cần biết. Kiến trúc, specs và nợ tài liệu nằm ở chỗ khác, c�
 npm test        # typecheck cả ba tsconfig, rồi vitest — chạy từ gốc repo
 ```
 
-Dev server: `.claude/launch.json`, dùng `backend/scripts/dev-server.mjs` cho API
-và vite cho web. Đừng chạy dev server bằng Bash.
+`npm run lint` chạy cả `knip`: tệp, export hay phụ thuộc không ai dùng làm đỏ
+CI. Code thôi dùng thì xoá, đừng giữ lại "cho chắc". Script chạy tay khai trong
+`knip.json`.
+
+Mọi khối trong menu `+` phải vẽ trong `FlowThing` (`components/RowShell.tsx`) —
+đó là chỗ duy nhất giữ luật Enter / mũi tên / Backspace của thân bài.
+`Editor.contract.test.tsx` đi hết menu ở cả sáu khuôn, nên khối mới thiếu luật
+là test đỏ.
+
+Dev server: `.claude/launch.json` dựng vite cho web (cổng 5199); API ở máy chạy
+bằng `backend/scripts/dev-server.mjs`. Đừng chạy dev server bằng Bash.
 
 `frontend/.env.local` và `backend/.env.local` chỉ có ở worktree gốc, không có ở
 worktree mới — symlink sang, đừng kết luận là thiếu credentials. Cả hai trỏ tới
@@ -21,7 +30,7 @@ Supabase **hosted**: chạy ở máy vẫn đọc ghi nhật ký thật của ch
 | Lane | Worktree | Sở hữu |
 |---|---|---|
 | Kiến trúc | `.claude/worktrees/spine` | ghép FE/BE/DB, `packages/post-renderer`, migration, `docs/spine/` |
-| Tài liệu | — | `docs/SPEC.html`, `frontend/src/content/logic.ts` (bộ luật đánh số), `docs/inbox/docs/` |
+| Tài liệu | — | `README.md`, `backend/README.md`, `docs/inbox/docs/` |
 | QA hot-fix | `.claude/worktrees/hotfix` | sửa lỗi QA/QC báo, `docs/inbox/qa/` |
 
 **Không sửa file của lane khác.** Nếu thay đổi của bạn làm file đó sai, ghi vào
@@ -70,10 +79,8 @@ Mỗi PR kèm một ghi chú trong `docs/inbox/<lane>/<ngày>-<tên>.md`.
    phải luôn Y". Đề xuất luật để riêng ở mục cuối.
 5. **Mọi khẳng định phải chỉ được bằng chứng** — `file:tên hàm`, hoặc các bước
    tái hiện. Câu không chỉ được vào đâu sẽ bị bỏ qua.
-6. **Đối chiếu ngược với bộ luật** trong `logic.ts`. Gọi đúng `nhóm.số`. Nếu bản
-   sửa **mâu thuẫn** với một luật, nói thẳng.
-7. **Nêu mọi bảng, cột và endpoint đã đụng**, kể cả chỉ đọc thêm một cột.
-8. **Không viết bằng giọng tài liệu, không tự sửa specs.** Đây là báo cáo bàn
+6. **Nêu mọi bảng, cột và endpoint đã đụng**, kể cả chỉ đọc thêm một cột.
+7. **Không viết bằng giọng tài liệu, không tự sửa specs.** Đây là báo cáo bàn
    giao, không phải bản nháp tài liệu.
 
 Một PR một file, **không sửa file đã nộp** — có gì mới thì file mới.
@@ -154,7 +161,5 @@ giải thích **vì sao** chứ không mô tả lại code.
 
 ## Đọc thêm
 
-- `docs/spine/SO-BAN-GIAO.md` — nợ tài liệu, ai chịu trách nhiệm, đã xong chưa
-- `docs/SPEC.html` — hệ thống hiện có gì
-- `frontend/src/content/logic.ts` — bộ luật đánh số, trích dẫn theo `nhóm.số`
+- `docs/spine/SO-BAN-GIAO.md` — việc chờ chủ site quyết, nợ kỹ thuật chưa xử lý
 - `docs/inbox/qa/`, `docs/inbox/docs/` — bàn giao giữa các lane

@@ -151,7 +151,7 @@ function Row({
   )
 }
 
-export const list = registerElement<ListAttrs>({
+registerElement<ListAttrs>({
   name: 'list',
   title: 'Danh sách',
   category: 'text',
