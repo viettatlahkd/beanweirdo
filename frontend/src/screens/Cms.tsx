@@ -804,9 +804,10 @@ export function Cms() {
 
       {tab === 'posts' && <ContentWorkspace onChanged={() => void load()} />}
 
-      {(tab === 'pages' || tab === 'authors') && (
+      {(tab === 'pages' || tab === 'authors' || tab === 'tags') && (
         <ConfigTree
-          openAuthors={tab === 'authors'}
+          key={tab === 'pages' ? 'pages' : tab}
+          only={tab === 'pages' ? undefined : tab}
           modules={modules}
           renderPractice={() => {
             const practice = site.practice ?? {}

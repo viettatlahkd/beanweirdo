@@ -47,6 +47,15 @@ export function useAdminFrame(): Frame {
 }
 
 /**
+ * The lists that file posts, under Nội dung (owner, 2026-10-15) rather than
+ * under a site in Cấu hình: every site's posts wear them.
+ */
+const CONTENT_LISTS = [
+  { tab: 'authors', label: 'Tác giả' },
+  { tab: 'tags', label: 'Tag' },
+] as const
+
+/**
  * Wide enough for the longest entry ("Mở nhật ký Ghi 02 ↗" ends at 148px) and a
  * nested page under it, no wider: at 248 a third of the column was empty
  * margin on the right of every row (owner, 2026-10-15).
@@ -67,12 +76,23 @@ export function AdminShell({ children }: { children: ReactNode }) {
   const [site, setSite] = useRememberedTab('beanweirdo.config.tab', CONFIG_SITES)
   const [slot, setSlot] = useState<HTMLDivElement | null>(null)
   const tab = nav.cmsTab
-  const config = tab === 'pages' || tab === 'authors'
+  const config = tab === 'pages'
   const openSite = (s: ConfigSite) => {
     setSite(s)
     if (!config) nav.goCms('pages')
   }
-  const where = nav.screen === 'postEdit' ? 'Nội dung › Sửa bài' : nav.screen === 'postPreview' ? 'Nội dung › Xem trước' : tab === 'posts' ? 'Nội dung' : tab === 'display' ? 'Cài đặt hiển thị' : `Cấu hình › ${CONFIG_SITE_LABELS[site]}`
+  const where =
+    nav.screen === 'postEdit'
+      ? 'Nội dung › Sửa bài'
+      : nav.screen === 'postPreview'
+        ? 'Nội dung › Xem trước'
+        : tab === 'posts'
+          ? 'Nội dung'
+          : tab === 'authors' || tab === 'tags'
+            ? `Nội dung › ${CONTENT_LISTS.find((l) => l.tab === tab)?.label}`
+            : tab === 'display'
+              ? 'Cài đặt hiển thị'
+              : `Cấu hình › ${CONFIG_SITE_LABELS[site]}`
 
   const side = (
     <aside
@@ -97,6 +117,11 @@ export function AdminShell({ children }: { children: ReactNode }) {
       <Item on={tab === 'posts' || nav.screen !== 'cms'} onClick={() => nav.goCms('posts')}>
         Nội dung
       </Item>
+      {CONTENT_LISTS.map((l) => (
+        <Item key={l.tab} depth={1} on={tab === l.tab && nav.screen === 'cms'} onClick={() => nav.goCms(l.tab)}>
+          {l.label}
+        </Item>
+      ))}
 
       <Heading>Cấu hình</Heading>
       {CONFIG_SITES.map((s) => {
