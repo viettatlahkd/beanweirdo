@@ -54,6 +54,23 @@
   site là về trang đầu (`AdminShell.tsx:clickSite`, `Frame.round`; effect trong `ConfigTree`). Lệnh mở site từ bên trong
   ConfigTree (vd. từ menu sang journal) không bị ảnh hưởng.
 
+## Thanh menu: gỡ không xoá, Thêm mục chỉ gọi trang có sẵn
+
+- **[SỬA LỖI]** ⋯ trên dòng trang port ở Thanh menu (beanweirdo › Trang chủ) trước đây là "Xoá trang…", tức **xoá hẳn trang
+  port** (`ConfigTree.tsx:tocList` rơi về `deleteOf` vì dòng không có `actions`). Giờ mọi dòng có đúng một lệnh "Gỡ khỏi thanh
+  menu": trang port và about → `hideLink` (đặt `hidden: true` trong `site_settings.data.portfolio.header.links`); trang journal →
+  `dropLink` (bỏ khỏi danh sách như cũ). Xoá trang chỉ còn ở port archives › Template.
+- **[ĐỔI HÀNH VI]** Dòng đã ẩn không còn hiện trong Thanh menu (trước: hiện kèm "ẩn"). Gọi lại bằng Thêm mục.
+  `movePortLink` giữ các link ẩn ở cuối danh sách khi kéo thả, để chúng không hiện lại.
+- **[ĐỔI HÀNH VI]** Thêm mục: mặc định "Trang có sẵn" (mục journal chưa có trên menu + trang đang ẩn). "Trang mới" không còn ô
+  nhập tên mà là nút "Tạo trang ở Template": mở port archives › Template với form Thêm trang mở sẵn (`AddSpec.newAt`,
+  `AddSpec.startOpen` trong `Detail.tsx`).
+- **[ĐỔI HÀNH VI]** Nhãn "About" → "about" ở Thanh menu, tiêu đề màn about, ghi chú thẻ Thông tin chung.
+- Trình duyệt (chặn lệnh ghi): ⋯ bizops chỉ có "Gỡ khỏi thanh menu" → đúng một `PATCH /api/site` với bizops `hidden: true`, không
+  lệnh xoá nào; bizops biến khỏi danh sách; Thêm mục liệt kê "mục lục journal · /journal/muc-luc", "bizops · /biz · đang ẩn"; chọn
+  bizops → `PATCH /api/site` `hidden: false`, bizops về vị trí 01. "Tạo trang ở Template" → Template, form Thêm trang mở. Không
+  ghi gì thật.
+
 ## Giới hạn
 
 "Cơ chế cho port tiếp theo" mới ở mức tên: thêm một id vào `PORT_SITES` là nó thành "port #3: …". **Tạo một site port mới thì
