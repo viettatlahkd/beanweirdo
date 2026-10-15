@@ -471,8 +471,8 @@ export function Cms() {
    * in one long list of every page's words.
    */
   const pageCopy: Record<SystemPage, ReactNode> = {
+    // The section around it names the page (Cấu hình › journal › Trang chủ), so no heading of its own.
     landing: <>
-          <div style={sectionHead}>Trang chủ — landing</div>
           <div style={grid(two)}>
             <Field label="Nhãn trên cùng">
               <input
@@ -558,7 +558,6 @@ export function Cms() {
           </div>
         </>,
     index: <>
-          <div style={{ ...sectionHead, margin: '34px 0 18px' }}>Mục lục</div>
           <div style={grid(two)}>
             <Field label="Tiêu đề — dòng 1">
               <input {...field('t1')} style={serifInput} />

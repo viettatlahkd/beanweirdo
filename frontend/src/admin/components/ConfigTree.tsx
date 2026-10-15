@@ -21,7 +21,7 @@ import { ancestorsOf, buildTree, flattenTree } from '../../lib/contentTree'
 import { planMove, type DropWhere } from '../../lib/treeMove'
 import { bySiteOrder } from '../../lib/moduleOrder'
 import { TAG_PAGE, portPagePath, portSiteOf, toPath } from '../../lib/routes'
-import { findPage, useModules } from '../../data/useModules'
+import { findPage, indexModules, useModules } from '../../data/useModules'
 import { usePortSources } from '../../portfolio/data'
 import { JOURNAL_LINKS, navLinks, type Feature, type NavOverride, type PortContent, featuresFollowingMenu } from '../../portfolio/content'
 import type { PresetKey } from '../../portfolio/blocks'
@@ -45,6 +45,7 @@ import {
   pagePath,
   NavFlags,
   NodePage,
+  saveNavFlag,
   PageEditor,
   type BlogSelected,
   type Layout,
@@ -54,6 +55,8 @@ import {
 
 /** A topic a journal row sent to Biên tập › Chuyên mục, read when that tab opens and dropped once it has. */
 let sentTopic: string | null = null
+/** Set when the journal's "Thêm nội dung" sends the owner to make a topic: Chuyên mục opens with its add form. */
+let sentNew = false
 
 /**
  * Cấu hình — every page of the site and every setting behind it, in one tree.
@@ -237,8 +240,13 @@ export function ConfigTree({
     const sent = only === 'topics' ? sentTopic : null
     return sent ? { kind: 'topic', id: sent } : only ? { kind: 'group', id: only } : homeOf(site)
   })
+  // Read at mount (StrictMode mounts twice), dropped once mounted.
+  const [startNew] = useState(() => only === 'topics' && sentNew)
   useEffect(() => {
-    if (only === 'topics') sentTopic = null
+    if (only === 'topics') {
+      sentTopic = null
+      sentNew = false
+    }
   }, [only])
   // A click on the open site's row in the sidebar goes back to its first page.
   const seenRound = useRef(frame.round)
@@ -865,25 +873,67 @@ export function ConfigTree({
     sentTopic = id
     nav.goCms('topics')
   }
-  const journalTree = shownTopics.filter((t) => t.parent_id === null).flatMap((t) => [t, ...shownTopics.filter((c) => c.parent_id === t.id)])
-  const journalRows = tocList(
-    topicToc,
-    journalTree.map((t) => topicToc.items.find((x) => x.id === t.id)!),
-  ).map(({ onOpen: _, actions: _a, ...it }, i): ListItem => {
-    const t = journalTree[i]
-    const key = `look:${t.id}`
+  // Only what the journal's sidebar shows, in its order (owner, 2026-10-16): the same rows `Sidebar` draws.
+  const onSidebar = flattenTree(buildTree(indexModules(pages)))
+  const shownIds = new Set(onSidebar.map((n) => n.row.id))
+  const topicById = (id: string) => vocab.topics.find((t) => t.id === id)
+  const sidebarFlag = (id: string, on: boolean) => run(() => saveNavFlag(layout, `topic:${id}`, { sidebar: true, home: topicById(id)?.parent_id === null }, 'sidebar', on))
+  const journalToc: Toc = {
+    id: 'topics',
+    title: 'Danh mục trang con',
+    note: '',
+    nest: true,
+    // The tree's order is one flat list for the whole table: the rows off the sidebar keep theirs, after the ones dragged.
+    move: (id, p) => moveTopic(id, { ...p, order: [...p.order, ...shownTopics.map((t) => t.id).filter((x) => !p.order.includes(x))] }),
+    items: onSidebar.map(({ row }): TocItem => {
+      const t = topicById(row.id)
+      return {
+        id: row.id,
+        parent_id: row.parent_id ?? null,
+        name: row.title,
+        dot: row.accent ?? null,
+        meta: `${postsOf(row.id).length} bài`,
+        picked: t ? { kind: 'topic', id: t.id } : { kind: 'module', id: row.id },
+        movable: !!t,
+      }
+    }),
+  }
+  const journalRows = tocList(journalToc, journalToc.items).map(({ onOpen: _, actions: _a, ...it }, i): ListItem => {
+    const { row, depth } = onSidebar[i]
+    const t = topicById(row.id)
+    const key = `look:${row.id}`
     const toggle = () => setFeatOpen(featOpen === key ? null : key)
     return {
       ...it,
-      depth: t.parent_id ? 1 : 0,
+      depth,
       onOpen: toggle,
       buttons: [
         { label: 'Cài đặt giao diện', icon: <IconPage size={14} />, on: featOpen === key, onClick: toggle },
-        { label: 'Chọn nội dung', icon: <IconLink size={14} />, onClick: () => chooseContent(t.id) },
+        ...(t ? [{ label: 'Chọn nội dung', icon: <IconLink size={14} />, onClick: () => chooseContent(t.id) }] : []),
       ],
-      below: featOpen === key ? lookOf(t) : undefined,
+      // Off the page, not deleted: deleting a topic is Biên tập › Chuyên mục's.
+      actions: t ? [{ label: 'Gỡ khỏi trang', danger: true, onPick: () => sidebarFlag(t.id, false) }] : undefined,
+      below: featOpen === key ? (t ? lookOf(t) : renderModule(row.id)) : undefined,
     }
   })
+  const journalAdd: AddSpec = {
+    label: 'Thêm nội dung',
+    placeholder: '',
+    onSave: () => {},
+    existing: {
+      options: sorted
+        .filter((t) => !shownIds.has(t.id))
+        .map((t) => ({ value: t.id, label: [...ancestorsOf(sorted, t.id).reverse().map((x) => x.title), t.title].join(' › ') })),
+      onPick: (id) => sidebarFlag(id, true),
+    },
+    newAt: {
+      label: 'Tạo chủ đề ở Chuyên mục',
+      onGo: () => {
+        sentNew = true
+        nav.goCms('topics')
+      },
+    },
+  }
 
   switch (picked.kind) {
     case 'port-part': {
@@ -984,10 +1034,10 @@ export function ConfigTree({
       body =
         picked.key === 'landing' ? (
           <>
-            {page(picked)}
-            <Section title="Nội dung tĩnh · Mục lục">{renderCopy('index')}</Section>
+            <Section title="Nội dung Trang chủ">{renderCopy('landing')}</Section>
+            <Section title="Nội dung Trang mục lục">{renderCopy('index')}</Section>
             <Section title="Danh mục trang con" tip="Thứ tự như trên thanh bên của journal. Kéo biểu tượng ⠿ để đổi chỗ hoặc đưa vào trong một mục khác.">
-              <ItemList label="Danh mục trang con" items={journalRows} />
+              <ItemList label="Danh mục trang con" items={journalRows} add={journalAdd} />
             </Section>
           </>
         ) : (
@@ -1171,7 +1221,7 @@ export function ConfigTree({
           <>
             {errorLine}
             <Section title="Cây chủ đề" note={dragNote(true)}>
-              <ItemList label="Cây chủ đề" items={tocList(topicToc, rows).map((it, i) => ({ ...it, depth: rows[i].parent_id ? 1 : 0 }))} add={addTopic(null)} />
+              <ItemList label="Cây chủ đề" items={tocList(topicToc, rows).map((it, i) => ({ ...it, depth: rows[i].parent_id ? 1 : 0 }))} add={{ ...addTopic(null), startOpen: startNew }} />
             </Section>
           </>
         )
