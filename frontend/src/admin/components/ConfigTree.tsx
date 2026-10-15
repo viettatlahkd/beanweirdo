@@ -583,7 +583,7 @@ export function ConfigTree({
     // The menu is part of Trang chủ now (owner, 2026-10-15): its words, its port blocks, and the menu's order.
     home: { title: 'Trang chủ', note: 'nội dung trang, thanh menu', picked: { kind: 'port-part', part: 'home' } },
     cards: [
-      { title: 'Thông tin chung', note: 'đầu trang, chân trang, about: mọi trang đều mang', picked: { kind: 'group', id: 'frame' } },
+      { title: 'Thông tin chung', note: 'đầu trang, chân trang, about', picked: { kind: 'group', id: 'frame' } },
       // Tag and Tác giả moved up to Nội dung (owner, 2026-10-15): they file posts, not pages of this site.
     ],
   }
@@ -814,11 +814,15 @@ export function ConfigTree({
       title = about ? 'about' : 'Trang chủ'
       const menuRows = tocList(rootToc, rootToc.items).map((it, i): ListItem => {
         const pg = rootToc.items[i].page
+        const edit = (key: string) => ({ label: 'Cập nhật nội dung', icon: <IconInfo size={14} />, on: featOpen === key, onClick: () => setFeatOpen(featOpen === key ? null : key) })
+        // about's own words are its signature, edited here and nowhere else (owner, 2026-10-15).
+        if (it.id === 'about')
+          return { ...it, buttons: [edit('about')], below: featOpen === 'about' ? <ContentTab only="sign" content={port.content} setStored={port.setContentStored} pages={port.pages} /> : undefined }
         if (!pg) return it
         return {
           ...it,
           buttons: [
-            { label: 'Cập nhật nội dung', icon: <IconInfo size={14} />, on: featOpen === pg.id, onClick: () => setFeatOpen(featOpen === pg.id ? null : pg.id) },
+            edit(pg.id),
             { label: 'Xem dàn trang', icon: <IconPage size={14} />, onClick: () => openPortPage(pg) },
           ],
           below: featOpen === pg.id ? <ContentTab only="feature" pageId={pg.id} content={port.content} setStored={port.setContentStored} pages={port.pages} /> : undefined,
@@ -1118,11 +1122,8 @@ export function ConfigTree({
               <ContentTab key="footer" only="footer" content={port.content} setStored={port.setContentStored} pages={port.pages} />
             </Section>
             {/* About moved here from the menu (owner, 2026-10-15): a page every site links, set once. */}
-            <Section title="About">
+            <Section title="about">
               <ContentTab key="about" only="about" content={port.content} setStored={port.setContentStored} pages={port.pages} />
-            </Section>
-            <Section title="Signature">
-              <ContentTab key="sign" only="sign" content={port.content} setStored={port.setContentStored} pages={port.pages} />
             </Section>
           </>
         ) : null

@@ -90,6 +90,8 @@
   quay về. Đã xảy ra trên dữ liệu thật lúc 2026-10-15 16:20 UTC: khối beæn weirdo mất nhãn "beæn weirdo" và ảnh
   `post-images/7026093d-7936-4936-9b16-e1391f7eeb42.jpeg`. Chưa khôi phục — chờ chủ site đồng ý.
   Công tắc cùng tên trong trang port (`ConfigTree.tsx:portFlags`, `setHome`) vẫn bỏ hẳn khối như trước.
+- **[ĐỔI HÀNH VI]** Dòng about ở Thanh menu có "Cập nhật nội dung", mở ngay dưới dòng phần ký tên (`ContentTab only="sign"`).
+  Phần Signature bỏ khỏi Thông tin chung; ở đó còn Đầu trang · Chân trang · about (tiêu đề đổi "About" → "about").
 - Thứ tự khối trên trang chủ vẫn theo thứ tự port trên Thanh menu (`featuresFollowingMenu` khi kéo).
 - Trình duyệt (chặn lệnh ghi): Trang chủ chỉ còn Nội dung trang, Thanh menu; "Cập nhật nội dung" ở bizops mở Hiện ở trang chủ ·
   Nhãn "beæn bizops" · Ảnh; sửa nhãn → một `PATCH /api/site` `portfolio.home.features`; "Xem dàn trang" ở beæn weirdo → port
