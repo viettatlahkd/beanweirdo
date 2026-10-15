@@ -349,8 +349,9 @@ function AuthorDialog({
 
   useEffect(() => {
     if (!open) return
+    // Esc over the crop dialog opened from here closes that dialog only.
     const escape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape' && !document.querySelector('[data-crop]')) onClose()
     }
     document.addEventListener('keydown', escape)
     const scroll = document.body.style.overflow

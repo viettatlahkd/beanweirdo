@@ -95,7 +95,8 @@ const backdrop: CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  zIndex: 60,
+  // Above every dialog: it is opened from inside them (an author's or a signature's picture).
+  zIndex: 200,
   padding: 24,
 }
 
@@ -250,7 +251,7 @@ export function CropPicker({
   const pxH = natural ? Math.round((natural.h * rect.h) / 100) : null
 
   return (
-    <div style={backdrop} onPointerDown={(e) => e.target === e.currentTarget && onCancel()}>
+    <div data-crop style={backdrop} onPointerDown={(e) => e.target === e.currentTarget && onCancel()}>
       <div
         ref={box}
         role="dialog"
