@@ -95,11 +95,20 @@ const BULK_STATUS: { action: StatusAction; label: string }[] = [
 
 const SEL = '#EEF5F8'
 const WARN = '#B4552E'
+/**
+ * A published post whose edits are saved but not yet published — not a status
+ * in the database (it is `published` + `has_draft`), but a pile the owner looks
+ * for on its own, so it gets a tab and a search chip like the statuses.
+ */
+const PENDING = 'pending'
+const isPending = (p: PostSummary) => p.status === 'published' && !!p.has_draft
+type TabId = PostStatus | typeof PENDING
 /** The status tabs over the list; "Tất cả" is every post but the trash. */
-const TABS: { id: PostStatus | null; label: string }[] = [
+const TABS: { id: TabId | null; label: string }[] = [
   { id: null, label: 'Tất cả' },
   { id: 'draft', label: 'Nháp' },
   { id: 'published', label: 'Đã đăng' },
+  { id: PENDING, label: 'Lưu chỉnh sửa' },
   { id: 'archived', label: 'Lưu trữ' },
   { id: 'deleted', label: 'Thùng rác' },
 ]
@@ -115,7 +124,7 @@ const STATUS_PILL: Record<PostStatus, Pill | null> = {
   archived: { text: 'Lưu trữ', bg: '#ECE7DF', fg: '#62584A' },
   deleted: { text: 'Thùng rác', bg: '#FBE7E5', fg: '#8E1E42' },
 }
-const PENDING_PILL: Pill = { text: 'Có sửa chưa đăng', bg: '#FCE3B0', fg: '#73450A' }
+const PENDING_PILL: Pill = { text: 'Lưu chỉnh sửa', bg: '#FCE3B0', fg: '#73450A' }
 
 const CSS = `
 .cw-r:hover{background:${paper.hover}}
@@ -274,6 +283,7 @@ export function ContentWorkspace({ onChanged }: { onChanged?: () => void }) {
         ...(p.authors ?? []).map((id) => authorById.get(id)?.name ?? ''),
         templateName(p.template),
         STATUS_LABEL[p.status],
+        isPending(p) ? 'Lưu chỉnh sửa' : '',
         p.date_label ?? '',
       ].join(' '),
     )
@@ -289,7 +299,9 @@ export function ContentWorkspace({ onChanged }: { onChanged?: () => void }) {
             ? p.template === t.id
             : t.kind === 'site'
               ? shownOn(p).includes(t.id as PostSite)
-              : p.status === t.id
+              : t.id === PENDING
+                ? isPending(p)
+                : p.status === t.id
   // Chips of one kind widen (this topic or that one); different kinds narrow
   // (this topic and that tag) — two topics ANDed would only ever match nothing.
   const kindsOn = [...new Set(tokens.map((t) => t.kind))]
@@ -319,7 +331,9 @@ export function ContentWorkspace({ onChanged }: { onChanged?: () => void }) {
             ? authorById.get(id)?.name ?? id
             : vocab === 'site'
               ? SITE_LABEL[id as PostSite]
-              : STATUS_LABEL[id as PostStatus]
+              : id === PENDING
+                ? 'Lưu chỉnh sửa'
+                : STATUS_LABEL[id as PostStatus]
 
   const isOn = (kind: Facet, id: string) => tokens.some((t) => t.kind === kind && t.id === id)
   const add = (t: Token) => setTokens((o) => (o.some((x) => x.kind === t.kind && x.id === t.id) ? o : [...o, t]))
@@ -403,6 +417,7 @@ export function ContentWorkspace({ onChanged }: { onChanged?: () => void }) {
     ...TEMPLATE_KEYS.map((t) => ({ kind: 'tpl' as const, id: t, label: templateName(t), count: postsOf('tpl', t).length })),
     ...(Object.keys(SITE_LABEL) as PostSite[]).map((s) => ({ kind: 'site' as const, id: s, label: SITE_LABEL[s], count: postsOf('site', s).length })),
     ...(Object.keys(STATUS_LABEL) as PostStatus[]).map((st) => ({ kind: 'status' as const, id: st, label: STATUS_LABEL[st], count: posts.filter((p) => p.status === st).length })),
+    { kind: 'status' as const, id: PENDING, label: 'Lưu chỉnh sửa', count: posts.filter(isPending).length },
   ]
   const search = (
     <PostSearch
@@ -468,13 +483,13 @@ export function ContentWorkspace({ onChanged }: { onChanged?: () => void }) {
   // bar lights its tab and a tab click shows up as the bar's chip.
   const statusOn = tokens.filter((t) => t.kind === 'status')
   const tabOn = statusOn.length === 0 ? null : statusOn.length === 1 ? statusOn[0].id : undefined
-  const pickTab = (id: PostStatus | null) => setTokens((o) => [...o.filter((t) => t.kind !== 'status'), ...(id ? [{ kind: 'status' as const, id }] : [])])
+  const pickTab = (id: TabId | null) => setTokens((o) => [...o.filter((t) => t.kind !== 'status'), ...(id ? [{ kind: 'status' as const, id }] : [])])
   // Each tab counts what it would show under the other filters as they stand.
   const otherKinds = kindsOn.filter((k) => k !== 'status')
-  const tabCount = (id: PostStatus | null) =>
+  const tabCount = (id: TabId | null) =>
     posts.filter(
       (p) =>
-        (id ? p.status === id : p.status !== 'deleted') &&
+        (id === PENDING ? isPending(p) : id ? p.status === id : p.status !== 'deleted') &&
         otherKinds.every((k) => tokens.some((t) => t.kind === k && wears(p, t))) &&
         (!words.length || words.every((w) => haystack(p).includes(w))),
     ).length
