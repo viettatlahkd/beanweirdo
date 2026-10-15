@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
-import { ink, paper, sans, serif, space } from '../../design/tokens'
+import { ink, paper, sans } from '../../design/tokens'
 import { buildSlug } from '../../lib/postSlug'
-import { toPath } from '../../lib/routes'
+import { TAG_PAGE, toPath } from '../../lib/routes'
 import {
   adoptWords,
   checkWords,
@@ -14,8 +14,9 @@ import {
   type RouteWords,
   type StoredRoutes,
 } from '../../lib/routeWords'
-import type { Module } from '../lib/apiClient'
 import { Button } from '../../design/Button'
+import { Row, Section } from './Detail'
+import { indexModules, useModules } from '../../data/useModules'
 
 /** Ô nào đứng cạnh ô nào, và cái gì chúng làm ra. */
 type Block = {
@@ -25,21 +26,22 @@ type Block = {
   sample: (w: RouteWords) => string
 }
 
+/*
+ * Chỉ những từ còn làm ra địa chỉ (2026-10-16). Các từ chỉ còn để đọc link cũ —
+ * `post` (/journal/post/…, bài giờ ở /p/…), `details` (/bean/details), và sáu
+ * trang con cũ của khu quản trị — không còn ô: sửa chúng không đổi địa chỉ
+ * nào, mà bộ từ đã lưu vẫn giữ chúng để link cũ mở được.
+ */
 const BLOCKS: Block[] = [
   {
     title: 'Trang công khai',
-    keys: ['bean', 'details', 'index', 'notes', 'module', 'tag', 'post', 'practice'],
-    sample: (w) => toPath({ area: 'public', screen: 'module', moduleId: 'biochem' }, w),
+    keys: ['bean', 'index', 'notes', 'module', 'tag', 'practice'],
+    sample: (w) => toPath({ area: 'public', screen: 'module', moduleId: 'bean-weirdo' }, w),
   },
   {
     title: 'Khu quản trị',
-    keys: ['admin'],
-    sample: (w) => toPath({ area: 'admin', screen: 'cms' }, w),
-  },
-  {
-    title: 'Trang con của khu quản trị',
-    keys: ['adPost', 'adConfig', 'adTree', 'adAuthors', 'adTags', 'adTemplates', 'adSitemap', 'adPageContent', 'adTaxonomy', 'adDisplay', 'adArchive', 'adPortfolio', 'adPortContent', 'adPortDesign'],
-    sample: (w) => toPath({ area: 'admin', screen: 'archive' }, w),
+    keys: ['admin', 'adPost', 'adAuthors', 'adTaxonomy', 'adTags', 'adTemplates', 'adTree', 'adDisplay', 'adArchive'],
+    sample: (w) => toPath({ area: 'admin', screen: 'cms', tab: 'pages' }, w),
   },
   {
     title: 'Soạn bài',
@@ -53,30 +55,24 @@ const BLOCKS: Block[] = [
   },
 ]
 
-const OPEN_KEY = 'cms_routes_open'
-
-const label: React.CSSProperties = {
-  fontFamily: sans,
-  fontWeight: 400,
-  fontSize: 12,
-  color: ink.soft,
-  minWidth: 168,
-}
-
 const field = (bad: boolean): React.CSSProperties => ({
+  boxSizing: 'border-box',
   fontFamily: sans,
-  fontSize: 13,
+  fontSize: 13.5,
   color: ink.base,
   background: paper.white,
   border: `1px solid ${bad ? '#8E1E42' : paper.rule}`,
-  borderRadius: 2,
-  padding: '6px 9px',
-  width: 170,
+  borderRadius: 6,
+  padding: '7px 10px',
+  width: 220,
+  maxWidth: '100%',
   outline: 'none',
 })
+const sampleCode: React.CSSProperties = { fontFamily: 'ui-monospace, monospace', fontSize: 12, color: ink.green }
 
 /**
- * Các từ dùng để viết địa chỉ.
+ * Các từ dùng để viết địa chỉ — Cài đặt hiển thị › Đường dẫn, vẽ bằng khung
+ * Section/Row như mọi màn khác của khu quản trị (2026-10-16).
  *
  * Chỉ có ô chữ ở đây. Hình dạng của một địa chỉ — có những mảnh nào, xếp thứ
  * tự ra sao, dấu gì ngăn chúng — nằm trong mã, nên nó không phải thứ bị từ chối
@@ -87,40 +83,17 @@ const field = (bad: boolean): React.CSSProperties => ({
  */
 export function RoutesPanel({
   stored,
-  modules,
   onSave,
 }: {
   stored: StoredRoutes | undefined
-  modules: Module[]
   onSave: (routes: StoredRoutes) => void | Promise<void>
 }) {
   const live = useMemo(() => resolveWords(stored), [stored])
   const [draft, setDraft] = useState<RouteWords>(live)
   const [saved, setSaved] = useState(false)
-  /*
-   * Co lại khi mở màn. Đây là chỗ ít động tới nhất trên tab này mà lại dài
-   * nhất, nên để nó xổ sẵn là đẩy sơ đồ trang — thứ người ta vào đây để xem —
-   * ra khỏi tầm mắt. Nhớ lại lựa chọn để ai đang sửa dở không phải mở lại mỗi
-   * lần quay vào.
-   */
-  const [open, setOpen] = useState(() => {
-    try {
-      return window.localStorage.getItem(OPEN_KEY) === '1'
-    } catch {
-      return false
-    }
-  })
-
-  const toggle = () => {
-    setOpen((v) => {
-      try {
-        window.localStorage.setItem(OPEN_KEY, v ? '0' : '1')
-      } catch {
-        // Trình duyệt chặn lưu thì mỗi lần vào lại co sẵn, không sao.
-      }
-      return !v
-    })
-  }
+  // The journal's pages as its sidebar lists them: their ids are what a page address carries (topic ids since 0036).
+  const { data: pages } = useModules()
+  const journalPages = indexModules(pages).filter((p) => !p.id.startsWith(TAG_PAGE) && p.screen !== 'notes')
 
   const errors = checkWords(draft)
   const bad = Object.keys(errors).length > 0
@@ -141,169 +114,65 @@ export function RoutesPanel({
     void onSave(next)
   }
 
-  return (
-    <div style={{ marginTop: space.section, borderTop: `2px solid ${ink.base}`, paddingTop: space.inner }}>
-      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: space.inner }}>
-        <h2
-          onClick={toggle}
-          style={{
-            fontFamily: serif,
-            fontWeight: 400,
-            fontSize: 30,
-            letterSpacing: '-.02em',
-            margin: 0,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'baseline',
-            gap: 10,
-          }}
-        >
-          <span
-            aria-label={open ? 'Co lại' : 'Mở ra'}
-            role="button"
-            style={{ fontFamily: sans, fontSize: 13, color: ink.soft, width: 12 }}
-          >
-            {open ? '−' : '+'}
-          </span>
-          Đường dẫn
-          {!open && (
-            <code style={{ fontFamily: 'ui-monospace, monospace', fontSize: 12, color: ink.soft }}>
-              {toPath({ area: 'admin', screen: 'cms' }, live)} · {`${toPath({ area: 'public', screen: 'landing' }, live)}/${live.post}/…`}
-            </code>
-          )}
-        </h2>
-        {open && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: space.gap }}>
-            {saved && !changed && (
-              <span style={{ fontFamily: sans, fontSize: 13, color: ink.soft }}>đã lưu</span>
-            )}
-            <Button level="primary" disabled={!changed || bad} onClick={save}>
-              Lưu đường dẫn
-            </Button>
-          </div>
+  const word = (k: keyof typeof WORD_LABELS) => (
+    <Row key={k} label={WORD_LABELS[k]}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        <input value={draft[k]} aria-label={WORD_LABELS[k]} onChange={(e) => set(k, e.target.value)} spellCheck={false} style={field(Boolean(errors[k]))} />
+        {draft[k] !== DEFAULT_WORDS[k] && (
+          <Button size="sm" level="quiet" onClick={() => set(k, DEFAULT_WORDS[k])}>
+            về {DEFAULT_WORDS[k]}
+          </Button>
         )}
       </div>
+      {errors[k] && <div style={{ fontFamily: sans, fontSize: 13, color: '#8E1E42', marginTop: 4 }}>{errors[k]}</div>}
+    </Row>
+  )
 
-      {open && BLOCKS.map((b) => (
-        <div key={b.title} style={{ marginTop: space.inner + 6 }}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'baseline',
-              justifyContent: 'space-between',
-              gap: space.inner,
-              borderBottom: `1px solid ${paper.rule}`,
-              paddingBottom: 6,
-            }}
-          >
-            <div
-              style={{
-                fontFamily: sans,
-                fontSize: 13,
-                fontWeight: 500,
-                letterSpacing: '.2em',
-                color: ink.soft,
-              }}
-            >
-              {b.title}
-            </div>
-            <code style={{ fontFamily: 'ui-monospace, monospace', fontSize: 12, color: ink.green }}>
-              {b.sample(draft)}
-            </code>
-          </div>
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10 }}>
+        {saved && !changed && <span style={{ fontFamily: sans, fontSize: 13, color: ink.soft }}>đã lưu</span>}
+        <Button level="primary" disabled={!changed || bad} onClick={save}>
+          Lưu đường dẫn
+        </Button>
+      </div>
 
-          {b.keys.map((k) => (
-            <div key={k} style={{ padding: '9px 0 0' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: space.gap }}>
-                <div style={label}>{WORD_LABELS[k]}</div>
-                <input
-                  value={draft[k]}
-                  aria-label={WORD_LABELS[k]}
-                  onChange={(e) => set(k, e.target.value)}
-                  spellCheck={false}
-                  style={field(Boolean(errors[k]))}
-                />
-                {draft[k] !== DEFAULT_WORDS[k] && (
-                  <Button size="sm" onClick={() => set(k, DEFAULT_WORDS[k])}>
-                    {DEFAULT_WORDS[k]}
-                  </Button>
-                )}
-              </div>
-              {errors[k] && (
-                <div style={{ fontFamily: sans, fontSize: 13, color: '#8E1E42', marginTop: 4, marginLeft: 168 + space.gap }}>
-                  {errors[k]}
-                </div>
-              )}
-            </div>
-          ))}
-
+      {BLOCKS.map((b) => (
+        <Section key={b.title} title={b.title} note={<code style={sampleCode}>{b.sample(draft)}</code>}>
+          {b.keys.map(word)}
           {b.title === 'Địa chỉ của một bài' && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: space.gap, padding: '9px 0 0' }}>
-              <div style={label}>Thứ tự ngày</div>
-              <select
-                value={draft.dateOrder}
-                aria-label="Thứ tự ngày"
-                onChange={(e) => set('dateOrder', e.target.value as DateOrder)}
-                style={{ ...field(false), width: 'auto' }}
-              >
+            <Row label="Thứ tự ngày">
+              <select value={draft.dateOrder} aria-label="Thứ tự ngày" onChange={(e) => set('dateOrder', e.target.value as DateOrder)} style={{ ...field(false), width: 'auto' }}>
                 {DATE_ORDERS.map((o) => (
                   <option key={o} value={o}>
                     {o}
                   </option>
                 ))}
               </select>
-            </div>
+            </Row>
           )}
-        </div>
+        </Section>
       ))}
 
-      {open && (
-      <div style={{ marginTop: space.inner + 6 }}>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'baseline',
-            justifyContent: 'space-between',
-            gap: space.inner,
-            borderBottom: `1px solid ${paper.rule}`,
-            paddingBottom: 6,
-          }}
-        >
-          <div
-            style={{
-              fontFamily: sans,
-              fontSize: 13,
-              fontWeight: 500,
-              letterSpacing: '.2em',
-              color: ink.soft,
-            }}
-          >
-            Tên module trong địa chỉ
-          </div>
-          {errors.modules && (
-            <span style={{ fontFamily: sans, fontSize: 13, color: '#8E1E42' }}>{errors.modules}</span>
-          )}
-        </div>
-        {modules.map((m) => (
-          <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: space.gap, padding: '9px 0 0' }}>
-            <div style={label}>{m.title}</div>
-            <input
-              value={draft.modules[m.id] ?? m.id}
-              aria-label={m.title}
-              onChange={(e) => {
-                setSaved(false)
-                setDraft((d) => ({ ...d, modules: { ...d.modules, [m.id]: e.target.value } }))
-              }}
-              spellCheck={false}
-              style={field(false)}
-            />
-            <code style={{ fontFamily: 'ui-monospace, monospace', fontSize: 12, color: ink.green }}>
-              {toPath({ area: 'public', screen: 'module', moduleId: m.id }, draft)}
-            </code>
-          </div>
+      <Section title="Tên trang chủ đề trong địa chỉ" note={errors.modules ? <span style={{ color: '#8E1E42' }}>{errors.modules}</span> : undefined}>
+        {journalPages.map((p) => (
+          <Row key={p.id} label={p.title}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <input
+                value={draft.modules[p.id] ?? p.id}
+                aria-label={p.title}
+                onChange={(e) => {
+                  setSaved(false)
+                  setDraft((d) => ({ ...d, modules: { ...d.modules, [p.id]: e.target.value } }))
+                }}
+                spellCheck={false}
+                style={field(false)}
+              />
+              <code style={sampleCode}>{toPath({ area: 'public', screen: 'module', moduleId: p.id }, draft)}</code>
+            </div>
+          </Row>
         ))}
-      </div>
-      )}
+      </Section>
     </div>
   )
 }

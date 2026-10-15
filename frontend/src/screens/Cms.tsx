@@ -834,7 +834,7 @@ export function Cms() {
         <DisplaySettings
           design={site.design}
           onSaveDesign={(patch) => saveSite({ design: patch })}
-          routes={<RoutesPanel stored={site.routes} modules={modules} onSave={(routes) => saveSite({ routes } as SiteOverrides)} />}
+          routes={<RoutesPanel stored={site.routes} onSave={(routes) => saveSite({ routes } as SiteOverrides)} />}
           blog={
             <>
           <Hover
