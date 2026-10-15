@@ -137,6 +137,111 @@ export function Avatar({ author, size }: { author: Pick<Author, 'name' | 'avatar
   )
 }
 
+/**
+ * A round picture's controls, the same as every other picture slot in the back
+ * office (owner, 2026-10-16): Tải ảnh · Đặt vào khung · Dán link · Bỏ ảnh. A face
+ * is drawn in a circle, so its frame is square.
+ */
+export function AvatarPicker({
+  name,
+  url,
+  frameName,
+  onChange,
+  onError,
+  onBusy,
+}: {
+  name: string
+  url: string | null
+  frameName: string
+  onChange: (url: string | null) => void
+  onError: (message: string) => void
+  /** While a file goes up, so the dialog does not save half a picture. */
+  onBusy?: (busy: boolean) => void
+}) {
+  const file = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
+  const [linking, setLinking] = useState(false)
+  const frame = useFraming()
+  const busy = (b: boolean) => {
+    setUploading(b)
+    onBusy?.(b)
+  }
+  // Cancel hands back the same address: nothing changes.
+  const place = async (u: string) => {
+    const next = await frame({ url: u, name: frameName, ratio: 1 })
+    if (next !== u) onChange(next)
+  }
+  const upload = async (f: File) => {
+    busy(true)
+    try {
+      const { url: u } = await uploadImage(f)
+      onChange(u)
+      await place(u)
+    } catch (e) {
+      onError((e as Error).message)
+    } finally {
+      busy(false)
+    }
+  }
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        <span style={{ marginRight: 4, display: 'flex' }}>
+          <Avatar author={{ name: name || '?', avatar_url: url }} size={56} />
+        </span>
+        <input
+          ref={file}
+          type="file"
+          accept="image/*"
+          hidden
+          onChange={(e) => {
+            const f = e.target.files?.[0]
+            if (f) void upload(f)
+            e.target.value = ''
+          }}
+        />
+        <Button size="sm" icon={<IconUpload size={14} />} disabled={uploading} onClick={() => file.current?.click()}>
+          {uploading ? 'Đang tải…' : url ? 'Đổi ảnh' : 'Tải ảnh'}
+        </Button>
+        {url && (
+          <Button size="sm" onClick={() => void place(url)}>
+            Đặt vào khung
+          </Button>
+        )}
+        <Button size="sm" onClick={() => setLinking(!linking)}>
+          Dán link
+        </Button>
+        {url && (
+          <Button size="sm" level="quiet" onClick={() => onChange(null)}>
+            Bỏ ảnh
+          </Button>
+        )}
+      </div>
+      {linking && (
+        <input
+          autoFocus
+          className="admin-field"
+          aria-label="Link ảnh"
+          defaultValue={url ?? ''}
+          placeholder="dán link ảnh rồi Enter"
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') setLinking(false)
+            if (e.key !== 'Enter') return
+            // Enter inside the dialog's form would also submit it.
+            e.preventDefault()
+            const v = (e.target as HTMLInputElement).value.trim()
+            setLinking(false)
+            onChange(v || null)
+            if (v) void place(v)
+          }}
+          onBlur={() => setLinking(false)}
+          style={{ marginTop: 8 }}
+        />
+      )}
+    </div>
+  )
+}
+
 function AuthorCard({
   author: a,
   onOpen,
@@ -232,10 +337,8 @@ function AuthorDialog({
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<{ field?: string; message: string } | null>(null)
   const panel = useRef<HTMLDivElement>(null)
-  const file = useRef<HTMLInputElement>(null)
   const open = author !== null
   const creating = author === 'new'
-  const frame = useFraming()
 
   useEffect(() => {
     if (!author) return
@@ -278,20 +381,6 @@ function AuthorDialog({
       const field = e instanceof ApiError ? (e.payload as { field?: string })?.field : undefined
       setError({ field, message: (e as Error).message })
       setBusy(false)
-    }
-  }
-
-  const upload = async (f: File) => {
-    setUploading(true)
-    try {
-      const { url } = await uploadImage(f)
-      set('avatar_url', url)
-      // A face is drawn in a circle, so the dialog opens on a square.
-      set('avatar_url', await frame({ url, name: 'Ảnh tác giả', ratio: 1 }))
-    } catch (e) {
-      setError({ field: 'avatar_url', message: (e as Error).message })
-    } finally {
-      setUploading(false)
     }
   }
 
@@ -361,28 +450,7 @@ function AuthorDialog({
           }}
           style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <Avatar author={{ name: form.name || '?', avatar_url: form.avatar_url }} size={56} />
-            <input
-              ref={file}
-              type="file"
-              accept="image/*"
-              hidden
-              onChange={(e) => {
-                const f = e.target.files?.[0]
-                if (f) void upload(f)
-                e.target.value = ''
-              }}
-            />
-            <Button size="sm" icon={<IconUpload size={14} />} disabled={uploading} onClick={() => file.current?.click()}>
-              {uploading ? 'Đang tải…' : 'Tải ảnh'}
-            </Button>
-            {form.avatar_url && (
-              <Button size="sm" onClick={() => set('avatar_url', null)}>
-                Bỏ ảnh
-              </Button>
-            )}
-          </div>
+          <AvatarPicker name={form.name} url={form.avatar_url} frameName="Ảnh tác giả" onChange={(u) => set('avatar_url', u)} onError={(message) => setError({ field: 'avatar_url', message })} onBusy={setUploading} />
           {note('avatar_url')}
 
           <Labeled label="Tên" htmlFor="author-name">

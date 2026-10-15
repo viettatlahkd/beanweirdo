@@ -222,6 +222,13 @@
     cột chỉnh của Port có khung nền như Journal, khung xem trước có viền.
   - Đo trên trình duyệt (tab riêng): tiêu đề và khung đầu của 13 màn đều ở x=224; khoảng từ vạch kẻ tới nội dung đầu 0 (danh
     sách) hoặc 12 (ô nhập) ở mọi khung.
+- **[ĐỔI HÀNH VI] Ảnh tròn (Tác giả, Chữ kí)** có đủ lệnh như mọi ô ảnh: Tải/Đổi ảnh · Đặt vào khung · Dán link · Bỏ ảnh
+  (`AvatarPicker` trong `AuthorsPanel.tsx`, dùng ở `AuthorDialog` và `SignDialog`; khung vuông vì ảnh vẽ tròn). Rà các chỗ tải
+  ảnh khác trong admin: ô ảnh port (`ImageField`), dàn trang (`ModuleImages`), trang chủ journal (`ImageSlot`), ô feature
+  (`FeatureCellsEditor`), ảnh trong bài và thumbnail clip (`PlateUpload`/`PlateImageUpload`) đã có đủ bộ lệnh từ trước.
+- **[ĐỔI HÀNH VI]** Hiển thị: "Port" → "Portfolio" (`DISPLAY_LABELS`).
+- Trình duyệt (tab riêng, chặn ghi): hộp Sửa tác giả có Đổi ảnh · Đặt vào khung · Dán link · Bỏ ảnh, "Đặt vào khung" mở hộp
+  "Ảnh tác giả", "Dán link" mở ô; hộp Sửa chữ kí (chưa có ảnh) có Tải ảnh · Dán link; không lệnh ghi nào.
 - Thứ tự khối trên trang chủ vẫn theo thứ tự port trên Thanh menu (`featuresFollowingMenu` khi kéo).
 - Trình duyệt (chặn lệnh ghi): Trang chủ chỉ còn Nội dung trang, Thanh menu; "Cập nhật nội dung" ở bizops mở Hiện ở trang chủ ·
   Nhãn "beæn bizops" · Ảnh; sửa nhãn → một `PATCH /api/site` `portfolio.home.features`; "Xem dàn trang" ở beæn weirdo → port
