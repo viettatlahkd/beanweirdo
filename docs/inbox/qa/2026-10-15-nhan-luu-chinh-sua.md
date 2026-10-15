@@ -18,3 +18,9 @@
 Trình duyệt `/ad-post` (dữ liệu hosted, không ghi gì): 2 bài mang nhãn, cả hai hiện "Lưu chỉnh sửa", không còn chữ cũ.
 Tab: Tất cả 33 · Nháp 3 · Đã đăng 29 · Lưu chỉnh sửa 2 · Lưu trữ 1 · Thùng rác 1; bấm tab → "2 bài" (Course Menu pt.1,
 jurisprudence), chip ô tìm "Trạng thái Lưu chỉnh sửa".
+
+## Cùng PR — thanh bên quản trị hẹp lại
+
+- **[ĐỔI HÀNH VI]** Thanh bên quản trị 248px → 196px (`AdminShell.tsx:SIDE_W`); khu nội dung rộng thêm 52px. Đo trên trình
+  duyệt: mục dài nhất ("Mở nhật ký Ghi 02 ↗") kết thúc ở 148px; mở cây beanweirdo, biz, bean, journal — mục con dài nhất
+  "Trang chủ bean" ở 153px; không mục nào bị cắt hay xuống dòng. Chủ site, 2026-10-15: "giảm khoảng trống bên lề phải".
