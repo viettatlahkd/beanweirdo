@@ -840,17 +840,19 @@ export function ConfigTree({
       const about = picked.part === 'about'
       const part = (only: PortPart) => <ContentTab key={only} only={only} content={port.content} setStored={port.setContentStored} pages={port.pages} />
       title = about ? 'about' : 'Trang chủ'
-      // A menu row opens nothing by itself, only through its buttons (owner, 2026-10-15).
+      // A click anywhere on a menu row opens or closes its Cập nhật nội dung, never another page (owner, 2026-10-16).
       const menuRows = tocList(rootToc, rootToc.items).map(({ onOpen: _, ...it }, i): ListItem => {
         const pg = rootToc.items[i].page
-        const edit = (key: string) => ({ label: 'Cập nhật nội dung', icon: <IconInfo size={14} />, on: featOpen === key, onClick: () => setFeatOpen(featOpen === key ? null : key) })
+        const toggle = (key: string) => () => setFeatOpen(featOpen === key ? null : key)
+        const edit = (key: string) => ({ label: 'Cập nhật nội dung', icon: <IconInfo size={14} />, on: featOpen === key, onClick: toggle(key) })
         // about's words, images and which signature it uses open here; signatures themselves live in Thông tin chung (owner, 2026-10-15).
         if (it.id === 'about')
-          return { ...it, buttons: [edit('about')], below: featOpen === 'about' ? <ContentTab only="about" content={port.content} setStored={port.setContentStored} pages={port.pages} onNewSign={newSign} /> : undefined }
+          return { ...it, onOpen: toggle('about'), buttons: [edit('about')], below: featOpen === 'about' ? <ContentTab only="about" content={port.content} setStored={port.setContentStored} pages={port.pages} onNewSign={newSign} /> : undefined }
         if (!pg) return it
         const onHome = homeFeatures().some((f) => f.pageId === pg.id)
         return {
           ...it,
+          onOpen: onHome ? toggle(pg.id) : undefined,
           control: <Switch label={`${pg.title}: hiện ở trang chủ`} value={onHome} onChange={(on) => setOnHome(pg.id, on)} />,
           buttons: [
             { ...edit(pg.id), off: !onHome },
