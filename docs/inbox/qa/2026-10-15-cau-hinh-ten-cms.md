@@ -191,6 +191,18 @@
   (business, bænweirdo). Bảng màu **đã có chỗ quản lý**: Cài đặt hiển thị › Port › Bảng màu (`DesignTab`, sửa màu, thêm bảng).
   Đổi nhãn thành "Bảng màu"; lựa chọn cuối "Quản lý bảng màu…" mở Cài đặt hiển thị ở tab Port (`DISPLAY_TAB_KEY` trong
   `SiteTabs.tsx`). Trình duyệt (tab riêng, chặn ghi): chọn → `/ad-display`, tab Port, không lệnh ghi nào.
+- **[ĐỔI HÀNH VI] Cài đặt hiển thị › Đường dẫn** (`RoutesPanel.tsx`): vẽ bằng `Section`/`Row` như các màn khác; bỏ tiêu đề lớn
+  và nút thu gọn/mở rộng (`cms_routes_open`). Nút Lưu đường dẫn ở trên cùng; mỗi khung ghi địa chỉ mẫu ở góc phải.
+- **[SỬA LỖI] Logic đường dẫn đã cũ** (đối chiếu `parsePath`/`toPath` trong `lib/routes.ts`):
+  - `post` không còn làm ra địa chỉ nào (bài ở `/p/<slug>`, hằng `POST`), chỉ đọc link cũ `/journal/post/…`; `details` chỉ đọc
+    `/bean/details`; `adConfig`, `adSitemap`, `adPageContent`, `adPortfolio`, `adPortContent`, `adPortDesign` chỉ đọc link cũ. Các
+    ô này không còn trên màn (bộ từ đã lưu vẫn giữ, link cũ vẫn mở). Nhãn của chúng ghi rõ "địa chỉ cũ".
+  - "Tên module trong địa chỉ" liệt kê dàn trang (biochem, ghi01…) trong khi trang journal mang id chủ đề từ 0036 → đổi thành
+    "Tên trang chủ đề trong địa chỉ", liệt kê đúng trang trên thanh bên journal (`indexModules`, trừ trang tag và Ghi — Ghi có
+    ô riêng). Mục cũ `modules.biochem → biochemistry` vẫn đọc được.
+  - Nhãn theo tên hiện tại: bean → "port #2: bean", Ghi 01 → "Ghi", Nhật ký → "practice", Module → "Trang chủ đề"; Khu quản trị
+    thêm Tác giả/Chuyên mục/Tag/Template/Cấu hình theo thứ tự thanh bên. Mẫu trang công khai đổi sang `bean-weirdo`.
+- vitest `lib`, `admin`, `portfolio`, `screens`: 50 file, 569 test xanh.
 - Thứ tự khối trên trang chủ vẫn theo thứ tự port trên Thanh menu (`featuresFollowingMenu` khi kéo).
 - Trình duyệt (chặn lệnh ghi): Trang chủ chỉ còn Nội dung trang, Thanh menu; "Cập nhật nội dung" ở bizops mở Hiện ở trang chủ ·
   Nhãn "beæn bizops" · Ảnh; sửa nhãn → một `PATCH /api/site` `portfolio.home.features`; "Xem dàn trang" ở beæn weirdo → port

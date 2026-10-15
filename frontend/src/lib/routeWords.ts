@@ -100,17 +100,17 @@ export const DEFAULT_WORDS: RouteWords = {
 
 export const DATE_ORDERS: DateOrder[] = ['yymmdd', 'mmddyy', 'ddmmyy']
 
-/** Ô nào là chữ, và tên tiếng Việt của nó trong màn Sơ đồ trang. */
+/** Ô nào là chữ, và tên tiếng Việt của nó ở Cài đặt hiển thị › Đường dẫn. */
 export const WORD_LABELS: Record<Exclude<keyof RouteWords, 'dateOrder' | 'modules'>, string> = {
   admin: 'Tên khu',
-  post: 'Bài viết',
-  module: 'Module',
+  post: 'Bài viết (địa chỉ cũ /journal/…)',
+  module: 'Trang chủ đề',
   tag: 'Tag',
   index: 'Mục lục',
-  notes: 'Ghi 01',
-  practice: 'Nhật ký',
-  bean: 'Khu bean',
-  details: 'Nút sang blog ở trang chủ bean',
+  notes: 'Ghi',
+  practice: 'practice',
+  bean: 'port #2: bean',
+  details: 'Trang chủ journal (địa chỉ cũ /bean/…)',
   adPost: 'Nội dung',
   adConfig: 'Cấu hình (địa chỉ cũ)',
   adTree: 'Cấu hình',
