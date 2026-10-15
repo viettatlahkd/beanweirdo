@@ -115,7 +115,7 @@ export const WORD_LABELS: Record<Exclude<keyof RouteWords, 'dateOrder' | 'module
   adTags: 'Tag',
   adSitemap: 'Sitemap (địa chỉ cũ)',
   adPageContent: 'Quản lý trang (địa chỉ cũ)',
-  adTaxonomy: 'Phân loại',
+  adTaxonomy: 'Chuyên mục',
   adDisplay: 'Cài đặt hiển thị',
   adArchive: 'Archive',
   adPortfolio: 'Portfolio · Quản lý port',

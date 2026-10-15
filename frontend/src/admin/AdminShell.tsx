@@ -48,10 +48,14 @@ export function useAdminFrame(): Frame {
 
 /**
  * The lists that file posts, under Nội dung (owner, 2026-10-15) rather than
- * under a site in Cấu hình: every site's posts wear them.
+ * under a site in Cấu hình: every site's posts wear them. Chuyên mục is the
+ * subject › topic tree itself — added, renamed, merged away — the CMS word for
+ * a hierarchical taxonomy (WordPress's Categories), beside Tag, the flat one.
+ * Mục lục, the journal page that shows that tree, stays in Cấu hình › journal.
  */
 const CONTENT_LISTS = [
   { tab: 'authors', label: 'Tác giả' },
+  { tab: 'topics', label: 'Chuyên mục' },
   { tab: 'tags', label: 'Tag' },
 ] as const
 
@@ -88,7 +92,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
         ? 'Nội dung › Xem trước'
         : tab === 'posts'
           ? 'Nội dung'
-          : tab === 'authors' || tab === 'tags'
+          : tab === 'authors' || tab === 'topics' || tab === 'tags'
             ? `Nội dung › ${CONTENT_LISTS.find((l) => l.tab === tab)?.label}`
             : tab === 'display'
               ? 'Cài đặt hiển thị'

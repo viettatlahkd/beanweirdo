@@ -57,6 +57,7 @@ const adminPages = (w: RouteWords): Record<string, Screen> => ({
   [`${w.admin}-${w.adConfig}`]: 'cms',
   [`${w.admin}-${w.adTree}`]: 'cms',
   [`${w.admin}-${w.adAuthors}`]: 'cms',
+  [`${w.admin}-${w.adTags}`]: 'cms',
   [`${w.admin}-${w.adSitemap}`]: 'cms',
   [`${w.admin}-${w.adPageContent}`]: 'cms',
   [`${w.admin}-${w.adTaxonomy}`]: 'cms',
@@ -69,8 +70,11 @@ const adminPages = (w: RouteWords): Record<string, Screen> => ({
   [`${w.admin}-${w.adPortDesign}`]: 'cms',
 })
 
-/** Nội dung and its lists — Tác giả, Tag — · Cấu hình (every page and its settings) · Cài đặt hiển thị. */
-export type CmsTab = 'posts' | 'authors' | 'tags' | 'pages' | 'display'
+/**
+ * Nội dung and its lists — Tác giả, Chuyên mục (the subject › topic tree),
+ * Tag — · Cấu hình (every page and its settings) · Cài đặt hiển thị.
+ */
+export type CmsTab = 'posts' | 'authors' | 'topics' | 'tags' | 'pages' | 'display'
 
 /**
  * Which tab of Content management an `/ad-…` address opens on.
@@ -89,8 +93,8 @@ const cmsTabs = (w: RouteWords = activeWords()): Record<string, CmsTab> => ({
   [`${w.admin}-${w.adConfig}`]: 'pages',
   [`${w.admin}-${w.adTree}`]: 'pages',
   [`${w.admin}-${w.adAuthors}`]: 'authors',
-  // Phân loại folded into Nội dung; its old address still lands there.
-  [`${w.admin}-${w.adTaxonomy}`]: 'posts',
+  // Phân loại's address is Nội dung › Chuyên mục now (2026-10-15): the tree it used to manage.
+  [`${w.admin}-${w.adTaxonomy}`]: 'topics',
   [`${w.admin}-${w.adTags}`]: 'tags',
   [`${w.admin}-${w.adSitemap}`]: 'pages',
   // Nội dung trang folded into Quản lý trang, now Cấu hình; its old address still lands there.
@@ -105,6 +109,7 @@ const pageOfTab = (w: RouteWords): Record<CmsTab, string> => ({
   pages: `${w.admin}-${w.adTree}`,
   display: `${w.admin}-${w.adDisplay}`,
   authors: `${w.admin}-${w.adAuthors}`,
+  topics: `${w.admin}-${w.adTaxonomy}`,
   tags: `${w.admin}-${w.adTags}`,
 })
 

@@ -191,11 +191,11 @@ export function ConfigTree({
   only,
 }: {
   /**
-   * One of Nội dung's lists (Tác giả, Tag) on its own: that list
+   * One of Nội dung's lists (Tác giả, Chuyên mục, Tag) on its own: that list
    * and what opens from it, with no site tree in the sidebar and no crumb back
    * into a site — they belong to every site's posts, not to one site's pages.
    */
-  only?: 'authors' | 'tags'
+  only?: 'authors' | 'topics' | 'tags'
   modules: Module[]
   /** The fixed copy of a page the site draws with a screen of its own. */
   renderCopy: (key: SystemPage) => ReactNode
@@ -850,12 +850,13 @@ export function ConfigTree({
               used={[...new Set(vocab.topics.map((x) => x.accent).filter((c): c is string => !!c))]}
               save={(patch) => run(() => updateNode(t.id, patch))}
             />
-            <NavFlags layout={layout} navRef={`topic:${t.id}`} defaults={{ sidebar: true, home: t.parent_id === null }} run={run} />
+            {/* Where it shows on the site is the journal's business (Cấu hình), not the tree's. */}
+            {!only && <NavFlags layout={layout} navRef={`topic:${t.id}`} defaults={{ sidebar: true, home: t.parent_id === null }} run={run} />}
           </Section>
           <Section title="Mục con" note={kids.length ? `${kids.length} · ${dragNote(true)}` : undefined}>
             <ItemList label="Mục con" items={tocList(topicToc, topicToc.items.filter((r) => r.parent_id === t.id))} add={addTopic(t)} />
           </Section>
-          <Section title="Nội dung trang">{nodePage('topic', t.id)}</Section>
+          {!only && <Section title="Nội dung trang">{nodePage('topic', t.id)}</Section>}
         </>
       )
       break
@@ -951,6 +952,20 @@ export function ConfigTree({
             </Section>
           </>
         )
+      } else if (g === 'topics' && only === 'topics') {
+        // Chuyên mục: the whole tree, subjects and their topics, to add to, rename, and merge away.
+        title = 'Chuyên mục'
+        const subjects = sorted.filter((t) => t.parent_id === null)
+        facts = [`${subjects.length} chủ đề`, `${shownTopics.length - subjects.length} chủ đề con`]
+        const rows = topicToc.items.filter((r) => r.parent_id === null).flatMap((r) => [r, ...topicToc.items.filter((c) => c.parent_id === r.id)])
+        body = (
+          <>
+            {errorLine}
+            <Section title="Cây chủ đề" note={dragNote(true)}>
+              <ItemList label="Cây chủ đề" items={tocList(topicToc, rows).map((it, i) => ({ ...it, depth: rows[i].parent_id ? 1 : 0 }))} add={addTopic(null)} />
+            </Section>
+          </>
+        )
       } else if (g === 'topics') {
         crumbs = [siteCrumb('blog')]
         title = 'Mục lục'
@@ -1018,7 +1033,9 @@ export function ConfigTree({
   if (only) {
     // A Nội dung list leads nowhere into a site: drop the site crumb, and name the list as its tab does.
     const siteNames = Object.values(SITE_LABELS) as string[]
-    crumbs = crumbs.filter((c) => !siteNames.includes(c.label))
+    crumbs = crumbs
+      .filter((c) => !siteNames.includes(c.label))
+      .map((c) => (only === 'topics' && c.label === 'Mục lục' ? { ...c, label: 'Chuyên mục' } : c))
   }
   const header = <DetailHead crumbs={crumbs} title={title} rename={rename} address={address} facts={facts} actions={actions} />
 
