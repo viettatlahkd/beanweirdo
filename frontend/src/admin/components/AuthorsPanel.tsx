@@ -70,7 +70,8 @@ export function AuthorsPanel() {
   }
 
   return (
-    <div style={{ maxWidth: 760, margin: '0 auto' }}>
+    // Left-aligned under the title like every other admin list, not a centred column (owner, 2026-10-16).
+    <div style={{ marginTop: 14 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
         <p style={{ fontFamily: sans, fontSize: 12.5, color: ink.soft, margin: 0 }}>
           Người tắt không chọn được cho bài mới, nhưng bài cũ vẫn giữ tên họ.

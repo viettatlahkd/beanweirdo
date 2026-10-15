@@ -1395,7 +1395,8 @@ export function ConfigTree({
         alignItems: 'start',
         columnGap: 12,
         rowGap: 20,
-        padding: wide ? '8px 28px 120px' : '8px 16px 90px',
+        // 28px at every width, as Nội dung and Hiển thị: the titles of all admin screens start on one line (owner, 2026-10-16).
+        padding: wide ? '8px 28px 120px' : '8px 28px 90px',
       }}
     >
       {tree}

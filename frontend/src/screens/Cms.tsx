@@ -20,7 +20,7 @@ import { coverStyle } from '../lib/imageFocus'
 import { useSlotSwap, type SlotSwap } from '../admin/lib/useSlotSwap'
 import { FeatureCellsEditor } from '../admin/components/FeatureCellsEditor'
 import type { FeatureOverride } from '../content/notes'
-import { ink, paper, sans, serif } from '../design/tokens'
+import { ink, paper, sans } from '../design/tokens'
 import { Hover } from '../lib/Hover'
 import { ContentWorkspace } from '../admin/components/ContentWorkspace'
 import { ConfigTree } from '../admin/components/ConfigTree'
@@ -39,10 +39,12 @@ const sectionHead: CSSProperties = {
   marginBottom: 18,
 }
 
+// One label for every field in the back office (owner, 2026-10-16): the same as Cấu hình's rows and the port editors'.
 const fieldLabel: CSSProperties = {
   fontFamily: sans,
   fontSize: 13,
-  color: ink.soft,
+  fontWeight: 600,
+  color: ink.strong,
   marginBottom: 6,
 }
 
@@ -58,8 +60,6 @@ const boxed: CSSProperties = {
   outline: 'none',
 }
 
-const serifInput: CSSProperties = { ...boxed, fontFamily: serif, fontSize: 22 }
-const serifItalicInput: CSSProperties = { ...serifInput, fontStyle: 'italic', color: ink.green }
 const area: CSSProperties = {
   ...boxed,
   fontWeight: 400,
@@ -104,6 +104,19 @@ function Where({ children }: { children: ReactNode }) {
       {' · '}
       {children}
     </span>
+  )
+}
+
+/** A colour as its hex, with a swatch of it at the start — the same wherever a colour is typed. */
+function HexField({ value, onSave }: { value: string; onSave: (v: string) => void }) {
+  return (
+    <div className="cfg-hex" style={{ position: 'relative' }}>
+      <span
+        aria-hidden
+        style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', width: 13, height: 13, border: `1px solid ${paper.rule}`, background: value || 'transparent' }}
+      />
+      <input defaultValue={value} key={value} placeholder="#hex" onBlur={(e) => e.target.value.trim() !== value && onSave(e.target.value.trim())} style={{ ...boxed, paddingLeft: 31 }} />
+    </div>
   )
 }
 
@@ -495,13 +508,13 @@ export function Cms() {
             >
               <input
                 {...field('lTitle1')}
-                style={serifInput}
+                style={boxed}
               />
             </Field>
             <Field label="Tên lớn — dòng 2 (nghiêng, xanh)">
               <input
                 {...field('lTitle2')}
-                style={serifItalicInput}
+                style={boxed}
               />
             </Field>
             <Field label="Đoạn dẫn — cột 1">
@@ -537,10 +550,10 @@ export function Cms() {
           <div style={{ ...sectionHead, margin: '34px 0 18px' }}>Trang Ghi chép</div>
           <div style={grid(two)}>
             <Field label="Tiêu đề trang">
-              <input {...field('notesTitle')} style={serifInput} />
+              <input {...field('notesTitle')} style={boxed} />
             </Field>
             <Field label="Dòng dưới tiêu đề">
-              <input {...field('notesSubtitle')} style={serifItalicInput} />
+              <input {...field('notesSubtitle')} style={boxed} />
             </Field>
           </div>
           <div style={grid(two, 18)}>
@@ -553,7 +566,7 @@ export function Cms() {
           </div>
           <div style={grid(two, 18)}>
             <Field label="Lời kết — cuối trang">
-              <input {...field('notesEnd')} style={serifItalicInput} />
+              <input {...field('notesEnd')} style={boxed} />
             </Field>
             <Field label="Lời kết — dòng phụ">
               <input {...field('notesEndNote')} style={boxed} />
@@ -563,12 +576,12 @@ export function Cms() {
     index: <>
           <div style={grid(two)}>
             <Field label="Tiêu đề — dòng 1">
-              <input {...field('t1')} style={serifInput} />
+              <input {...field('t1')} style={boxed} />
             </Field>
             <Field label="Tiêu đề — dòng 2 (nghiêng, xanh)">
               <input
                 {...field('t2')}
-                style={serifItalicInput}
+                style={boxed}
               />
             </Field>
           </div>
@@ -626,25 +639,7 @@ export function Cms() {
                         />
                       </Field>
                       <Field label="Màu">
-                        <div style={{ position: 'relative' }}>
-                          <span
-                            style={{
-                              position: 'absolute',
-                              left: 10,
-                              top: '50%',
-                              transform: 'translateY(-50%)',
-                              width: 13,
-                              height: 13,
-                              border: `1px solid ${paper.rule}`,
-                              background: m.accent,
-                            }}
-                          />
-                          <input
-                            defaultValue={m.accent}
-                            onBlur={(e) => void patchModule(m.id, { accent: e.target.value })}
-                            style={{ ...boxed, paddingLeft: 31 }}
-                          />
-                        </div>
+                        <HexField value={m.accent} onSave={(v) => void patchModule(m.id, { accent: v })} />
                       </Field>
                       {shape.layout && (
                         <Field label="Dàn trang">
@@ -787,7 +782,7 @@ export function Cms() {
     <div className="cfg-detail" style={{ color: ink.base }}>
       <style>{DETAIL_CSS}</style>
       {(tab === 'posts' || tab === 'display') && (
-        <h1 style={{ fontFamily: serif, fontWeight: 500, fontSize: 34, lineHeight: 1.15, margin: 0, padding: '8px 28px 4px' }}>{tab === 'posts' ? 'Nội dung' : DISPLAY_LABELS[shell.display]}</h1>
+        <h1 style={{ fontFamily: sans, fontWeight: 600, fontSize: 26, letterSpacing: '-.01em', lineHeight: 1.2, margin: 0, padding: '8px 28px 4px' }}>{tab === 'posts' ? 'Nội dung' : DISPLAY_LABELS[shell.display]}</h1>
       )}
 
       {error && (
@@ -815,12 +810,12 @@ export function Cms() {
             const practice = site.practice ?? {}
             const save = (patch: { title?: string; accent?: string }) => void saveSite({ practice: { ...practice, ...patch } })
             return (
-              <div style={{ ...grid(two, 20), marginTop: 22 }}>
+              <div style={grid(two, 12)}>
                 <Field label="Tên trên thanh bên">
-                  <input defaultValue={practice.title ?? ''} key={practice.title ?? ''} placeholder="Ghi 02" onBlur={(e) => e.target.value.trim() !== (practice.title ?? '') && save({ title: e.target.value.trim() || undefined })} style={{ ...serifInput, fontSize: 20 }} />
+                  <input defaultValue={practice.title ?? ''} key={practice.title ?? ''} placeholder="Ghi 02" onBlur={(e) => e.target.value.trim() !== (practice.title ?? '') && save({ title: e.target.value.trim() || undefined })} style={boxed} />
                 </Field>
                 <Field label="Màu">
-                  <input defaultValue={practice.accent ?? ''} key={practice.accent ?? ''} placeholder="#hex" onBlur={(e) => /^#[0-9a-f]{6}$/i.test(e.target.value.trim()) && save({ accent: e.target.value.trim() })} style={{ ...serifInput, fontSize: 16 }} />
+                  <HexField value={practice.accent ?? ''} onSave={(v) => /^#[0-9a-f]{6}$/i.test(v) && save({ accent: v })} />
                 </Field>
               </div>
             )
