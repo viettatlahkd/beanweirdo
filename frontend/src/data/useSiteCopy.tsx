@@ -2,13 +2,39 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { resolveSite, SITE_DEFAULTS, type SiteCopy, type SiteOverrides } from '../content/site'
 import { supabase } from '../lib/supabaseClient'
 
-export type UseSiteCopyResult = {
+type UseSiteCopyResult = {
   /** Defaults merged with whatever the CMS has overridden. Never null. */
   site: SiteCopy
   /** The raw overrides — what the CMS edits and PATCHes back. */
   overrides: SiteOverrides
   loading: boolean
+  /**
+   * True once the copy on screen is the owner's, not the shipped defaults:
+   * either the fetch answered or this browser remembered the last answer.
+   * A screen that would otherwise flash the defaults waits on this.
+   */
+  ready: boolean
   error: string | null
+}
+
+/** Last answer from `site_settings`, so the next visit starts on it. */
+const CACHE_KEY = 'bw.siteCopy'
+
+function readCache(): SiteOverrides | null {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY)
+    return raw ? (JSON.parse(raw) as SiteOverrides) : null
+  } catch {
+    return null
+  }
+}
+
+function writeCache(o: SiteOverrides) {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(o))
+  } catch {
+    // Private mode or a full quota: the next visit simply waits on the fetch.
+  }
 }
 
 const SiteCopyContext = createContext<UseSiteCopyResult | null>(null)
@@ -23,7 +49,14 @@ const SiteCopyContext = createContext<UseSiteCopyResult | null>(null)
  * `useSiteCopy()` used to mean its own request.
  */
 export function SiteCopyProvider({ children }: { children: ReactNode }) {
-  const [overrides, setOverrides] = useState<SiteOverrides>({})
+  /*
+   * Starting on `{}` drew the shipped headline first and swapped in the owner's
+   * one when the fetch landed — the "old heading, then the new one" flash on
+   * Trang chủ. Starting on the remembered answer makes a return visit correct
+   * from the first frame; a first visit hides the text until `ready` instead.
+   */
+  const [cached] = useState(readCache)
+  const [overrides, setOverrides] = useState<SiteOverrides>(cached ?? {})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -42,7 +75,9 @@ export function SiteCopyProvider({ children }: { children: ReactNode }) {
           return
         }
         setError(null)
-        setOverrides(((data?.data ?? {}) as SiteOverrides) || {})
+        const next = ((data?.data ?? {}) as SiteOverrides) || {}
+        setOverrides(next)
+        writeCache(next)
       })
 
     return () => {
@@ -51,8 +86,8 @@ export function SiteCopyProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const value = useMemo<UseSiteCopyResult>(
-    () => ({ site: resolveSite(overrides), overrides, loading, error }),
-    [overrides, loading, error],
+    () => ({ site: resolveSite(overrides), overrides, loading, ready: !loading || cached !== null, error }),
+    [overrides, loading, cached, error],
   )
 
   return <SiteCopyContext.Provider value={value}>{children}</SiteCopyContext.Provider>
@@ -72,6 +107,7 @@ export function useSiteCopy(): UseSiteCopyResult {
       site: SITE_DEFAULTS,
       overrides: {},
       loading: false,
+      ready: true,
       error: null,
     }
   )

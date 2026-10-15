@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { seriesLayout, storyLayout, type Placed } from './layout'
-import { parsePath, toPath } from '../lib/routes'
+import { parsePath } from '../lib/routes'
 import { DEFAULT_WORDS } from '../lib/routeWords'
 
 const overlap = (a: Placed, b: Placed) =>
@@ -49,12 +49,6 @@ describe('06.7 khối kể chuyện — khung 8 × 13, trục giữa hàng 8 và
 })
 
 describe('địa chỉ Portfolio', () => {
-  it('trang công khai đọc và viết khớp nhau', () => {
-    const w = { area: 'public', screen: 'portfolioPage', slug: 'bibi' } as const
-    expect(toPath(w, DEFAULT_WORDS)).toBe('/portfolio/bibi')
-    expect(parsePath('/portfolio/bibi', '', DEFAULT_WORDS)).toEqual(w)
-  })
-
   it('địa chỉ admin cũ của Portfolio rơi vào CMS', () => {
     // Port pages live in Quản lý trang, the port design in Cài đặt hiển thị.
     expect(parsePath('/ad-portfolio', '', DEFAULT_WORDS)).toEqual({ area: 'admin', screen: 'cms', tab: 'pages' })

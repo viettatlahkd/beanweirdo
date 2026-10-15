@@ -28,8 +28,3 @@ export function getSupabase(): SupabaseClient {
   cached = createClient(url, key, { auth: { persistSession: false } })
   return cached
 }
-
-/** Test-only: reset the cached client so mocks/env changes take effect. */
-export function resetSupabaseClientForTests(): void {
-  cached = null
-}

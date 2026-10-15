@@ -27,7 +27,7 @@ import type {
  * không có bản điện thoại. Đúng hai chỗ truyền, cả hai đều là trang công khai —
  * `screens/Article.tsx` và `screens/Notes.tsx`.
  */
-type Chrome = { breadcrumb?: ReactNode; mobile?: boolean }
+type Chrome = { head?: ReactNode; footer?: ReactNode; mobile?: boolean }
 
 export type PostRendererProps = Chrome &
   (

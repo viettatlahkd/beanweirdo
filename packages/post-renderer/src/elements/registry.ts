@@ -113,17 +113,3 @@ export function allElements(): ElementDefinition<any>[] {
   return [...store.values()]
 }
 
-/**
- * What an insert menu offers, filed by category.
- *
- * `query` matches the title and the keywords, so "gạch đầu dòng" finds `list`
- * without the writer knowing the English name it is stored under.
- */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function findElements(query = ''): ElementDefinition<any>[] {
-  const q = query.trim().toLowerCase()
-  if (!q) return allElements()
-  return allElements().filter(
-    (e) => e.title.toLowerCase().includes(q) || e.name.includes(q) || e.keywords.some((k) => k.toLowerCase().includes(q)),
-  )
-}

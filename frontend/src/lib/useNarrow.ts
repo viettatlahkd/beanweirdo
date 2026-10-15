@@ -14,7 +14,7 @@ import { layout } from '../design/tokens'
  * Không có `ResizeObserver` (jsdom) thì trả về false: bố cục rộng là bố cục
  * mặc định, và bài kiểm nào cần hẹp thì tự dựng lấy.
  */
-export function useNarrow(ref: RefObject<HTMLElement | null>, max = layout.mobileMax): boolean {
+export function useNarrow(ref: RefObject<HTMLElement | null>, max: number = layout.mobileMax): boolean {
   const [narrow, setNarrow] = useState(false)
 
   useEffect(() => {

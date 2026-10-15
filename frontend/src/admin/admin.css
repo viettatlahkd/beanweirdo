@@ -16,88 +16,12 @@
    global.css intentionally forces heading weight to 400. Admin's own few
    bare <h1> usages already set fontWeight inline where they need to. */
 
-.admin-btn {
-  font-family: 'Be Vietnam Pro', system-ui, sans-serif;
-  font-weight: 500;
-  font-size: 12.5px;
-  border: none;
-  border-radius: 6px;
-  padding: 9px 16px;
-  cursor: pointer;
-  background: #23211a;
-  color: #fdfbf2;
-}
-.admin-btn:hover {
-  background: #3b3729;
-}
-.admin-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.admin-btn-ghost {
-  font-family: 'Be Vietnam Pro', system-ui, sans-serif;
-  font-weight: 500;
-  font-size: 12.5px;
-  border: 1px solid #ebe5d3;
-  border-radius: 6px;
-  padding: 9px 16px;
-  cursor: pointer;
-  background: transparent;
-  color: #3b3729;
-}
-.admin-btn-ghost:hover {
-  background: #f6f2e2;
-}
-
-.admin-tab {
-  font-family: 'Be Vietnam Pro', system-ui, sans-serif;
-  font-size: 12px;
-  padding: 6px 14px;
-  border-radius: 999px;
-  border: 1px solid #ebe5d3;
-  color: #8c8674;
-  cursor: pointer;
-  background: transparent;
-}
-.admin-tab[aria-pressed='true'] {
-  background: #23211a;
-  color: #fdfbf2;
-  border-color: #23211a;
-}
-
-.admin-link-action {
-  color: #3e7a4e;
-  text-decoration: none;
-  margin-right: 12px;
-  cursor: pointer;
-  font-size: 11.5px;
-}
-.admin-link-action:hover {
-  text-decoration: underline;
-}
-
-.admin-tpl-card {
-  border: 1px solid #ebe5d3;
-  border-radius: 10px;
-  overflow: hidden;
-  cursor: pointer;
-  background: #ffffff;
-  box-shadow: 0 1px 2px rgba(35, 33, 26, 0.04);
-}
-.admin-tpl-card:hover {
-  border-color: #b5ae99;
-}
-.admin-tpl-card.sel {
-  border: 2px solid #23211a;
-}
-
 .admin-field {
   font-family: 'Be Vietnam Pro', system-ui, sans-serif;
   font-weight: 300;
   font-size: 14px;
   color: #23211a;
-  border: 1px solid #ebe5d3;
+  border: 1px solid #d1d5db;
   border-radius: 6px;
   padding: 9px 10px;
   width: 100%;
@@ -105,7 +29,8 @@
 }
 .admin-field:focus {
   outline: none;
-  border-color: #8c8674;
+  border-color: #3e7a4e;
+  box-shadow: 0 0 0 3px #e4f0df;
 }
 
 /*
@@ -135,7 +60,239 @@
 .awc-live-quote { border-left: 2px solid #EBE5D3; padding-left: 14px; margin: 20px 0; font-family: 'Playfair Display', Georgia, serif; font-size: 21px; line-height: 1.35; }
 .awc-live-ul, .awc-live-ol { margin: 0 0 20px; padding-left: 22px; }
 .awc-live-li { margin: 0 0 11px; }
-.awc-live-li-nested { margin-left: 22px; }
-.awc-live-bold { font-weight: 600; font-style: italic; }
+/* Lexical bọc danh sách con trong một <li> không có chữ của riêng nó. Để nó
+   mang dấu chấm thì Tab thụt vào là ra hai dấu trên một dòng — chủ site báo
+   2026-09-24. Chỉ danh sách con vẽ dấu; thụt lề đã có padding của nó lo. */
+.awc-live-li-nested { list-style: none; }
+.awc-live-li-nested > .awc-live-ul, .awc-live-li-nested > .awc-live-ol { margin: 0; }
+/* Đậm và nghiêng là hai dấu rời nhau từ 2026-09-19; trước đó `.awc-live-bold`
+   mang cả hai vì site chỉ có một mức nhấn. Bật cả hai cho ra đúng mức nhấn cũ. */
+.awc-live-bold { font-weight: 600; }
+.awc-live-em { font-style: italic; }
 .awc-live-u { border-bottom: 1px solid #CFCFC4; }
+/* Cùng kiểu với `CODE_STYLE` của trang đọc (post-renderer, codeStrike.ts). */
+.awc-live-code { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: .88em; background: rgba(0,0,0,.06); border-radius: 3px; padding: 1px 4px; }
+.awc-live-del { text-decoration: line-through; }
 .awc-live-link { color: inherit; border-bottom: 1px solid currentColor; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   .ab — the back office's controls, style "Bàn phím" (owner, 2026-10-13).
+   See design/Button.tsx and design/controls.ts. A compact tool: 32px, one
+   moss green for the action that saves or creates, white framed buttons for the
+   rest, bare icons that take a ground only when pointed at.
+
+   Frames are inset shadows, not borders, so a level that has none at rest
+   (quiet, add) and one that has (secondary) measure exactly the same and a
+   row never shifts when a button changes level or state.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.ab {
+  font-family: 'Be Vietnam Pro', system-ui, sans-serif;
+  font-weight: 400;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  box-sizing: border-box;
+  margin: 0;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: none;
+  flex: none;
+  transition: background-color .12s ease, box-shadow .12s ease, color .12s ease;
+}
+.ab:focus-visible { outline: 2px solid #3e7a4e; outline-offset: 2px; }
+
+.ab-lg { height: 36px; padding: 0 14px; font-size: 14px; }
+.ab-md { height: 32px; padding: 0 12px; font-size: 13.5px; }
+.ab-sm { height: 28px; padding: 0 10px; font-size: 13px; }
+.ab-icon { padding: 0; }
+.ab-icon.ab-lg { width: 36px; }
+.ab-icon.ab-md { width: 32px; }
+.ab-icon.ab-sm { width: 28px; }
+
+.ab-primary { background: #2b4b33; color: #ffffff; box-shadow: inset 0 -1px 0 rgba(0, 0, 0, .2); }
+.ab-primary:hover:not(:disabled) { background: #223d29; }
+
+.ab-secondary { background: #ffffff; color: #111827; box-shadow: inset 0 0 0 1px #d1d5db, 0 1px 0 rgba(17, 24, 39, .04); }
+.ab-secondary:hover:not(:disabled) { background: #f9fafb; box-shadow: inset 0 0 0 1px #9ca3af; }
+.ab-secondary[aria-expanded='true'] { background: #f3f4f6; }
+
+.ab-quiet { background: transparent; color: #4b5563; }
+.ab-quiet:hover:not(:disabled), .ab-quiet[aria-expanded='true'] { background: #f3f4f6; color: #111827; }
+
+.ab-danger { background: #ffffff; color: #dc2626; box-shadow: inset 0 0 0 1px #d1d5db; }
+.ab-danger:hover:not(:disabled) { background: #fef2f2; box-shadow: inset 0 0 0 1px #fca5a5; }
+
+/* A framed button, not a bare line of text: the owner could not tell "Thêm …" was clickable (2026-10-15). */
+.ab-add { background: #ffffff; color: #2b4b33; box-shadow: inset 0 0 0 1px #d1d5db, 0 1px 0 rgba(17, 24, 39, .04); }
+.ab-add:hover:not(:disabled) { background: #f1f7ee; box-shadow: inset 0 0 0 1px #3e7a4e; }
+
+.ab:disabled { background: #f3f4f6; color: #9ca3af; box-shadow: none; cursor: not-allowed; }
+
+.ab-kbd {
+  font: 400 11px 'Be Vietnam Pro', system-ui, sans-serif;
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, .2);
+  margin-left: 2px;
+}
+.ab-secondary .ab-kbd, .ab-quiet .ab-kbd { background: #f3f4f6; color: #6b7280; }
+
+/* The tabs that say where you stand: Nội dung · Cấu hình · … */
+.ab-tabs { display: flex; flex-wrap: wrap; gap: 2px; }
+.ab-tab {
+  font-family: 'Be Vietnam Pro', system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  height: 34px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #4b5563;
+  cursor: pointer;
+  transition: background-color .12s ease, color .12s ease;
+}
+.ab-tab:hover { background: rgba(17, 24, 39, .06); color: #111827; }
+.ab-tab[aria-selected='true'], .ab-tab[aria-pressed='true'] { background: #ffffff; color: #2b4b33; box-shadow: 0 1px 2px rgba(17, 24, 39, .12); }
+.ab-tab:focus-visible { outline: 2px solid #3e7a4e; outline-offset: 2px; }
+
+/* One of a few: joined buttons, the chosen one filled dark. */
+.ab-seg {
+  display: inline-flex;
+  flex-wrap: wrap;
+  vertical-align: middle;
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1px #d1d5db;
+  background: #ffffff;
+  overflow: hidden;
+}
+.ab-seg > button {
+  font-family: 'Be Vietnam Pro', system-ui, sans-serif;
+  font-size: 13.5px;
+  font-weight: 400;
+  height: 32px;
+  padding: 0 12px;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  color: #374151;
+  cursor: pointer;
+  box-shadow: inset 1px 0 0 #e5e7eb;
+}
+.ab-seg > button:first-child { box-shadow: none; }
+.ab-seg > button:hover:not([aria-pressed='true']):not([aria-selected='true']):not([aria-checked='true']) { background: #f3f4f6; }
+.ab-seg > button[aria-pressed='true'], .ab-seg > button[aria-selected='true'], .ab-seg > button[aria-checked='true'] { background: #111827; color: #ffffff; }
+.ab-seg > button:focus-visible { outline: 2px solid #3e7a4e; outline-offset: -2px; }
+
+/* On or off. */
+.ab-switch {
+  all: unset;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Be Vietnam Pro', system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: #111827;
+}
+.ab-switch > span:first-child {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  border-radius: 999px;
+  background: #d1d5db;
+  flex: none;
+  transition: background-color .15s ease;
+}
+.ab-switch > span:first-child::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .3);
+  transition: left .15s ease;
+}
+.ab-switch[aria-checked='true'] > span:first-child { background: #3e7a4e; }
+.ab-switch[aria-checked='true'] > span:first-child::after { left: 18px; }
+.ab-switch:focus-visible { outline: 2px solid #3e7a4e; outline-offset: 3px; border-radius: 6px; }
+
+/* The list a ⋮ opens. */
+.ab-menu {
+  position: fixed;
+  z-index: 50;
+  width: 230px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  box-shadow: 0 12px 32px rgba(17, 24, 39, .14);
+  padding: 4px;
+  text-align: left;
+}
+.ab-menuitem {
+  all: unset;
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: 'Be Vietnam Pro', system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: #111827;
+}
+.ab-menuitem:hover:not(:disabled), .ab-menuitem:focus-visible { background: #f3f4f6; }
+.ab-menuitem[data-danger] { color: #dc2626; }
+.ab-menuitem[data-danger]:hover:not(:disabled) { background: #fef2f2; }
+.ab-menuitem:disabled { color: #9ca3af; cursor: default; }
+.ab-menuitem small { display: block; font-size: 12.5px; font-weight: 400; color: #6b7280; margin-top: 2px; }
+
+/* The handle a row is dragged by. */
+.ab-grip {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 28px;
+  border-radius: 4px;
+  color: #9ca3af;
+  cursor: grab;
+  user-select: none;
+}
+.ab-grip:hover { background: #f3f4f6; color: #4b5563; }
+
+/* The title of a row that is itself a target. It looks like the heading it
+   replaced — the button exists so the keyboard and a screen reader get a named
+   control, since a row you click with the mouse is a div and cannot be one. */
+.ab-rowtitle {
+  font-family: 'Be Vietnam Pro', system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+  cursor: pointer;
+  display: block;
+}
+.ab-rowtitle:hover { color: #2b4b33; }
+.ab-rowtitle:focus-visible { outline: 2px solid #3e7a4e; outline-offset: 3px; border-radius: 6px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ab, .ab-tab, .ab-switch > span:first-child, .ab-switch > span:first-child::after { transition: none; }
+}

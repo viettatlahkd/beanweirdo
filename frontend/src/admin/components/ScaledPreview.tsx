@@ -6,7 +6,7 @@ import { useEffect, useState, type ReactNode } from 'react'
  * measured. No observer (old browsers, test DOMs) leaves it at 0 — "not
  * measured yet" to every caller.
  */
-export function useSize<T extends HTMLElement>(): [(el: T | null) => void, { width: number; height: number }] {
+function useSize<T extends HTMLElement>(): [(el: T | null) => void, { width: number; height: number }] {
   const [el, setEl] = useState<T | null>(null)
   const [size, setSize] = useState({ width: 0, height: 0 })
   useEffect(() => {

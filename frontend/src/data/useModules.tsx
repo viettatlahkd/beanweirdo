@@ -1,10 +1,15 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { watchModules } from './modulesChanged'
+import { bySiteOrder } from '../lib/moduleOrder'
+import { ancestorsOf, buildTree, flattenTree, rootsOf } from '../lib/contentTree'
 import { supabase } from '../lib/supabaseClient'
 import { groupPosts, resolveRule, toRule, type ListingRule, type PostGroup, type RuleTopic } from '../lib/listingRule'
 import type { PostRow } from './usePublishedPosts'
 import { TAG_PAGE } from '../lib/routes'
+import { tagColor, type Tag } from '../lib/tagColor'
+import type { ModuleLayout } from '../content/layouts'
+export type { ModuleLayout }
 
-export type ModuleLayout = 'band' | 'specimen' | 'sequence'
 
 /** A row from the public `modules` table — see backend/supabase/migrations/0001 and 0007. */
 export type ModuleRow = {
@@ -43,6 +48,16 @@ export type ModuleRow = {
   page_shot4: string
   sort_order: number
   /**
+   * The module this one sits inside; null at the top level — see migration
+   * 0025 and `lib/contentTree.ts`.
+   *
+   * Optional rather than `string | null` because a database that has not run
+   * 0025 yet answers without the column at all, and every screen still has to
+   * draw. Nothing reads this field directly: ask `contentTree` instead, so the
+   * rules about missing parents and cycles live in one place.
+   */
+  parent_id?: string | null
+  /**
    * 'normal' — a reading module, one of the gallery on the homepage.
    * 'special' — extended content that already has a page of its own (Ghi 01,
    * Ghi 02). Still a module, and still listed — see `visibility` for what
@@ -79,7 +94,7 @@ export type PageRow = ModuleRow & {
   onHome: boolean
 }
 
-export type UseModulesResult = {
+type UseModulesResult = {
   /** Every page: the navigation's, and every tier page whether listed or not. */
   data: PageRow[]
   loading: boolean
@@ -92,7 +107,7 @@ export type UseModulesResult = {
    */
   groupsOf: (pageId: string) => PostGroup<PostRow>[]
   /** A post's theme tags, by name, in the order they were given. Optional so stubs need not care. */
-  tagsOf?: (postId: string) => { id: string; label: string }[]
+  tagsOf?: (postId: string) => Tag[]
   /** Read everything again — after the CMS changes a rule or a page. */
   reload: () => void
 }
@@ -108,8 +123,8 @@ type PageRecord = {
   visibility: 'public' | 'private'
 }
 type NavItem = { ref: string; sidebar?: boolean; home?: boolean }
-type TopicRecord = RuleTopic & { intro: string; accent: string | null; on_color: string | null; tint: string | null; tint2: string | null; visibility: string }
-type KeywordRecord = { id: string; label: string }
+type TopicRecord = RuleTopic & { intro: string; accent: string | null; on_color: string | null; tint: string | null; tint2: string | null; status: string }
+type KeywordRecord = { id: string; label: string; color?: string | null }
 
 export type Store = {
   modules: ModuleRow[]
@@ -203,16 +218,17 @@ export function buildPages(store: Store): PageRow[] {
   for (const t of topics) {
     const tpl = template(t.parent_id === null ? 'template_subject' : 'template_topic')
     const own = override('topic', t.id)
-    const parent = t.parent_id ? topics.find((p) => p.id === t.parent_id) : undefined
+    // Nearest first: a topic with no colour of its own wears the closest ancestor's.
+    const above = ancestorsOf(topics, t.id).reverse()
+    const inherit = <K extends 'accent' | 'on_color' | 'tint' | 'tint2'>(k: K) => above.find((a) => a[k])?.[k]
     const look = present(
       {
         title: t.title,
         blurb: t.intro,
-        // A topic with no colour of its own wears its subject's.
-        accent: t.accent ?? parent?.accent ?? BLANK.accent,
-        on_color: t.on_color ?? parent?.on_color ?? BLANK.on_color,
-        tint: t.tint ?? parent?.tint ?? '',
-        tint2: t.tint2 ?? parent?.tint2 ?? '',
+        accent: t.accent ?? inherit('accent') ?? BLANK.accent,
+        on_color: t.on_color ?? inherit('on_color') ?? BLANK.on_color,
+        tint: t.tint ?? inherit('tint') ?? '',
+        tint2: t.tint2 ?? inherit('tint2') ?? '',
       },
       [tpl?.presentation, own?.presentation],
       modules,
@@ -220,7 +236,10 @@ export function buildPages(store: Store): PageRow[] {
     out.push({
       ...look,
       id: t.id,
-      visibility: t.visibility === 'private' ? 'private' : 'public',
+      // The topic tree is where the owner nests the blog; a borrowed module's
+      // old parent must not file the page somewhere else in the sidebar.
+      parent_id: t.parent_id,
+      visibility: t.status === 'published' ? 'public' : 'private',
       aliases: own?.aliases ?? [],
       source: 'topic',
       node: t.id,
@@ -279,8 +298,8 @@ function withScreen(p: PageRow): PageRow {
 }
 
 /**
- * The navigation as a rule: every subject in tree order is listed unless the
- * owner placed or hid it, and the owner's list comes first. With no navigation
+ * The navigation as a rule: the topic tree in its order, minus what the owner
+ * hid, then whatever else the owner listed. With no navigation
  * stored yet, the modules' own order and flags stand in for it.
  */
 function arrange(pages: PageRow[], nav: PageRecord | undefined, topics: TopicRecord[], modules: ModuleRow[]): PageRow[] {
@@ -304,11 +323,25 @@ function arrange(pages: PageRow[], nav: PageRecord | undefined, topics: TopicRec
     return pages
   }
 
+  // The whole topic tree comes in its own order, whatever order the list
+  // stored: the tree is where the owner arranges and nests the blog, and a
+  // second order here meant a drag in the tree did not move the sidebar. The
+  // list still says, per entry, whether it is shown — every topic is in the
+  // sidebar unless hidden (a hidden branch hides what is under it), only
+  // subjects are on the blog home unless asked. Whatever else it names (a
+  // curated page, a tag) follows the tree, in its stored order.
   const items = ((nav.presentation.items ?? []) as NavItem[]).filter((i) => byRef(i.ref))
-  const listed = new Set(items.map((i) => i.ref))
-  const subjects = [...topics].filter((t) => t.parent_id === null).sort((a, b) => a.sort_order - b.sort_order)
-  const auto = subjects.filter((s) => !listed.has(`topic:${s.id}`)).map((s) => ({ ref: `topic:${s.id}`, sidebar: true, home: true }))
-  ;[...items, ...auto].forEach((item, i) => {
+  const own = new Map(items.map((i) => [i.ref, i]))
+  const tree = flattenTree(buildTree([...topics].sort((a, b) => a.sort_order - b.sort_order))).map((n) => n.row)
+  const topicRefs = new Set(tree.map((t) => `topic:${t.id}`))
+  const hidden = new Set<string>()
+  const inTree = tree.map((t) => {
+    const o = own.get(`topic:${t.id}`)
+    const sidebar = (o ? o.sidebar !== false : true) && !(t.parent_id && hidden.has(t.parent_id))
+    if (!sidebar) hidden.add(t.id)
+    return { ref: `topic:${t.id}`, sidebar, home: o ? o.home !== false : t.parent_id === null }
+  })
+  ;[...inTree, ...items.filter((i) => !topicRefs.has(i.ref))].forEach((item, i) => {
     const page = byRef(item.ref)!
     page.sort_order = i + 1
     page.inSidebar = item.sidebar !== false && page.visibility !== 'private'
@@ -350,8 +383,9 @@ async function loadStore(): Promise<Store> {
     })
   const [modules, topics, keywords, pages, overrides, rules, postKeywords, posts] = await Promise.all([
     all<ModuleRow>(supabase.from('modules').select('*').order('sort_order', { ascending: true }), true),
-    all<TopicRecord>(supabase.from('topics').select('*')),
-    all<KeywordRecord>(supabase.from('keywords').select('id, label')),
+    all<TopicRecord>(supabase.from('nodes').select('*').eq('site', 'blog')),
+    // `*`: `color` (0033) may not exist yet, and naming it would empty the list.
+    all<KeywordRecord>(supabase.from('keywords').select('*')),
     all<PageRecord>(supabase.from('pages').select('*')),
     all<Override>(supabase.from('page_overrides').select('*')),
     all<ListingRule>(supabase.from('listing_rules').select('*')),
@@ -377,6 +411,13 @@ function useModulesQuery(enabled: boolean): UseModulesResult {
   const [loading, setLoading] = useState(enabled)
   const [error, setError] = useState<string | null>(null)
   const [round, setRound] = useState(0)
+
+  // The admin writes modules through a different API from this read path, so
+  // nothing tells it the order just changed. `modulesChanged` is the one link.
+  useEffect(() => {
+    if (!enabled) return
+    return watchModules(() => setRound((n) => n + 1))
+  }, [enabled])
 
   useEffect(() => {
     if (!enabled) return
@@ -415,8 +456,9 @@ function useModulesQuery(enabled: boolean): UseModulesResult {
         labelOf: (_g, key) => store.keywords.find((k) => k.id === key)?.label ?? key,
       })
     }
-    const labels = new Map(store.keywords.map((k) => [k.id, k.label]))
-    const tagsOf = (postId: string) => (store.postKeywords.get(postId) ?? []).map((id) => ({ id, label: labels.get(id) ?? id }))
+    const byId = new Map(store.keywords.map((k) => [k.id, k]))
+    const tagsOf = (postId: string) =>
+      (store.postKeywords.get(postId) ?? []).map((id) => ({ id, label: byId.get(id)?.label ?? id, color: tagColor(id, byId.get(id)?.color) }))
     return { data, loading, error, postsOf, groupsOf, tagsOf, reload: () => setRound((r) => r + 1) }
   }, [store, loading, error])
 }
@@ -444,20 +486,19 @@ export function usePagePosts(pageId: string | null | undefined): { data: PostRow
  */
 type Listable = ModuleRow & Partial<Pick<PageRow, 'inSidebar' | 'onHome'>>
 
-// A bare module row (no navigation flags) is placed the way modules always
-// were: reading modules before journals, private ones nowhere. Rule 05.
+// A bare module row (no navigation flags) is placed in the order the CMS set,
+// journals included (owner, 2026-09-24); private ones nowhere.
 const isPublic = (m: Listable) => m.visibility !== 'private'
-const legacyOrder = (a: Listable, b: Listable) =>
-  Number(a.kind === 'special') - Number(b.kind === 'special') || a.sort_order - b.sort_order
-const byNav = (a: Listable, b: Listable) => (a.inSidebar === undefined ? legacyOrder(a, b) : a.sort_order - b.sort_order)
+const byNav = (a: Listable, b: Listable) => (a.inSidebar === undefined ? bySiteOrder(a, b) : a.sort_order - b.sort_order)
 
-export const landingModules = <T extends Listable>(pages: T[]): T[] =>
-  pages.filter((p) => (p.onHome === undefined ? p.kind !== 'special' && isPublic(p) : p.onHome)).sort(byNav)
+export const landingModules = <T extends Listable>(pages: T[]): T[] => {
+  const flagged = pages.filter((p) => p.onHome !== undefined && p.onHome)
+  // A bare module filed inside another is introduced by its parent's page;
+  // listing it here too would put the same thing on the front page twice.
+  const bare = rootsOf(pages.filter((p) => p.onHome === undefined && p.kind !== 'special' && isPublic(p)))
+  return [...flagged, ...bare].sort(byNav)
+}
 
 export const indexModules = <T extends Listable>(pages: T[]): T[] =>
   pages.filter((p) => (p.inSidebar === undefined ? isPublic(p) : p.inSidebar)).sort(byNav)
 
-export const sidebarModules = indexModules
-
-/** @deprecated Old name for {@link landingModules}. */
-export const readingModules = landingModules

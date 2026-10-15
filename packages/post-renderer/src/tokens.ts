@@ -46,9 +46,25 @@ export const garden = {
 
 export const layout = {
   measure: 1140,
+  /*
+   * The one reading column every template's body sits in. Elements cap
+   * themselves at it too, so a block never runs wider than the column it was
+   * meant for — even in a template that forgets to set one.
+   */
+  reading: 760,
   railMin: 200,
   railMax: 260,
 } as const
+
+/**
+ * A block of at most `width`, centred in whatever is left over.
+ *
+ * Templates used to cap their columns and stop there, so on a wide screen
+ * every post hugged the left edge with a white field beside it. The colour
+ * bands still run edge to edge; only what is inside them takes this frame, so
+ * the title lines up with the body under it.
+ */
+export const frame = (width: number) => ({ maxWidth: width, marginLeft: 'auto', marginRight: 'auto' }) as const
 
 /**
  * Tiêu đề dài tự xuống dòng, và gãy đúng chỗ tiếng Anh cho phép gãy.

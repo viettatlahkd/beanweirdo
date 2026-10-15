@@ -10,7 +10,7 @@ import {
 } from './notes'
 import { getElement } from './elements'
 import { paletteFrom, type Palette } from './palette'
-import { ink, paper, sans, serif, wrapTitle } from './tokens'
+import { frame, ink, layout, paper, sans, serif, wrapTitle } from './tokens'
 import type { ReportBlock, ReportMetric, ReportPostData } from './types'
 
 export type ReportOverrides = {
@@ -30,16 +30,23 @@ export type ReportProps = ReportOverrides & {
    * `PostRenderer`.
    */
   mobile?: boolean
-  /**
-   * The trail back to where this post is filed. Supplied by the app, so the
-   * renderer package stays independent of how routing works.
-   */
-  breadcrumb?: ReactNode
+  /** The page's own head; replaces the band and title. See `ArticleProps.head`. */
+  head?: ReactNode
+  /** Closes the reading column — the app's author card. Supplied by the app, like `head`. */
+  footer?: ReactNode
   post: ReportPostData
 }
 
 /** Only a template with no module behind it — the standalone sample — uses this. */
 const REPORT_BLUE = '#6FA8C0'
+
+const NOTES_GAP = 40
+const NOTES_MAX = 260
+
+/** The reading column, plus the notes column when there is one to draw. */
+function columnWidth(post: ReportPostData): number {
+  return hasNotes(post.notes) ? layout.reading + NOTES_GAP + NOTES_MAX : layout.reading
+}
 
 
 /**
@@ -49,12 +56,13 @@ const REPORT_BLUE = '#6FA8C0'
  * of a report's blocks — the admin app's insert-menu / contentEditable
  * editing chrome is not part of this shared package.
  */
-export function Report({ post, breadcrumb, mobile = false, ...overrides }: ReportProps) {
+export function Report({ post, head, footer, mobile = false, ...overrides }: ReportProps) {
   const palette = paletteFrom(post.band?.bg ?? REPORT_BLUE, post.band?.fg)
   return (
     <div style={{ background: paper.cream, color: ink.base, minHeight: '100vh' }}>
+      {head === undefined && (
       <div style={{ background: palette.accent, color: palette.onAccent, padding: mobile ? '28px 20px 26px' : '44px 56px 40px' }}>
-        {breadcrumb}
+        <div style={frame(columnWidth(post))}>
         <div
           style={{
             display: 'flex',
@@ -85,9 +93,11 @@ export function Report({ post, breadcrumb, mobile = false, ...overrides }: Repor
             </div>
           )}
         </div>
+        </div>
       </div>
+      )}
 
-      <ReportBody post={post} palette={palette} overrides={overrides} mobile={mobile} />
+      <ReportBody post={post} palette={palette} overrides={overrides} mobile={mobile} footer={footer} head={head} />
     </div>
   )
 }
@@ -110,11 +120,15 @@ function ReportBody({
   palette,
   overrides,
   mobile,
+  footer,
+  head,
 }: {
   post: ReportPostData
   palette: Palette
   overrides: ReportOverrides
   mobile?: boolean
+  footer?: ReactNode
+  head?: ReactNode
 }) {
   const notes = post.notes
   const withNotes = hasNotes(notes)
@@ -126,13 +140,14 @@ function ReportBody({
   const firstAnnotated = segments.findIndex((seg) => seg.anchor)
 
   return (
+    <div style={{ padding: mobile ? '28px 20px 96px' : '44px 56px 96px' }}>
+    {head !== undefined && <div style={frame(columnWidth(post))}>{head}</div>}
     <div
       style={{
-        padding: mobile ? '28px 20px 96px' : '44px 56px 96px',
-        maxWidth: 1320,
+        ...frame(columnWidth(post)),
         display: 'grid',
-        gridTemplateColumns: withNotes ? 'minmax(0,1fr) minmax(200px,260px)' : 'minmax(0,1fr)',
-        columnGap: 40,
+        gridTemplateColumns: withNotes ? `minmax(0,1fr) minmax(200px,${NOTES_MAX}px)` : 'minmax(0,1fr)',
+        columnGap: NOTES_GAP,
       }}
     >
       {segments.map((seg, si) => {
@@ -161,6 +176,9 @@ function ReportBody({
           </Fragment>
         )
       })}
+      {/* Auto-placed: the first row whose first column is free is the one after the last block. */}
+      {footer && <div style={{ gridColumn: 1, minWidth: 0 }}>{footer}</div>}
+    </div>
     </div>
   )
 }

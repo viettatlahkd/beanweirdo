@@ -1,21 +1,19 @@
 import { type CSSProperties, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Breadcrumbs } from '../components/Breadcrumbs'
 import { resolveSite, SITE_DEFAULTS, type SiteCopy, type SiteOverrides } from '../content/site'
 import {
   listModules,
-  listPosts,
   updateModule,
   updateSite,
   uploadImage,
   type Module,
-  type PostSummary,
 } from '../admin/lib/apiClient'
 import { getSite } from '../admin/lib/apiClient'
+import { forgetModules } from '../admin/lib/lists'
 import { RoutesPanel } from '../admin/components/RoutesPanel'
-import { PagesManager, type SystemPage } from '../admin/components/PagesManager'
+import type { SystemPage } from '../admin/components/PageSettings'
 import { ModuleImages } from '../admin/components/ModuleImages'
 import { captionColumn, formShapeOf, imageColumn } from '../admin/moduleForm'
-import { FocusPicker } from '../admin/components/FocusPicker'
+import { useFraming } from '../admin/components/framing'
 import { coverStyle } from '../lib/imageFocus'
 import { useSlotSwap, type SlotSwap } from '../admin/lib/useSlotSwap'
 import { FeatureCellsEditor } from '../admin/components/FeatureCellsEditor'
@@ -23,16 +21,17 @@ import type { FeatureOverride } from '../content/notes'
 import { ink, paper, sans, serif } from '../design/tokens'
 import { Hover } from '../lib/Hover'
 import { ContentWorkspace } from '../admin/components/ContentWorkspace'
+import { ConfigTree } from '../admin/components/ConfigTree'
 import { DisplaySettings } from '../admin/components/DisplaySettings'
+import { DETAIL_CSS } from '../admin/components/Detail'
 import { useNav } from '../lib/nav'
 
 const sectionHead: CSSProperties = {
   fontFamily: sans,
-  fontSize: 10.5,
+  fontSize: 13,
   fontWeight: 500,
   letterSpacing: '.2em',
-  textTransform: 'uppercase',
-  color: ink.muted,
+  color: ink.soft,
   borderBottom: `2px solid ${ink.base}`,
   paddingBottom: 9,
   marginBottom: 18,
@@ -40,10 +39,8 @@ const sectionHead: CSSProperties = {
 
 const fieldLabel: CSSProperties = {
   fontFamily: sans,
-  fontSize: 10,
-  letterSpacing: '.16em',
-  textTransform: 'uppercase',
-  color: ink.faint,
+  fontSize: 13,
+  color: ink.soft,
   marginBottom: 6,
 }
 
@@ -63,7 +60,7 @@ const serifInput: CSSProperties = { ...boxed, fontFamily: serif, fontSize: 22 }
 const serifItalicInput: CSSProperties = { ...serifInput, fontStyle: 'italic', color: ink.green }
 const area: CSSProperties = {
   ...boxed,
-  fontWeight: 300,
+  fontWeight: 400,
   fontSize: 13.5,
   lineHeight: 1.5,
   padding: '10px 12px',
@@ -90,12 +87,6 @@ const nameRow = 'minmax(0,1fr) 112px 124px 128px'
 const nameRowPlain = 'minmax(0,1fr) 112px'
 
 
-/** The three tabs, named once so the site map and the tab bar cannot drift. */
-const TABS = [
-  { k: 'posts', t: 'Nội dung' },
-  { k: 'pages', t: 'Quản lý trang' },
-  { k: 'display', t: 'Cài đặt hiển thị' },
-] as const
 
 /** Names where a field turns up on the site — identification, not instruction. */
 function Where({ children }: { children: ReactNode }) {
@@ -159,7 +150,12 @@ function ImageSlot({
   /** Kéo sang khung khác để hai ảnh đổi chỗ. */
   drag?: SlotDragProps
 }) {
-  const [placing, setPlacing] = useState<string | null>(null)
+  const frame = useFraming()
+  // Cancel hands back the same address: nothing to save.
+  const place = async (url: string) => {
+    const next = await frame({ url, ratio, name: label })
+    if (next !== url) onPlace(next)
+  }
   const [linking, setLinking] = useState(false)
   const { marked, handle, ...dragProps } = drag ?? { marked: false, handle: undefined }
   return (
@@ -174,7 +170,7 @@ function ImageSlot({
               fontFamily: "'JetBrains Mono', monospace",
               fontSize: 13,
               lineHeight: 1,
-              color: ink.faint,
+              color: ink.soft,
               cursor: 'grab',
               userSelect: 'none',
             }}
@@ -215,7 +211,7 @@ function ImageSlot({
             justifyContent: 'center',
           }}
         >
-          <div style={{ fontFamily: sans, fontSize: 11, color: ink.faint }}>chưa có ảnh</div>
+          <div style={{ fontFamily: sans, fontSize: 13, color: ink.soft }}>chưa có ảnh</div>
         </div>
       )}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 7 }}>
@@ -226,9 +222,7 @@ function ImageSlot({
             minWidth: 0,
             display: 'block',
             fontFamily: sans,
-            fontSize: 10,
-            letterSpacing: '.14em',
-            textTransform: 'uppercase',
+            fontSize: 13,
             color: ink.soft,
             border: '1px dashed #DAD7C7',
             padding: '7px 10px',
@@ -243,8 +237,9 @@ function ImageSlot({
             accept="image/*"
             onChange={(e) => {
               const f = e.target.files?.[0]
-              if (f) onUpload(f)
               e.target.value = ''
+              // Straight from the upload into the crop dialog, like every other picture slot.
+              if (f) void onUpload(f).then((u) => (u ? place(u) : undefined))
             }}
             style={{ display: 'none' }}
           />
@@ -252,12 +247,10 @@ function ImageSlot({
         {url && (
           <Hover
             as="button"
-            onClick={() => setPlacing(url)}
+            onClick={() => void place(url)}
             style={{
               fontFamily: sans,
-              fontSize: 10,
-              letterSpacing: '.14em',
-              textTransform: 'uppercase',
+              fontSize: 13,
               color: ink.soft,
               background: 'none',
               border: 'none',
@@ -275,9 +268,7 @@ function ImageSlot({
           onClick={() => setLinking(!linking)}
           style={{
             fontFamily: sans,
-            fontSize: 10,
-            letterSpacing: '.14em',
-            textTransform: 'uppercase',
+            fontSize: 13,
             color: ink.soft,
             background: 'none',
             border: 'none',
@@ -292,7 +283,7 @@ function ImageSlot({
         {url && (
           <Hover
             onClick={onClear}
-            style={{ fontFamily: sans, fontSize: 11, color: ink.faint, cursor: 'pointer', flex: 'none' }}
+            style={{ fontFamily: sans, fontSize: 13, color: ink.soft, cursor: 'pointer', flex: 'none' }}
             hoverStyle={{ color: '#C25C7C' }}
           >
             ✕
@@ -317,25 +308,13 @@ function ImageSlot({
             setLinking(false)
             if (!v) return onClear()
             onPlace(v)
-            setPlacing(v)
+            void place(v)
           }}
           onBlur={() => setLinking(false)}
           style={{ ...boxed, padding: '7px 10px', marginTop: 7, fontSize: 12 }}
         />
       )}
 
-      {placing && (
-        <FocusPicker
-          url={placing}
-          ratio={ratio}
-          name={label}
-          onCancel={() => setPlacing(null)}
-          onSave={(next) => {
-            onPlace(next)
-            setPlacing(null)
-          }}
-        />
-      )}
     </div>
   )
 }
@@ -359,16 +338,13 @@ export function Cms() {
   const tab = nav.cmsTab
   const [site, setSite] = useState<SiteOverrides>({})
   const [modules, setModules] = useState<Module[]>([])
-  // The site map names what Templates holds, so it has to know.
-  const [posts, setPosts] = useState<PostSummary[]>([])
   const [error, setError] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     try {
-      const [s, m, p] = await Promise.all([getSite(), listModules(), listPosts('all')])
+      const [s, m] = await Promise.all([getSite(), listModules()])
       setSite(s)
       setModules(m)
-      setPosts(p)
       setError(null)
     } catch (e) {
       setError((e as Error).message)
@@ -386,7 +362,7 @@ export function Cms() {
   const copy = useMemo(() => resolveSite(site), [site])
 
   async function saveSite(patch: SiteOverrides) {
-    setSite((s) => ({ ...s, ...patch, sections: { ...s.sections, ...patch.sections } }))
+    setSite((s) => ({ ...s, ...patch }))
     try {
       setSite(await updateSite(patch))
     } catch (e) {
@@ -479,6 +455,9 @@ export function Cms() {
     setModules((ms) => ms.map((m) => (m.id === id ? { ...m, ...patch } : m)))
     try {
       await updateModule(id, patch)
+      // The sidebar and home read modules straight from Supabase; without this
+      // they keep the old title/colour until a full reload.
+      forgetModules()
     } catch (e) {
       setError((e as Error).message)
     }
@@ -575,17 +554,6 @@ export function Cms() {
             </Field>
             <Field label="Lời kết — dòng phụ">
               <input {...field('notesEndNote')} style={boxed} />
-            </Field>
-          </div>
-        </>,
-    archive: <>
-          <div style={{ ...sectionHead, margin: '34px 0 18px' }}>Trang Lưu trữ</div>
-          <div style={grid(two)}>
-            <Field label="Tiêu đề trang">
-              <input {...field('archiveTitle')} style={serifInput} />
-            </Field>
-            <Field label="Dòng phụ — cạnh số bài">
-              <input {...field('archiveNote')} style={boxed} />
             </Field>
           </div>
         </>,
@@ -812,85 +780,13 @@ export function Cms() {
     )
   }
 
-  const postCount = posts.length
-
   return (
-    <div style={{ background: paper.cream, color: ink.base, minHeight: '100vh' }}>
-      <div style={{ background: '#DDEBF0', color: '#0E2C38', padding: '44px 56px 30px' }}>
-        <Breadcrumbs style={{ opacity: 0.75 }} />
-
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'flex-end',
-            justifyContent: 'space-between',
-            gap: 44,
-            flexWrap: 'wrap',
-          }}
-        >
-          <div>
-            <h1
-              style={{
-                fontFamily: serif,
-                fontWeight: 400,
-                fontSize: 70,
-                lineHeight: 1,
-                letterSpacing: '-.04em',
-                margin: 0,
-              }}
-            >
-              {copy.cmsTitle}
-            </h1>
-            <div
-              style={{
-                fontFamily: sans,
-                fontWeight: 300,
-                fontSize: 13.5,
-                lineHeight: 1.5,
-                marginTop: 10,
-                maxWidth: 430,
-                opacity: 0.85,
-              }}
-            >
-              {copy.cmsIntro}
-            </div>
-          </div>
-          <div
-            style={{
-              fontFamily: sans,
-              fontSize: 11,
-              letterSpacing: '.14em',
-              textTransform: 'uppercase',
-              opacity: 0.7,
-              paddingBottom: 8,
-            }}
-          >
-            {modules.length} module · {postCount} bài
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: 4, marginTop: 26 }}>
-          {TABS.map((x) => (
-            <div
-              key={x.k}
-              onClick={() => nav.goCms(x.k)}
-              style={{
-                fontFamily: sans,
-                fontSize: 11,
-                fontWeight: 500,
-                letterSpacing: '.16em',
-                textTransform: 'uppercase',
-                padding: '10px 18px',
-                cursor: 'pointer',
-                background: tab === x.k ? ink.base : 'transparent',
-                color: tab === x.k ? paper.cream : ink.soft,
-              }}
-            >
-              {x.t}
-            </div>
-          ))}
-        </div>
-      </div>
+    // The frame (sidebar, top line) is AdminShell's; fields take their frames from DETAIL_CSS.
+    <div className="cfg-detail" style={{ color: ink.base }}>
+      <style>{DETAIL_CSS}</style>
+      {(tab === 'posts' || tab === 'display') && (
+        <h1 style={{ fontFamily: serif, fontWeight: 500, fontSize: 34, lineHeight: 1.15, margin: 0, padding: '8px 28px 4px' }}>{tab === 'posts' ? 'Nội dung' : 'Cài đặt hiển thị'}</h1>
+      )}
 
       {error && (
         <div
@@ -899,7 +795,7 @@ export function Cms() {
             color: '#8E1E42',
             fontFamily: sans,
             fontSize: 12.5,
-            padding: '10px 56px',
+            padding: '10px 28px',
           }}
         >
           {error}
@@ -908,8 +804,10 @@ export function Cms() {
 
       {tab === 'posts' && <ContentWorkspace onChanged={() => void load()} />}
 
-      {tab === 'pages' && (
-        <PagesManager
+      {(tab === 'pages' || tab === 'authors') && (
+        <ConfigTree
+          openAuthors={tab === 'authors'}
+          modules={modules}
           renderPractice={() => {
             const practice = site.practice ?? {}
             const save = (patch: { title?: string; accent?: string }) => void saveSite({ practice: { ...practice, ...patch } })
@@ -920,9 +818,6 @@ export function Cms() {
                 </Field>
                 <Field label="Màu">
                   <input defaultValue={practice.accent ?? ''} key={practice.accent ?? ''} placeholder="#hex" onBlur={(e) => /^#[0-9a-f]{6}$/i.test(e.target.value.trim()) && save({ accent: e.target.value.trim() })} style={{ ...serifInput, fontSize: 16 }} />
-                </Field>
-                <Field label="Tên section">
-                  <input defaultValue={copy.sections.Practice} key={copy.sections.Practice} onBlur={(e) => e.target.value.trim() && e.target.value.trim() !== copy.sections.Practice && void saveSite({ sections: { Practice: e.target.value.trim() } })} style={{ ...serifInput, fontSize: 16 }} />
                 </Field>
               </div>
             )
@@ -942,65 +837,12 @@ export function Cms() {
           routes={<RoutesPanel stored={site.routes} modules={modules} onSave={(routes) => saveSite({ routes } as SiteOverrides)} />}
           blog={
             <>
-          <div style={{ ...sectionHead, margin: '44px 0 18px' }}>{copy.sections.Admin}</div>
-          <div style={grid(two, 20)}>
-            <Field label="Design system — tiêu đề dòng 1">
-              <input
-                {...field('artT1')}
-                style={{ ...serifInput, fontSize: 20 }}
-              />
-            </Field>
-            <Field label="Design system — tiêu đề dòng 2 (nghiêng, xanh)">
-              <input
-                {...field('artT2')}
-                style={{ ...serifItalicInput, fontSize: 20 }}
-              />
-            </Field>
-            <div style={{ gridColumn: 'span 2' }}>
-              <Field label="Design system — đoạn dẫn">
-                <textarea
-                  {...field('artIntro')}
-                  rows={3}
-                  style={area}
-                />
-              </Field>
-            </div>
-            <Field label="System conventions — tiêu đề">
-              <input
-                {...field('logicTitle')}
-                style={{ ...serifInput, fontSize: 20 }}
-              />
-            </Field>
-            <Field label="System conventions — đoạn dẫn">
-              <textarea
-                {...field('logicIntro')}
-                rows={2}
-                style={area}
-              />
-            </Field>
-            <Field label="Content — tiêu đề">
-              <input
-                {...field('cmsTitle')}
-                style={{ ...serifInput, fontSize: 20 }}
-              />
-            </Field>
-            <Field label="Content — đoạn dẫn">
-              <textarea
-                {...field('cmsIntro')}
-                rows={2}
-                style={area}
-              />
-            </Field>
-          </div>
-
           <Hover
             onClick={async () => {
               // Every field back to its shipped default: clear the whole blob.
               try {
                 setSite(await updateSite(Object.fromEntries(
-                  Object.keys(SITE_DEFAULTS)
-                    .filter((k) => k !== 'sections')
-                    .map((k) => [k, '']),
+                  Object.keys(SITE_DEFAULTS).map((k) => [k, '']),
                 ) as SiteOverrides))
                 await load()
               } catch (e) {
@@ -1011,10 +853,8 @@ export function Cms() {
               display: 'inline-block',
               marginTop: 30,
               fontFamily: sans,
-              fontSize: 10.5,
-              letterSpacing: '.16em',
-              textTransform: 'uppercase',
-              color: ink.faint,
+              fontSize: 13,
+              color: ink.soft,
               borderBottom: `1px solid ${paper.rule}`,
               paddingBottom: 4,
               cursor: 'pointer',

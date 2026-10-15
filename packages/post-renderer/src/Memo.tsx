@@ -1,11 +1,13 @@
 import { getElement } from './elements'
 import { TableScroll } from './elements/data'
 import { flatElements } from './memoElements'
+import { PlateCorner, plateHost, type PlateAction } from './plates'
+import { fillStyle } from './focus'
 import { paletteFrom, type Palette } from './palette'
 import { Fragment } from 'react'
 import type { ReactNode } from 'react'
 import type { CSSProperties } from 'react'
-import { sans, serif, wrapTitle } from './tokens'
+import { frame, layout, sans, serif, wrapTitle } from './tokens'
 import type { MemoPostData } from './types'
 
 /**
@@ -44,20 +46,27 @@ export type MemoOverrides = {
    */
   renderSpecKey?: (key: string, index: number) => ReactNode
   renderSpecValue?: (value: string, index: number) => ReactNode
+  /**
+   * Móc treo nút tải ảnh vào góc tấm ảnh đầu trang, khoá `hero`.
+   *
+   * Có móc thì ô ảnh vẽ **cả khi bài chưa có ảnh**: trước đây `post.img` rỗng
+   * là cả khối biến mất, nên trong màn sửa không còn chỗ nào để bấm — muốn đặt
+   * ảnh thì phải đi tìm một hàng chữ ở trên đầu khung.
+   */
+  renderPlateAction?: PlateAction
 }
 
-export type MemoProps = MemoOverrides & {
+type MemoProps = MemoOverrides & {
   /**
    * Bố cục điện thoại. Chỗ gọi quyết định, không phải khuôn tự đo — xem
    * `PostRenderer`.
    */
   mobile?: boolean
   post: MemoPostData
-  /**
-   * The trail back to where this post is filed. Supplied by the app, so the
-   * renderer package stays independent of how routing works.
-   */
-  breadcrumb?: ReactNode
+  /** The page's own head; replaces the band and title. See `ArticleProps.head`. */
+  head?: ReactNode
+  /** Closes the reading column — the app's author card. Supplied by the app, like `head`. */
+  footer?: ReactNode
 }
 
 /** Only a memo with no module behind it — the standalone sample — uses this. */
@@ -187,7 +196,8 @@ const MEMO_VIEWS: Record<
  */
 export function Memo({
   post,
-  breadcrumb,
+  head,
+  footer,
   mobile = false,
   renderTitle,
   renderSubtitle,
@@ -195,6 +205,7 @@ export function Memo({
   renderAfterElements,
   renderSpecKey,
   renderSpecValue,
+  renderPlateAction,
 }: MemoProps) {
   // Everything this template tints comes from the one colour the post wears.
   const palette = paletteFrom(post.band?.bg ?? MEMO_BLUE, post.band?.fg)
@@ -202,28 +213,36 @@ export function Memo({
     <div style={{ background: '#FCFCFA', color: '#172124', minHeight: '100vh', fontFamily: sans, fontWeight: 300 }}>
       {/* A memo is short and deliberately plain, so it gets the shallow band
           too — enough to say where it is filed, not enough to crowd the note. */}
-      <div
-        style={{
-          background: palette.accent,
-          color: palette.onAccent,
-          padding: mobile ? '18px 20px 16px' : '22px 56px 20px',
-        }}
-      >
-        {breadcrumb}
-      </div>
+      {head === undefined && (
+        <div
+          style={{
+            background: palette.accent,
+            color: palette.onAccent,
+            padding: mobile ? '18px 20px 16px' : '22px 56px 20px',
+          }}
+        />
+      )}
       <div style={{ padding: '40px 56px 0' }}>
         <div
           style={{
+            ...frame(layout.reading),
             display: 'grid',
-            // B49 — tiêu đề và bảng thông số xếp dọc; 300px cạnh cột chữ trên
-            // màn 390 thì cả hai đều không còn chỗ.
-            gridTemplateColumns: mobile ? 'minmax(0,1fr)' : 'minmax(0,1fr) 300px',
-            gap: 56,
+            /*
+             * Title over specs at every width. The specs used to stand in a
+             * 300px column right of the title, which left the 760px body under
+             * it with a white field of that size; now the page is one column.
+             */
+            gridTemplateColumns: 'minmax(0,1fr)',
+            gap: 28,
             alignItems: 'end',
-            borderBottom: `1px solid ${palette.ink}`,
-            paddingBottom: 26,
+            // The page's head closes on its own rule; a second one under it reads as a gap.
+            borderBottom: head === undefined ? `1px solid ${palette.ink}` : undefined,
+            paddingBottom: head === undefined ? 26 : 0,
           }}
         >
+          {head !== undefined ? (
+            <div>{head}</div>
+          ) : (
           <div>
             <h1
           lang="en"
@@ -256,6 +275,7 @@ export function Memo({
               </div>
             )}
           </div>
+          )}
 
           {post.specs && post.specs.length > 0 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14, paddingBottom: 6 }}>
@@ -281,14 +301,22 @@ export function Memo({
         </div>
       </div>
 
-      {post.img && (
+      {/* Under the page's head the cover is already drawn there. */}
+      {head === undefined && (post.img || renderPlateAction) && (
         <div style={{ padding: '30px 56px 0' }}>
-          <div style={{ aspectRatio: '21/9', overflow: 'hidden', background: '#EDE8DD' }}>
-            <img src={post.img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+          <div style={frame(layout.reading)}>
+          {/*
+            Nền chứ không phải `<img>`: thẻ ảnh bỏ qua cả điểm căn lẫn khung cắt
+            ghi trên địa chỉ, nên ô này là ô duy nhất cắt đâu cũng ra giữa ảnh.
+            `fillStyle` là đường chung của mọi ô ảnh khuôn bài.
+          */}
+          <div style={{ ...plateHost, aspectRatio: '21/9', overflow: 'hidden', ...fillStyle(post.img, '#EDE8DD') }}>
+            <PlateCorner action={renderPlateAction} slot={{ key: 'hero', imageUrl: post.img ?? null }} />
           </div>
           <div style={{ display: 'flex', gap: 10, alignItems: 'baseline', marginTop: 10, fontSize: 11, color: '#A2A296' }}>
             <div style={{ width: 22, height: 1, background: palette.accent, transform: 'translateY(-4px)' }} />
             <div>{post.imgCaption ?? 'ảnh features'}</div>
+          </div>
           </div>
         </div>
       )}
@@ -296,8 +324,8 @@ export function Memo({
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'minmax(0,760px)',
-          justifyContent: 'start',
+          gridTemplateColumns: `minmax(0,${layout.reading}px)`,
+          justifyContent: 'center',
           padding: '56px 56px 130px',
         }}
       >
@@ -320,6 +348,7 @@ export function Memo({
             return <Fragment key={i}>{wrapElement ? wrapElement(drawn, i, el) : drawn}</Fragment>
           })}
           {renderAfterElements?.()}
+          {footer}
         </div>
       </div>
     </div>

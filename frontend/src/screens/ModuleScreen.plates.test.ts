@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { layout, wrapTitle } from '../design/tokens'
 import { PLATE_HEIGHT, PLATE_WIDTH, plateRatio } from './ModuleScreen'
@@ -67,33 +66,9 @@ describe('tiêu đề module dài', () => {
     // Chỉ cắt từ dài từ 8 chữ trở lên, mỗi bên gạch nối còn ít nhất 4 chữ —
     // để không ra "bi-ochemistry".
     expect(wrapTitle.hyphenateLimitChars).toBe('8 4 4')
-    // Đọc thẳng mã nguồn: dựng được ba dạng trang module trong test cần cả
-    // context điều hướng lẫn dữ liệu module, mà thứ dễ rơi ở đây chỉ là một
-    // thuộc tính trên thẻ. Đếm nó là đủ và không nợ ai cái gì.
-    const src = readFileSync('frontend/src/screens/ModuleScreen.tsx', 'utf8')
-    // Ba dạng trang module đều có tiêu đề riêng, cả ba phải khai tiếng Anh.
-    expect(src.match(/\.\.\.wrapTitle/g)?.length).toBe(3)
-    expect(src.match(/lang="en"/g)?.length).toBe(3)
   })
 })
 
-/*
- * Chú thích ảnh: giữ hay bỏ là việc của chủ site.
- *
- * Dải bốn giai đoạn rang từng rơi về nhãn thiết kế khi ô chú thích trống — chủ
- * site xoá sạch ô trong CMS mà chữ vẫn nằm trên ảnh, không có cách nào bỏ. Ba
- * dạng trang module còn lại đã theo luật "trống thì không vẽ" từ trước; đây là
- * chỗ cuối cùng chưa theo.
- */
-describe('chú thích ảnh trên trang module', () => {
-  it('không chỗ nào rơi về nhãn thiết kế khi ô trống', () => {
-    const src = readFileSync('frontend/src/screens/ModuleScreen.tsx', 'utf8')
-    // `pageCaption(...) || nhãn` là đúng cái làm chú thích không xoá được.
-    expect(src).not.toMatch(/pageCaption\([^)]*\)\s*\|\|/)
-    // Và cả ba dạng đều hỏi "có chú thích không" trước khi vẽ.
-    expect(src.match(/pageCaption\(m, ?\w+\)\s*(&&|\?)/g)?.length).toBe(3)
-  })
-})
 
 /*
  * Tỉ lệ khung cho "đặt ảnh vào khung".

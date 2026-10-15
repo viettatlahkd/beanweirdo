@@ -3,6 +3,8 @@ import { withCors } from '../../lib/cors.js'
 import { requireAuth } from '../../lib/auth.js'
 import { getSupabase } from '../../lib/supabase.js'
 import {
+  bodyPreview,
+  firstImageIn,
   POST_STATUSES,
   POST_SUMMARY_COLUMNS,
   POST_TEMPLATES,
@@ -11,8 +13,21 @@ import {
   type PostRow,
   type PostTemplate,
 } from '../../lib/posts.js'
+import { isDraftTableUnreadable, readDraft } from '../../lib/drafts.js'
 
 const LIST_FILTERS = [...POST_STATUSES, 'all'] as const
+
+/** Link-table rows grouped by post, in the order they were read. A missing table reads as none. */
+function byPost(rows: unknown, column: 'keyword_id' | 'author_id'): Map<string, string[]> {
+  const out = new Map<string, string[]>()
+  for (const r of (Array.isArray(rows) ? rows : []) as Record<string, unknown>[]) {
+    const post = r.post_id
+    const id = r[column]
+    if (typeof post !== 'string' || typeof id !== 'string') continue
+    out.set(post, [...(out.get(post) ?? []), id])
+  }
+  return out
+}
 
 async function handleList(req: VercelRequest, res: VercelResponse): Promise<void> {
   const rawStatus = req.query.status
@@ -24,33 +39,58 @@ async function handleList(req: VercelRequest, res: VercelResponse): Promise<void
   }
 
   const supabase = getSupabase()
-  let query = supabase.from('posts').select(POST_SUMMARY_COLUMNS).order('updated_at', { ascending: false })
+  // `body` is read here only to cut the preview line; it is not sent on.
+  let query = supabase.from('posts').select(`${POST_SUMMARY_COLUMNS}, body`).order('updated_at', { ascending: false })
 
   if (statusParam !== 'all') {
     query = query.eq('status', statusParam)
   }
 
-  const [{ data, error }, { data: worn }] = await Promise.all([query, supabase.from('post_keywords').select('post_id, keyword_id')])
+  const [{ data, error }, { data: drafts, error: draftError }, { data: worn }, { data: named }] = await Promise.all([
+    query,
+    supabase.from('post_drafts').select('post_id'),
+    supabase.from('post_keywords').select('post_id, keyword_id'),
+    supabase.from('post_authors').select('post_id, author_id').order('position', { ascending: true }),
+  ])
   if (error) {
     res.status(500).json({ error: error.message })
     return
   }
 
-  // The content workspace filters and bulk-edits by theme tag, so the list
-  // carries each post's tags; one query for all of them, not one per post.
-  const tags = new Map<string, string[]>()
-  for (const r of (Array.isArray(worn) ? worn : []) as { post_id?: unknown; keyword_id?: unknown }[]) {
-    if (typeof r.post_id !== 'string' || typeof r.keyword_id !== 'string') continue
-    tags.set(r.post_id, [...(tags.get(r.post_id) ?? []), r.keyword_id])
+  /*
+   * Which posts have edits waiting for Publish, so the list can say so. One
+   * extra read of a table that holds a row only per published post being
+   * edited — cheaper than a join PostgREST cannot express without a foreign
+   * key embed on every summary. A missing table (0028 not run) means none.
+   * It runs alongside the list itself, not after it.
+   */
+  if (draftError && !isDraftTableUnreadable(draftError)) {
+    res.status(500).json({ error: draftError.message })
+    return
   }
-  res.status(200).json({ posts: (data as PostRow[]).map((row) => ({ ...toPostSummary(row), keywords: tags.get(row.id) ?? [] })) })
+  const pending = new Set(((drafts ?? []) as { post_id: string }[]).map((d) => d.post_id))
+
+  // The content workspace filters by tag and by author, so the list carries
+  // each post's tag and author ids; one query per link table, not one per post.
+  const tags = byPost(worn, 'keyword_id')
+  const authors = byPost(named, 'author_id')
+  res.status(200).json({
+    posts: (data as PostRow[]).map((row) => ({
+      ...toPostSummary(row),
+      ...bodyPreview(row.body),
+      keywords: tags.get(row.id) ?? [],
+      authors: authors.get(row.id) ?? [],
+      has_draft: pending.has(row.id),
+    })),
+  })
 }
 
 interface CreatePostBody {
   module_id?: unknown
+  /** Dạng bài — retired; stored as given, empty when absent. */
+  kind?: unknown
   /** Place on the topic tree (migration 0027). */
   topic_id?: unknown
-  kind?: unknown
   en?: unknown
   vi?: unknown
   /** The stored template to start from — its body is copied into the new post. */
@@ -160,7 +200,7 @@ async function handleCreate(req: VercelRequest, res: VercelResponse): Promise<vo
   if (fromPostId) {
     const { data: src, error: srcError } = await supabase
       .from('posts')
-      .select('template, body, lead, hero_image_url, hero_caption, pull_quote, further_reading, topic_id')
+      .select('template, body, lead, pull_quote, further_reading, topic_id, hero_image_url, hero_caption, plate_images')
       .eq('id', fromPostId)
       .maybeSingle()
 
@@ -172,10 +212,29 @@ async function handleCreate(req: VercelRequest, res: VercelResponse): Promise<vo
       res.status(400).json({ error: `Post '${fromPostId}' does not exist` })
       return
     }
-    const row = src as { template: string; body: unknown }
+    /*
+     * The copy starts from what the owner last wrote, not what readers see:
+     * a published post's unpublished edits live in `post_drafts`, and copying
+     * it is how the owner starts a sibling from their newest text.
+     */
+    const pendingEdits = await readDraft(supabase, fromPostId)
+    if (pendingEdits.error) {
+      res.status(500).json({ error: (pendingEdits.error as { message?: string }).message ?? 'Draft read failed' })
+      return
+    }
+    const merged: Record<string, unknown> = { ...(src as Record<string, unknown>) }
+    for (const key of ['body', 'lead', 'pull_quote', 'further_reading', 'hero_image_url', 'hero_caption', 'plate_images'] as const) {
+      if (pendingEdits.data && Object.prototype.hasOwnProperty.call(pendingEdits.data, key)) merged[key] = pendingEdits.data[key]
+    }
+    const row = merged as { template: string; body: unknown }
     template = row.template
+    /*
+     * Pictures come across with the text. Both posts then point at the same
+     * stored files, which is safe because nothing ever deletes an upload; a
+     * copy that dropped them left the owner re-uploading every photo.
+     */
     startingBody = row.body ?? null
-    copied = src as Record<string, unknown>
+    copied = merged
     // What a post is about is part of its content, so a copy keeps its topic
     // unless the caller filed it somewhere else.
     topic_id = topic_id ?? ((copied.topic_id as string | null) ?? null)
@@ -208,7 +267,7 @@ async function handleCreate(req: VercelRequest, res: VercelResponse): Promise<vo
   // and nobody has: order falls to `published_at`, which is what a new post
   // should follow until someone drags it somewhere. Writing a number here would
   // make every post look hand-placed and so make the real ones indistinguishable.
-  const { data, error } = await supabase
+  const insert = supabase
     .from('posts')
     .insert({
       module_id: module_id,
@@ -219,16 +278,22 @@ async function handleCreate(req: VercelRequest, res: VercelResponse): Promise<vo
       date_label: formatDateLabel(new Date()),
       sort_order: null,
       body: startingBody,
+      // Derived from the body being written, in the same statement that writes
+      // it. A template or a copied post can arrive with pictures already in it.
+      thumbnail_url: firstImageIn(startingBody),
       lead: copied?.lead ?? null,
       theme_color,
       topic_id,
       hero_image_url: copied?.hero_image_url ?? null,
       hero_caption: copied?.hero_caption ?? null,
+      plate_images: copied?.plate_images ?? null,
       pull_quote: copied?.pull_quote ?? null,
       further_reading: copied?.further_reading ?? null,
     })
     .select('id')
     .single()
+
+  const { data, error } = await insert
 
   if (error) {
     // 23503 = foreign key violation, i.e. module_id doesn't exist.
@@ -268,16 +333,25 @@ async function handleReorder(req: VercelRequest, res: VercelResponse): Promise<v
   const supabase = getSupabase()
   const nowIso = new Date().toISOString()
 
-  for (const [i, id] of (order as string[]).entries()) {
-    const { error } = await supabase
-      .from('posts')
-      .update({ sort_order: i + 1, updated_at: nowIso })
-      .eq('id', id)
-      .eq('module_id', module_id)
-    if (error) {
-      res.status(500).json({ error: error.message })
-      return
-    }
+  /*
+   * The `await` used to sit inside the loop, so reordering ten posts was ten
+   * round trips waiting on each other before the select below could even start.
+   * They do not depend on one another — each writes its own row — so they go
+   * together. Still N statements, but N in flight instead of N in a queue.
+   */
+  const writes = await Promise.all(
+    (order as string[]).map((id, i) =>
+      supabase
+        .from('posts')
+        .update({ sort_order: i + 1, updated_at: nowIso })
+        .eq('id', id)
+        .eq('module_id', module_id),
+    ),
+  )
+  const failed = writes.find((w) => w.error)
+  if (failed?.error) {
+    res.status(500).json({ error: failed.error.message })
+    return
   }
 
   const { data, error } = await supabase

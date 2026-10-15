@@ -26,6 +26,14 @@ describe('Header links', () => {
     const content = resolveContent({ header: { links: [{ key: 'page:c', label: 'x' }] } })
     expect(navLinks(content, pages).some((l) => l.key === 'page:c')).toBe(false)
   })
+
+  it('shows a journal page only once the owner added it, at /journal', () => {
+    expect(navLinks(resolveContent({}), pages).some((l) => l.key.startsWith('journal:'))).toBe(false)
+    const content = resolveContent({ header: { links: [{ key: 'page:a' }, { key: 'journal:home' }] } })
+    const links = navLinks(content, pages)
+    expect(links.map((l) => l.key)).toEqual(['page:a', 'journal:home', 'home', 'page:b', 'about'])
+    expect(links[1]).toMatchObject({ label: 'journal', href: '/journal' })
+  })
 })
 
 describe('About signature', () => {
@@ -37,11 +45,12 @@ describe('About signature', () => {
 })
 
 describe('Portfolio addresses', () => {
-  it('reads and writes the main page, about and a port page', () => {
+  it('reads and writes the main page, about, biz’s home and a biz page', () => {
     for (const [path, where] of [
-      ['/portfolio', { area: 'public', screen: 'portfolioHome' }],
-      ['/portfolio/about', { area: 'public', screen: 'portfolioAbout' }],
-      ['/portfolio/bibi', { area: 'public', screen: 'portfolioPage', slug: 'bibi' }],
+      ['/', { area: 'public', screen: 'portfolioHome' }],
+      ['/about', { area: 'public', screen: 'portfolioAbout' }],
+      ['/biz/bibi', { area: 'public', screen: 'portfolioPage', slug: 'bibi' }],
+      ['/biz', { area: 'public', screen: 'portfolioPage', site: 'biz' }],
     ] as const) {
       expect(parsePath(path, '', DEFAULT_WORDS)).toEqual(where)
       expect(toPath(where, DEFAULT_WORDS)).toBe(path)

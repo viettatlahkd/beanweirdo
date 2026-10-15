@@ -46,12 +46,9 @@ const AREA_SCREENS: Record<Area, readonly string[]> = {
   public: ['landing', 'home', 'module', 'notes', 'article', 'portfolioPage', 'portfolioHome', 'portfolioAbout'],
   practice: ['hours'],
   admin: [
-    'portfolio',
     'cms',
-    'logic',
     'archive',
     'article',
-    'postNew',
     'postEdit',
     'postPreview',
   ],

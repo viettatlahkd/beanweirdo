@@ -11,7 +11,10 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "allowJs": false,
-    "types": ["node"]
+    "types": ["node"],
+    // Types only: every import of it is `import type`, erased before the
+    // functions are bundled, so the backend deploy never needs the package.
+    "paths": { "api-contract": ["../packages/api-contract/src/index.ts"] }
   },
   "include": ["**/*.ts"],
   "exclude": ["node_modules"]

@@ -25,7 +25,7 @@ const topic = (id: string, parent_id: string | null, sort_order: number, extra =
   on_color: null,
   tint: null,
   tint2: null,
-  visibility: 'public',
+  status: 'published',
   ...extra,
 })
 const post = (id: string, topic_id: string, module_id: string, template = 'longform', published_at = '2026-09-01') => ({
@@ -103,9 +103,12 @@ describe('pages from the feature layer', () => {
     expect(findPage(pages, 'ghi02')?.screen).toBeUndefined()
   })
 
-  it('lists the owner order first, then every subject not placed, honouring the flags', () => {
-    expect(indexModules(pages).map((p) => p.id)).toEqual(['biochemistry', 'ghi', 'bean'])
-    expect(landingModules(pages).map((p) => p.id)).toEqual(['biochemistry', 'bean'])
+  it('lists the subjects in tree order, then what else the owner listed, honouring the flags', () => {
+    // The stored list puts biochemistry first; the tree's order still wins for subjects.
+    expect(indexModules(pages).map((p) => p.id)).toEqual(['bean', 'biochemistry', 'ghi'])
+    expect(landingModules(pages).map((p) => p.id)).toEqual(['bean', 'biochemistry'])
+    // Nested where the topic tree nests it, so the sidebar draws it under its subject.
+    expect(findPage(pages, 'biochemistry')!.parent_id).toBe('bean')
   })
 
   it('falls back to the modules exactly while no page is set up', () => {

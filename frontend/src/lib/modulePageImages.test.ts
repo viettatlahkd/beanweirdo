@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isBorrowed, pageCaption, pageImage, pageSlots } from './modulePageImages'
+import { isBorrowed, pageCaption, pageImage } from './modulePageImages'
 
 const base = {
   layout: 'band',
@@ -8,16 +8,6 @@ const base = {
   page_img1: null, page_img2: null, page_img3: null, page_img4: null,
   page_shot1: null, page_shot2: null, page_shot3: null, page_shot4: null,
 }
-
-describe('pageSlots', () => {
-  it('gives each layout the number of photos its page actually draws', () => {
-    // Measured on the pages themselves: one hero, three cells, a four-cell strip.
-    expect(pageSlots('band')).toEqual([1])
-    // Bốn: ô thứ tư từng là mảng màu đặc chứ không phải chỗ đặt ảnh.
-    expect(pageSlots('specimen')).toEqual([1, 2, 3, 4])
-    expect(pageSlots('sequence')).toEqual([1, 2, 3, 4])
-  })
-})
 
 describe('pageImage', () => {
   it('borrows the homepage photo when the page has none of its own', () => {

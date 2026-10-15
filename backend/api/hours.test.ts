@@ -163,7 +163,6 @@ describe('POST /api/hours?resource=kinds', () => {
       .mockReturnValueOnce(queryBuilder({ data: [{ sort_order: 4 }], error: null }))
       // 23505 = unique violation: the caller wanted the kind to exist, and it does.
       .mockReturnValueOnce(queryBuilder({ data: null, error: { code: '23505', message: 'duplicate' } }))
-      .mockReturnValueOnce(queryBuilder({ data: [{ name: 'đọc', system: 'task' }], error: null }))
 
     const res = mockRes()
     await handler(
@@ -172,7 +171,9 @@ describe('POST /api/hours?resource=kinds', () => {
     )
 
     expect(res.statusCode).toBe(200)
-    expect(res.body.kinds).toEqual(['đọc'])
+    expect(res.body).toEqual({ name: 'đọc', system: 'task' })
+    // Đọc `sort_order` lớn nhất, rồi insert. Không có lượt thứ ba đọc lại bảng.
+    expect(fromMock).toHaveBeenCalledTimes(2)
   })
 
   it('files the tag under the system it was asked for', async () => {
@@ -180,7 +181,6 @@ describe('POST /api/hours?resource=kinds', () => {
     fromMock
       .mockReturnValueOnce(queryBuilder({ data: [{ sort_order: 2 }], error: null }))
       .mockReturnValueOnce(insert)
-      .mockReturnValueOnce(queryBuilder({ data: [{ name: 'Bột nở', system: 'project' }], error: null }))
 
     const res = mockRes()
     await handler(
@@ -194,7 +194,8 @@ describe('POST /api/hours?resource=kinds', () => {
     )
 
     expect(insert.insert).toHaveBeenCalledWith(expect.objectContaining({ system: 'project', sort_order: 3 }))
-    expect(res.body.projects).toEqual(['Bột nở'])
+    expect(res.body).toEqual({ name: 'Bột nở', system: 'project' })
+    expect(fromMock).toHaveBeenCalledTimes(2)
   })
 
   it('rejects an unknown system', async () => {
@@ -221,16 +222,6 @@ describe('POST /api/hours?resource=kinds', () => {
   })
 })
 
-/** The listing every kinds route answers with, as the last mocked call. */
-const bothSystems = (kinds: string[], projects: string[]) =>
-  queryBuilder({
-    data: [
-      ...kinds.map((name) => ({ name, system: 'task' })),
-      ...projects.map((name) => ({ name, system: 'project' })),
-    ],
-    error: null,
-  })
-
 describe('PATCH /api/hours?resource=kinds — renaming a tag', () => {
   it('carries the activities over before the tag itself', async () => {
     const logs = queryBuilder({ data: null, error: null })
@@ -238,7 +229,6 @@ describe('PATCH /api/hours?resource=kinds — renaming a tag', () => {
     fromMock
       .mockReturnValueOnce(logs)
       .mockReturnValueOnce(tag)
-      .mockReturnValueOnce(bothSystems(['đọc', 'ghi chép'], []))
 
     const res = mockRes()
     await handler(
@@ -257,7 +247,9 @@ describe('PATCH /api/hours?resource=kinds — renaming a tag', () => {
     expect(logs.eq).toHaveBeenCalledWith('kind', 'viết')
     expect(tag.update).toHaveBeenCalledWith({ name: 'ghi chép' })
     expect(res.statusCode).toBe(200)
-    expect(res.body.kinds).toEqual(['đọc', 'ghi chép'])
+    expect(res.body).toEqual({ name: 'ghi chép', system: 'task' })
+    // Hai câu ghi, không có lượt thứ ba đọc lại bảng để trả lời.
+    expect(fromMock).toHaveBeenCalledTimes(2)
   })
 
   it('writes the project column when the project system is renamed', async () => {
@@ -265,7 +257,6 @@ describe('PATCH /api/hours?resource=kinds — renaming a tag', () => {
     fromMock
       .mockReturnValueOnce(logs)
       .mockReturnValueOnce(queryBuilder({ data: { id: 'tag-2' }, error: null }))
-      .mockReturnValueOnce(bothSystems([], ['Cà phê']))
 
     const res = mockRes()
     await handler(
@@ -279,7 +270,7 @@ describe('PATCH /api/hours?resource=kinds — renaming a tag', () => {
     )
 
     expect(logs.update).toHaveBeenCalledWith({ project: 'Cà phê' })
-    expect(res.body.projects).toEqual(['Cà phê'])
+    expect(res.body).toEqual({ name: 'Cà phê', system: 'project' })
   })
 
   it('puts the activities back when the tag write fails', async () => {
@@ -307,8 +298,6 @@ describe('PATCH /api/hours?resource=kinds — renaming a tag', () => {
   })
 
   it('is a no-op when the name has not changed', async () => {
-    fromMock.mockReturnValueOnce(bothSystems(['viết'], []))
-
     const res = mockRes()
     await handler(
       mockReq({
@@ -321,8 +310,8 @@ describe('PATCH /api/hours?resource=kinds — renaming a tag', () => {
     )
 
     expect(res.statusCode).toBe(200)
-    // No update was attempted — only the listing was read.
-    expect(fromMock).toHaveBeenCalledTimes(1)
+    // Đổi tên thành chính nó thì không đụng database lần nào.
+    expect(fromMock).not.toHaveBeenCalled()
   })
 
   it('404s on a tag that is not there', async () => {
@@ -372,7 +361,6 @@ describe('DELETE /api/hours?resource=kinds — deleting a tag', () => {
       .mockReturnValueOnce(move)
       .mockReturnValueOnce(rest)
       .mockReturnValueOnce(drop)
-      .mockReturnValueOnce(bothSystems(['đọc'], []))
 
     const res = mockRes()
     await handler(
@@ -394,6 +382,9 @@ describe('DELETE /api/hours?resource=kinds — deleting a tag', () => {
     expect(res.statusCode).toBe(200)
     // Including the one outside the span the screen draws.
     expect(res.body.affected).toEqual(['log-1', 'log-9'])
+    // Đọc ai đang đeo → chuyển → dọn phần còn lại → xoá tag. Bốn, không phải
+    // năm: lượt đọc lại cả bảng để trả lời đã bỏ.
+    expect(fromMock).toHaveBeenCalledTimes(4)
   })
 
   it('lets a project fall to no project at all when that is what was asked', async () => {
@@ -402,7 +393,6 @@ describe('DELETE /api/hours?resource=kinds — deleting a tag', () => {
       .mockReturnValueOnce(queryBuilder({ data: [], error: null }))
       .mockReturnValueOnce(rest)
       .mockReturnValueOnce(queryBuilder({ data: null, error: null }))
-      .mockReturnValueOnce(bothSystems([], []))
 
     const res = mockRes()
     await handler(
@@ -425,7 +415,6 @@ describe('DELETE /api/hours?resource=kinds — deleting a tag', () => {
       .mockReturnValueOnce(queryBuilder({ data: [], error: null }))
       .mockReturnValueOnce(rest)
       .mockReturnValueOnce(queryBuilder({ data: null, error: null }))
-      .mockReturnValueOnce(bothSystems([], []))
 
     const res = mockRes()
     await handler(

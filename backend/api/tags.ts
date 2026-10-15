@@ -2,8 +2,9 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { withCors } from '../lib/cors.js'
 import { requireAuth } from '../lib/auth.js'
 import { getSupabase } from '../lib/supabase.js'
-import { handleKeywords, handleTopics, slug, vocabOf } from '../lib/vocab.js'
+import { handleKeywords, handleNodes, slug, vocabOf } from '../lib/vocab.js'
 import { handleLayout } from '../lib/layout.js'
+import { handleAuthors } from '../lib/authorsApi.js'
 
 /**
  * Tags — what a post is, in the owner's own words.
@@ -13,8 +14,9 @@ import { handleLayout } from '../lib/layout.js'
  *   PATCH  /api/tags?id=…       rename one, and everything wearing it
  *   DELETE /api/tags?id=…       remove one, after saying where its things go
  *
- *   ?vocab=topics | keywords    the topic tree and theme tags (lib/vocab.ts)
+ *   ?vocab=nodes | keywords     every site's pages and theme tags (lib/vocab.ts)
  *   ?vocab=layout | rules | pages | overrides   the feature layer (lib/layout.ts)
+ *   ?vocab=authors              author profiles (lib/authorsApi.ts)
  *
  * Since migration 0027 this vocabulary means dạng bài — what form a post
  * takes — and theme tags live in `keywords` instead.
@@ -41,10 +43,11 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
 
   // The content layer's two vocabularies live on this endpoint too.
   const vocab = vocabOf(req)
-  if (vocab === 'topics') return handleTopics(req, res, supabase)
+  if (vocab === 'nodes') return handleNodes(req, res, supabase)
   if (vocab === 'keywords') return handleKeywords(req, res, supabase)
   const layout = typeof req.query.vocab === 'string' ? req.query.vocab : ''
   if (['layout', 'rules', 'pages', 'overrides'].includes(layout)) return handleLayout(req, res, supabase, layout)
+  if (layout === 'authors') return handleAuthors(req, res)
 
   if (req.method === 'GET') {
     const [{ data, error }, { data: kinds }] = await Promise.all([
@@ -94,20 +97,6 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
       return
     }
 
-    const { data: existing, error: findError } = await supabase
-      .from('tags')
-      .select('id, label')
-      .eq('id', id)
-      .maybeSingle()
-    if (findError) {
-      res.status(500).json({ error: findError.message })
-      return
-    }
-    if (!existing) {
-      res.status(404).json({ error: `Tag '${id}' not found` })
-      return
-    }
-
     if (req.method === 'PATCH') {
       const label = typeof (req.body ?? {}).label === 'string' ? (req.body as { label: string }).label.trim() : ''
       if (!label) {
@@ -120,13 +109,44 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
        * `id` là thứ `posts.kind` và `notes.k` đang trỏ tới. Đổi nó theo tên mới
        * thì mọi bài và ghi chép đang đeo tag ấy mất chỗ dựa — nên tên hiển thị
        * đổi, còn danh tính thì không.
+       *
+       * Một câu, không hai. Trước đây chỗ này đọc lấy tag ra để biết nó có tồn
+       * tại không rồi mới ghi — nhưng chính câu ghi đã trả lời được: `returning`
+       * không có dòng nào nghĩa là không có tag nào mang `id` ấy.
        */
-      const { error } = await supabase.from('tags').update({ label }).eq('id', id)
+      const { data: renamed, error } = await supabase
+        .from('tags')
+        .update({ label })
+        .eq('id', id)
+        .select('id, label')
+        .maybeSingle()
       if (error) {
         res.status(500).json({ error: error.message })
         return
       }
+      if (!renamed) {
+        res.status(404).json({ error: `Tag '${id}' not found` })
+        return
+      }
       res.status(200).json({ id, label })
+      return
+    }
+
+    /*
+     * Xoá thì vẫn phải đọc trước: `notes.k` trỏ vào **nhãn**, không phải `id`,
+     * nên không biết nhãn hiện tại thì không tìm được ghi chép nào đang đeo nó.
+     */
+    const { data: existing, error: findError } = await supabase
+      .from('tags')
+      .select('id, label')
+      .eq('id', id)
+      .maybeSingle()
+    if (findError) {
+      res.status(500).json({ error: findError.message })
+      return
+    }
+    if (!existing) {
+      res.status(404).json({ error: `Tag '${id}' not found` })
       return
     }
 

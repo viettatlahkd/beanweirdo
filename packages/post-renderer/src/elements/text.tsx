@@ -1,5 +1,5 @@
 /** The elements a post is mostly made of: words, and words set apart. */
-import { ink, sans, serif } from '../tokens'
+import { ink, layout, sans, serif } from '../tokens'
 import { registerElement, type ElementViewProps } from './registry'
 import { Inline } from './inline'
 
@@ -9,7 +9,7 @@ export type MetaAttrs = { type: 'meta'; id?: string; text: string }
 export type QuoteAttrs = { type: 'quote'; id?: string; text: string; attribution?: string }
 export type CalloutAttrs = { type: 'callout'; id?: string; text: string; heading?: string }
 
-export const paragraph = registerElement<ParagraphAttrs>({
+registerElement<ParagraphAttrs>({
   name: 'paragraph',
   title: 'Đoạn văn',
   category: 'text',
@@ -28,7 +28,7 @@ export const paragraph = registerElement<ParagraphAttrs>({
        * một kiểu khi đăng. Im lặng đổi hình dạng chữ người viết là tệ hơn cả
        * hai lựa chọn còn lại.
        */
-      style={{ fontFamily: sans, fontWeight: 300, fontSize: 15.5, lineHeight: 1.55, color: ink.strong, margin: '0 0 20px', maxWidth: 660, whiteSpace: 'pre-wrap' }}
+      style={{ fontFamily: sans, fontWeight: 300, fontSize: 15.5, lineHeight: 1.55, color: ink.strong, margin: '0 0 20px', maxWidth: layout.reading, whiteSpace: 'pre-wrap' }}
     >
       {render?.renderParagraph ? (
         render.renderParagraph(attributes.text, index)
@@ -49,7 +49,7 @@ const HEADING: Record<1 | 2 | 3, { size: number; top: number; accented: boolean 
   3: { size: 20, top: 20, accented: true },
 }
 
-export const heading = registerElement<HeadingAttrs>({
+registerElement<HeadingAttrs>({
   name: 'heading',
   title: 'Tiêu đề',
   category: 'text',
@@ -72,6 +72,7 @@ export const heading = registerElement<HeadingAttrs>({
           letterSpacing: '-.03em',
           color: step.accented ? palette.ink : '#172124',
           margin: `${step.top}px 0 20px`,
+          maxWidth: layout.reading,
         }}
       >
         {render?.renderHeading ? render.renderHeading(attributes.text, index) : attributes.text}
@@ -80,7 +81,7 @@ export const heading = registerElement<HeadingAttrs>({
   },
 })
 
-export const meta = registerElement<MetaAttrs>({
+registerElement<MetaAttrs>({
   name: 'meta',
   title: 'Dòng nhãn',
   category: 'text',
@@ -98,7 +99,7 @@ export const meta = registerElement<MetaAttrs>({
   ),
 })
 
-export const quote = registerElement<QuoteAttrs>({
+registerElement<QuoteAttrs>({
   name: 'quote',
   title: 'Trích dẫn',
   category: 'text',
@@ -110,7 +111,7 @@ export const quote = registerElement<QuoteAttrs>({
   },
   blank: () => ({ type: 'quote', text: '', attribution: '' }),
   View: ({ attributes, palette, testId }: ElementViewProps<QuoteAttrs>) => (
-    <div data-testid={testId} style={{ margin: '20px 0', maxWidth: 660, position: 'relative', paddingLeft: 40 }}>
+    <div data-testid={testId} style={{ margin: '20px 0', maxWidth: layout.reading, position: 'relative', paddingLeft: 40 }}>
       {/* The mark belongs to the template — nobody should have to type it. */}
       <span aria-hidden style={{ position: 'absolute', left: 0, top: -8, fontFamily: serif, fontSize: 52, lineHeight: 1, color: palette.edge }}>
         “
@@ -127,7 +128,7 @@ export const quote = registerElement<QuoteAttrs>({
   ),
 })
 
-export const callout = registerElement<CalloutAttrs>({
+registerElement<CalloutAttrs>({
   name: 'callout',
   title: 'Khối nhấn',
   category: 'text',
@@ -141,7 +142,7 @@ export const callout = registerElement<CalloutAttrs>({
   View: ({ attributes, palette, testId }: ElementViewProps<CalloutAttrs>) => (
     <div
       data-testid={testId}
-      style={{ background: palette.tint, borderLeft: `2px solid ${palette.accent}`, padding: 20, margin: '0 0 20px', maxWidth: 660 }}
+      style={{ background: palette.tint, borderLeft: `2px solid ${palette.accent}`, padding: 20, margin: '0 0 20px', maxWidth: layout.reading }}
     >
       {attributes.heading && (
         <div style={{ fontFamily: sans, fontWeight: 500, fontSize: 9.5, letterSpacing: '.16em', textTransform: 'uppercase', color: palette.ink, marginBottom: 8 }}>

@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react'
 import type { Area } from './area'
-import type { CmsTab, PortTab } from './routes'
+import type { CmsTab, PortSite } from './routes'
 
 export type Screen =
   | 'landing'
@@ -11,23 +11,14 @@ export type Screen =
   | 'hours'
   | 'notes'
   | 'cms'
-  | 'logic'
-  /** Admin › Portfolio — port pages and the design system. */
-  | 'portfolio'
-  /** Public port page, /portfolio/<slug>. */
+  /** Public port page: a child site's home (/biz, /bean) or a biz page, /biz/<slug>. */
   | 'portfolioPage'
-  /** /portfolio — the main page, and /portfolio/about. */
+  /** / — the main page, and /about. */
   | 'portfolioHome'
   | 'portfolioAbout'
-  | 'cards'
-  | 'report'
   // The post-authoring flow, reached from Content management's first tab.
-  | 'postNew'
   | 'postEdit'
   | 'postPreview'
-  /** Admin › Templates — the stored blueprints. */
-  /** A template with sample content in it, under Admin › Templates. */
-  | 'template'
 
 /** Two shapes for the index screen — a ledger (A) and three columns (B). */
 export type Variant = 'A' | 'B'
@@ -40,13 +31,14 @@ export type Variant = 'A' | 'B'
  * which door was used.
  */
 /**
- * Which door a post was opened through — the breadcrumb reads back the way in.
+ * Which door a post was opened through — the post page's "Quay lại" leads back
+ * through it. `biz`, `bean` and `blog` are the sites' homes.
  *
  * `archive` exists because Archive is its own door: a post opened from there
  * came neither from a module nor from the template list, and saying either is
  * describing a walk the reader never took.
  */
-export type Origin = 'module' | 'admin' | 'archive'
+export type Origin = 'module' | 'admin' | 'archive' | 'biz' | 'bean' | 'blog'
 
 export type Nav = {
   screen: Screen
@@ -57,28 +49,18 @@ export type Nav = {
   /** The post currently open on the article screen — null until one is picked. */
   postId: string | null
   articleFrom: Origin
-  /** The template open under Admin › Templates — null on the list itself. */
   /** Which tab of Content management is open. */
   cmsTab: CmsTab
-  /** Which tab of Portfolio is open. */
-  portTab: PortTab
   /** Slug of the public port page currently open. */
   slug: string | null
+  /** The child site whose home is open (`/biz`, `/bean`), instead of a slug. */
+  portSite?: PortSite
   goLanding(): void
   goHome(): void
   goArchive(): void
   goHours(): void
   goNotes(): void
   goCms(tab?: CmsTab): void
-  goLogic(): void
-  goPortfolio(tab?: PortTab): void
-  /**
-   * Open one template, or `null` for the list.
-   *
-   * The open template is a place, not a mode: the trail names it and the back
-   * button returns from it. That only works if the address says which one is
-   * open, so the screen asks to be moved rather than moving itself.
-   */
   openModule(id: string): void
   /**
    * Optional id: some call sites (the sidebar's Templates links) don't have a

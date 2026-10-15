@@ -1,5 +1,10 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 
+const uploadToSignedUrl = vi.fn()
+vi.mock('../../lib/supabaseClient', () => ({
+  supabase: { storage: { from: () => ({ uploadToSignedUrl }) } },
+}))
+
 const {
   login,
   listPosts,
@@ -15,6 +20,8 @@ const {
   TOKEN_KEY,
   ApiError,
 } = await import('./apiClient')
+// jsdom's File has no `arrayBuffer()`; Node's does, and uploadImage sends raw bytes.
+const { File: NodeFile } = await import('node:buffer')
 
 function mockJsonResponse(body: unknown, status = 200) {
   return { ok: status >= 200 && status < 300, status, text: async () => JSON.stringify(body) }
@@ -127,17 +134,41 @@ describe('apiClient authenticated calls', () => {
     expect(result).toEqual({ deleted: true })
   })
 
-  it('uploadImage POSTs multipart form data without a Content-Type header (browser sets the boundary)', async () => {
-    ;(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(mockJsonResponse({ url: 'https://x/img.png' }))
-    const file = new File(['data'], 'photo.png', { type: 'image/png' })
-    const result = await uploadImage(file)
-    expect(global.fetch).toHaveBeenCalledWith(
-      'http://localhost:3001/api/upload',
-      expect.objectContaining({ method: 'POST', body: expect.any(FormData), headers: expect.objectContaining({ Authorization: 'Bearer tok' }) }),
+  /*
+   * Điều đang được giữ: tệp KHÔNG đi qua `/api/upload`. Lượt gọi ấy chỉ xin một
+   * vé, và chính trình duyệt đẩy tệp thẳng lên Storage.
+   */
+  it('uploadImage asks for a ticket, then sends the file straight to storage', async () => {
+    ;(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(
+      mockJsonResponse({ path: 'uuid.png', token: 'signed', url: 'https://cdn/uuid.png' }),
     )
+    uploadToSignedUrl.mockResolvedValue({ error: null })
+
+    const file = new NodeFile(['data'], 'photo.png', { type: 'image/png' }) as unknown as File
+    const result = await uploadImage(file)
+
     const [, init] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0]
-    expect(init.headers['Content-Type']).toBeUndefined()
-    expect(result).toEqual({ url: 'https://x/img.png' })
+    expect(init.method).toBe('POST')
+    // Thân request là tên tệp và kiểu, không phải tệp.
+    expect(JSON.parse(init.body as string)).toEqual({ filename: 'photo.png', contentType: 'image/png' })
+    expect(init.body).not.toBeInstanceOf(FormData)
+
+    // Byte trơn kèm header cache một năm — FormData làm Storage bỏ qua cacheControl.
+    expect(uploadToSignedUrl).toHaveBeenCalledWith('uuid.png', 'signed', expect.anything(), {
+      contentType: 'image/png',
+      cacheControl: '31536000',
+    })
+    expect(result).toEqual({ url: 'https://cdn/uuid.png' })
+  })
+
+  it('uploadImage surfaces a storage failure as its own error, not the ticket call\'s', async () => {
+    ;(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(
+      mockJsonResponse({ path: 'uuid.png', token: 'signed', url: 'https://cdn/uuid.png' }),
+    )
+    uploadToSignedUrl.mockResolvedValue({ error: { message: 'payload too large' } })
+
+    const file = new NodeFile(['data'], 'photo.png', { type: 'image/png' }) as unknown as File
+    await expect(uploadImage(file)).rejects.toThrow(/payload too large/)
   })
 
   it('listModules GETs /api/modules and unwraps { modules }', async () => {

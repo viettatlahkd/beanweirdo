@@ -15,7 +15,7 @@ export type Palette = { name: string; c500: string; c700: string; c900: string; 
 /** One type size. When `min` differs from `max` the size scales with page width. */
 export type TypeStyle = { min: number; max: number; weight: number; lh: number; track: number }
 
-export type FontRole = 'display' | 'body' | 'meta'
+type FontRole = 'display' | 'body' | 'meta'
 
 export type TypeRole = 'd1' | 'd2' | 'head' | 'title' | 'body' | 'read' | 'label' | 'meta'
 
@@ -59,7 +59,7 @@ export const DEFAULT_DESIGN: Design = {
 }
 
 /** Which font family each type role uses. */
-export const TYPE_FONT: Record<TypeRole, FontRole> = {
+const TYPE_FONT: Record<TypeRole, FontRole> = {
   d1: 'display', d2: 'display', head: 'display', title: 'display',
   body: 'body', read: 'body', label: 'meta', meta: 'meta',
 }
@@ -86,7 +86,7 @@ export function resolveDesign(stored: unknown): Design {
  * against the container width (`cqw`), not the viewport, so the scaled-down
  * preview in admin renders exactly like the real page.
  */
-export const fluid = ({ min, max }: Fluid) =>
+const fluid = ({ min, max }: Fluid) =>
   min === max ? `${min}px` : `clamp(${min}px, ${((max / 1280) * 100).toFixed(3)}cqw, ${max}px)`
 
 const family = (name: string, fallback: string) => `"${name}", ${fallback}`

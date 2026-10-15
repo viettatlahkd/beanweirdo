@@ -18,17 +18,28 @@
  * Cách lưu **không đổi một chữ**. Đây thuần tuý là cách bày ra để sửa.
  */
 import { bodyToMarkdown, markdownToBlocks, type ReportBlock } from 'post-renderer'
+import { splitAtLine } from './mdBlocks'
 
-/** Khối nào markdown viết ra rồi đọc lại được mà không mất gì. */
-const FLOWING = new Set(['paragraph', 'heading', 'list', 'quote'])
+/**
+ * Khối nào là **chữ**, tức nhập chung một ô với đoạn văn bên cạnh.
+ *
+ * Trích dẫn từng nằm trong đây: markdown viết nó ra được (`> `) nên gộp vào
+ * dải chữ là gộp được. Nhưng chủ site đòi kéo nó: *"quote cũng phải được di
+ * chuyển chứ"* — mà thứ nằm trong dải chữ thì không có tay nắm, vì dải chữ là
+ * một dòng chảy chứ không phải một chuỗi khối.
+ *
+ * Nên trích dẫn ra đứng riêng. Gõ `> ` vẫn tạo ra nó như cũ; chỉ khác là lúc
+ * ghi lại, nó tách khỏi dải thành một khối có tay nắm, đúng như ảnh và bảng.
+ */
+const FLOWING = new Set(['paragraph', 'heading', 'list'])
 
-export type Run =
+type Run =
   /** Một dải chữ liền, gộp từ các khối `at[0]`…`at[1]`. */
   | { kind: 'text'; at: [number, number]; text: string }
   /** Một thứ đứng riêng giữa dải chữ, vẫn giữ nguyên khối của nó. */
   | { kind: 'thing'; at: number; block: ReportBlock }
 
-export const flows = (block: ReportBlock | undefined) => block !== undefined && FLOWING.has(block.type)
+const flows = (block: ReportBlock | undefined) => block !== undefined && FLOWING.has(block.type)
 
 /**
  * Thân bài thành các dải.
@@ -84,38 +95,60 @@ export function writeRun(blocks: ReportBlock[], at: [number, number], text: stri
 }
 
 /**
- * Chèn một thứ vào **giữa** một dải chữ, tại đúng chỗ con trỏ đang đứng.
+ * Chèn một thứ vào **giữa** một dải chữ, ngay sau khối con trỏ đang đứng.
  *
- * Chữ trước con trỏ ở lại thành một dải, thứ vừa chèn đứng sau nó, chữ còn
- * lại thành dải tiếp theo. Đó là nghĩa của "ở dòng nào ở đâu cũng tạo được".
+ * Trước 2026-09-21 chỗ gọi tự cộng: `run.at[0] + khối thứ mấy + 1`. Phép cộng
+ * ấy giả định mỗi khối trong kho vẽ ra đúng một khối trên mặt soạn, và giả
+ * định ấy sai ở article lẫn longform — xem `mdBlocks.ts`. Nên nay không cộng
+ * nữa: cắt chính chuỗi markdown của dải, rồi dựng lại cả hai nửa.
+ *
+ * `thing` giữ `id` mới của nó. Mấy khối chữ thì nhận lại `id` cũ theo thứ tự,
+ * cùng lý do với `writeRun`: ghi chú cạnh bài neo vào `id`.
  */
-export function splitForThing(
+export function insertThing(
   blocks: ReportBlock[],
   at: [number, number],
   text: string,
-  caret: number,
+  /** Số dòng có chữ của dải đứng trên chỗ chèn — xem `linesThrough`. */
+  lines: number,
   thing: ReportBlock,
-): { blocks: ReportBlock[]; thingAt: number } {
-  /*
-   * Con trỏ ở **đầu** một dòng thì thứ chèn vào đứng trước dòng ấy; ở bất kỳ
-   * đâu khác trong dòng thì đứng **sau** cả dòng.
-   *
-   * Không bao giờ cắt giữa câu: một cái bảng chen vào giữa một câu làm câu ấy
-   * gãy làm đôi, mà người viết không hề ra lệnh cho việc đó.
-   */
-  const lineStart = text.lastIndexOf('\n', Math.max(0, caret - 1)) + 1
-  const lineEnd = text.indexOf('\n', caret)
-  const cut = caret === lineStart ? lineStart : lineEnd === -1 ? text.length : lineEnd
-  const before = text.slice(0, cut).replace(/\s+$/, '')
-  const after = text.slice(cut)
-
+): ReportBlock[] {
+  const [before, after] = splitAtLine(text, lines)
   const head = before.trim() === '' ? [] : (markdownToBlocks(before) as unknown as ReportBlock[])
   const tail = after.trim() === '' ? [] : (markdownToBlocks(after) as unknown as ReportBlock[])
 
   const keep = blocks.slice(at[0], at[1] + 1).map((b) => b.id)
-  const named = [...head, thing, ...tail].map((b, k) => (keep[k] ? { ...b, id: keep[k] } : b))
+  const named = [...head, ...tail].map((b, k) => (keep[k] ? { ...b, id: keep[k] } : b))
 
   const next = [...blocks]
-  next.splice(at[0], at[1] - at[0] + 1, ...named)
-  return { blocks: next, thingAt: at[0] + head.length }
+  next.splice(at[0], at[1] - at[0] + 1, ...named.slice(0, head.length), thing, ...named.slice(head.length))
+  return next
+}
+
+/**
+ * Nhấc một thứ đang đứng riêng lên rồi thả nó **vào giữa một dải chữ**.
+ *
+ * Trước đây chỗ thả cộng `run.at[0] + dòng thứ mấy` rồi gọi `move` — lại đúng
+ * phép cộng chỉ số mà `insertThing` đã bỏ: dòng trên mặt soạn không phải khối
+ * trong kho, nên cái bảng rơi lệch chỗ, hoặc rơi hẳn ra ngoài dải. Chủ site:
+ * *"vụ di chuyển các khối cũng chưa ăn"*.
+ *
+ * Nay đi đúng đường của nút `+`: cắt dải ở dòng được thả, chèn vào đó, rồi mới
+ * bỏ bản cũ đi. Dùng chung cho mọi khuôn — mỗi khuôn đưa hàm chèn của mình.
+ */
+export function moveIntoRun<T>(
+  items: readonly T[],
+  from: number,
+  at: [number, number],
+  text: string,
+  lines: number,
+  insert: (items: T[], at: [number, number], text: string, lines: number, thing: T) => T[],
+): T[] {
+  const thing = items[from]
+  // Thả vào chính dải nó đang đứng trong thì không có nghĩa: nó không đứng trong dải nào.
+  if (thing === undefined || (from >= at[0] && from <= at[1])) return items as T[]
+  const placed = insert([...items], at, text, lines, thing)
+  // Mọi thứ trước dải giữ nguyên chỉ số; thứ sau dải trượt theo độ dài dải mới.
+  const old = from < at[0] ? from : from + (placed.length - items.length)
+  return placed.filter((_, k) => k !== old)
 }

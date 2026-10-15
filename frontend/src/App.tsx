@@ -5,12 +5,13 @@ import { PostAddressProvider, usePostAddresses } from './data/usePostAddresses'
 import { SiteCopyProvider, useSiteCopy } from './data/useSiteCopy'
 import { useBlogDesign } from './design/blogDesign'
 import { ink, layout, paper, sans } from './design/tokens'
+import { ToastProvider } from './design/Toaster'
 import { AuthGate, AuthProvider } from './lib/auth'
 import { useIsMobile } from './lib/useIsMobile'
 import { AREA_HOME, isPrivate, screenAllowed } from './lib/area'
 import { useRoute } from './lib/useRoute'
 import { adoptWords } from './lib/routeWords'
-import { toPath, type CmsTab, type PortTab, type Where } from './lib/routes'
+import { toPath, type CmsTab, type Where } from './lib/routes'
 import {
   NavContext,
   SettingsContext,
@@ -21,15 +22,15 @@ import {
   type Variant,
 } from './lib/nav'
 import { Editor } from './admin/screens/Editor'
-import { NewPostWizard } from './admin/screens/NewPostWizard'
+import { AdminShell } from './admin/AdminShell'
+import { NewPostDialog } from './admin/components/NewPostDialog'
 import { Preview } from './admin/screens/Preview'
 import { Archive } from './screens/Archive'
-import { Article } from './screens/Article'
+import { PostPage } from './screens/PostPage'
 import { Cms } from './screens/Cms'
 import { Hours } from './screens/Hours'
 import { IndexScreen } from './screens/IndexScreen'
 import { Landing } from './screens/Landing'
-import { Logic } from './screens/Logic'
 import { PortfolioAbout, PortfolioHome, PortfolioPage } from './screens/PortfolioPage'
 import { ModuleScreen } from './screens/ModuleScreen'
 import { Notes } from './screens/Notes'
@@ -64,6 +65,13 @@ export function App() {
 
   return (
     <SettingsContext.Provider value={settings}>
+      {/*
+        One place the whole app reports from. Every screen used to hold its own
+        error in state and draw it its own way, and a save that worked said
+        nothing at all — which matters most on Sửa nội dung, where the fields
+        write themselves on blur.
+      */}
+      <ToastProvider>
       <AuthProvider>
         <SiteCopyProvider>
           <RouteWordsSync onAdopt={onWords} />
@@ -74,6 +82,7 @@ export function App() {
           </ModulesProvider>
         </SiteCopyProvider>
       </AuthProvider>
+      </ToastProvider>
     </SettingsContext.Provider>
   )
 }
@@ -105,6 +114,14 @@ function Routed({ where, go }: { where: Where; go: (next: Where) => void }) {
   useBlogDesign(area !== 'admin')
   const posts = usePostAddresses()
   const [variant, setVariant] = useState<Variant>('A')
+  /*
+   * Bắt đầu một bài là một hộp thoại, không phải một trang.
+   *
+   * Nên nó là state chứ không phải một địa chỉ: `/ad-post/create` đã bỏ. Hai
+   * chỗ gọi `nav.newPost()` — danh sách bài và hàng module trong tab Cấu hình
+   * — không đổi gì, chúng mở hộp thoại ngay trên màn đang đứng.
+   */
+  const [newPostOpen, setNewPostOpen] = useState(false)
 
   const at = useCallback((next: Omit<Where, 'area'>) => go({ ...next, area }), [go, area])
 
@@ -131,15 +148,6 @@ function Routed({ where, go }: { where: Where; go: (next: Where) => void }) {
     window.dispatchEvent(new PopStateEvent('popstate'))
   }, [where, pageList])
 
-  useEffect(() => {
-    if (!where.slug || !postId || !posts.forwards(where.slug)) return
-    // The old addresses can arrive before the current ones; until the book
-    // knows this post's address there is nothing better to show than the old.
-    const current = posts.slugOf(postId)
-    if (current === postId) return
-    window.history.replaceState({}, '', toPath({ ...where, slug: current }))
-    window.dispatchEvent(new PopStateEvent('popstate'))
-  }, [where, postId, posts])
   const articleFrom: Origin = where.from ?? 'admin'
 
   const openModule = useCallback((id: string) => at({ screen: 'module', moduleId: id }), [at])
@@ -160,21 +168,18 @@ function Routed({ where, go }: { where: Where; go: (next: Where) => void }) {
       moduleId,
       postId,
       articleFrom,
-      templateId: where.templateId ?? null,
       cmsTab: where.tab ?? 'posts',
-      portTab: where.portTab ?? 'pages',
       slug: where.slug ?? null,
+      portSite: where.site,
       goLanding: () => at({ screen: 'landing' }),
       goHome: () => at({ screen: 'home' }),
       goArchive: () => at({ screen: 'archive' }),
       goHours: () => at({ screen: 'hours' }),
       goNotes: () => at({ screen: 'notes' }),
       goCms: (tab?: CmsTab) => at({ screen: 'cms', tab }),
-      goLogic: () => at({ screen: 'logic' }),
-      goPortfolio: (portTab?: PortTab) => at({ screen: 'portfolio', portTab }),
       openModule,
       openArticle,
-      newPost: () => at({ screen: 'postNew' }),
+      newPost: () => setNewPostOpen(true),
       editPost,
       previewPost,
       toggleVariant: () => {
@@ -192,9 +197,11 @@ function Routed({ where, go }: { where: Where; go: (next: Where) => void }) {
 
   // The public port page is full width: it has its own topbar and footer, so it
   // skips the site's left rail.
-  if (shown === 'portfolioPage' || shown === 'portfolioHome' || shown === 'portfolioAbout') {
+  // A post's page (`/p/<slug>`) wears the same shared header, not the blog's frame.
+  if (shown === 'portfolioPage' || shown === 'portfolioHome' || shown === 'portfolioAbout' || shown === 'article') {
     return (
       <NavContext.Provider value={nav}>
+        {shown === 'article' && <PostPage />}
         {shown === 'portfolioPage' && <PortfolioPage />}
         {shown === 'portfolioHome' && <PortfolioHome />}
         {shown === 'portfolioAbout' && <PortfolioAbout />}
@@ -202,7 +209,15 @@ function Routed({ where, go }: { where: Where; go: (next: Where) => void }) {
     )
   }
 
-  const body = (
+  // The back office wears its own frame (AdminShell) instead of the site's rail.
+  const admin = shown === 'cms' || shown === 'postEdit' || shown === 'postPreview'
+  const body = admin ? (
+    <AdminShell>
+      {shown === 'cms' && <Cms />}
+      {shown === 'postEdit' && postId && <Editor postId={postId} />}
+      {shown === 'postPreview' && postId && <Preview postId={postId} />}
+    </AdminShell>
+  ) : (
     /*
      * Trên mobile không có rail bên trái để tránh, mà có thanh dưới để tránh.
      * `paddingBottom` là bắt buộc: thiếu nó thì đoạn cuối mỗi trang chui xuống
@@ -214,13 +229,7 @@ function Routed({ where, go }: { where: Where; go: (next: Where) => void }) {
       {shown === 'landing' && <Landing />}
       {shown === 'home' && <IndexScreen />}
       {shown === 'module' && <ModuleScreen />}
-      {shown === 'article' && <Article />}
       {shown === 'archive' && <Archive />}
-      {shown === 'cms' && <Cms />}
-      {shown === 'logic' && <Logic />}
-      {shown === 'postNew' && <NewPostWizard />}
-      {shown === 'postEdit' && postId && <Editor postId={postId} />}
-      {shown === 'postPreview' && postId && <Preview postId={postId} />}
     </div>
   )
 
@@ -238,8 +247,18 @@ function Routed({ where, go }: { where: Where; go: (next: Where) => void }) {
       >
         {isPrivate(area) ? (
           <AuthGate>
-            <Sidebar />
+            {!admin && <Sidebar />}
             {body}
+            {/* Bên trong AuthGate: nó ghi vào database, nên nó chỉ tồn tại ở
+                nơi đã đăng nhập, y như trước khi nó còn là một trang. */}
+            <NewPostDialog
+              open={newPostOpen}
+              onClose={() => setNewPostOpen(false)}
+              onCreated={(id) => {
+                setNewPostOpen(false)
+                editPost(id)
+              }}
+            />
           </AuthGate>
         ) : (
           <>

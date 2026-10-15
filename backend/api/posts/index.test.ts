@@ -70,6 +70,32 @@ describe('GET /api/posts', () => {
     }
   })
 
+  it('flags posts with edits waiting for Publish', async () => {
+    fromMock
+      .mockReturnValueOnce(queryBuilder({ data: [SAMPLE_ROW, { ...SAMPLE_ROW, id: 'p2' }], error: null }))
+      .mockReturnValueOnce(queryBuilder({ data: [{ post_id: 'p2' }], error: null }))
+      .mockReturnValueOnce(queryBuilder({ data: [], error: null }))
+      .mockReturnValueOnce(queryBuilder({ data: [{ post_id: 'p2', author_id: 'a2' }, { post_id: 'p2', author_id: 'a1' }], error: null }))
+    const res = mockRes()
+    await handler(mockReq({ method: 'GET', headers: authHeaders(token), query: {} }), res)
+    expect(fromMock).toHaveBeenNthCalledWith(2, 'post_drafts')
+    expect(res.body.posts.map((p: { has_draft: boolean }) => p.has_draft)).toEqual([false, true])
+    // Authors come in byline order, so the list can name the lead author first.
+    expect(res.body.posts.map((p: { authors: string[] }) => p.authors)).toEqual([[], ['a2', 'a1']])
+  })
+
+  it('still lists posts before migration 0028 has run', async () => {
+    fromMock
+      .mockReturnValueOnce(queryBuilder({ data: [SAMPLE_ROW], error: null }))
+      .mockReturnValueOnce(queryBuilder({ data: null, error: { code: 'PGRST205', message: 'post_drafts not found' } }))
+      .mockReturnValueOnce(queryBuilder({ data: [], error: null }))
+      .mockReturnValueOnce(queryBuilder({ data: [], error: null }))
+    const res = mockRes()
+    await handler(mockReq({ method: 'GET', headers: authHeaders(token), query: {} }), res)
+    expect(res.statusCode).toBe(200)
+    expect(res.body.posts[0].has_draft).toBe(false)
+  })
+
   it('rejects an invalid status filter with 400', async () => {
     const req = mockReq({ method: 'GET', headers: authHeaders(token), query: { status: 'bogus' } })
     const res = mockRes()
@@ -265,16 +291,18 @@ describe('POST /api/posts — starting from a template', () => {
         queryBuilder({
           data: {
             template: 'memo',
-            body: [{ k: 'p', t: 'thân bài' }],
+            body: [{ k: 'p', t: 'thân bài' }, { k: 'fig', src: '/hat-ca-phe.jpg', ar: '1.5' }],
             lead: 'dẫn',
             hero_image_url: '/a.jpg',
             hero_caption: 'chú thích',
+            plate_images: { a: '/o.jpg' },
             pull_quote: 'trích',
             further_reading: ['x'],
           },
           error: null,
         }),
       )
+      .mockReturnValueOnce(queryBuilder({ data: null, error: null }))
       .mockReturnValueOnce(insert)
 
     await handler(
@@ -288,14 +316,48 @@ describe('POST /api/posts — starting from a template', () => {
 
     const row = insert.insert.mock.calls[0][0] as Record<string, unknown>
     expect(row.template).toBe('memo')
-    expect(row.body).toEqual([{ k: 'p', t: 'thân bài' }])
+    // Text and pictures both come across.
+    expect(row.body).toEqual([{ k: 'p', t: 'thân bài' }, { k: 'fig', src: '/hat-ca-phe.jpg', ar: '1.5' }])
     expect(row.lead).toBe('dẫn')
     expect(row.hero_image_url).toBe('/a.jpg')
+    expect(row.hero_caption).toBe('chú thích')
+    expect(row.plate_images).toEqual({ a: '/o.jpg' })
+    expect(row.thumbnail_url).toBe('/hat-ca-phe.jpg')
     // A copy is a draft nobody has published or placed.
     expect(row.sort_order).toBeNull()
     expect(row).not.toHaveProperty('status')
     expect(row).not.toHaveProperty('pinned')
     expect(row).not.toHaveProperty('published_at')
+  })
+
+  it('copies the unpublished edits of a published post, not its live text', async () => {
+    const insert = queryBuilder({ data: { id: 'copy' }, error: null })
+    fromMock
+      .mockReturnValueOnce(
+        queryBuilder({
+          data: { template: 'memo', body: [{ k: 'p', t: 'cũ' }], lead: 'dẫn cũ', pull_quote: 'trích', further_reading: null },
+          error: null,
+        }),
+      )
+      .mockReturnValueOnce(queryBuilder({ data: { data: { body: [{ k: 'p', t: 'mới' }], lead: 'dẫn mới', en: 'Tên mới' } }, error: null }))
+      .mockReturnValueOnce(insert)
+
+    await handler(
+      mockReq({
+        method: 'POST',
+        body: { module_id: 'biochem', kind: 'note', en: 'Bản sao', vi: 'y', fromPostId: 'p1' },
+        headers: authHeaders(signToken()),
+      }),
+      mockRes(),
+    )
+
+    expect(fromMock).toHaveBeenNthCalledWith(2, 'post_drafts')
+    const row = insert.insert.mock.calls[0][0] as Record<string, unknown>
+    expect(row.body).toEqual([{ k: 'p', t: 'mới' }])
+    expect(row.lead).toBe('dẫn mới')
+    expect(row.pull_quote).toBe('trích')
+    // The copy's own title is the one typed in the dialog, never the draft's.
+    expect(row.en).toBe('Bản sao')
   })
 
   it('rejects a post id that does not exist', async () => {
@@ -354,5 +416,29 @@ describe('POST /api/posts — starting from a template', () => {
     )
 
     expect(insert.insert).toHaveBeenCalledWith(expect.objectContaining({ template: 'article', body: null }))
+  })
+})
+
+/*
+ * Cột `thumbnail_url` (xem docs/inbox/qa/2026-09-18-qa-39-thumbnail-url.sql).
+ *
+ * Trước đây danh sách bài gửi cả `body` ra trình duyệt chỉ để tìm một tấm ảnh,
+ * nên mở /ad-post là tải toàn bộ nội dung mọi bài. Giờ máy chủ có đọc `body`
+ * để cắt dòng xem trước, nhưng chỉ gửi đi dòng ấy, không gửi `body`.
+ */
+describe('GET /api/posts — không gửi body ra trình duyệt', () => {
+  it('gửi thumbnail_url và dòng xem trước, không gửi body', async () => {
+    const builder = queryBuilder({ data: [{ ...SAMPLE_ROW, body: [{ p: 'Câu đầu bài.' }] }], error: null })
+    fromMock.mockReturnValue(builder)
+
+    const req = mockReq({ method: 'GET', headers: authHeaders(token), query: {} })
+    const res = mockRes()
+    await handler(req, res)
+    expect(res.statusCode).toBe(200)
+
+    expect(builder.select.mock.calls[0][0] as string).toContain('thumbnail_url')
+    const [post] = (res.body as { posts: Record<string, unknown>[] }).posts
+    expect(post).not.toHaveProperty('body')
+    expect(post).toMatchObject({ excerpt: 'Câu đầu bài.', read_minutes: 1 })
   })
 })

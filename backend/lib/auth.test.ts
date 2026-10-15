@@ -52,7 +52,7 @@ describe('signToken / verifyToken', () => {
 
   it('rejects a tampered payload', () => {
     const token = signToken()
-    const [payloadB64, sig] = token.split('.')
+    const [, sig] = token.split('.')
     const tamperedPayload = Buffer.from(JSON.stringify({ iat: 0, exp: 9999999999 })).toString('base64url')
     expect(verifyToken(`${tamperedPayload}.${sig}`)).toBeNull()
   })

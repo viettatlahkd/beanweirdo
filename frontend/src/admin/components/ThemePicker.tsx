@@ -21,7 +21,7 @@ import { useEffect, useState } from 'react'
 import { paletteFrom } from 'post-renderer'
 import { ink, paper } from '../../design/tokens'
 
-export type Theme = { id: string; label: string; color: string }
+type Theme = { id: string; label: string; color: string }
 
 const SWATCH = 22
 const HEX = /^#?([0-9a-fA-F]{6})$/
@@ -96,7 +96,7 @@ export function ThemePicker({
           style={{ ...swatchStyle('transparent', false), borderStyle: 'dashed', display: 'grid', placeItems: 'center', cursor: 'pointer' }}
           title={`customize — ${showing.toUpperCase()}`}
         >
-          <span style={{ fontSize: 13, lineHeight: 1, color: ink.muted }}>+</span>
+          <span style={{ fontSize: 13, lineHeight: 1, color: ink.soft }}>+</span>
           <input
             type="color"
             aria-label="chọn màu khác"
@@ -115,7 +115,7 @@ export function ThemePicker({
             <span key={c} style={{ width: 26, height: 14, background: c }} />
           ))}
         </span>
-        <span style={{ fontSize: 11, color: ink.muted, fontVariantNumeric: 'tabular-nums' }}>{describe(showing)}</span>
+        <span style={{ fontSize: 13, color: ink.soft, fontVariantNumeric: 'tabular-nums' }}>{describe(showing)}</span>
       </div>
     </div>
   )
@@ -148,7 +148,7 @@ function HexField({ value, onChange }: { value: string; onChange: (next: string)
       onBlur={() => setDraft(value.toUpperCase())}
       style={{
         fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-        fontSize: 11,
+        fontSize: 13,
         letterSpacing: '.02em',
         width: 84,
         padding: '4px 6px',
@@ -156,7 +156,6 @@ function HexField({ value, onChange }: { value: string; onChange: (next: string)
         background: paper.white,
         border: `1px solid ${paper.rule}`,
         borderRadius: 4,
-        textTransform: 'uppercase',
       }}
     />
   )

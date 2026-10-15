@@ -17,6 +17,7 @@
     "@lexical/rich-text": "^0.50.0",
     "@lexical/utils": "^0.50.0",
     "@supabase/supabase-js": "^2.112.3",
+    "api-contract": "*",
     "lexical": "^0.50.0",
     "post-renderer": "*",
     "react": "^18.3.1",

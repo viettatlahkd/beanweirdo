@@ -100,27 +100,70 @@ describe('PATCH /api/modules/:id', () => {
   })
 })
 
-describe('DELETE /api/modules/:id', () => {
-  it('returns 204 once the row is gone', async () => {
-    fromMock.mockReturnValue(queryBuilder({ data: { id: 'sensory' }, error: null }))
-    const res = mockRes()
-    await handler(mockReq({ method: 'DELETE', query: q(), headers: authHeaders(signToken()) }), res)
-    expect(res.statusCode).toBe(204)
-    expect(res.ended).toBe(true)
-  })
-
-  it('404s when the module does not exist', async () => {
-    fromMock.mockReturnValue(queryBuilder({ data: null, error: null }))
-    const res = mockRes()
-    await handler(mockReq({ method: 'DELETE', query: q('nope'), headers: authHeaders(signToken()) }), res)
-    expect(res.statusCode).toBe(404)
-  })
-})
-
 describe('/api/modules/:id — other methods', () => {
   it('rejects GET with 405', async () => {
     const res = mockRes()
     await handler(mockReq({ method: 'GET', query: q(), headers: authHeaders(signToken()) }), res)
     expect(res.statusCode).toBe(405)
+  })
+})
+
+/*
+ * Số lượt đi tới database cho một lần bấm nút. Bài dưới đây khoá lại thiết kế
+ * chứ không chỉ khoá kết quả — nếu ai đó thêm một lượt đọc "cho chắc" vào
+ * đường thường, nó đỏ.
+ */
+describe('/api/modules/:id — số câu lệnh', () => {
+  it('sửa module thôi trả về cả bản ghi', async () => {
+    const builder = queryBuilder({ data: { id: 'sensory', title: 'tên mới' }, error: null })
+    fromMock.mockReturnValue(builder)
+
+    const res = mockRes()
+    await handler(
+      mockReq({ method: 'PATCH', query: q(), body: { title: 'tên mới' }, headers: authHeaders(signToken()) }),
+      res,
+    )
+
+    expect(res.statusCode).toBe(200)
+    const columns = builder.select.mock.calls[0][0] as string
+    expect(columns).toBe('id, title')
+    // Mấy cột nặng nhất của một module, không cột nào được đi theo.
+    expect(columns).not.toContain('long_desc')
+    expect(columns).not.toContain('feature_cells')
+    expect(columns).not.toContain('page_img')
+  })
+})
+
+/*
+ * Và cái KHÔNG gộp được, cố ý: hỏi "đưa module này vào trong module kia có tạo
+ * vòng không" thì phải nhìn cả cây, không nhét vào `WHERE` của câu ghi được.
+ * Bài kiểm này giữ cho lượt đọc ấy khỏi bị ai đó dọn nhầm.
+ */
+describe('/api/modules/:id — phép chặn vòng cha-con vẫn đọc cả cây', () => {
+  it('đọc cây trước khi ghi, khi và chỉ khi patch có parent_id', async () => {
+    fromMock
+      .mockReturnValueOnce(queryBuilder({ data: [{ id: 'sensory', parent_id: null }], error: null }))
+      .mockReturnValueOnce(queryBuilder({ data: { id: 'sensory', parent_id: null }, error: null }))
+
+    const res = mockRes()
+    await handler(
+      mockReq({ method: 'PATCH', query: q(), body: { parent_id: null }, headers: authHeaders(signToken()) }),
+      res,
+    )
+
+    expect(res.statusCode).toBe(200)
+    expect(fromMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('không đọc cây cho một lần sửa không đụng parent_id', async () => {
+    fromMock.mockReturnValue(queryBuilder({ data: { id: 'sensory', title: 'x' }, error: null }))
+
+    const res = mockRes()
+    await handler(
+      mockReq({ method: 'PATCH', query: q(), body: { title: 'x' }, headers: authHeaders(signToken()) }),
+      res,
+    )
+
+    expect(fromMock).toHaveBeenCalledTimes(1)
   })
 })

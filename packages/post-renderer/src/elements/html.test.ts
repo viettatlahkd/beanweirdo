@@ -10,10 +10,15 @@ import { describe, expect, it } from 'vitest'
 import { htmlToMarkdown, pastedToBlocks } from './index'
 
 describe('HTML về markdown', () => {
-  it('đậm và nghiêng về cùng một mức nhấn — design chỉ có một', () => {
+  it('đậm và nghiêng giữ nguyên hai mức, thẻ nào về dấu nấy', () => {
     expect(htmlToMarkdown('<p>có <strong>đậm</strong> và <em>nghiêng</em></p>')).toBe(
-      'có **đậm** và **nghiêng**',
+      'có **đậm** và *nghiêng*',
     )
+    expect(htmlToMarkdown('<p><b>đậm</b> và <i>nghiêng</i></p>')).toBe('**đậm** và *nghiêng*')
+  })
+
+  it('đậm lồng nghiêng ra ký hiệu cả hai', () => {
+    expect(htmlToMarkdown('<p><strong><em>cả hai</em></strong></p>')).toBe('***cả hai***')
   })
 
   it('link giữ cả chữ lẫn địa chỉ', () => {

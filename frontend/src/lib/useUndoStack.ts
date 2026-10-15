@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react'
 
 /** One reversible operation: how to take it back, and how to put it back. */
-export type UndoEntry = {
+type UndoEntry = {
   /** Short description of what was done — for a future toast, and for debugging. */
   label: string
   undo(): void | Promise<void>
