@@ -143,7 +143,7 @@ export const PF_CSS = `
 .pf .stage .frame .ph{aspect-ratio:1.618}
 .pf .over.ctx{inset:var(--s-5);justify-content:flex-start;gap:var(--s-5);color:#b8505a;text-shadow:none}
 .pf .over.ctx p{margin:0;font-size:clamp(13px,1.5cqw,17px);line-height:1.4;columns:2;column-gap:var(--s-5);max-width:none}
-.pf .over.ctx p>span{background:linear-gradient(transparent 40%,#fbd6d8 40%);-webkit-box-decoration-break:clone;box-decoration-break:clone}
+.pf .over.ctx p>span{background:linear-gradient(transparent 12%,rgba(254,253,251,.72) 12%,rgba(254,253,251,.72) 92%,transparent 92%);-webkit-box-decoration-break:clone;box-decoration-break:clone}
 .pf .over .top{display:flex;justify-content:space-between;font:var(--t-label)}
 .pf .over .sign{font:var(--t-label)}
 .pf .stage-under{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,3fr);column-gap:var(--col-gap);padding:var(--s-5) var(--gut) var(--s-6)}
