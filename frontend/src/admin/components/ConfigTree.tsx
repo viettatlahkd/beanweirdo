@@ -28,10 +28,11 @@ import type { PresetKey } from '../../portfolio/blocks'
 import { ink, paper, sans } from '../../design/tokens'
 import { radius } from '../../design/controls'
 import { Button, IconButton } from '../../design/Button'
-import { IconClose, IconInfo, IconPage } from '../../design/icons'
+import { IconClose, IconInfo, IconLink, IconPage } from '../../design/icons'
 import { retireKeyword, retireTopic } from '../lib/retire'
 import { Switch, desk, DetailHead, ItemList, Row, Section, WHERE_WORDS, type AddSpec, type Crumb, type DetailAction, type ItemDrag, type ListItem } from './Detail'
 import { SignaturesPanel } from './SignaturesPanel'
+import { useNav } from '../../lib/nav'
 import { ColorField, RetireTag, RetireTopic, statusLabel, TopicFields } from './NodeFields'
 import { tagColor } from '../../lib/tagColor'
 import { Builder, ContentTab, createFromPage, createFromPreset, usePortAdmin, useSplit, type PortPart } from './PortEditors'
@@ -50,6 +51,9 @@ import {
   type SystemPage,
   type Vocab,
 } from './PageSettings'
+
+/** A topic a journal row sent to Biên tập › Chuyên mục, read when that tab opens and dropped once it has. */
+let sentTopic: string | null = null
 
 /**
  * Cấu hình — every page of the site and every setting behind it, in one tree.
@@ -215,6 +219,7 @@ export function ConfigTree({
   const [layout, setLayout] = useState<Layout | null>(null)
   const [vocab, setVocab] = useState<Vocab>({ topics: [], keywords: [], kinds: [] })
   const frame = useAdminFrame()
+  const nav = useNav()
   const site = frame.site
   // Without its home page (not loaded yet) a block-page site opens on its Mục lục.
   const homeOf = (id: SiteId): Picked => {
@@ -226,7 +231,15 @@ export function ConfigTree({
     if (home) return { kind: 'port-page', id: home.id }
     return { kind: 'group', id: id === 'bean' ? 'bean-pages' : 'biz-pages' }
   }
-  const [picked, setPicked] = useState<Picked>(() => (only ? { kind: 'group', id: only } : homeOf(site)))
+  const [picked, setPicked] = useState<Picked>(() => {
+    // Sent here by a journal row's "Chọn nội dung": open that topic, once.
+    // Read, not taken: StrictMode runs this twice; the effect below drops it after mounting.
+    const sent = only === 'topics' ? sentTopic : null
+    return sent ? { kind: 'topic', id: sent } : only ? { kind: 'group', id: only } : homeOf(site)
+  })
+  useEffect(() => {
+    if (only === 'topics') sentTopic = null
+  }, [only])
   // A click on the open site's row in the sidebar goes back to its first page.
   const seenRound = useRef(frame.round)
   useEffect(() => {
@@ -581,9 +594,8 @@ export function ConfigTree({
     id: 'blog',
     path: `${blogPath}/…`,
     // The blog's front page, called details until it got its own address (2026-10-15).
-    home: { title: 'Trang chủ', note: `${blogPath} · nhãn trên cùng, tên lớn, hai đoạn dẫn`, picked: { kind: 'system', key: 'landing' } },
-    toc: topicToc,
-    cards: [{ title: 'Dàn trang', note: 'bố cục, ảnh và chữ mà một trang dùng lại', picked: { kind: 'group', id: 'modules' } }],
+    // Mục lục and Dàn trang folded into Trang chủ (owner, 2026-10-16): its subjects are listed there, each with its look.
+    home: { title: 'Trang chủ', note: `${blogPath} · nội dung tĩnh, danh mục trang con`, picked: { kind: 'system', key: 'landing' } },
   }
 
   // beanweirdo's Mục lục is its top bar: the doors to the sites, then About, in the bar's order.
@@ -704,8 +716,9 @@ export function ConfigTree({
       renderModule={renderModule}
     />
   )
-  const nodePage = (type: 'topic' | 'keyword', node: string) => (
+  const nodePage = (type: 'topic' | 'keyword', node: string, selectionOnly?: boolean) => (
     <NodePage
+      selectionOnly={selectionOnly}
       type={type}
       node={node}
       layout={layout}
@@ -833,6 +846,45 @@ export function ConfigTree({
     )
   }
 
+  // Journal › Trang chủ › Danh mục trang con: the subject tree, each row with its look in place and a way to its posts (owner, 2026-10-16).
+  const moduleOfTopic = (id: string) => {
+    const pg = findPage(pages, id)
+    return pg ? modules.find((m) => m.id === pg.id || pg.aliases.includes(m.id)) : undefined
+  }
+  const lookOf = (t: (typeof shownTopics)[number]) => {
+    const m = moduleOfTopic(t.id)
+    return (
+      <>
+        <NavFlags layout={layout} navRef={`topic:${t.id}`} defaults={{ sidebar: true, home: t.parent_id === null }} run={run} />
+        {m && renderModule(m.id)}
+        {findPage(pages, t.id)?.screen === 'notes' && renderCopy('notes')}
+      </>
+    )
+  }
+  const chooseContent = (id: string) => {
+    sentTopic = id
+    nav.goCms('topics')
+  }
+  const journalTree = shownTopics.filter((t) => t.parent_id === null).flatMap((t) => [t, ...shownTopics.filter((c) => c.parent_id === t.id)])
+  const journalRows = tocList(
+    topicToc,
+    journalTree.map((t) => topicToc.items.find((x) => x.id === t.id)!),
+  ).map(({ onOpen: _, actions: _a, ...it }, i): ListItem => {
+    const t = journalTree[i]
+    const key = `look:${t.id}`
+    const toggle = () => setFeatOpen(featOpen === key ? null : key)
+    return {
+      ...it,
+      depth: t.parent_id ? 1 : 0,
+      onOpen: toggle,
+      buttons: [
+        { label: 'Cài đặt giao diện', icon: <IconPage size={14} />, on: featOpen === key, onClick: toggle },
+        { label: 'Chọn nội dung', icon: <IconLink size={14} />, onClick: () => chooseContent(t.id) },
+      ],
+      below: featOpen === key ? lookOf(t) : undefined,
+    }
+  })
+
   switch (picked.kind) {
     case 'port-part': {
       // Only home and About are picked: the top bar and footer open together as Khung chung, and
@@ -929,7 +981,18 @@ export function ConfigTree({
       preview = d.preview
       address = d.preview
       actions = fixed('trang hệ thống, không xoá được')
-      body = page(picked)
+      body =
+        picked.key === 'landing' ? (
+          <>
+            {page(picked)}
+            <Section title="Nội dung tĩnh · Mục lục">{renderCopy('index')}</Section>
+            <Section title="Danh mục trang con" tip="Thứ tự như trên thanh bên của journal. Kéo biểu tượng ⠿ để đổi chỗ hoặc đưa vào trong một mục khác.">
+              <ItemList label="Danh mục trang con" items={journalRows} />
+            </Section>
+          </>
+        ) : (
+          page(picked)
+        )
       break
     }
     case 'override':
@@ -976,6 +1039,8 @@ export function ConfigTree({
             <ItemList label="Mục con" items={tocList(topicToc, topicToc.items.filter((r) => r.parent_id === t.id))} add={addTopic(t)} />
           </Section>
           {!only && <Section title="Nội dung trang">{nodePage('topic', t.id)}</Section>}
+          {/* Which posts the page lists; its look stays in Cấu hình › journal › Trang chủ (owner, 2026-10-16). */}
+          {only === 'topics' && <Section title="Chọn nội dung">{nodePage('topic', t.id, true)}</Section>}
         </>
       )
       break
@@ -1039,7 +1104,13 @@ export function ConfigTree({
       preview = toPath({ area: 'practice', screen: 'hours' })
       address = preview
       actions = fixed('trang hệ thống, không xoá được')
-      body = <Section title="Thông tin">{renderPractice()}</Section>
+      body = (
+        <>
+          <Section title="Thông tin">{renderPractice()}</Section>
+          {/* Ghi 02 is practice's own module; with Dàn trang gone its look is set here (owner, 2026-10-16). */}
+          {modules.some((m) => m.id === 'ghi02') && <Section title="Giao diện">{renderModule('ghi02')}</Section>}
+        </>
+      )
       break
     case 'group': {
       const g = picked.id
