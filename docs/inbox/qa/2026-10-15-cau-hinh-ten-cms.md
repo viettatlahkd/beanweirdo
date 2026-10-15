@@ -229,6 +229,10 @@
 - **[ĐỔI HÀNH VI]** Hiển thị: "Port" → "Portfolio" (`DISPLAY_LABELS`).
 - Trình duyệt (tab riêng, chặn ghi): hộp Sửa tác giả có Đổi ảnh · Đặt vào khung · Dán link · Bỏ ảnh, "Đặt vào khung" mở hộp
   "Ảnh tác giả", "Dán link" mở ô; hộp Sửa chữ kí (chưa có ảnh) có Tải ảnh · Dán link; không lệnh ghi nào.
+- **[SỬA LỖI]** "Đặt vào khung" trong hộp Sửa tác giả/Sửa chữ kí mở hộp Cắt ảnh **nằm dưới** hộp đang mở (`CropPicker`
+  `zIndex` 60 < 100). Nâng lên 200; hộp cắt ảnh mang `data-crop`, và Esc trong lúc nó mở không đóng hộp phía sau
+  (`AuthorDialog`, `SignDialog` nghe `keydown` ở `document`, tới trước `window` của `CropPicker`). Trình duyệt: hộp Cắt ảnh nằm
+  trên, Esc chỉ đóng nó.
 - Thứ tự khối trên trang chủ vẫn theo thứ tự port trên Thanh menu (`featuresFollowingMenu` khi kéo).
 - Trình duyệt (chặn lệnh ghi): Trang chủ chỉ còn Nội dung trang, Thanh menu; "Cập nhật nội dung" ở bizops mở Hiện ở trang chủ ·
   Nhãn "beæn bizops" · Ảnh; sửa nhãn → một `PATCH /api/site` `portfolio.home.features`; "Xem dàn trang" ở beæn weirdo → port

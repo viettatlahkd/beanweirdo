@@ -90,7 +90,8 @@ function SignDialog({ sign, onClose, onSave }: { sign: Signature | 'new'; onClos
   const panel = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const escape = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
+    // Esc over the crop dialog opened from here closes that dialog only.
+    const escape = (e: KeyboardEvent) => e.key === 'Escape' && !document.querySelector('[data-crop]') && onClose()
     document.addEventListener('keydown', escape)
     panel.current?.querySelector<HTMLInputElement>('#sign-name')?.focus()
     return () => document.removeEventListener('keydown', escape)
