@@ -3,11 +3,11 @@ import { createPortal } from 'react-dom'
 import { ScaledPreview } from './ScaledPreview'
 import { useCropping } from './framing'
 import { coverStyle } from '../../lib/imageFocus'
-import { Choice, Row, Section, desk } from './Detail'
+import { Choice, Row, Section, Switch, desk } from './Detail'
 import { Button, IconButton } from '../../design/Button'
 import { IconClose, IconGrip, IconPlus } from '../../design/icons'
 import { ColorRow, STATUS_CHOICES } from './NodeFields'
-import { ink, paper, sans, serif } from '../../design/tokens'
+import { ink, paper, sans } from '../../design/tokens'
 import { useRowDrag } from '../lib/useRowDrag'
 import { freeSlug, titleSlug } from '../../lib/postSlug'
 import { portSiteOf } from '../../lib/routes'
@@ -216,12 +216,6 @@ export function usePortAdmin() {
 
 const uniqueSlug = (base: string, pages: Node[]) => freeSlug(base, new Set(pages.map((p) => p.slug)))
 
-/** What a new port page can start from, wherever one is made. */
-const PRESET_CHOICES: { value: PresetKey; label: string }[] = [
-  { value: 'bibi', label: 'mẫu bibi' },
-  { value: 'bibe', label: 'mẫu bibe' },
-  { value: 'blank', label: 'trang trống' },
-]
 
 /** A new port page from a preset, named by the owner; it starts as a draft at the end of the list. */
 export async function createFromPreset(key: PresetKey, title: string, pages: Node[], moduleIds: string[], parentId: string | null = null): Promise<Node> {
@@ -746,115 +740,29 @@ const rowBox: CSSProperties = { borderTop: `1px solid ${paper.rule}`, padding: '
 /** "+ Thêm …" sits on its own line under the list it adds to. */
 const addLine: CSSProperties = { marginTop: 8 }
 
-const NEW = '__new'
-
-/**
- * "+ Thêm khối" under the home blocks: a page already made but not on the
- * home yet, or a new page made right here. Either way the page's own "Hiện ở
- * trang chủ" ends up on, since that switch is the same list.
- */
-function AddFeature({ pages, onAdd, onNewPage }: { pages: Node[]; onAdd: (pageId: string) => void; onNewPage: (name: string, preset: PresetKey) => Promise<Node> }) {
-  const [open, setOpen] = useState(false)
-  const [which, setWhich] = useState(NEW)
-  const [name, setName] = useState('')
-  const [from, setFrom] = useState<PresetKey>('bibi')
-  const [busy, setBusy] = useState(false)
-  const [err, setErr] = useState('')
-  const close = () => {
-    setOpen(false)
-    setName('')
-    setErr('')
-  }
-  const ready = which !== NEW || !!name.trim()
-  const save = async () => {
-    if (!ready || busy) return
-    if (which !== NEW) {
-      onAdd(which)
-      return close()
-    }
-    setBusy(true)
-    try {
-      onAdd((await onNewPage(name.trim(), from)).id)
-      close()
-    } catch (e) {
-      setErr((e as Error).message)
-    } finally {
-      setBusy(false)
-    }
-  }
-  if (!open)
-    return (
-      <div style={addLine}>
-        <Button
-          level="add"
-          icon={<IconPlus />}
-          onClick={() => {
-            setWhich(pages[0]?.id ?? NEW)
-            setOpen(true)
-          }}
-        >
-          Thêm khối
-        </Button>
-      </div>
-    )
-  const label = { fontFamily: sans, fontSize: 13, fontWeight: 600, color: ink.strong }
-  return (
-    <div style={{ ...rowBox, display: 'grid', gap: 12 }}>
-      <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 10, ...label }}>
-        Trang <Choice label="Trang cho khối mới" options={[...pages.map((p) => ({ value: p.id, label: p.title })), { value: NEW, label: '+ Trang mới' }]} value={which} onChange={setWhich} />
-      </div>
-      {which === NEW && (
-        <>
-          <input
-            autoFocus
-            aria-label="Tên trang mới"
-            placeholder="tên trang mới"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            onKeyDown={(e) => (e.key === 'Enter' ? void save() : e.key === 'Escape' && close())}
-            style={{ ...boxed, maxWidth: 420 }}
-          />
-          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 10, ...label }}>
-            bắt đầu từ <Choice label="bắt đầu từ" options={PRESET_CHOICES} value={from} onChange={setFrom} />
-          </div>
-        </>
-      )}
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-        <Button level="primary" disabled={!ready || busy} onClick={() => void save()}>
-          {busy ? 'Đang tạo…' : 'Lưu'}
-        </Button>
-        <Button level="quiet" onClick={close}>
-          Huỷ
-        </Button>
-      </div>
-      {err && <div style={{ color: '#8E1E42', fontFamily: sans, fontSize: 12.5 }}>{err}</div>}
-    </div>
-  )
-}
-
 /**
  * Portfolio › Nội dung trang — the content every port page shares, edited the
  * way Content management edits site copy: grouped fields, autosaved (rule 08.3).
  * Each group is saved whole under `site_settings.data.portfolio.<group>`.
  */
 /** The parts of the fixed port copy, each a node of its own in the CMS page tree. */
-/** `home` is the home page's words; `blocks` its port blocks — split so the CMS can show them as two steps. */
-export type PortPart = 'home' | 'blocks' | 'about' | 'sign' | 'header' | 'footer'
+/** `feature` is one port's block, opened from its row in Trang chủ's Thanh menu (owner, 2026-10-15). */
+export type PortPart = 'home' | 'feature' | 'about' | 'sign' | 'header' | 'footer'
 
 export function ContentTab({
   content,
   setStored,
   pages,
   only,
-  onNewPage,
+  pageId,
 }: {
   content: PortContent
   setStored: (f: (s: Record<string, unknown>) => Record<string, unknown>) => void
   pages: Node[]
-  /** Makes a port page from the home's "+ Thêm khối"; it starts as a draft, as one made in Mục lục does. */
-  onNewPage: (name: string, preset: PresetKey) => Promise<Node>
   /** The part Cấu hình has open; its heading and address are the detail template's. */
   only: PortPart
+  /** The port page whose block `feature` edits. */
+  pageId?: string
 }) {
   const show = (part: PortPart) => only === part
   const save = useCallback((patch: Record<string, unknown>) => updateSite({ portfolio: patch } as never), [])
@@ -885,12 +793,7 @@ export function ContentTab({
     const links = menuFollowingFeatures(header.links, list.map((f) => f.pageId))
     if (links.some((l, i) => l !== header.links[i])) setGroup('header', { ...header, links })
   }
-  const featDrag = useRowDrag((from, to) => {
-    const next = [...features]
-    const [m] = next.splice(from, 1)
-    next.splice(to, 0, m)
-    saveFeatures(next)
-  })
+
 
   const text = (label: string, value: string, set: (v: string) => void, area = false) => (
     <Field label={label}>
@@ -901,21 +804,6 @@ export function ContentTab({
       )}
     </Field>
   )
-  const grip = (
-    <span className="ab-grip" aria-label="Kéo để đổi thứ tự">
-      <IconGrip size={14} />
-    </span>
-  )
-  const dragProps = (d: ReturnType<typeof useRowDrag>, i: number) => ({
-    draggable: true,
-    onDragStart: () => d.setFrom(i),
-    onDragOver: (e: React.DragEvent) => {
-      e.preventDefault()
-      d.setOver(i)
-    },
-    onDrop: () => d.drop(i),
-    onDragEnd: d.end,
-  })
 
   return (
     <div style={{ padding: '6px 0 20px', maxWidth: 1080 }}>
@@ -964,36 +852,31 @@ export function ContentTab({
       </div>
       )}
 
-      {(!only || only === 'blocks') && (
-        <>
-      <div style={fieldLabel}>Khối trên trang chủ · mỗi khối là một trang port, kéo để đổi thứ tự</div>
-      {features.map((f, i) => {
-        const page = kept.find((p) => p.id === f.pageId)
+      {show('feature') && pageId && (() => {
+        const i = features.findIndex((f) => f.pageId === pageId)
+        const f = features[i]
         const set = (patch: Partial<Feature>) => saveFeatures(features.map((x, j) => (j === i ? { ...x, ...patch } : x)))
         return (
-          <div key={f.pageId} {...dragProps(featDrag, i)} style={{ ...rowBox, opacity: featDrag.from === i ? 0.5 : 1 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, fontFamily: sans, fontSize: 13 }}>
-              {grip}
-              <span style={{ fontFamily: serif, fontSize: 18, flex: 1 }}>
-                {page?.title}
-                {page?.status === 'draft' && <span style={{ fontFamily: sans, fontSize: 12, color: ink.soft, marginLeft: 10 }}>nháp · hiện khi trang được đăng</span>}
-              </span>
-              <IconButton size="sm" label="Bỏ khỏi trang tổng" onClick={() => saveFeatures(features.filter((_, j) => j !== i))}>
-                <IconClose size={14} />
-              </IconButton>
-            </div>
-            <div style={two}>
-              {text('Nhãn', f.label, (v) => set({ label: v }))}
-              {text('Mô tả ngắn', f.intro, (v) => set({ intro: v }))}
-            </div>
-            <ImageField label="Ảnh" value={f.image} onChange={(v) => set({ image: v })} />
-          </div>
+          <>
+            <Row label="Hiện ở trang chủ">
+              <Switch
+                label="Hiện ở trang chủ"
+                value={!!f}
+                onChange={(on) => (on ? addFeature(pageId) : saveFeatures(features.filter((x) => x.pageId !== pageId)))}
+              />
+            </Row>
+            {f && (
+              <>
+                <div style={two}>
+                  {text('Nhãn', f.label, (v) => set({ label: v }))}
+                  {text('Mô tả ngắn', f.intro, (v) => set({ intro: v }))}
+                </div>
+                <ImageField label="Ảnh" value={f.image} onChange={(v) => set({ image: v })} />
+              </>
+            )}
+          </>
         )
-      })}
-      <AddFeature pages={kept.filter((p) => !features.some((f) => f.pageId === p.id))} onAdd={addFeature} onNewPage={onNewPage} />
-
-        </>
-      )}
+      })()}
 
       {show('about') && (
         <>

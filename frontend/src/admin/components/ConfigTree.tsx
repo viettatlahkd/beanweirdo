@@ -156,6 +156,8 @@ type TocItem = {
   /** A row that opens or is removed some other way than its pick: a journal link on beanweirdo's top bar. */
   open?: () => void
   actions?: DetailAction[]
+  /** The port page a Thanh menu row stands for. */
+  page?: Node
 }
 
 type Toc = NonNullable<SiteSpec['toc']>
@@ -415,6 +417,13 @@ export function ConfigTree({
       },
     },
   }
+  // A port row in Thanh menu opens its home block in place, or its page in port archives (owner, 2026-10-15).
+  const [featOpen, setFeatOpen] = useState<string | null>(null)
+  const openPortPage = (pg: Node) => {
+    keepPick.current = true
+    frame.openSite(pg.status === 'archived' ? 'template' : (portOf(pg) ?? 'template'))
+    setPicked({ kind: 'port-page', id: pg.id })
+  }
   // A journal row opens the journal's own tab, on the page it links.
   const openJournal = (to: Picked) => () => {
     keepPick.current = true
@@ -564,7 +573,7 @@ export function ConfigTree({
         return [{ id: l.key, parent_id: null, name: l.label, dot: null, meta: tocMeta('published', l.href, l.hidden), picked: to, movable: true, open: openJournal(to), actions: offMenu(l.key, true) }]
       }
       const pg = port.pages.find((x) => `page:${x.id}` === l.key)
-      return pg ? [{ id: l.key, parent_id: null, name: l.label, dot: portDot(pg), meta: tocMeta(pg.status, portPagePath(pg), l.hidden), picked: { kind: 'port-page', id: pg.id }, movable: true, actions: offMenu(l.key, false) }] : []
+      return pg ? [{ id: l.key, parent_id: null, name: l.label, dot: portDot(pg), meta: tocMeta(pg.status, portPagePath(pg), l.hidden), picked: { kind: 'port-page', id: pg.id }, movable: true, actions: offMenu(l.key, false), page: pg }] : []
     }),
   }
 
@@ -572,7 +581,7 @@ export function ConfigTree({
     id: 'root',
     path: '/',
     // The menu is part of Trang chủ now (owner, 2026-10-15): its words, its port blocks, and the menu's order.
-    home: { title: 'Trang chủ', note: 'nội dung, các port trên trang /, thứ tự thanh menu', picked: { kind: 'port-part', part: 'home' } },
+    home: { title: 'Trang chủ', note: 'nội dung trang, thanh menu', picked: { kind: 'port-part', part: 'home' } },
     cards: [
       { title: 'Thông tin chung', note: 'đầu trang, chân trang, about: mọi trang đều mang', picked: { kind: 'group', id: 'frame' } },
       // Tag and Tác giả moved up to Nội dung (owner, 2026-10-15): they file posts, not pages of this site.
@@ -801,8 +810,20 @@ export function ConfigTree({
       // Only home and About are picked: the top bar and footer open together as Khung chung, and
       // the signature, which only About shows, opens with About.
       const about = picked.part === 'about'
-      const part = (only: PortPart) => <ContentTab key={only} only={only} content={port.content} setStored={port.setContentStored} pages={port.pages} onNewPage={newPortPage} />
+      const part = (only: PortPart) => <ContentTab key={only} only={only} content={port.content} setStored={port.setContentStored} pages={port.pages} />
       title = about ? 'about' : 'Trang chủ'
+      const menuRows = tocList(rootToc, rootToc.items).map((it, i): ListItem => {
+        const pg = rootToc.items[i].page
+        if (!pg) return it
+        return {
+          ...it,
+          buttons: [
+            { label: 'Cập nhật nội dung', on: featOpen === pg.id, onClick: () => setFeatOpen(featOpen === pg.id ? null : pg.id) },
+            { label: 'Xem dàn trang', onClick: () => openPortPage(pg) },
+          ],
+          below: featOpen === pg.id ? <ContentTab only="feature" pageId={pg.id} content={port.content} setStored={port.setContentStored} pages={port.pages} /> : undefined,
+        }
+      })
       crumbs = [siteCrumb('root'), ...(about ? [groupCrumb('frame', 'Thông tin chung')] : [])]
       preview = toPath({ area: 'public', screen: about ? 'portfolioAbout' : 'portfolioHome' })
       address = preview
@@ -812,10 +833,9 @@ export function ConfigTree({
         <>
           <Section title="Nội dung trang">{part(about ? 'about' : 'home')}</Section>
           {about && <Section title="Signature">{part('sign')}</Section>}
-          {!about && <Section title="Port trên trang chủ">{part('blocks')}</Section>}
           {!about && (
-            <Section title="Thanh menu" note={`mặc định: các port theo thứ tự trên, rồi about, journal · ${dragNote(false)}`}>
-              <ItemList label="Thanh menu" items={tocList(rootToc, rootToc.items)} add={menuAdd} />
+            <Section title="Thanh menu" note={`mặc định: các port, rồi about, journal · ${dragNote(false)}`}>
+              <ItemList label="Thanh menu" items={menuRows} add={menuAdd} />
             </Section>
           )}
         </>
@@ -1092,17 +1112,17 @@ export function ConfigTree({
         body = port.loaded ? (
           <>
             <Section title="Đầu trang">
-              <ContentTab key="header" only="header" content={port.content} setStored={port.setContentStored} pages={port.pages} onNewPage={newPortPage} />
+              <ContentTab key="header" only="header" content={port.content} setStored={port.setContentStored} pages={port.pages} />
             </Section>
             <Section title="Chân trang">
-              <ContentTab key="footer" only="footer" content={port.content} setStored={port.setContentStored} pages={port.pages} onNewPage={newPortPage} />
+              <ContentTab key="footer" only="footer" content={port.content} setStored={port.setContentStored} pages={port.pages} />
             </Section>
             {/* About moved here from the menu (owner, 2026-10-15): a page every site links, set once. */}
             <Section title="About">
-              <ContentTab key="about" only="about" content={port.content} setStored={port.setContentStored} pages={port.pages} onNewPage={newPortPage} />
+              <ContentTab key="about" only="about" content={port.content} setStored={port.setContentStored} pages={port.pages} />
             </Section>
             <Section title="Signature">
-              <ContentTab key="sign" only="sign" content={port.content} setStored={port.setContentStored} pages={port.pages} onNewPage={newPortPage} />
+              <ContentTab key="sign" only="sign" content={port.content} setStored={port.setContentStored} pages={port.pages} />
             </Section>
           </>
         ) : null
