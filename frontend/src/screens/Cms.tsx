@@ -10,6 +10,8 @@ import {
 import { getSite } from '../admin/lib/apiClient'
 import { forgetModules } from '../admin/lib/lists'
 import { RoutesPanel } from '../admin/components/RoutesPanel'
+import { useAdminFrame } from '../admin/AdminShell'
+import { DISPLAY_LABELS } from '../admin/components/SiteTabs'
 import type { SystemPage } from '../admin/components/PageSettings'
 import { ModuleImages } from '../admin/components/ModuleImages'
 import { captionColumn, formShapeOf, imageColumn } from '../admin/moduleForm'
@@ -333,6 +335,7 @@ function ImageSlot({
 
 export function Cms() {
   const nav = useNav()
+  const shell = useAdminFrame()
   // Tab nằm trong địa chỉ, không nằm trong state: ba tab là ba chỗ khác nhau
   // để đứng, nên một đường link tới sơ đồ trang không được mở ra danh sách bài.
   const tab = nav.cmsTab
@@ -784,7 +787,7 @@ export function Cms() {
     <div className="cfg-detail" style={{ color: ink.base }}>
       <style>{DETAIL_CSS}</style>
       {(tab === 'posts' || tab === 'display') && (
-        <h1 style={{ fontFamily: serif, fontWeight: 500, fontSize: 34, lineHeight: 1.15, margin: 0, padding: '8px 28px 4px' }}>{tab === 'posts' ? 'Nội dung' : 'Cài đặt hiển thị'}</h1>
+        <h1 style={{ fontFamily: serif, fontWeight: 500, fontSize: 34, lineHeight: 1.15, margin: 0, padding: '8px 28px 4px' }}>{tab === 'posts' ? 'Nội dung' : DISPLAY_LABELS[shell.display]}</h1>
       )}
 
       {error && (

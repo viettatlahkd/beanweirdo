@@ -4,7 +4,7 @@ import { useAuth } from '../lib/auth'
 import { goToArea } from '../lib/area'
 import { useIsMobile } from '../lib/useIsMobile'
 import { serif } from '../design/tokens'
-import { useRememberedTab } from './components/SiteTabs'
+import { DISPLAY_LABELS, DISPLAY_TAB_KEY, DISPLAY_TABS, useRememberedTab, type DisplayTab } from './components/SiteTabs'
 import { FramingProvider } from './components/framing'
 
 /**
@@ -54,6 +54,9 @@ const SHELL = {
 type Frame = {
   site: ConfigSite
   openSite: (s: ConfigSite) => void
+  /** Which of Hiển thị's rows is open, and the way to one of them. */
+  display: DisplayTab
+  openDisplay: (t: DisplayTab) => void
   /** Counts clicks on a site's row in the sidebar: a click on the open site's row goes back to that site's first page. */
   round: number
   /** Where Cấu hình draws the open site's cards, under that site in the sidebar. */
@@ -107,6 +110,11 @@ export function AdminShell({ children }: { children: ReactNode }) {
   const mobile = useIsMobile()
   const { signOut } = useAuth()
   const [site, setSite] = useRememberedTab('beanweirdo.config.tab', CONFIG_SITES)
+  const [display, setDisplay] = useRememberedTab(DISPLAY_TAB_KEY, DISPLAY_TABS)
+  const openDisplay = (t: DisplayTab) => {
+    setDisplay(t)
+    if (nav.cmsTab !== 'display') nav.goCms('display')
+  }
   const [slot, setSlot] = useState<HTMLDivElement | null>(null)
   const tab = nav.cmsTab
   const config = tab === 'pages'
@@ -129,7 +137,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
           : tab === 'authors' || tab === 'topics' || tab === 'tags' || tab === 'templates'
             ? CONTENT_LISTS.find((l) => l.tab === tab)?.label
             : tab === 'display'
-              ? 'Cài đặt hiển thị'
+              ? `Hiển thị › ${DISPLAY_LABELS[display]}`
               : `Cấu hình › ${PORT_GROUP.includes(site) ? 'port archives' : CONFIG_SITE_LABELS[site]}`
 
   const side = (
@@ -188,9 +196,12 @@ export function AdminShell({ children }: { children: ReactNode }) {
       })}
 
       <Heading>Hiển thị</Heading>
-      <Item on={tab === 'display'} onClick={() => nav.goCms('display')}>
-        Cài đặt hiển thị
-      </Item>
+      {/* Journal, Port, Đường dẫn: one row each, no Cài đặt hiển thị screen with tabs over them (owner, 2026-10-16). */}
+      {DISPLAY_TABS.map((t) => (
+        <Item key={t} on={tab === 'display' && display === t} onClick={() => openDisplay(t)}>
+          {DISPLAY_LABELS[t]}
+        </Item>
+      ))}
 
       <div style={{ marginTop: 'auto', paddingTop: 24, display: 'flex', flexDirection: 'column', gap: 2 }}>
         <Item bare onClick={() => goToArea('practice', 'hours')}>
@@ -210,7 +221,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
   )
 
   return (
-    <FrameContext.Provider value={{ site, openSite, slot, round }}>
+    <FrameContext.Provider value={{ site, openSite, display, openDisplay, slot, round }}>
       <div style={mobile ? undefined : { display: 'grid', gridTemplateColumns: `${SIDE_W}px minmax(0, 1fr)`, minHeight: '100vh' }}>
         {side}
         <main style={{ background: SHELL.main, minWidth: 0 }}>

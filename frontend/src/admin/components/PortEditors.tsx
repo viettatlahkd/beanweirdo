@@ -2,8 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, 
 import { createPortal } from 'react-dom'
 import { ScaledPreview } from './ScaledPreview'
 import { Hover } from '../../lib/Hover'
-import { useNav } from '../../lib/nav'
-import { DISPLAY_TAB_KEY } from './SiteTabs'
+import { useAdminFrame } from '../AdminShell'
 import { useCropping } from './framing'
 import { coverStyle } from '../../lib/imageFocus'
 import { Choice, Row, Section, desk } from './Detail'
@@ -266,16 +265,9 @@ export function Builder({
 }) {
   const [draft, setDraft] = useState({ ...page, blocks: parseBlocks(page.blocks) })
   const [active, setActive] = useState<string | null>(null)
-  const nav = useNav()
-  // Cài đặt hiển thị remembers its tab; set it to Port before going, so the palettes are what opens.
-  const openPalettes = () => {
-    try {
-      localStorage.setItem(DISPLAY_TAB_KEY, 'port')
-    } catch {
-      /* a remembered tab is a convenience */
-    }
-    nav.goCms('display')
-  }
+  const frame = useAdminFrame()
+  // The palettes are kept in Hiển thị › Port.
+  const openPalettes = () => frame.openDisplay('port')
   const { tags } = useTags()
   const site = portSiteOf(page, pages)
   const postHref = usePostHref(site)
@@ -328,7 +320,7 @@ export function Builder({
             onChange={(e) => set({ slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })}
           />
         </Row>
-        {/* The page's palette (`nodes.look`); the palettes themselves are kept in Cài đặt hiển thị › Port › Bảng màu. */}
+        {/* The page's palette (`nodes.look`); the palettes themselves are kept in Hiển thị › Port › Bảng màu. */}
         <Row label="Bảng màu">
           <select
             aria-label="Bảng màu"

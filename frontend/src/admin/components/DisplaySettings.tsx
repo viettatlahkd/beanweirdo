@@ -3,7 +3,7 @@ import { BLOG_COLORS, BLOG_FONTS, blogFontHref, blogVars, type BlogDesign } from
 import { ink, paper, sans, serif } from '../../design/tokens'
 import { DesignTab, sectionHead, usePortAdmin, useSplit } from './PortEditors'
 import { ScaledPreview, useWidth } from './ScaledPreview'
-import { DISPLAY_TAB_KEY, SiteTabs, useRememberedTab } from './SiteTabs'
+import { useAdminFrame } from '../AdminShell'
 import { desk } from './Detail'
 import { radius } from '../../design/controls'
 import { Button, IconButton } from '../../design/Button'
@@ -15,8 +15,6 @@ import { IconClose } from '../../design/icons'
  * are drawn with (it was the third tab of the separate Portfolio screen).
  */
 
-const SITES = ['blog', 'port', 'routes'] as const
-const SITE_LABELS = { blog: 'Journal', port: 'Port', routes: 'Đường dẫn' }
 
 const label: CSSProperties = { fontFamily: sans, fontSize: 13, color: ink.soft, marginBottom: 6 }
 const box: CSSProperties = { boxSizing: 'border-box', width: '100%', background: paper.white, border: `1px solid ${paper.rule}`, color: ink.base, fontFamily: sans, fontSize: 12.5, padding: '6px 8px', outline: 'none' }
@@ -34,12 +32,10 @@ export function DisplaySettings({
   design: BlogDesign | undefined
   onSaveDesign: (patch: BlogDesign) => Promise<void>
 }) {
-  const [site, setSite] = useRememberedTab(DISPLAY_TAB_KEY, SITES)
+  // Picked by Hiển thị's rows in the sidebar, not by tabs here (owner, 2026-10-16).
+  const site = useAdminFrame().display
   return (
     <div>
-      <div style={{ margin: '26px 28px 0' }}>
-        <SiteTabs tabs={SITES} labels={SITE_LABELS} value={site} onChange={setSite} />
-      </div>
       {site === 'blog' ? (
         <>
           <BlogDesignPanel stored={design ?? {}} onSave={onSaveDesign} />
