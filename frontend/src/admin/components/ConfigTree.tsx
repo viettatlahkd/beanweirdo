@@ -834,7 +834,7 @@ export function ConfigTree({
           <Section title="Nội dung trang">{part(about ? 'about' : 'home')}</Section>
           {about && <Section title="Signature">{part('sign')}</Section>}
           {!about && (
-            <Section title="Thanh menu" note={`mặc định: các port, rồi about, journal · ${dragNote(false)}`}>
+            <Section title="Thanh menu" tip="Thứ tự mặc định: các trang port, sau đó là about và journal. Kéo biểu tượng ⠿ ở đầu dòng để sắp xếp lại.">
               <ItemList label="Thanh menu" items={menuRows} add={menuAdd} />
             </Section>
           )}

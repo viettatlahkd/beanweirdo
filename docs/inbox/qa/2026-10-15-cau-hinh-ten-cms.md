@@ -83,6 +83,13 @@
   - Dòng about và journal không có hai nút này. (`ListItem.buttons`, `ListItem.below` trong `Detail.tsx`.)
   - Hai nút vẽ như ô thông tin bài ở Nội dung (`.cw-fact`): chữ + icon nhỏ, không viền; rê chuột hoặc đang mở thì nền trắng
     viền mảnh (`.cfg-fact` trong `Detail.tsx`).
+- **[ĐỔI HÀNH VI]** Ghi chú cách dùng của Thanh menu chuyển vào ô ⓘ cạnh tiêu đề (`Section` prop `tip`, `.cfg-tip` trong
+  `Detail.tsx`), viết lại: "Thứ tự mặc định: các trang port, sau đó là about và journal. Kéo biểu tượng ⠿ ở đầu dòng để sắp xếp lại."
+- **[SỬA LỖI]** Công tắc "Hiện ở trang chủ" trong panel "Cập nhật nội dung": tắt rồi bật lại từng ra khối trống (tắt = bỏ hẳn khối
+  khỏi `home.features`). Giờ khối tắt được giữ trong phiên (`offFeatures` trong `PortEditors.tsx`), bật lại thì nhãn, mô tả, ảnh
+  quay về. Đã xảy ra trên dữ liệu thật lúc 2026-10-15 16:20 UTC: khối beæn weirdo mất nhãn "beæn weirdo" và ảnh
+  `post-images/7026093d-7936-4936-9b16-e1391f7eeb42.jpeg`. Chưa khôi phục — chờ chủ site đồng ý.
+  Công tắc cùng tên trong trang port (`ConfigTree.tsx:portFlags`, `setHome`) vẫn bỏ hẳn khối như trước.
 - Thứ tự khối trên trang chủ vẫn theo thứ tự port trên Thanh menu (`featuresFollowingMenu` khi kéo).
 - Trình duyệt (chặn lệnh ghi): Trang chủ chỉ còn Nội dung trang, Thanh menu; "Cập nhật nội dung" ở bizops mở Hiện ở trang chủ ·
   Nhãn "beæn bizops" · Ảnh; sửa nhãn → một `PATCH /api/site` `portfolio.home.features`; "Xem dàn trang" ở beæn weirdo → port
