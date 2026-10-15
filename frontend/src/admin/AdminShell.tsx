@@ -73,7 +73,7 @@ export function useAdminFrame(): Frame {
  * under a site in Cấu hình: every site's posts wear them. Chuyên mục is the
  * subject › topic tree itself — added, renamed, merged away — the CMS word for
  * a hierarchical taxonomy (WordPress's Categories), beside Tag, the flat one.
- * Mục lục, the journal page that shows that tree, stays in Cấu hình › journal.
+ * The journal's Trang chủ lists that tree for its look; which posts a topic lists is set here.
  * The admin still opens on Nội dung (`/ad` → posts).
  */
 const CONTENT_LISTS = [

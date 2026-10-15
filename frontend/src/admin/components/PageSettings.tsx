@@ -320,6 +320,7 @@ export function NodePage({
   run,
   renderCopy,
   renderModule,
+  selectionOnly,
 }: {
   type: 'topic' | 'keyword'
   node: string
@@ -331,6 +332,8 @@ export function NodePage({
   run: (fn: () => Promise<unknown>) => void
   renderCopy: (key: SystemPage) => ReactNode
   renderModule: (moduleId: string) => ReactNode
+  /** Only which posts the page lists: its look and words are set in Cấu hình (owner, 2026-10-16). */
+  selectionOnly?: boolean
 }) {
   const own = layout.overrides.find((o) => o.node_type === type && o.node_id === node)
   if (own)
@@ -345,6 +348,7 @@ export function NodePage({
         run={run}
         renderCopy={renderCopy}
         renderModule={renderModule}
+        selectionOnly={selectionOnly}
       />
     )
   const topic = vocab.topics.find((t) => t.id === node)
@@ -425,6 +429,7 @@ export function PageEditor({
   run,
   renderCopy,
   renderModule,
+  selectionOnly,
 }: {
   selected: BlogSelected
   layout: Layout
@@ -435,6 +440,7 @@ export function PageEditor({
   run: (fn: () => Promise<unknown>) => void
   renderCopy: (key: SystemPage) => ReactNode
   renderModule: (moduleId: string) => ReactNode
+  selectionOnly?: boolean
 }) {
   const { rule, page, override, copyKey } = describePage(selected, layout, pages)
   const linked = ((override?.presentation ?? {}) as { module?: string }).module
@@ -457,9 +463,9 @@ export function PageEditor({
         </Section>
       )}
 
-      {linked && <Section title="Giao diện">{renderModule(linked)}</Section>}
+      {linked && !selectionOnly && <Section title="Giao diện">{renderModule(linked)}</Section>}
 
-      {copyKey && <Section title="Nội dung tĩnh">{renderCopy(copyKey)}</Section>}
+      {copyKey && !selectionOnly && <Section title="Nội dung tĩnh">{renderCopy(copyKey)}</Section>}
 
       {selected.kind === 'override' && (
         <div style={{ marginTop: 30 }}>

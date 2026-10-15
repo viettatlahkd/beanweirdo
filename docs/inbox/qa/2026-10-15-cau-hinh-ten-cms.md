@@ -142,6 +142,18 @@
 - **[SỬA DỮ LIỆU — chủ site yêu cầu 2026-10-16]** `nodes` site=port: `f215cf9d-…` bibi → title "archive 1", slug `archive-1`;
   `cc6f1175-…` bibe → title "archive 2", slug `archive-2` (REST PATCH). Cả hai đang `archived`. Đã tìm `biz/bibi`, `biz/bibe` trong
   `site_settings.data` và `nodes.blocks` của port: không còn chỗ nào trỏ tới. Mẫu trong code (`PresetKey` 'bibi'/'bibe') không đổi.
+- **[ĐỔI HÀNH VI] journal: Mục lục và Dàn trang gộp vào Trang chủ** (`ConfigTree.tsx`, `blogSite` không còn `toc`/`cards`).
+  Trang chủ journal = Nội dung tĩnh (trang chủ) → "Nội dung tĩnh · Mục lục" (`renderCopy('index')`) → "Danh mục trang con": cây
+  chủ đề (subject + mục con thụt vào), kéo thả như Mục lục cũ, không còn ⋮ xoá và "+ Thêm subject" (thêm/xoá ở Biên tập ›
+  Chuyên mục). Mỗi dòng: "Cài đặt giao diện" (bấm dòng cũng mở) = Hiện trên menu/Hiện ở trang chủ (`NavFlags`) + dàn trang mà
+  trang chủ đề mượn (`moduleOfTopic`: `findPage` rồi module trùng id/alias) + nội dung tĩnh của Ghi; "Chọn nội dung" → Biên tập
+  › Chuyên mục mở đúng chủ đề (`sentTopic`), nơi giờ có mục "Chọn nội dung" = Quy tắc liệt kê/Thứ tự/cài đặt riêng
+  (`NodePage`/`PageEditor` prop `selectionOnly` ẩn Giao diện và Nội dung tĩnh).
+- Dàn trang `ghi02` (Ghi 02, không chủ đề nào mượn) chuyển sang màn practice, mục "Giao diện". Ngoài nó, 6 dàn trang còn lại
+  đều gắn chủ đề (đối chiếu `modules` với `page_overrides.aliases` qua REST, chỉ đọc).
+- Trình duyệt (tab riêng, chặn lệnh ghi): thanh bên journal chỉ còn Trang chủ; 3 mục như trên, 18 dòng; mở giao diện bean
+  weirdo hiện công tắc + dàn trang "a bean weirdo"; "Chọn nội dung" → `/ad-taxonomy`, chủ đề bean weirdo, có Quy tắc liệt kê;
+  practice có "Giao diện". Không lệnh ghi nào.
 - Thứ tự khối trên trang chủ vẫn theo thứ tự port trên Thanh menu (`featuresFollowingMenu` khi kéo).
 - Trình duyệt (chặn lệnh ghi): Trang chủ chỉ còn Nội dung trang, Thanh menu; "Cập nhật nội dung" ở bizops mở Hiện ở trang chủ ·
   Nhãn "beæn bizops" · Ảnh; sửa nhãn → một `PATCH /api/site` `portfolio.home.features`; "Xem dàn trang" ở beæn weirdo → port
