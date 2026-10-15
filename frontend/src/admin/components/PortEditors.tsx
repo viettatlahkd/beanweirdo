@@ -749,6 +749,12 @@ const addLine: CSSProperties = { marginTop: 8 }
 /** `feature` is one port's block, opened from its row in Trang chủ's Thanh menu (owner, 2026-10-15). */
 export type PortPart = 'home' | 'feature' | 'about' | 'sign' | 'header' | 'footer'
 
+/**
+ * A block switched off on the home page, kept until it is switched back on:
+ * the switch sits right by the fields, so off-then-on must not empty them.
+ */
+const offFeatures = new Map<string, Feature>()
+
 export function ContentTab({
   content,
   setStored,
@@ -786,7 +792,6 @@ export function ContentTab({
   const features: Feature[] = home.features.length
     ? home.features.filter((f) => kept.some((p) => p.id === f.pageId))
     : published.map((p) => ({ pageId: p.id, label: '', intro: '', image: '' }))
-  const addFeature = (pageId: string) => saveFeatures([...features, { pageId, label: '', intro: '', image: '' }])
   // The menu keeps its ports in this order too (`menuFollowingFeatures`): one order, two places.
   const saveFeatures = (list: Feature[]) => {
     setGroup('home', { ...home, features: list })
@@ -862,7 +867,11 @@ export function ContentTab({
               <Switch
                 label="Hiện ở trang chủ"
                 value={!!f}
-                onChange={(on) => (on ? addFeature(pageId) : saveFeatures(features.filter((x) => x.pageId !== pageId)))}
+                onChange={(on) => {
+                  if (on) return saveFeatures([...features, offFeatures.get(pageId) ?? { pageId, label: '', intro: '', image: '' }])
+                  if (f) offFeatures.set(pageId, f)
+                  saveFeatures(features.filter((x) => x.pageId !== pageId))
+                }}
               />
             </Row>
             {f && (

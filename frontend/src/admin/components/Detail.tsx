@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type DragEvent, type ReactNode } from 'rea
 import { ink, sans } from '../../design/tokens'
 import { ctl, radius } from '../../design/controls'
 import { Button, ButtonLink, IconButton } from '../../design/Button'
-import { IconExternal, IconGrip, IconMore, IconPlus } from '../../design/icons'
+import { IconExternal, IconGrip, IconInfo, IconMore, IconPlus } from '../../design/icons'
 import type { DropWhere } from '../../lib/treeMove'
 
 /**
@@ -198,11 +198,19 @@ export function DetailHead({
 }
 
 /** One part of an item: a white panel on the desk, its name and a note at the top. */
-export function Section({ title, note, children }: { title: string; note?: ReactNode; children: ReactNode }) {
+/** `tip` is how the section works, kept behind an ⓘ by the title so it does not crowd the content (owner, 2026-10-15). */
+export function Section({ title, note, tip, children }: { title: string; note?: ReactNode; tip?: string; children: ReactNode }) {
   return (
     <section aria-label={title} className="cfg-sec" style={{ marginTop: 14, background: desk.panel, border: `1px solid ${desk.line}`, borderRadius: radius, padding: '0 18px 12px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: '4px 12px', padding: '13px 0 11px', borderBottom: `1px solid ${desk.line}` }}>
-        <h3 style={{ fontFamily: sans, fontWeight: 600, fontSize: 15, color: ink.base, margin: 0 }}>{title}</h3>
+        <h3 style={{ fontFamily: sans, fontWeight: 600, fontSize: 15, color: ink.base, margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+          {title}
+          {tip && (
+            <span className="cfg-tip" tabIndex={0} role="note" aria-label={tip} data-tip={tip}>
+              <IconInfo size={14} />
+            </span>
+          )}
+        </h3>
         {note && <span style={{ fontFamily: sans, fontSize: 13, color: ink.soft }}>{note}</span>}
       </div>
       {children}
@@ -511,6 +519,10 @@ export const DETAIL_CSS = `
 .cfg-detail .cfg-field + .cfg-field { border-top: 1px solid ${desk.line}; }
 .cfg-detail .cfg-item:focus-visible, .cfg-detail .cfg-crumb:focus-visible { outline: 2px solid ${ctl.accent}; outline-offset: 2px; }
 .cfg-detail .cfg-item:hover { background: ${ctl.hover}; }
+.cfg-detail .cfg-tip { position: relative; display: inline-flex; color: ${ink.muted}; cursor: help; border-radius: 50%; outline: none; }
+.cfg-detail .cfg-tip:hover, .cfg-detail .cfg-tip:focus-visible { color: ${ink.strong}; }
+.cfg-detail .cfg-tip::after { content: attr(data-tip); position: absolute; left: -8px; top: calc(100% + 8px); z-index: 20; width: max-content; max-width: 300px; padding: 8px 11px; border-radius: 6px; background: ${ink.base}; color: #fff; font-family: ${sans}; font-size: 12.5px; font-weight: 400; line-height: 1.45; white-space: normal; opacity: 0; visibility: hidden; transition: opacity .12s; pointer-events: none; }
+.cfg-detail .cfg-tip:hover::after, .cfg-detail .cfg-tip:focus-visible::after { opacity: 1; visibility: visible; }
 .cfg-detail .cfg-fact { all: unset; box-sizing: border-box; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; padding: 4px 8px; border: 1px solid transparent; border-radius: 6px; font-family: ${sans}; font-size: 13.5px; color: ${ink.strong}; }
 .cfg-detail .cfg-fact svg { color: ${ink.muted}; flex: none; }
 .cfg-detail .cfg-fact:hover, .cfg-detail .cfg-fact[aria-pressed=true] { background: #fff; border-color: ${desk.line}; color: ${ink.base}; }
