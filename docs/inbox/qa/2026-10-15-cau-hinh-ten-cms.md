@@ -203,6 +203,11 @@
   - Nhãn theo tên hiện tại: bean → "port #2: bean", Ghi 01 → "Ghi", Nhật ký → "practice", Module → "Trang chủ đề"; Khu quản trị
     thêm Tác giả/Chuyên mục/Tag/Template/Cấu hình theo thứ tự thanh bên. Mẫu trang công khai đổi sang `bean-weirdo`.
 - vitest `lib`, `admin`, `portfolio`, `screens`: 50 file, 569 test xanh.
+- **[ĐỔI HÀNH VI] Hiển thị thành ba dòng trên thanh bên**: Journal · Port · Đường dẫn (`DISPLAY_TABS`, `DISPLAY_LABELS` trong
+  `SiteTabs.tsx`; `AdminShell` giữ tab đang mở và đưa `display`/`openDisplay` qua `useAdminFrame`). Bỏ dòng "Cài đặt hiển thị" và
+  hàng nút Journal | Port | Đường dẫn trong `DisplaySettings`; tiêu đề màn là tên dòng đang mở, dòng dẫn đường "Hiển thị › …".
+  Địa chỉ vẫn là `/ad-display`. "Quản lý bảng màu…" mở Hiển thị › Port qua `openDisplay('port')`.
+- Trình duyệt (tab riêng): ba dòng mở đúng màn, đúng dòng sáng, không còn hàng nút; Bảng màu → Hiển thị › Port.
 - Thứ tự khối trên trang chủ vẫn theo thứ tự port trên Thanh menu (`featuresFollowingMenu` khi kéo).
 - Trình duyệt (chặn lệnh ghi): Trang chủ chỉ còn Nội dung trang, Thanh menu; "Cập nhật nội dung" ở bizops mở Hiện ở trang chủ ·
   Nhãn "beæn bizops" · Ảnh; sửa nhãn → một `PATCH /api/site` `portfolio.home.features`; "Xem dàn trang" ở beæn weirdo → port
