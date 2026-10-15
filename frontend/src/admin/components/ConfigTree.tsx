@@ -840,7 +840,8 @@ export function ConfigTree({
       const about = picked.part === 'about'
       const part = (only: PortPart) => <ContentTab key={only} only={only} content={port.content} setStored={port.setContentStored} pages={port.pages} />
       title = about ? 'about' : 'Trang chủ'
-      const menuRows = tocList(rootToc, rootToc.items).map((it, i): ListItem => {
+      // A menu row opens nothing by itself, only through its buttons (owner, 2026-10-15).
+      const menuRows = tocList(rootToc, rootToc.items).map(({ onOpen: _, ...it }, i): ListItem => {
         const pg = rootToc.items[i].page
         const edit = (key: string) => ({ label: 'Cập nhật nội dung', icon: <IconInfo size={14} />, on: featOpen === key, onClick: () => setFeatOpen(featOpen === key ? null : key) })
         // about's words, images and which signature it uses open here; signatures themselves live in Thông tin chung (owner, 2026-10-15).

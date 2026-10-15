@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type DragEvent, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type DragEvent, type ReactNode } from 'react'
 import { ink, sans } from '../../design/tokens'
 import { ctl, radius } from '../../design/controls'
 import { Button, ButtonLink, IconButton } from '../../design/Button'
@@ -283,7 +283,8 @@ export type ListItem = {
   dot?: string | null
   /** Indent under the row above, for a list that is a tree (Phần chung). */
   depth?: number
-  onOpen: () => void
+  /** Absent: the row only carries its own buttons and opens nothing (Thanh menu, owner 2026-10-15). */
+  onOpen?: () => void
   drag?: ItemDrag
   /** The row's own ⋮: the same actions its detail's ⋮ holds. */
   actions?: DetailAction[]
@@ -415,6 +416,17 @@ function AddLine({ spec }: { spec: AddSpec }) {
   )
 }
 
+/** A row's name and facts: a button when the row opens something, plain otherwise. */
+function RowBody({ open, style, children }: { open?: () => void; style: CSSProperties; children: ReactNode }) {
+  return open ? (
+    <button type="button" onClick={open} className="cfg-item" style={style}>
+      {children}
+    </button>
+  ) : (
+    <div style={style}>{children}</div>
+  )
+}
+
 /** The children of an item, numbered, with their facts at the end; a click opens one. */
 export function ItemList({ label, items, add, empty }: { label: string; items: ListItem[]; add?: AddSpec; empty?: string }) {
   return (
@@ -459,7 +471,7 @@ export function ItemList({ label, items, add, empty }: { label: string; items: L
               ) : (
                 <span style={{ width: 20, flex: 'none' }} />
               )}
-              <button type="button" onClick={it.onOpen} className="cfg-item" style={{ all: 'unset', boxSizing: 'border-box', cursor: 'pointer', flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 10, padding: '11px 6px', paddingLeft: 6 + (it.depth ?? 0) * 20, borderRadius: radius }}>
+              <RowBody open={it.onOpen} style={{ all: 'unset', boxSizing: 'border-box', cursor: it.onOpen ? 'pointer' : 'default', flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 10, padding: '11px 6px', paddingLeft: 6 + (it.depth ?? 0) * 20, borderRadius: radius }}>
                 <span aria-hidden style={{ fontFamily: sans, fontSize: 12.5, color: ink.soft, width: 20, flex: 'none', fontVariantNumeric: 'tabular-nums' }}>
                   {String(i + 1).padStart(2, '0')}
                 </span>
@@ -473,7 +485,7 @@ export function ItemList({ label, items, add, empty }: { label: string; items: L
                 ) : (
                   it.meta && <span style={{ fontFamily: sans, fontSize: 13, color: ink.strong, whiteSpace: 'nowrap' }}>{it.meta}</span>
                 )}
-              </button>
+              </RowBody>
               {it.control}
               {it.buttons && (
                 <span style={{ display: 'flex', gap: 4, flex: 'none' }}>
