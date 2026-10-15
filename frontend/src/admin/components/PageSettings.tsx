@@ -262,6 +262,18 @@ const ruleIn = (layout: Layout) => (id: string | null | undefined) => layout.rul
 
 type NavItem = { ref: string; sidebar?: boolean; home?: boolean }
 
+/** Writes one of an entry's two switches into the navigation list; the other keeps what it shows now. */
+export function saveNavFlag(layout: Layout, navRef: string, defaults: { sidebar: boolean; home: boolean }, flag: 'sidebar' | 'home', value: boolean) {
+  const nav = layout.pages.find((p) => p.kind === 'nav')
+  if (!nav) return Promise.resolve()
+  const items = (nav.presentation.items ?? []) as NavItem[]
+  const own = items.find((i) => i.ref === navRef)
+  const shown = (f: 'sidebar' | 'home') => (own ? own[f] !== false : defaults[f])
+  const entry = { ref: navRef, sidebar: shown('sidebar'), home: shown('home'), [flag]: value }
+  const next = own ? items.map((i) => (i.ref === navRef ? entry : i)) : [...items, entry]
+  return updatePage(nav.id, { presentation: { ...nav.presentation, items: next } })
+}
+
 /**
  * Whether one page is listed in the blog's menu (its sidebar) and on the blog
  * home — named as the port names its own pair, so the two sites read alike.
@@ -289,11 +301,7 @@ export function NavFlags({
   const items = (nav.presentation.items ?? []) as NavItem[]
   const own = items.find((i) => i.ref === navRef)
   const shown = (flag: 'sidebar' | 'home') => (own ? own[flag] !== false : defaults[flag])
-  const set = (flag: 'sidebar' | 'home', value: boolean) => {
-    const entry = { ref: navRef, sidebar: shown('sidebar'), home: shown('home'), [flag]: value }
-    const next = own ? items.map((i) => (i.ref === navRef ? entry : i)) : [...items, entry]
-    run(() => updatePage(nav.id, { presentation: { ...nav.presentation, items: next } }))
-  }
+  const set = (flag: 'sidebar' | 'home', value: boolean) => run(() => saveNavFlag(layout, navRef, defaults, flag, value))
   return (
     <>
       {(['sidebar', 'home'] as const).map((flag) => (

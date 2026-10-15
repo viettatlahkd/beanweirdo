@@ -154,6 +154,16 @@
 - Trình duyệt (tab riêng, chặn lệnh ghi): thanh bên journal chỉ còn Trang chủ; 3 mục như trên, 18 dòng; mở giao diện bean
   weirdo hiện công tắc + dàn trang "a bean weirdo"; "Chọn nội dung" → `/ad-taxonomy`, chủ đề bean weirdo, có Quy tắc liệt kê;
   practice có "Giao diện". Không lệnh ghi nào.
+- **[ĐỔI HÀNH VI]** journal › Trang chủ: hai mục đổi tên "Nội dung Trang chủ", "Nội dung Trang mục lục"; bỏ dòng tiêu đề lặp bên
+  trong ("Trang chủ — landing", "Mục lục" trong `pageCopy`, `screens/Cms.tsx`).
+- **[ĐỔI HÀNH VI]** "Danh mục trang con" giờ chỉ gồm trang đang hiện trên thanh bên journal, đúng thứ tự và tên của thanh bên
+  (`flattenTree(buildTree(indexModules(pages)))`, cùng nguồn với `Sidebar`), số bài theo `postsOf`. Kéo thả vẫn đổi thứ tự cây
+  chủ đề; chủ đề không hiện được nối vào cuối `order`. ⋮ = "Gỡ khỏi trang" (công tắc Hiện trên menu = tắt, qua `saveNavFlag`
+  tách từ `NavFlags`, `PageSettings.tsx`; không xoá chủ đề). "Thêm nội dung": Trang có sẵn = các chủ đề đang không hiện (chọn →
+  bật lại), Trang mới = "Tạo chủ đề ở Chuyên mục" → Biên tập › Chuyên mục với ô thêm mở sẵn (`sentNew`).
+- Trình duyệt (tab riêng, chặn lệnh ghi): 7 dòng a bean weirdo · roasting 101 · sensory · biochemistry 101 · fermentation · tư
+  duy tư duy · ghi, khớp thanh bên; "Gỡ khỏi trang" ở fermentation → một `PATCH /api/tags?vocab=pages&id=nav`; Thêm nội dung
+  liệt kê 11 chủ đề đang ẩn; "Tạo chủ đề ở Chuyên mục" → `/ad-taxonomy`, ô thêm mở.
 - Thứ tự khối trên trang chủ vẫn theo thứ tự port trên Thanh menu (`featuresFollowingMenu` khi kéo).
 - Trình duyệt (chặn lệnh ghi): Trang chủ chỉ còn Nội dung trang, Thanh menu; "Cập nhật nội dung" ở bizops mở Hiện ở trang chủ ·
   Nhãn "beæn bizops" · Ảnh; sửa nhãn → một `PATCH /api/site` `portfolio.home.features`; "Xem dàn trang" ở beæn weirdo → port
