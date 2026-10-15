@@ -27,7 +27,7 @@ import {
 import { PortfolioView } from '../../portfolio/PortfolioView'
 import docHtml from '../../portfolio/design-doc.html?raw'
 import { buildChrome, onwardOf, usePortSources, usePostHref } from '../../portfolio/data'
-import { navLinks, resolveContent, type Feature, type LinkItem, type NavOverride, type PortContent } from '../../portfolio/content'
+import { navLinks, resolveContent, type Feature, type LinkItem, type NavOverride, type PortContent, menuFollowingFeatures } from '../../portfolio/content'
 import {
   BLOCK_NAMES,
   BLOCK_ORDER,
@@ -826,7 +826,8 @@ function AddFeature({ pages, onAdd, onNewPage }: { pages: Node[]; onAdd: (pageId
  * Each group is saved whole under `site_settings.data.portfolio.<group>`.
  */
 /** The parts of the fixed port copy, each a node of its own in the CMS page tree. */
-export type PortPart = 'home' | 'about' | 'sign' | 'header' | 'footer'
+/** `home` is the home page's words; `blocks` its port blocks — split so the CMS can show them as two steps. */
+export type PortPart = 'home' | 'blocks' | 'about' | 'sign' | 'header' | 'footer'
 
 export function ContentTab({
   content,
@@ -866,7 +867,12 @@ export function ContentTab({
     ? home.features.filter((f) => kept.some((p) => p.id === f.pageId))
     : published.map((p) => ({ pageId: p.id, label: '', intro: '', image: '' }))
   const addFeature = (pageId: string) => saveFeatures([...features, { pageId, label: '', intro: '', image: '' }])
-  const saveFeatures = (list: Feature[]) => setGroup('home', { ...home, features: list })
+  // The menu keeps its ports in this order too (`menuFollowingFeatures`): one order, two places.
+  const saveFeatures = (list: Feature[]) => {
+    setGroup('home', { ...home, features: list })
+    const links = menuFollowingFeatures(header.links, list.map((f) => f.pageId))
+    if (links.some((l, i) => l !== header.links[i])) setGroup('header', { ...header, links })
+  }
   const featDrag = useRowDrag((from, to) => {
     const next = [...features]
     const [m] = next.splice(from, 1)
@@ -940,11 +946,14 @@ export function ContentTab({
       )}
 
       {show('home') && (
-        <>
       <div style={two}>
         {text('Tiêu đề', home.title, (v) => setGroup('home', { ...home, title: v }))}
         {text('Giới thiệu', home.intro, (v) => setGroup('home', { ...home, intro: v }), true)}
       </div>
+      )}
+
+      {(!only || only === 'blocks') && (
+        <>
       <div style={fieldLabel}>Khối trên trang chủ · mỗi khối là một trang port, kéo để đổi thứ tự</div>
       {features.map((f, i) => {
         const page = kept.find((p) => p.id === f.pageId)
