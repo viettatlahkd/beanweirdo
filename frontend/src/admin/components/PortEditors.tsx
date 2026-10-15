@@ -749,10 +749,16 @@ export type PortPart = 'home' | 'feature' | 'about' | 'header' | 'footer'
 
 const NEW_SIGN = '__new-sign'
 
-/** Grows a text box to its whole text; the border is added since scrollHeight leaves it out. */
-const fitText = (el: HTMLTextAreaElement) => {
+/**
+ * Sizes a text box to its text; the border is added since scrollHeight leaves it out.
+ * At rest a long text stops at REST_MAX and shows all of itself once clicked (owner, 2026-10-15).
+ */
+const REST_MAX = 120
+const fitText = (el: HTMLTextAreaElement | null, open = el === document.activeElement) => {
+  if (!el) return
   el.style.height = 'auto'
-  el.style.height = `${el.scrollHeight + el.offsetHeight - el.clientHeight}px`
+  const full = el.scrollHeight + el.offsetHeight - el.clientHeight
+  el.style.height = `${open ? full : Math.min(full, REST_MAX)}px`
 }
 
 export function ContentTab({
@@ -806,13 +812,14 @@ export function ContentTab({
   const text = (label: string, value: string, set: (v: string) => void, area = false) => (
     <Field label={label}>
       {area ? (
-        // Opened, it grows to all its text; left, it folds back (owner, 2026-10-15).
         <textarea
-          style={{ ...boxed, minHeight: 70, resize: 'vertical' }}
+          ref={(el) => fitText(el)}
+          rows={1}
+          style={{ ...boxed, resize: 'vertical', overflow: 'auto' }}
           value={value}
-          onFocus={(e) => fitText(e.currentTarget)}
-          onInput={(e) => fitText(e.currentTarget)}
-          onBlur={(e) => (e.currentTarget.style.height = '')}
+          onFocus={(e) => fitText(e.currentTarget, true)}
+          onInput={(e) => fitText(e.currentTarget, true)}
+          onBlur={(e) => fitText(e.currentTarget, false)}
           onChange={(e) => set(e.target.value)}
         />
       ) : (
@@ -822,7 +829,7 @@ export function ContentTab({
   )
 
   return (
-    <div style={{ padding: '6px 0 20px', maxWidth: 1080 }}>
+    <div style={{ padding: '6px 0 0', maxWidth: 1080 }}>
       {error && <div style={{ color: '#8E1E42', fontFamily: sans, fontSize: 12.5, marginBottom: 12 }}>{error}</div>}
 
       {show('header') && (
