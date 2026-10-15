@@ -88,14 +88,30 @@
 - **[SỬA LỖI]** Công tắc "Hiện ở trang chủ" trong panel "Cập nhật nội dung": tắt rồi bật lại từng ra khối trống (tắt = bỏ hẳn khối
   khỏi `home.features`). Giờ khối tắt được giữ trong phiên (`offFeatures` trong `PortEditors.tsx`), bật lại thì nhãn, mô tả, ảnh
   quay về. Đã xảy ra trên dữ liệu thật lúc 2026-10-15 16:20 UTC: khối beæn weirdo mất nhãn "beæn weirdo" và ảnh
-  `post-images/7026093d-7936-4936-9b16-e1391f7eeb42.jpeg`. Chưa khôi phục — chờ chủ site đồng ý.
-- **[ĐỔI HÀNH VI]** Dòng about ở Thanh menu có "Cập nhật nội dung", mở ngay dưới dòng phần ký tên (`ContentTab only="sign"`).
-  Phần Signature bỏ khỏi Thông tin chung; ở đó còn Đầu trang · Chân trang · about (tiêu đề đổi "About" → "about").
+  `post-images/7026093d-7936-4936-9b16-e1391f7eeb42.jpeg`. Đã khôi phục sau khi chủ site duyệt (xem mục [SỬA DỮ LIỆU]).
+- **[ĐỔI HÀNH VI]** Dòng about ở Thanh menu có "Cập nhật nội dung"; phần Signature bỏ khỏi Thông tin chung (xem mục chữ kí dưới).
 - **[ĐỔI HÀNH VI]** Công tắc "Hiện ở trang chủ" lên thẳng dòng port ở Thanh menu (`ListItem.control`), không còn trong panel.
   Tắt thì "Cập nhật nội dung" mờ đi và panel đóng. Công tắc này và công tắc cùng tên trong trang port dùng chung
   `ConfigTree.tsx:setOnHome`: khối tắt được nhớ trong phiên (`offFeatures`), bật lại thì về đúng vị trí theo thứ tự menu
   (`featuresFollowingMenu`) với nhãn, mô tả, ảnh cũ. Trình duyệt (chặn lệnh ghi): tắt bizops → features chỉ còn beæn weirdo; bật
   lại → "beæn bizops"+ảnh ở vị trí 01.
+- **[ĐỔI HÀNH VI] Chữ kí thành đối tượng riêng.** `portfolio/content.ts`: `about.signs` (tên) + `about.signUse` (chỉ số) +
+  `about.reach` (một danh sách liên hệ) → `about.signatures: Signature[]` ({id, name, image, reach}) + `about.signId`.
+  `aboutOf` (trong `resolveContent`) đọc dữ liệu cũ thành chữ kí 1 = tên đang dùng + liên hệ cũ; dữ liệu thật **chưa ghi lại** —
+  lần lưu đầu tiên từ CMS sẽ ghi `signatures`/`signId`, các trường cũ để nguyên trong `site_settings.data.portfolio.about`.
+  `aboutSign` trả về cả chữ kí; `PortAbout` (`PortfolioView.tsx`) lấy tên và liên hệ từ chữ kí đang chọn.
+- **[ĐỔI HÀNH VI]** Thông tin chung: mục "about" đổi thành "Quản lý chữ kí" (`SignaturesPanel.tsx`, khuôn của `AuthorsPanel`): mỗi
+  chữ kí một thẻ (ảnh tròn, tên, các liên hệ, "đang dùng ở about"); bấm thẻ mở hộp thoại Tên chữ kí · ảnh · Liên hệ, ghi khi bấm
+  Lưu; ⋮ có Sửa, Dùng ở about, Xoá (chữ kí đang dùng không xoá được). Ảnh chữ kí chỉ lưu, trang công khai chưa dùng.
+- **[ĐỔI HÀNH VI]** Thanh menu › about › Cập nhật nội dung: Đoạn chữ phủ ảnh · Nhãn trên ảnh · Ảnh hẹp · Ảnh chính (chuyển từ
+  Thông tin chung) + "Chữ kí": chọn trong danh sách, hoặc "Tạo chữ kí" → Thông tin chung với hộp thoại Thêm chữ kí mở sẵn.
+  `PortPart` bỏ `sign`.
+- **[SỬA DỮ LIỆU — chủ site duyệt 2026-10-15]** `site_settings` (id=true) `portfolio.home.features`, khối pageId `d58a1b4a-…`:
+  ghi lại `label` "beæn weirdo", `image` `post-images/7026093d-7936-4936-9b16-e1391f7eeb42.jpeg` (REST PATCH, đọc trước rồi chỉ
+  đổi hai trường này). bizops không mất gì nên không đụng.
+- Trình duyệt (chặn lệnh ghi): dropdown about hiện đủ ô + Chữ kí "a soliloquise"; "Tạo chữ kí" → Thông tin chung, hộp thoại mở,
+  con trỏ ở ô tên; lưu "thử" + email → một `PATCH /api/site` `portfolio.about` với `signatures` [chữ kí 1 kèm 4 liên hệ cũ, thử],
+  `signId` sign-1. `/about` công khai vẫn ký "a soliloquise", liên hệ email + linkedin.
 - Thứ tự khối trên trang chủ vẫn theo thứ tự port trên Thanh menu (`featuresFollowingMenu` khi kéo).
 - Trình duyệt (chặn lệnh ghi): Trang chủ chỉ còn Nội dung trang, Thanh menu; "Cập nhật nội dung" ở bizops mở Hiện ở trang chủ ·
   Nhãn "beæn bizops" · Ảnh; sửa nhãn → một `PATCH /api/site` `portfolio.home.features`; "Xem dàn trang" ở beæn weirdo → port

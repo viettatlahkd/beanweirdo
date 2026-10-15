@@ -83,7 +83,7 @@ const FALLBACK_CHROME = (title: string): Chrome => ({
     header: { brand: 'bæn.', right: title, links: [] },
     footer: { left: 'bæn.', right: title },
     home: { title: '', intro: '', features: [] },
-    about: { text: '', tags: [], signs: [], signUse: 0, imageLeft: '', imageRight: '', reach: [] },
+    about: { text: '', tags: [], imageLeft: '', imageRight: '', signatures: [], signId: '' },
   },
   links: [],
 })
@@ -447,7 +447,8 @@ export function PortHome({ design, chrome, cards }: { design: Design; chrome: Ch
 export function PortAbout({ design, chrome, posts }: { design: Design; chrome: Chrome; posts: LinkItemOut[] }) {
   const { about } = chrome.content
   const first = Object.keys(design.palettes)[0] ?? 'biz'
-  const reach = about.reach.filter((l) => l.url)
+  const sign = aboutSign(about)
+  const reach = (sign?.reach ?? []).filter((l) => l.url)
   return (
     <PortFrame design={design} palette={first} chrome={chrome}>
       <section className="rg" style={{ paddingTop: 'var(--s-6)', paddingBottom: 'var(--s-5)' }}>
@@ -469,7 +470,7 @@ export function PortAbout({ design, chrome, posts }: { design: Design; chrome: C
               ))}
             </div>
             {about.text && <p>{about.text}</p>}
-            <span className="sign">{aboutSign(about)}</span>
+            <span className="sign">{sign?.name}</span>
           </div>
         </div>
       </div>

@@ -31,6 +31,7 @@ import { Button, IconButton } from '../../design/Button'
 import { IconClose, IconInfo, IconPage } from '../../design/icons'
 import { retireKeyword, retireTopic } from '../lib/retire'
 import { Switch, desk, DetailHead, ItemList, Row, Section, WHERE_WORDS, type AddSpec, type Crumb, type DetailAction, type ItemDrag, type ListItem } from './Detail'
+import { SignaturesPanel } from './SignaturesPanel'
 import { ColorField, RetireTag, RetireTopic, statusLabel, TopicFields } from './NodeFields'
 import { tagColor } from '../../lib/tagColor'
 import { Builder, ContentTab, createFromPage, createFromPreset, usePortAdmin, useSplit, type PortPart } from './PortEditors'
@@ -247,6 +248,7 @@ export function ConfigTree({
   const wantAdd = useRef(false)
   useEffect(() => {
     if (site === 'template' && picked.kind === 'group' && picked.id === 'biz-pages') wantAdd.current = false
+    if (picked.kind === 'group' && picked.id === 'frame') wantSign.current = false
   })
   useEffect(() => {
     if (only || shownSite.current === site) return
@@ -441,6 +443,16 @@ export function ConfigTree({
     frame.openSite(pg.status === 'archived' ? 'template' : (portOf(pg) ?? 'template'))
     setPicked({ kind: 'port-page', id: pg.id })
   }
+  // About's "Tạo chữ kí" goes to Thông tin chung with a new signature open.
+  const wantSign = useRef(false)
+  const newSign = () => {
+    wantSign.current = true
+    setPicked({ kind: 'group', id: 'frame' })
+  }
+  const saveAbout = (about: PortContent['about']) => {
+    port.setContentStored((st) => ({ ...st, about }))
+    run(() => updateSite({ portfolio: { about } } as never))
+  }
   // A journal row opens the journal's own tab, on the page it links.
   const openJournal = (to: Picked) => () => {
     keepPick.current = true
@@ -600,7 +612,7 @@ export function ConfigTree({
     // The menu is part of Trang chủ now (owner, 2026-10-15): its words, its port blocks, and the menu's order.
     home: { title: 'Trang chủ', note: 'nội dung trang, thanh menu', picked: { kind: 'port-part', part: 'home' } },
     cards: [
-      { title: 'Thông tin chung', note: 'đầu trang, chân trang, about', picked: { kind: 'group', id: 'frame' } },
+      { title: 'Thông tin chung', note: 'đầu trang, chân trang, chữ kí', picked: { kind: 'group', id: 'frame' } },
       // Tag and Tác giả moved up to Nội dung (owner, 2026-10-15): they file posts, not pages of this site.
     ],
   }
@@ -831,9 +843,9 @@ export function ConfigTree({
       const menuRows = tocList(rootToc, rootToc.items).map((it, i): ListItem => {
         const pg = rootToc.items[i].page
         const edit = (key: string) => ({ label: 'Cập nhật nội dung', icon: <IconInfo size={14} />, on: featOpen === key, onClick: () => setFeatOpen(featOpen === key ? null : key) })
-        // about's own words are its signature, edited here and nowhere else (owner, 2026-10-15).
+        // about's words, images and which signature it uses open here; signatures themselves live in Thông tin chung (owner, 2026-10-15).
         if (it.id === 'about')
-          return { ...it, buttons: [edit('about')], below: featOpen === 'about' ? <ContentTab only="sign" content={port.content} setStored={port.setContentStored} pages={port.pages} /> : undefined }
+          return { ...it, buttons: [edit('about')], below: featOpen === 'about' ? <ContentTab only="about" content={port.content} setStored={port.setContentStored} pages={port.pages} onNewSign={newSign} /> : undefined }
         if (!pg) return it
         const onHome = homeFeatures().some((f) => f.pageId === pg.id)
         return {
@@ -854,7 +866,6 @@ export function ConfigTree({
       body = port.loaded ? (
         <>
           <Section title="Nội dung trang">{part(about ? 'about' : 'home')}</Section>
-          {about && <Section title="Signature">{part('sign')}</Section>}
           {!about && (
             <Section title="Thanh menu" tip="Thứ tự mặc định: các trang port, sau đó là about và journal. Kéo biểu tượng ⠿ ở đầu dòng để sắp xếp lại.">
               <ItemList label="Thanh menu" items={menuRows} add={menuAdd} />
@@ -1139,9 +1150,9 @@ export function ConfigTree({
             <Section title="Chân trang">
               <ContentTab key="footer" only="footer" content={port.content} setStored={port.setContentStored} pages={port.pages} />
             </Section>
-            {/* About moved here from the menu (owner, 2026-10-15): a page every site links, set once. */}
-            <Section title="about">
-              <ContentTab key="about" only="about" content={port.content} setStored={port.setContentStored} pages={port.pages} />
+            {/* About's words moved to its Thanh menu row; what stays is the signatures it can sign with (owner, 2026-10-15). */}
+            <Section title="Quản lý chữ kí">
+              <SignaturesPanel about={port.content.about} onSave={saveAbout} startNew={wantSign.current} />
             </Section>
           </>
         ) : null

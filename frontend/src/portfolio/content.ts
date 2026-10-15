@@ -17,6 +17,9 @@ export type NavOverride = { key: string; label?: string; hidden?: boolean }
 
 export type Feature = { pageId: string; label: string; intro: string; image: string }
 
+/** A signature: the name the about page signs with, its default image, and the contacts listed under it. */
+export type Signature = { id: string; name: string; image: string; reach: LinkItem[] }
+
 export type PortContent = {
   header: { brand: string; right: string; links: NavOverride[] }
   footer: { left: string; right: string }
@@ -24,12 +27,11 @@ export type PortContent = {
   about: {
     text: string
     tags: string[]
-    /** Several signatures can be kept; `signUse` picks the one the about page shows. */
-    signs: string[]
-    signUse: number
     imageLeft: string
     imageRight: string
-    reach: LinkItem[]
+    /** Kept in Thông tin chung › Quản lý chữ kí; `signId` is the one the about page uses (owner, 2026-10-15). */
+    signatures: Signature[]
+    signId: string
   }
 }
 
@@ -40,15 +42,21 @@ const DEFAULT_CONTENT: PortContent = {
   about: {
     text: "Mostly I'm trying to understand how things work — a business, a roast curve, a person. This is where I write it down as I go.",
     tags: ['ops', 'compliance', 'coffee', 'philo'],
-    signs: ['bæn. — inside the mind of hkd'],
-    signUse: 0,
     imageLeft: '',
     imageRight: '',
-    reach: [
-      { label: 'email', url: '' },
-      { label: 'linkedin', url: '' },
-      { label: 'cv', url: '' },
+    signatures: [
+      {
+        id: 'sign-1',
+        name: 'bæn. — inside the mind of hkd',
+        image: '',
+        reach: [
+          { label: 'email', url: '' },
+          { label: 'linkedin', url: '' },
+          { label: 'cv', url: '' },
+        ],
+      },
     ],
+    signId: 'sign-1',
   },
 }
 
@@ -59,12 +67,26 @@ export function resolveContent(stored: unknown): PortContent {
   const s = isObj(stored) ? stored : {}
   const group = <K extends keyof PortContent>(k: K): PortContent[K] =>
     ({ ...DEFAULT_CONTENT[k], ...(isObj(s[k]) ? (s[k] as object) : {}) }) as PortContent[K]
-  return { header: group('header'), footer: group('footer'), home: group('home'), about: group('about') }
+  return { header: group('header'), footer: group('footer'), home: group('home'), about: aboutOf(s.about) }
 }
 
-/** The signature the about page shows — the chosen one, or the first if the choice was removed. */
-export function aboutSign(about: PortContent['about']): string {
-  return about.signs[about.signUse] ?? about.signs[0] ?? ''
+/**
+ * Before signatures had their own contacts (2026-10-15) the about group kept
+ * `signs` (names), `signUse` (an index) and one `reach` list: those become
+ * signature 1, carrying the name in use and the contacts.
+ */
+function aboutOf(stored: unknown): PortContent['about'] {
+  const s = isObj(stored) ? stored : {}
+  const about = { ...DEFAULT_CONTENT.about, ...s } as PortContent['about'] & { signs?: string[]; signUse?: number; reach?: LinkItem[] }
+  if (Array.isArray(s.signatures)) return about
+  if (!Array.isArray(s.signs) && !Array.isArray(s.reach)) return about
+  const name = about.signs?.[about.signUse ?? 0] ?? about.signs?.[0] ?? ''
+  return { ...about, signatures: [{ id: 'sign-1', name, image: '', reach: about.reach ?? [] }], signId: 'sign-1' }
+}
+
+/** The signature the about page uses — the chosen one, or the first if the choice was removed. */
+export function aboutSign(about: PortContent['about']): Signature | undefined {
+  return about.signatures.find((x) => x.id === about.signId) ?? about.signatures[0]
 }
 
 export type NavPage = { id: string; slug: string; title: string; status: string; home_of?: PortSite | null; parent_id?: string | null }
