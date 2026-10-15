@@ -9,7 +9,7 @@ import { FramingProvider } from './components/framing'
 
 /**
  * What Cấu hình edits, in the order the sidebar lists it. `template`, `biz` and
- * `bean` sit under Quản trị port (owner, 2026-10-15): the templates first, then
+ * `bean` sit under port archives (owner, 2026-10-15): the templates first, then
  * each port site. practice is the journal behind the login.
  */
 export const CONFIG_SITES = ['root', 'template', 'biz', 'bean', 'blog', 'practice'] as const
@@ -21,7 +21,7 @@ export type ConfigSite = (typeof CONFIG_SITES)[number]
  * to rename.
  */
 const PORT_SITES: readonly ConfigSite[] = ['biz', 'bean']
-/** Quản trị port's rows: the templates, then the port sites. */
+/** port archives rows: the templates, then the port sites. */
 const PORT_GROUP: readonly ConfigSite[] = ['template', ...PORT_SITES]
 const SITE_NAMES: Record<ConfigSite, string> = { root: 'beanweirdo', template: 'Template', biz: 'biz', bean: 'bean', blog: 'journal', practice: 'practice' }
 /** Sites whose cards open under them in the sidebar; the others are one page, opened by their row. */
@@ -52,6 +52,8 @@ const SHELL = {
 type Frame = {
   site: ConfigSite
   openSite: (s: ConfigSite) => void
+  /** Counts clicks on a site's row in the sidebar: a click on the open site's row goes back to that site's first page. */
+  round: number
   /** Where Cấu hình draws the open site's cards, under that site in the sidebar. */
   slot: HTMLElement | null
 }
@@ -107,6 +109,11 @@ export function AdminShell({ children }: { children: ReactNode }) {
     setSite(s)
     if (!config) nav.goCms('pages')
   }
+  const [round, setRound] = useState(0)
+  const clickSite = (s: ConfigSite) => {
+    setRound((r) => r + 1)
+    openSite(s)
+  }
   const where =
     nav.screen === 'postEdit'
       ? 'Nội dung › Sửa bài'
@@ -118,7 +125,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
             ? CONTENT_LISTS.find((l) => l.tab === tab)?.label
             : tab === 'display'
               ? 'Cài đặt hiển thị'
-              : `Cấu hình › ${PORT_GROUP.includes(site) ? 'Quản trị port › ' : ''}${CONFIG_SITE_LABELS[site]}`
+              : `Cấu hình › ${PORT_GROUP.includes(site) ? 'port archives › ' : ''}${CONFIG_SITE_LABELS[site]}`
 
   const side = (
     <aside
@@ -159,18 +166,18 @@ export function AdminShell({ children }: { children: ReactNode }) {
         const row = (
           <div key={s}>
             {/* Open, a site with cards lights none of itself, only its dash and name: the card picked under it is the lit row. A one-page site is the lit row. */}
-            <Item depth={inPorts ? 1 : 0} open={open && WITH_CARDS.includes(s)} on={open && !WITH_CARDS.includes(s)} onClick={() => openSite(s)}>
+            <Item depth={inPorts ? 1 : 0} open={open && WITH_CARDS.includes(s)} on={open && !WITH_CARDS.includes(s)} onClick={() => clickSite(s)}>
               {CONFIG_SITE_LABELS[s]}
             </Item>
             {open && WITH_CARDS.includes(s) && <div ref={setSlot} />}
           </div>
         )
         if (s !== PORT_GROUP[0]) return row
-        // Quản trị port: a heading row over its own rows, opening the first of them.
+        // port archives: a heading row over its own rows, opening the first of them.
         return (
           <div key="ports">
-            <Item open={config && PORT_GROUP.includes(site)} onClick={() => openSite(PORT_GROUP[0])}>
-              Quản trị port
+            <Item open={config && PORT_GROUP.includes(site)} onClick={() => clickSite(PORT_GROUP[0])}>
+              port archives
             </Item>
             {row}
           </div>
@@ -200,7 +207,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
   )
 
   return (
-    <FrameContext.Provider value={{ site, openSite, slot }}>
+    <FrameContext.Provider value={{ site, openSite, slot, round }}>
       <div style={mobile ? undefined : { display: 'grid', gridTemplateColumns: `${SIDE_W}px minmax(0, 1fr)`, minHeight: '100vh' }}>
         {side}
         <main style={{ background: SHELL.main, minWidth: 0 }}>
