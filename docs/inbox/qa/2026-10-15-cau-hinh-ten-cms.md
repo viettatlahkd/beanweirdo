@@ -117,6 +117,12 @@
 - **[ĐỔI HÀNH VI]** Bấm vào thân dòng ở Thanh menu không còn mở trang nào; dòng chỉ làm việc qua nút của nó và ⋮
   (`ListItem.onOpen` thành tuỳ chọn, `RowBody` trong `Detail.tsx`). Trình duyệt: bấm tên bizops → vẫn ở Trang chủ; chọn
   "+ Tạo chữ kí mới…" → Thông tin chung, hộp thoại Thêm chữ kí mở, không lệnh ghi nào.
+- **[ĐỔI HÀNH VI]** Ô chữ nhiều dòng trong `ContentTab` (Văn bản lớp phủ, Giới thiệu trang chủ…) giãn theo toàn bộ nội dung khi bấm
+  vào, gõ thêm thì giãn tiếp, rời ô thì thu lại (`fitText`, `PortEditors.tsx`). Lựa chọn "Tạo chữ kí mới…" bỏ dấu "+".
+- **[SỬA LỖI]** `/about` công khai: văn bản lớp phủ dính thành một đoạn vì `.pf .over p` không giữ xuống dòng. Thêm
+  `white-space: pre-wrap` (`portfolio/styles.ts`). Giữ xuống dòng thì bài 31 dòng tràn khỏi khung ảnh (458px) đè lên reach/post, nên
+  riêng `.pf .over.ctx p` (chỉ about dùng) chuyển sang 2 cột, chữ `clamp(13px,1.5cqw,17px)`, line-height 1.4: vừa khung, chữ kí ở
+  424px. Phương án khác đã thử: khung ảnh cao theo chữ (khung thành 1133px, ảnh bị cắt mạnh) — chưa chọn, chờ chủ site.
 - Thứ tự khối trên trang chủ vẫn theo thứ tự port trên Thanh menu (`featuresFollowingMenu` khi kéo).
 - Trình duyệt (chặn lệnh ghi): Trang chủ chỉ còn Nội dung trang, Thanh menu; "Cập nhật nội dung" ở bizops mở Hiện ở trang chủ ·
   Nhãn "beæn bizops" · Ảnh; sửa nhãn → một `PATCH /api/site` `portfolio.home.features`; "Xem dàn trang" ở beæn weirdo → port
