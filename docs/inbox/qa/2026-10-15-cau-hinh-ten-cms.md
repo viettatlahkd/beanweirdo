@@ -164,6 +164,11 @@
 - Trình duyệt (tab riêng, chặn lệnh ghi): 7 dòng a bean weirdo · roasting 101 · sensory · biochemistry 101 · fermentation · tư
   duy tư duy · ghi, khớp thanh bên; "Gỡ khỏi trang" ở fermentation → một `PATCH /api/tags?vocab=pages&id=nav`; Thêm nội dung
   liệt kê 11 chủ đề đang ẩn; "Tạo chủ đề ở Chuyên mục" → `/ad-taxonomy`, ô thêm mở.
+- **[ĐỔI HÀNH VI]** Ô ảnh của nội dung port (`ImageField`, `PortEditors.tsx` — khối port ở Thanh menu, Ảnh hẹp/Ảnh chính của
+  about) vẽ như ô ảnh của journal (`ImageSlot`, `screens/Cms.tsx`): ảnh 16:9 rộng tối đa 360px, rồi "đổi ảnh/tải ảnh lên · đặt vào
+  khung · dán link · ✕". Khung cắt vẫn tự do (`useCropping`) như trước; huỷ khung không lưu. Khung ngoài là `div`, không phải
+  `label` của `Field`. Trình duyệt: bizops hiện ảnh + 4 lệnh; "đặt vào khung" mở hộp "Ảnh", Esc đóng; "dán link" mở ô; không
+  lệnh ghi nào.
 - Thứ tự khối trên trang chủ vẫn theo thứ tự port trên Thanh menu (`featuresFollowingMenu` khi kéo).
 - Trình duyệt (chặn lệnh ghi): Trang chủ chỉ còn Nội dung trang, Thanh menu; "Cập nhật nội dung" ở bizops mở Hiện ở trang chủ ·
   Nhãn "beæn bizops" · Ảnh; sửa nhãn → một `PATCH /api/site` `portfolio.home.features`; "Xem dàn trang" ở beæn weirdo → port

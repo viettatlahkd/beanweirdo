@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { ScaledPreview } from './ScaledPreview'
+import { Hover } from '../../lib/Hover'
 import { useCropping } from './framing'
 import { coverStyle } from '../../lib/imageFocus'
 import { Choice, Row, Section, desk } from './Detail'
@@ -695,11 +696,21 @@ function BlockFields({
 // ── tab 2: fixed content (header, footer, main page, about) ────────────────
 
 /** An image slot: the URL, a thumbnail, and an upload button. */
+/**
+ * A picture slot drawn as the journal's are (owner, 2026-10-16): the picture, then
+ * đổi ảnh · đặt vào khung · dán link · ✕. Free-shape framing, because these cells
+ * change shape with the screen; the page keeps the frame as the focal point (`imageOf`).
+ */
 function ImageField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
-  const ref = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
+  const [linking, setLinking] = useState(false)
   const crop = useCropping()
+  // Cancel hands back the same address: nothing to save.
+  const place = async (url: string) => {
+    const next = await crop({ url, name: label })
+    if (next !== url) onChange(next)
+  }
   const upload = async (f: File | undefined) => {
     if (!f) return
     setBusy(true)
@@ -707,31 +718,80 @@ function ImageField({ label, value, onChange }: { label: string; value: string; 
     try {
       const { url } = await uploadImage(f)
       onChange(url)
-      /*
-       * The same crop dialog as every other picture slot. Free-shape, because
-       * these cells change shape with the screen; the page keeps the crop's
-       * window as the focal point (`imageOf`).
-       */
-      onChange(await crop({ url, name: label }))
+      await place(url)
     } catch (e) {
       setErr((e as Error).message)
     } finally {
       setBusy(false)
-      if (ref.current) ref.current.value = ''
     }
   }
+  const quiet: CSSProperties = { fontFamily: sans, fontSize: 13, color: ink.soft, background: 'none', border: 'none', padding: 0, cursor: 'pointer', flex: 'none' }
   return (
-    <Field label={label}>
-      <div style={{ display: 'grid', gridTemplateColumns: '56px minmax(0,1fr) auto', gap: 8, alignItems: 'center' }}>
-        <div style={{ width: 56, height: 56, ...(value ? coverStyle(value) : { background: paper.rule }), border: `1px solid ${paper.rule}` }} />
-        <input style={small} value={value} placeholder="URL ảnh" onChange={(e) => onChange(e.target.value)} />
-        <Button size="sm" disabled={busy} onClick={() => ref.current?.click()}>
-          {busy ? 'Đang tải…' : 'Tải ảnh'}
-        </Button>
-        <input ref={ref} type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => upload(e.target.files?.[0])} />
+    // A div, not Field's label: inside a label a click on the picture would open the file picker.
+    <div style={{ marginBottom: 12 }}>
+      <div style={fieldLabel}>{label}</div>
+      <div style={{ maxWidth: 360 }}>
+        <div
+          style={{
+            aspectRatio: '16/9',
+            border: `1px solid ${paper.rule}`,
+            ...(value ? coverStyle(value) : { display: 'flex', alignItems: 'center', justifyContent: 'center' }),
+          }}
+        >
+          {!value && <span style={{ fontFamily: sans, fontSize: 13, color: ink.soft }}>chưa có ảnh</span>}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 7 }}>
+          <Hover
+            as="label"
+            style={{ flex: 1, minWidth: 0, display: 'block', fontFamily: sans, fontSize: 13, color: ink.soft, border: '1px dashed #DAD7C7', padding: '7px 10px', cursor: 'pointer', textAlign: 'center' }}
+            hoverStyle={{ borderColor: ink.base, color: ink.base }}
+          >
+            {busy ? 'đang tải…' : value ? 'đổi ảnh' : 'tải ảnh lên'}
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const f = e.target.files?.[0]
+                e.target.value = ''
+                void upload(f)
+              }}
+              style={{ display: 'none' }}
+            />
+          </Hover>
+          {value && (
+            <Hover as="button" onClick={() => void place(value)} style={quiet} hoverStyle={{ color: ink.base }}>
+              đặt vào khung
+            </Hover>
+          )}
+          <Hover as="button" onClick={() => setLinking(!linking)} style={quiet} hoverStyle={{ color: ink.base }}>
+            dán link
+          </Hover>
+          {value && (
+            <Hover as="button" aria-label={`Bỏ ${label}`} onClick={() => onChange('')} style={quiet} hoverStyle={{ color: '#C25C7C' }}>
+              ✕
+            </Hover>
+          )}
+        </div>
+        {linking && (
+          <input
+            autoFocus
+            defaultValue={value}
+            placeholder="dán link ảnh rồi Enter"
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') setLinking(false)
+              if (e.key !== 'Enter') return
+              const v = (e.target as HTMLInputElement).value.trim()
+              setLinking(false)
+              onChange(v)
+              if (v) void place(v)
+            }}
+            onBlur={() => setLinking(false)}
+            style={{ ...small, marginTop: 7, fontSize: 12 }}
+          />
+        )}
       </div>
       {err && <div style={{ color: '#8E1E42', fontFamily: sans, fontSize: 12, marginTop: 4 }}>{err}</div>}
-    </Field>
+    </div>
   )
 }
 
