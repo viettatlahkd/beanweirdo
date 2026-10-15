@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { ScaledPreview } from './ScaledPreview'
 import { useCropping } from './framing'
 import { coverStyle } from '../../lib/imageFocus'
-import { Choice, Row, Section, Switch, desk } from './Detail'
+import { Choice, Row, Section, desk } from './Detail'
 import { Button, IconButton } from '../../design/Button'
 import { IconClose, IconGrip, IconPlus } from '../../design/icons'
 import { ColorRow, STATUS_CHOICES } from './NodeFields'
@@ -749,12 +749,6 @@ const addLine: CSSProperties = { marginTop: 8 }
 /** `feature` is one port's block, opened from its row in Trang chủ's Thanh menu (owner, 2026-10-15). */
 export type PortPart = 'home' | 'feature' | 'about' | 'sign' | 'header' | 'footer'
 
-/**
- * A block switched off on the home page, kept until it is switched back on:
- * the switch sits right by the fields, so off-then-on must not empty them.
- */
-const offFeatures = new Map<string, Feature>()
-
 export function ContentTab({
   content,
   setStored,
@@ -863,17 +857,6 @@ export function ContentTab({
         const set = (patch: Partial<Feature>) => saveFeatures(features.map((x, j) => (j === i ? { ...x, ...patch } : x)))
         return (
           <>
-            <Row label="Hiện ở trang chủ">
-              <Switch
-                label="Hiện ở trang chủ"
-                value={!!f}
-                onChange={(on) => {
-                  if (on) return saveFeatures([...features, offFeatures.get(pageId) ?? { pageId, label: '', intro: '', image: '' }])
-                  if (f) offFeatures.set(pageId, f)
-                  saveFeatures(features.filter((x) => x.pageId !== pageId))
-                }}
-              />
-            </Row>
             {f && (
               <>
                 <div style={two}>
