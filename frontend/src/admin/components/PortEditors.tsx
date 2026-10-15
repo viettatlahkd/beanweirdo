@@ -749,6 +749,12 @@ export type PortPart = 'home' | 'feature' | 'about' | 'header' | 'footer'
 
 const NEW_SIGN = '__new-sign'
 
+/** Grows a text box to its whole text; the border is added since scrollHeight leaves it out. */
+const fitText = (el: HTMLTextAreaElement) => {
+  el.style.height = 'auto'
+  el.style.height = `${el.scrollHeight + el.offsetHeight - el.clientHeight}px`
+}
+
 export function ContentTab({
   content,
   setStored,
@@ -800,7 +806,15 @@ export function ContentTab({
   const text = (label: string, value: string, set: (v: string) => void, area = false) => (
     <Field label={label}>
       {area ? (
-        <textarea style={{ ...boxed, minHeight: 70, resize: 'vertical' }} value={value} onChange={(e) => set(e.target.value)} />
+        // Opened, it grows to all its text; left, it folds back (owner, 2026-10-15).
+        <textarea
+          style={{ ...boxed, minHeight: 70, resize: 'vertical' }}
+          value={value}
+          onFocus={(e) => fitText(e.currentTarget)}
+          onInput={(e) => fitText(e.currentTarget)}
+          onBlur={(e) => (e.currentTarget.style.height = '')}
+          onChange={(e) => set(e.target.value)}
+        />
       ) : (
         <input style={boxed} value={value} onChange={(e) => set(e.target.value)} />
       )}
@@ -907,7 +921,7 @@ export function ContentTab({
               {sg.name || 'chưa đặt tên'}
             </option>
           ))}
-          {onNewSign && <option value={NEW_SIGN}>+ Tạo chữ kí mới…</option>}
+          {onNewSign && <option value={NEW_SIGN}>Tạo chữ kí mới…</option>}
         </select>
       </Row>
         </>

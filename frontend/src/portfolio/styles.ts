@@ -95,7 +95,7 @@ export const PF_CSS = `
 .pf .about-block>.ph{aspect-ratio:1;width:calc(100% * 8 / 13 - 8px);margin:4px;justify-self:end}
 
 .pf .over{position:absolute;inset:var(--s-4) var(--s-4) auto;display:flex;flex-direction:column;pointer-events:none;color:#fefdfb;text-shadow:0 1px 12px rgba(0,0,0,.3)}
-.pf .over p{font:300 clamp(18px,2.2cqw,26px)/1.45 var(--f-display);max-width:30ch}
+.pf .over p{font:300 clamp(18px,2.2cqw,26px)/1.45 var(--f-display);max-width:30ch;white-space:pre-wrap}
 .pf .scrim .ph::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(29,29,27,.42),rgba(29,29,27,0) 55%);pointer-events:none}
 
 .pf .open-ab{--big:calc((100cqw - var(--gut) - var(--col-gap)*2) * 24 / 52);display:grid;grid-template-columns:minmax(0,13fr) minmax(0,24fr) minmax(0,15fr);grid-template-rows:repeat(8,calc(var(--big) / 8)) auto;column-gap:var(--col-gap);padding-right:var(--gut)}
@@ -142,6 +142,7 @@ export const PF_CSS = `
 .pf .stage .frame{position:relative}
 .pf .stage .frame .ph{aspect-ratio:1.618}
 .pf .over.ctx{inset:var(--s-5);justify-content:space-between;color:var(--signal);text-shadow:none}
+.pf .over.ctx p{font-size:clamp(13px,1.5cqw,17px);line-height:1.4;columns:2;column-gap:var(--s-5);max-width:none}
 .pf .over .top{display:flex;justify-content:space-between;font:var(--t-label)}
 .pf .over .sign{font:var(--t-label)}
 .pf .stage-under{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,3fr);column-gap:var(--col-gap);padding:var(--s-5) var(--gut) var(--s-6)}
