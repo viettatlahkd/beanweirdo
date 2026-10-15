@@ -208,6 +208,20 @@
   hàng nút Journal | Port | Đường dẫn trong `DisplaySettings`; tiêu đề màn là tên dòng đang mở, dòng dẫn đường "Hiển thị › …".
   Địa chỉ vẫn là `/ad-display`. "Quản lý bảng màu…" mở Hiển thị › Port qua `openDisplay('port')`.
 - Trình duyệt (tab riêng): ba dòng mở đúng màn, đúng dòng sáng, không còn hàng nút; Bảng màu → Hiển thị › Port.
+- **[ĐỔI HÀNH VI] Lề lối admin đồng bộ** (chủ site báo nhãn, khoảng cách, căn lề lệch nhau):
+  - Nhãn ô: một kiểu 13px/600/`ink.strong` (`fieldLabel` trong `screens/Cms.tsx`, `label` trong `DisplaySettings.tsx`, như
+    `PortEditors`). Ô nhập: bỏ chữ serif (`serifInput`, `serifItalicInput` gỡ khỏi `Cms.tsx`).
+  - Khung `Section` bọc nội dung trong `.cfg-sec-body` cách vạch kẻ 12px; Row và danh sách trả lại phần đệm riêng
+    (`DETAIL_CSS`). `ContentTab`, `SignaturesPanel`, practice bỏ đệm riêng; dòng đầu "Link trang con" bỏ đệm trên.
+  - **[SỬA LỖI]** Ô màu (dàn trang, practice): ô vuông màu che chữ "#" vì `padding … !important` chung đè `paddingLeft: 31`.
+    Giờ `HexField` (Cms.tsx) đặt `--field-pad-left`, quy tắc chung đọc biến này. Practice có ô màu như dàn trang.
+  - Tiêu đề trang: Nội dung và Hiển thị dùng cùng kiểu với Cấu hình/Biên tập (sans 26px/600, thay serif 34px).
+  - Lề trái: mọi màn bắt đầu ở 28px (ConfigTree khung hẹp 16 → 28; Nội dung 24 → 28; Hiển thị › Port thêm lề như Journal; đầu
+    trang chi tiết bỏ 2px; Tác giả bỏ cột giữa 760px).
+  - Hiển thị › Journal/Port: tiêu đề mục (`sectionHead`) như đầu `Section` — 15px, vạch mảnh `desk.line` thay vạch đen 2px;
+    cột chỉnh của Port có khung nền như Journal, khung xem trước có viền.
+  - Đo trên trình duyệt (tab riêng): tiêu đề và khung đầu của 13 màn đều ở x=224; khoảng từ vạch kẻ tới nội dung đầu 0 (danh
+    sách) hoặc 12 (ô nhập) ở mọi khung.
 - Thứ tự khối trên trang chủ vẫn theo thứ tự port trên Thanh menu (`featuresFollowingMenu` khi kéo).
 - Trình duyệt (chặn lệnh ghi): Trang chủ chỉ còn Nội dung trang, Thanh menu; "Cập nhật nội dung" ở bizops mở Hiện ở trang chủ ·
   Nhãn "beæn bizops" · Ảnh; sửa nhãn → một `PATCH /api/site` `portfolio.home.features`; "Xem dàn trang" ở beæn weirdo → port

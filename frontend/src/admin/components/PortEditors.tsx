@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, 
 import { createPortal } from 'react-dom'
 import { ScaledPreview } from './ScaledPreview'
 import { Hover } from '../../lib/Hover'
+import { radius } from '../../design/controls'
 import { useAdminFrame } from '../AdminShell'
 import { useCropping } from './framing'
 import { coverStyle } from '../../lib/imageFocus'
@@ -60,14 +61,15 @@ import {
 
 // ── shared ──────────────────────────────────────────────────────────────────
 
+// Drawn as a Section's head (Detail.tsx): the same type and the same thin rule on every admin screen (owner, 2026-10-16).
 export const sectionHead: CSSProperties = {
   fontFamily: sans,
-  fontSize: 14,
+  fontSize: 15,
   fontWeight: 600,
   color: ink.base,
-  borderBottom: `2px solid ${ink.base}`,
-  paddingBottom: 9,
-  margin: '28px 0 16px',
+  borderBottom: `1px solid ${desk.line}`,
+  padding: '13px 0 11px',
+  margin: '10px 0 12px',
 }
 const fieldLabel: CSSProperties = {
   fontFamily: sans,
@@ -905,7 +907,7 @@ export function ContentTab({
   )
 
   return (
-    <div style={{ padding: '6px 0 0', maxWidth: 1080 }}>
+    <div style={{ maxWidth: 1080 }}>
       {error && <div style={{ color: '#8E1E42', fontFamily: sans, fontSize: 12.5, marginBottom: 12 }}>{error}</div>}
 
       {/* Header and footer words sit together; the header's links are their own part (owner, 2026-10-16). */}
@@ -925,7 +927,7 @@ export function ContentTab({
       {/* Only the words and whether each shows; the order is dragged in Trang chủ › Thanh menu. */}
       {show('links') &&
         links.map((l, i) => (
-          <div key={l.key} style={{ ...rowBox, ...(i === 0 ? { borderTop: 'none' } : {}), display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 200px 80px', gap: 10, alignItems: 'center' }}>
+          <div key={l.key} style={{ ...rowBox, ...(i === 0 ? { borderTop: 'none', paddingTop: 0 } : {}), display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 200px 80px', gap: 10, alignItems: 'center' }}>
             <input
               style={small}
               aria-label={`Nhãn ${l.href}`}
@@ -1184,11 +1186,11 @@ export function DesignTab({
         title="Design system"
         srcDoc={docHtml}
         onLoad={sendTokens}
-        style={{ width: '100%', height: 'calc(100vh - 220px)', border: 0, background: paper.white, display: 'block', position: 'sticky', top: 0, pointerEvents: split.dragging ? 'none' : undefined }}
+        style={{ width: '100%', height: 'calc(100vh - 220px)', border: `1px solid ${desk.line}`, borderRadius: radius, boxSizing: 'border-box', background: paper.white, display: 'block', position: 'sticky', top: 0, pointerEvents: split.dragging ? 'none' : undefined }}
       />
       {split.handle}
 
-      <div style={{ padding: '6px 34px 80px 22px', height: 'calc(100vh - 220px)', overflowY: 'auto', position: 'sticky', top: 0 }}>
+      <div style={{ background: desk.panel, border: `1px solid ${desk.line}`, borderRadius: radius, padding: '0 22px 40px', height: 'calc(100vh - 220px)', overflowY: 'auto', position: 'sticky', top: 0 }}>
         {error && <div style={{ color: '#8E1E42', fontFamily: sans, fontSize: 12.5, marginTop: 12 }}>{error}</div>}
 
         {head('Màu', 'colors')}

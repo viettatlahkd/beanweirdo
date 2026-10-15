@@ -16,7 +16,7 @@ import { IconClose } from '../../design/icons'
  */
 
 
-const label: CSSProperties = { fontFamily: sans, fontSize: 13, color: ink.soft, marginBottom: 6 }
+const label: CSSProperties = { fontFamily: sans, fontSize: 13, fontWeight: 600, color: ink.strong, marginBottom: 6 }
 const box: CSSProperties = { boxSizing: 'border-box', width: '100%', background: paper.white, border: `1px solid ${paper.rule}`, color: ink.base, fontFamily: sans, fontSize: 12.5, padding: '6px 8px', outline: 'none' }
 const HEX = /^#[0-9a-fA-F]{6}$/
 
@@ -54,7 +54,12 @@ function PortDesign() {
   const port = usePortAdmin()
   if (port.error) return <div style={{ padding: '20px 28px', fontFamily: sans, fontSize: 12.5, color: '#8E1E42' }}>{port.error}</div>
   if (!port.loaded) return null
-  return <DesignTab stored={port.stored} setStored={port.setStored} design={port.design} />
+  // The same margins as Journal's, so the two screens line up under their titles.
+  return (
+    <div style={{ margin: '16px 28px 0' }}>
+      <DesignTab stored={port.stored} setStored={port.setStored} design={port.design} />
+    </div>
+  )
 }
 
 /** Colours and families of the blog, each beside its default; the preview is the front page wearing them. */
@@ -124,7 +129,7 @@ function BlogDesignPanel({ stored, onSave }: { stored: BlogDesign; onSave: (patc
         </ScaledPreview>
       </div>
       {!stacked && split.handle}
-      <div style={{ background: desk.panel, border: `1px solid ${desk.line}`, borderRadius: radius, ...(stacked ? { padding: '6px 20px 24px' } : { padding: '6px 22px 40px', height: 'calc(100vh - 220px)', overflowY: 'auto', position: 'sticky', top: 0 }) }}>
+      <div style={{ background: desk.panel, border: `1px solid ${desk.line}`, borderRadius: radius, ...(stacked ? { padding: '0 20px 24px' } : { padding: '0 22px 40px', height: 'calc(100vh - 220px)', overflowY: 'auto', position: 'sticky', top: 0 }) }}>
         {group(
           'Font',
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>

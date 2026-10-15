@@ -680,7 +680,7 @@ export function ContentWorkspace({ onChanged }: { onChanged?: () => void }) {
   )
 
   return (
-    <div style={{ padding: '16px 24px 40px' }}>
+    <div style={{ padding: '16px 28px 40px' }}>
       <style>{CSS}</style>
       {search}
       {err && (

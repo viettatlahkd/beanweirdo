@@ -25,7 +25,7 @@ export function SignaturesPanel({ about, onSave, startNew }: { about: About; onS
     setEditing(null)
   }
   return (
-    <div style={{ padding: '12px 0 4px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+    <div style={{ paddingBottom: 4, display: 'flex', flexDirection: 'column', gap: 8 }}>
       {about.signatures.map((sg) => {
         const actions: DetailAction[] = [
           { label: 'Sửa', onPick: () => setEditing(sg) },

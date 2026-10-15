@@ -139,7 +139,7 @@ export function DetailHead({
   actions: DetailAction[]
 }) {
   return (
-    <header style={{ display: 'grid', gap: 6, padding: '2px 2px 4px' }}>
+    <header style={{ display: 'grid', gap: 6, padding: '2px 0 4px' }}>
       <div aria-label="Đang sửa" style={{ fontFamily: sans, fontSize: 13, color: ink.soft }}>
         {crumbs.map((c, i) => (
           <span key={i}>
@@ -213,7 +213,7 @@ export function Section({ title, note, tip, children }: { title: string; note?: 
         </h3>
         {note && <span style={{ fontFamily: sans, fontSize: 13, color: ink.soft }}>{note}</span>}
       </div>
-      {children}
+      <div className="cfg-sec-body">{children}</div>
     </section>
   )
 }
@@ -535,7 +535,7 @@ export const DETAIL_CSS = `
 .cfg-detail input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]):not(.cfg-line),
 .cfg-detail textarea, .cfg-detail select {
   border: 1px solid ${desk.field} !important; border-radius: ${radius}px !important; background: ${desk.panel} !important;
-  box-shadow: none !important; outline: none; padding: 8px 11px !important; box-sizing: border-box;
+  box-shadow: none !important; outline: none; padding: 8px 11px 8px var(--field-pad-left, 11px) !important; box-sizing: border-box;
   font-family: ${sans}; font-size: 14px !important; color: ${ink.base} !important; max-width: 100%;
 }
 .cfg-detail input::placeholder, .cfg-detail textarea::placeholder { color: ${ink.muted}; }
@@ -545,6 +545,15 @@ export const DETAIL_CSS = `
 .cfg-detail .cfg-line:hover { border-color: ${desk.field}; }
 .cfg-detail .cfg-line:focus { border-color: ${ctl.accent}; background: ${desk.panel}; box-shadow: 0 0 0 3px ${ctl.accentSoft}; }
 .cfg-detail .cfg-field + .cfg-field { border-top: 1px solid ${desk.line}; }
+/*
+ * One gap under every section's rule (owner, 2026-10-16: some fields sat on the rule, some 20px below).
+ * Rows and lists bring their own padding, so they give the gap back.
+ */
+.cfg-detail .cfg-sec-body { padding-top: 12px; }
+.cfg-detail .cfg-sec-body > .cfg-field:first-child { padding-top: 0 !important; }
+.cfg-detail .cfg-sec-body > div:first-child > ol:first-child { margin-top: -12px !important; }
+/* A swatch sits at the start of a colour field: its text starts after it. */
+.cfg-detail .cfg-hex { --field-pad-left: 31px; }
 .cfg-detail .cfg-item:focus-visible, .cfg-detail .cfg-crumb:focus-visible { outline: 2px solid ${ctl.accent}; outline-offset: 2px; }
 .cfg-detail .cfg-item:hover { background: ${ctl.hover}; }
 .cfg-detail .cfg-tip { position: relative; display: inline-flex; color: ${ink.muted}; cursor: help; border-radius: 50%; outline: none; }
