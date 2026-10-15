@@ -28,7 +28,7 @@ import type { PresetKey } from '../../portfolio/blocks'
 import { ink, paper, sans } from '../../design/tokens'
 import { radius } from '../../design/controls'
 import { Button, IconButton } from '../../design/Button'
-import { IconClose } from '../../design/icons'
+import { IconClose, IconInfo, IconPage } from '../../design/icons'
 import { retireKeyword, retireTopic } from '../lib/retire'
 import { Switch, desk, DetailHead, ItemList, Row, Section, WHERE_WORDS, type AddSpec, type Crumb, type DetailAction, type ItemDrag, type ListItem } from './Detail'
 import { ColorField, RetireTag, RetireTopic, statusLabel, TopicFields } from './NodeFields'
@@ -818,8 +818,8 @@ export function ConfigTree({
         return {
           ...it,
           buttons: [
-            { label: 'Cập nhật nội dung', on: featOpen === pg.id, onClick: () => setFeatOpen(featOpen === pg.id ? null : pg.id) },
-            { label: 'Xem dàn trang', onClick: () => openPortPage(pg) },
+            { label: 'Cập nhật nội dung', icon: <IconInfo size={14} />, on: featOpen === pg.id, onClick: () => setFeatOpen(featOpen === pg.id ? null : pg.id) },
+            { label: 'Xem dàn trang', icon: <IconPage size={14} />, onClick: () => openPortPage(pg) },
           ],
           below: featOpen === pg.id ? <ContentTab only="feature" pageId={pg.id} content={port.content} setStored={port.setContentStored} pages={port.pages} /> : undefined,
         }
