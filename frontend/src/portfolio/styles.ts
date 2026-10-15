@@ -141,8 +141,8 @@ export const PF_CSS = `
 .pf .stage .strip .ph{height:100%;border-top-left-radius:0;border-bottom-left-radius:0}
 .pf .stage .frame{position:relative}
 .pf .stage .frame .ph{aspect-ratio:1.618}
-.pf .over.ctx{inset:var(--s-5);justify-content:space-between;color:var(--signal);text-shadow:none}
-.pf .over.ctx p{font-size:clamp(13px,1.5cqw,17px);line-height:1.4;columns:2;column-gap:var(--s-5);max-width:none}
+.pf .over.ctx{inset:var(--s-5);justify-content:flex-start;gap:var(--s-5);color:#b8505a;text-shadow:none}
+.pf .over.ctx p{margin:0;font-size:clamp(13px,1.5cqw,17px);line-height:1.4;columns:2;column-gap:var(--s-5);max-width:none}
 .pf .over .top{display:flex;justify-content:space-between;font:var(--t-label)}
 .pf .over .sign{font:var(--t-label)}
 .pf .stage-under{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,3fr);column-gap:var(--col-gap);padding:var(--s-5) var(--gut) var(--s-6)}

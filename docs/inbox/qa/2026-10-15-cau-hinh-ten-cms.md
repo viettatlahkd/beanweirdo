@@ -123,6 +123,11 @@
   `white-space: pre-wrap` (`portfolio/styles.ts`). Giữ xuống dòng thì bài 31 dòng tràn khỏi khung ảnh (458px) đè lên reach/post, nên
   riêng `.pf .over.ctx p` (chỉ about dùng) chuyển sang 2 cột, chữ `clamp(13px,1.5cqw,17px)`, line-height 1.4: vừa khung, chữ kí ở
   424px. Phương án khác đã thử: khung ảnh cao theo chữ (khung thành 1133px, ảnh bị cắt mạnh) — chưa chọn, chờ chủ site.
+- **[ĐỔI HÀNH VI]** `/about` công khai: bỏ dòng tên chữ kí dưới văn bản lớp phủ (`PortAbout`, `PortfolioView.tsx`; chữ kí đang
+  chọn vẫn quyết định liên hệ ở "reach"). Khối phủ xếp từ trên xuống, nhãn và văn bản cách nhau `--s-5` (34px), màu chữ
+  `#b8505a` thay `var(--signal)` (`.pf .over.ctx`, `styles.ts`). Đo trên ảnh about (thu nhỏ 60×37, tương phản WCAG từng điểm):
+  #b8505a trung bình 3.26:1, 60% điểm ≥3:1; #f19ea3 2.45:1, 19%; màu cũ 3.35:1, 60% — màu cũ chìm vì cùng tông xám-xanh với ảnh
+  đen trắng chứ không vì độ sáng.
 - Thứ tự khối trên trang chủ vẫn theo thứ tự port trên Thanh menu (`featuresFollowingMenu` khi kéo).
 - Trình duyệt (chặn lệnh ghi): Trang chủ chỉ còn Nội dung trang, Thanh menu; "Cập nhật nội dung" ở bizops mở Hiện ở trang chủ ·
   Nhãn "beæn bizops" · Ảnh; sửa nhãn → một `PATCH /api/site` `portfolio.home.features`; "Xem dàn trang" ở beæn weirdo → port

@@ -469,8 +469,8 @@ export function PortAbout({ design, chrome, posts }: { design: Design; chrome: C
                 <span key={i}>{t}</span>
               ))}
             </div>
+            {/* No signature line under the words: the owner dropped it (2026-10-15); the chosen signature still gives the contacts. */}
             {about.text && <p>{about.text}</p>}
-            <span className="sign">{sign?.name}</span>
           </div>
         </div>
       </div>
