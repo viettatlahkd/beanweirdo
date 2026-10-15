@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, 
 import { createPortal } from 'react-dom'
 import { ScaledPreview } from './ScaledPreview'
 import { Hover } from '../../lib/Hover'
+import { useNav } from '../../lib/nav'
+import { DISPLAY_TAB_KEY } from './SiteTabs'
 import { useCropping } from './framing'
 import { coverStyle } from '../../lib/imageFocus'
 import { Choice, Row, Section, desk } from './Detail'
@@ -238,6 +240,9 @@ export async function createFromPage(source: Node, title: string, pages: Node[])
 
 type Sources = ReturnType<typeof usePortSources>
 
+/** The last choice of a page's palette list: not a palette, a way to where they are kept. */
+const MANAGE_PALETTES = '__manage'
+
 export function Builder({
   page,
   design,
@@ -261,6 +266,16 @@ export function Builder({
 }) {
   const [draft, setDraft] = useState({ ...page, blocks: parseBlocks(page.blocks) })
   const [active, setActive] = useState<string | null>(null)
+  const nav = useNav()
+  // Cài đặt hiển thị remembers its tab; set it to Port before going, so the palettes are what opens.
+  const openPalettes = () => {
+    try {
+      localStorage.setItem(DISPLAY_TAB_KEY, 'port')
+    } catch {
+      /* a remembered tab is a convenience */
+    }
+    nav.goCms('display')
+  }
   const { tags } = useTags()
   const site = portSiteOf(page, pages)
   const postHref = usePostHref(site)
@@ -297,6 +312,10 @@ export function Builder({
   const fields = (
     <>
       <Section title="Thông tin">
+        {/* First, and coloured: the status is what decides whether these edits reach readers (owner, 2026-10-16). */}
+        <Row label="Trạng thái">
+          <Choice label="Trạng thái" tone="status" options={STATUS_CHOICES} value={draft.status} onChange={(status) => set({ status })} />
+        </Row>
         <ColorRow node={draft} used={[...new Set(pages.map((p) => p.accent).filter((c): c is string => !!c))]} save={(patch) => set(patch as Partial<typeof draft>)} />
         <Row label="Lời dẫn">
           <textarea aria-label="Lời dẫn" style={{ ...boxed, minHeight: 44, resize: 'vertical' }} value={draft.intro} placeholder="bấm để viết lời dẫn…" onChange={(e) => set({ intro: e.target.value })} />
@@ -309,15 +328,19 @@ export function Builder({
             onChange={(e) => set({ slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })}
           />
         </Row>
-        <Row label="Giao diện">
-          <select aria-label="Giao diện" style={boxed} value={draft.look ?? 'biz'} onChange={(e) => set({ look: e.target.value })}>
+        {/* The page's palette (`nodes.look`); the palettes themselves are kept in Cài đặt hiển thị › Port › Bảng màu. */}
+        <Row label="Bảng màu">
+          <select
+            aria-label="Bảng màu"
+            style={boxed}
+            value={draft.look ?? 'biz'}
+            onChange={(e) => (e.target.value === MANAGE_PALETTES ? openPalettes() : set({ look: e.target.value }))}
+          >
             {Object.entries(design.palettes).map(([k, p]) => (
               <option key={k} value={k}>{p.name}</option>
             ))}
+            <option value={MANAGE_PALETTES}>Quản lý bảng màu…</option>
           </select>
-        </Row>
-        <Row label="Trạng thái">
-          <Choice label="Trạng thái" options={STATUS_CHOICES} value={draft.status} onChange={(status) => set({ status })} />
         </Row>
         {flags}
         {error && <div style={{ color: ink.danger, fontFamily: sans, fontSize: 12, paddingTop: 6 }}>{error}</div>}

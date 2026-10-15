@@ -181,6 +181,16 @@
 - **[ĐỔI HÀNH VI]** Thứ tự Biên tập: Nội dung · Tác giả · Chuyên mục · Tag · Template. "Cây chủ đề" (Chuyên mục) → "Danh mục chủ đề".
 - Trình duyệt (tab riêng, chỉ đọc): 6 template; xem trước Long-form, Memo, Bitesize note, Info cards, Field report, Article đều vẽ
   được body của template.
+- **[ĐỔI HÀNH VI] port archives gộp với Template**: thanh bên chỉ còn một dòng "port archives" mở danh sách mọi trang port
+  (`AdminShell.tsx`: `SITE_NAMES.template` = 'port archives', `biz`/`bean` không còn dòng). Trang port nào cũng có dòng dẫn
+  đường "port archives"; "Xem dàn trang" ở Thanh menu mở trang trong port archives (`openPortPage`).
+- **[ĐỔI HÀNH VI] Trạng thái nổi hơn**: `Choice` có `tone="status"` — lớn hơn, lựa chọn đang bật tô theo trạng thái (đã đăng
+  #2f6b3f, nháp #b7791f, lưu trữ #6b7280; `.ab-seg-status` trong `admin.css`). Áp cho trang port (đưa lên dòng đầu mục Thông
+  tin) và chủ đề (`NodeFields.tsx`).
+- **[ĐỔI HÀNH VI] "Giao diện" của trang port là bảng màu**: ô chọn `nodes.look` = khoá trong `portfolio_design.palettes`
+  (business, bænweirdo). Bảng màu **đã có chỗ quản lý**: Cài đặt hiển thị › Port › Bảng màu (`DesignTab`, sửa màu, thêm bảng).
+  Đổi nhãn thành "Bảng màu"; lựa chọn cuối "Quản lý bảng màu…" mở Cài đặt hiển thị ở tab Port (`DISPLAY_TAB_KEY` trong
+  `SiteTabs.tsx`). Trình duyệt (tab riêng, chặn ghi): chọn → `/ad-display`, tab Port, không lệnh ghi nào.
 - Thứ tự khối trên trang chủ vẫn theo thứ tự port trên Thanh menu (`featuresFollowingMenu` khi kéo).
 - Trình duyệt (chặn lệnh ghi): Trang chủ chỉ còn Nội dung trang, Thanh menu; "Cập nhật nội dung" ở bizops mở Hiện ở trang chủ ·
   Nhãn "beæn bizops" · Ảnh; sửa nhãn → một `PATCH /api/site` `portfolio.home.features`; "Xem dàn trang" ở beæn weirdo → port

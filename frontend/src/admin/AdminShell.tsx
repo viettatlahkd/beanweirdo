@@ -8,9 +8,10 @@ import { useRememberedTab } from './components/SiteTabs'
 import { FramingProvider } from './components/framing'
 
 /**
- * What Cấu hình edits, in the order the sidebar lists it. `template`, `biz` and
- * `bean` sit under port archives (owner, 2026-10-15): the templates first, then
- * each port site. practice is the journal behind the login.
+ * What Cấu hình edits, in the order the sidebar lists it. `template` is port
+ * archives — one row, every port page listed with its status (owner,
+ * 2026-10-16); `biz` and `bean` have no row, their pages open from that list.
+ * practice is the journal behind the login.
  */
 export const CONFIG_SITES = ['root', 'template', 'biz', 'bean', 'blog', 'practice'] as const
 export type ConfigSite = (typeof CONFIG_SITES)[number]
@@ -23,7 +24,8 @@ export type ConfigSite = (typeof CONFIG_SITES)[number]
 const PORT_SITES: readonly ConfigSite[] = ['biz', 'bean']
 /** port archives rows: the templates, then the port sites. */
 const PORT_GROUP: readonly ConfigSite[] = ['template', ...PORT_SITES]
-const SITE_NAMES: Record<ConfigSite, string> = { root: 'beanweirdo', template: 'Template', biz: 'biz', bean: 'bean', blog: 'journal', practice: 'practice' }
+// port archives is the Template list itself since 2026-10-16: its own row, no rows under it; biz and bean open from that list.
+const SITE_NAMES: Record<ConfigSite, string> = { root: 'beanweirdo', template: 'port archives', biz: 'biz', bean: 'bean', blog: 'journal', practice: 'practice' }
 /** Sites whose cards open under them in the sidebar; the others are one page, opened by their row. */
 const WITH_CARDS: readonly ConfigSite[] = ['root', 'blog']
 export const CONFIG_SITE_LABELS = Object.fromEntries(
@@ -128,7 +130,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
             ? CONTENT_LISTS.find((l) => l.tab === tab)?.label
             : tab === 'display'
               ? 'Cài đặt hiển thị'
-              : `Cấu hình › ${PORT_GROUP.includes(site) ? 'port archives › ' : ''}${CONFIG_SITE_LABELS[site]}`
+              : `Cấu hình › ${PORT_GROUP.includes(site) ? 'port archives' : CONFIG_SITE_LABELS[site]}`
 
   const side = (
     <aside
@@ -175,15 +177,13 @@ export function AdminShell({ children }: { children: ReactNode }) {
             {open && WITH_CARDS.includes(s) && <div ref={setSlot} />}
           </div>
         )
+        if (PORT_SITES.includes(s)) return null
         if (s !== PORT_GROUP[0]) return row
-        // port archives: a heading row over its own rows, opening the first of them.
+        // port archives: one row, the Template list of every port page; a port site's pages open from there.
         return (
-          <div key="ports">
-            <Item open={config && PORT_GROUP.includes(site)} onClick={() => clickSite(PORT_GROUP[0])}>
-              port archives
-            </Item>
-            {row}
-          </div>
+          <Item key="ports" on={config && PORT_GROUP.includes(site)} onClick={() => clickSite(PORT_GROUP[0])}>
+            port archives
+          </Item>
         )
       })}
 

@@ -190,6 +190,11 @@
 .ab-seg > button:hover:not([aria-pressed='true']):not([aria-selected='true']):not([aria-checked='true']) { background: #f3f4f6; }
 .ab-seg > button[aria-pressed='true'], .ab-seg > button[aria-selected='true'], .ab-seg > button[aria-checked='true'] { background: #111827; color: #ffffff; }
 .ab-seg > button:focus-visible { outline: 2px solid #3e7a4e; outline-offset: -2px; }
+/* Status: what readers get hangs on it, so the chosen state is coloured and the control a size up. */
+.ab-seg-status > button { height: 36px; padding: 0 16px; font-size: 14px; font-weight: 500; }
+.ab-seg-status[data-value='published'] > button[aria-pressed='true'] { background: #2f6b3f; }
+.ab-seg-status[data-value='draft'] > button[aria-pressed='true'] { background: #b7791f; }
+.ab-seg-status[data-value='archived'] > button[aria-pressed='true'] { background: #6b7280; }
 
 /* On or off. */
 .ab-switch {
