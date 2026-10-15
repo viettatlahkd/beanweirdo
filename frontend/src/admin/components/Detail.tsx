@@ -279,6 +279,10 @@ export type ListItem = {
   drag?: ItemDrag
   /** The row's own ⋮: the same actions its detail's ⋮ holds. */
   actions?: DetailAction[]
+  /** Buttons on the row itself, before its ⋮; `on` lights one whose panel is open. */
+  buttons?: { label: string; onClick: () => void; on?: boolean }[]
+  /** Drawn under the row, inside the list: a row's own settings opened in place. */
+  below?: ReactNode
 }
 
 /** What "+ Thêm …" asks before it saves: a name, and optionally one choice. */
@@ -409,7 +413,7 @@ export function ItemList({ label, items, add, empty }: { label: string; items: L
       <ol aria-label={label} style={{ listStyle: 'none', margin: 0, padding: 0 }}>
         {items.map((it, i) => {
           const mark = it.drag?.mark
-          return (
+          return [
             <li
               key={it.id}
               className="cfg-row"
@@ -460,9 +464,19 @@ export function ItemList({ label, items, add, empty }: { label: string; items: L
                   it.meta && <span style={{ fontFamily: sans, fontSize: 13, color: ink.strong, whiteSpace: 'nowrap' }}>{it.meta}</span>
                 )}
               </button>
+              {it.buttons?.map((b) => (
+                <Button key={b.label} level={b.on ? 'primary' : 'secondary'} size="sm" aria-pressed={b.on} onClick={b.onClick}>
+                  {b.label}
+                </Button>
+              ))}
               {it.actions ? <Menu actions={it.actions} label={`Thao tác ${it.name}`} small /> : <span style={{ width: 28, flex: 'none' }} />}
-            </li>
-          )
+            </li>,
+            it.below && (
+              <li key={`${it.id}:below`} style={{ padding: '4px 34px 14px 32px' }}>
+                {it.below}
+              </li>
+            ),
+          ]
         })}
       </ol>
       {add && <AddLine spec={add} />}

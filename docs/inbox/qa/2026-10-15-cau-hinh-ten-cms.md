@@ -71,6 +71,21 @@
   bizops → `PATCH /api/site` `hidden: false`, bizops về vị trí 01. "Tạo trang ở Template" → Template, form Thêm trang mở. Không
   ghi gì thật.
 
+## Trang chủ: bỏ "Port trên trang chủ", khối port mở từ Thanh menu
+
+- **[ĐỔI HÀNH VI]** Trang chủ (beanweirdo) còn hai phần: Nội dung trang · Thanh menu. Phần "Port trên trang chủ" bỏ hẳn, cùng nút
+  "+ Thêm khối" và kéo thả khối (`PortEditors.tsx`: bỏ `AddFeature`, nhánh `only === 'blocks'`, `PRESET_CHOICES`; `PortPart` bỏ
+  `blocks`, thêm `feature`).
+- **[ĐỔI HÀNH VI]** Mỗi dòng trang port ở Thanh menu có hai nút:
+  - "Cập nhật nội dung": mở ngay dưới dòng công tắc "Hiện ở trang chủ" và các ô Nhãn · Mô tả ngắn · Ảnh của khối port đó
+    (`ContentTab only="feature" pageId=…`). Vẫn ghi vào `site_settings.data.portfolio.home.features` như trước.
+  - "Xem dàn trang": mở trang đó trong port archives (port #1/#2 theo `portSiteOf`, trang lưu trữ thì Template).
+  - Dòng about và journal không có hai nút này. (`ListItem.buttons`, `ListItem.below` trong `Detail.tsx`.)
+- Thứ tự khối trên trang chủ vẫn theo thứ tự port trên Thanh menu (`featuresFollowingMenu` khi kéo).
+- Trình duyệt (chặn lệnh ghi): Trang chủ chỉ còn Nội dung trang, Thanh menu; "Cập nhật nội dung" ở bizops mở Hiện ở trang chủ ·
+  Nhãn "beæn bizops" · Ảnh; sửa nhãn → một `PATCH /api/site` `portfolio.home.features`; "Xem dàn trang" ở beæn weirdo → port
+  archives › port #2: bean. Không ghi gì thật. `npm test` 884/884 (API 3001 tắt), `vite build` OK.
+
 ## Giới hạn
 
 "Cơ chế cho port tiếp theo" mới ở mức tên: thêm một id vào `PORT_SITES` là nó thành "port #3: …". **Tạo một site port mới thì
