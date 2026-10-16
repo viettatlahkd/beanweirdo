@@ -379,20 +379,29 @@ export function Sidebar() {
           * Closed, the rail is 64px, so the mark shrinks to 27px and steps out
           * to a 10px inset to sit whole inside it.
           */}
-        <img
-          src="/icon-180.png"
-          alt="beaen"
-          width={34}
-          height={34}
+        {/*
+          * A circle, the mark smaller inside it (owner, 2026-10-16): the cream
+          * disc is the icon's own ground, so the square file sits in it unseen.
+          */}
+        <span
           style={{
             height: open ? 34 : 27,
             width: open ? 34 : 27,
             marginLeft: open ? 0 : -12,
             flex: 'none',
-            borderRadius: 3,
+            borderRadius: '50%',
+            background: '#FBF8F1',
+            // The page is the same cream: a hairline is what shows the circle.
+            boxShadow: 'inset 0 0 0 1px #E6DFD0',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            overflow: 'hidden',
             transition: 'height .3s cubic-bezier(.4,0,.2,1), width .3s cubic-bezier(.4,0,.2,1), margin-left .3s cubic-bezier(.4,0,.2,1)',
           }}
-        />
+        >
+          <img src="/icon-180.png" alt="beaen" width={34} height={34} style={{ width: '72%', height: '72%', display: 'block' }} />
+        </span>
         <div style={{ fontFamily: serif, fontSize: 23, letterSpacing: '-.01em' }}>
           be
           <span
