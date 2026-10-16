@@ -141,8 +141,9 @@ export const PF_CSS = `
 .pf .stage .strip .ph{height:100%;border-top-left-radius:0;border-bottom-left-radius:0}
 .pf .stage .frame{position:relative}
 .pf .stage .frame .ph{aspect-ratio:1.618}
-.pf .over.ctx{inset:var(--s-5);justify-content:flex-start;gap:var(--s-5);color:#b8505a;text-shadow:none}
-.pf .over.ctx p{margin:0;font-size:clamp(13px,1.5cqw,17px);line-height:1.4;columns:2;column-gap:var(--s-5);max-width:none}
+.pf .over.ctx{inset:var(--s-5);justify-content:space-between;gap:var(--s-5);color:#b8505a;text-shadow:none}
+/* The words sit low and to the right of the photo (owner, 2026-10-16); lines stay left-aligned so the poem keeps its indents. */
+.pf .over.ctx p{margin:0 0 0 auto;font-size:clamp(13px,1.5cqw,17px);line-height:1.4;columns:2;column-gap:var(--s-5);max-width:min(100%,62em)}
 .pf .over.ctx p>span{background:linear-gradient(transparent 50%,rgba(251,214,216,.6) 50%);-webkit-box-decoration-break:clone;box-decoration-break:clone}
 .pf .over .top{display:flex;justify-content:space-between;font:var(--t-label)}
 .pf .over .sign{font:var(--t-label)}
