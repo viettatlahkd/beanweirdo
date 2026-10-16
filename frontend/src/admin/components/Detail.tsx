@@ -458,6 +458,8 @@ export function ItemList({ label, items, add, empty }: { label: string; items: L
               style={{
                 display: 'flex',
                 alignItems: 'center',
+                // A row with its own controls wraps them under its name when the column is narrow, rather than crushing the name.
+                flexWrap: 'wrap',
                 gap: 6,
                 borderTop: i ? `1px solid ${desk.line}` : 'none',
                 // Where the drop will land: a line above or below, or the whole row lit for "inside".
@@ -484,7 +486,7 @@ export function ItemList({ label, items, add, empty }: { label: string; items: L
               ) : (
                 <span style={{ width: 20, flex: 'none' }} />
               )}
-              <RowBody open={it.onOpen} style={{ all: 'unset', boxSizing: 'border-box', cursor: it.onOpen ? 'pointer' : 'default', flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 10, padding: '11px 6px', paddingLeft: 6 + (it.depth ?? 0) * 20, borderRadius: radius }}>
+              <RowBody open={it.onOpen} style={{ all: 'unset', boxSizing: 'border-box', cursor: it.onOpen ? 'pointer' : 'default', flex: it.control || it.buttons ? '1 1 220px' : 1, minWidth: 0, overflow: 'hidden', display: 'flex', alignItems: 'center', gap: 10, padding: '11px 6px', paddingLeft: 6 + (it.depth ?? 0) * 20, borderRadius: radius }}>
                 <span aria-hidden style={{ fontFamily: sans, fontSize: 12.5, color: ink.soft, width: 20, flex: 'none', fontVariantNumeric: 'tabular-nums' }}>
                   {String(i + 1).padStart(2, '0')}
                 </span>
@@ -499,18 +501,20 @@ export function ItemList({ label, items, add, empty }: { label: string; items: L
                   it.meta && <span style={{ fontFamily: sans, fontSize: 13, color: ink.strong, whiteSpace: 'nowrap' }}>{it.meta}</span>
                 )}
               </RowBody>
-              {it.control}
-              {it.buttons && (
-                <span style={{ display: 'flex', gap: 4, flex: 'none' }}>
-                  {it.buttons.map((b) => (
-                    <button key={b.label} type="button" className="cfg-fact" aria-pressed={!!b.on} disabled={b.off} onClick={b.onClick}>
-                      {b.icon}
-                      {b.label}
-                    </button>
-                  ))}
-                </span>
-              )}
-              {it.actions ? <Menu actions={it.actions} label={`Thao tác ${it.name}`} small /> : <span style={{ width: 28, flex: 'none' }} />}
+              <span style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 'none', marginLeft: 'auto' }}>
+                {it.control}
+                {it.buttons && (
+                  <span style={{ display: 'flex', gap: 4, flex: 'none' }}>
+                    {it.buttons.map((b) => (
+                      <button key={b.label} type="button" className="cfg-fact" aria-pressed={!!b.on} disabled={b.off} onClick={b.onClick}>
+                        {b.icon}
+                        {b.label}
+                      </button>
+                    ))}
+                  </span>
+                )}
+                {it.actions ? <Menu actions={it.actions} label={`Thao tác ${it.name}`} small /> : <span style={{ width: 28, flex: 'none' }} />}
+              </span>
             </li>,
             it.below && (
               <li key={`${it.id}:below`} style={{ padding: '4px 34px 14px 32px' }}>

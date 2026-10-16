@@ -1239,13 +1239,13 @@ export function ConfigTree({
         title = bean ? 'Danh mục con' : 'Template'
         // Template lists every port page — the templates (bibi, bibe) and each port site's home — with its status
         // spelled out, archived or published (owner, 2026-10-15). Homes cannot be deleted from here.
-        const homeOfLabel = (pg: Node) => (pg.home_of ? `trang chủ ${SITE_LABELS[pg.home_of]}` : '')
         const rows: ListItem[] = shownPort.map((pg) => ({
           id: pg.id,
           name: pg.title,
           depth: ancestorsOf(shownPort, pg.id).length,
           dot: portDot(pg),
-          meta: [statusLabel(pg.status), homeOfLabel(pg), portPagePath(pg, port.pages)].filter(Boolean).join(' · '),
+          // Status and address only: "trang chủ port #n" went (owner, 2026-10-16).
+          meta: [statusLabel(pg.status), portPagePath(pg, port.pages)].join(' · '),
           onOpen: pick({ kind: 'port-page', id: pg.id }),
           actions: pg.home_of ? undefined : deleteOf({ kind: 'port-page', id: pg.id }),
         }))
