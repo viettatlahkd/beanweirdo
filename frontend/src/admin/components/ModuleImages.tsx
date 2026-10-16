@@ -276,7 +276,8 @@ export function ModuleImages({
     <div
       style={{
         display: 'grid',
-        gridTemplateColumns: 'minmax(0,1fr) minmax(0,1.15fr)',
+        // Side by side when there is room; stacked in a narrow panel, where the captions were squeezed to 58px.
+        gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))',
         gap: 22,
         marginTop: 18,
       }}

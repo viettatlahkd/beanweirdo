@@ -976,7 +976,8 @@ export function ContentTab({
         <ImageField label="Ảnh chính" value={about.imageRight} onChange={(v) => setGroup('about', { ...about, imageRight: v })} />
       </div>
       <div style={fieldLabel}>Nhãn trên ảnh</div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,minmax(0,1fr))', gap: 8, marginBottom: 12 }}>
+      {/* Two by two in the two columns around them: four across clipped a label as short as "a soliloquise". */}
+      <div style={{ ...two, rowGap: 8, marginBottom: 12 }}>
         {[0, 1, 2, 3].map((i) => (
           <input
             key={i}
@@ -1194,7 +1195,7 @@ export function DesignTab({
         {error && <div style={{ color: '#8E1E42', fontFamily: sans, fontSize: 12.5, marginTop: 12 }}>{error}</div>}
 
         {head('Màu', 'colors')}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 12px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: '0 22px' }}>
           {(Object.keys(COLOR_NAMES) as (keyof Design['colors'])[]).map((k) => (
             <Color key={k} label={COLOR_NAMES[k]} value={design.colors[k]} onChange={(v) => put('colors', k, v)} />
           ))}
@@ -1206,7 +1207,7 @@ export function DesignTab({
             <Field label="Tên">
               <input style={small} value={p.name} onChange={(e) => put('palettes', key, { ...p, name: e.target.value })} />
             </Field>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: '0 22px' }}>
               {(Object.keys(PALETTE_NAMES) as (keyof typeof PALETTE_NAMES)[]).map((c) => (
                 <Color key={c} label={PALETTE_NAMES[c]} value={p[c]} onChange={(v) => put('palettes', key, { ...p, [c]: v })} />
               ))}
@@ -1231,7 +1232,7 @@ export function DesignTab({
         </Button>
 
         {head('Màu ngữ cảnh', 'signal')}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 12px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: '0 22px' }}>
           <Color label="Màu chữ phủ ảnh" value={design.signal.color} onChange={(v) => put('signal', 'color', v)} />
           <Color label="Màu đánh dấu" value={design.signal.mark} onChange={(v) => put('signal', 'mark', v)} />
         </div>
@@ -1280,14 +1281,14 @@ export function DesignTab({
         </div>
 
         {head('Cỡ chữ', 'type')}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 48px 48px 56px 50px 54px', gap: 6, ...fieldLabel, letterSpacing: '.08em' }}>
+        <div className="cfg-compact" style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 54px 54px 72px 54px 84px', gap: 6, ...fieldLabel, letterSpacing: '.08em' }}>
           <span /><span>Nhỏ nhất</span><span>Lớn nhất</span><span>Độ đậm</span><span>Giãn dòng</span><span>Giãn chữ</span>
         </div>
         {(Object.keys(ROLE_NAMES) as TypeRole[]).map((r) => {
           const t = design.type[r]
           const setT = (patch: Partial<TypeStyle>) => put('type', r, { ...t, ...patch })
           return (
-            <div key={r} style={{ display: 'grid', gridTemplateColumns: '1fr 48px 48px 56px 50px 54px', gap: 6, alignItems: 'center', marginBottom: 6 }}>
+            <div key={r} className="cfg-compact" style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 54px 54px 72px 54px 84px', gap: 6, alignItems: 'center', marginBottom: 6 }}>
               <span style={{ fontFamily: sans, fontSize: 12 }}>{ROLE_NAMES[r]}</span>
               <Num value={t.min} onChange={(n) => setT({ min: n })} />
               <Num value={t.max} onChange={(n) => setT({ max: n })} />
@@ -1303,19 +1304,19 @@ export function DesignTab({
         })}
 
         {head('Khoảng cách', 'space')}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 6, marginBottom: 6 }}>
+        <div className="cfg-compact" style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 6, marginBottom: 6 }}>
           {(['s1', 's2', 's3', 's4', 's5'] as const).map((k) => (
             <Num key={k} label={SPACE_NAMES[k]} value={design.space[k]} onChange={(n) => put('space', k, n)} />
           ))}
         </div>
         {sub('Co giãn theo bề ngang trang')}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 70px 70px', gap: 8, ...fieldLabel, letterSpacing: '.08em' }}>
+        <div className="cfg-compact" style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 72px 72px', gap: 8, ...fieldLabel, letterSpacing: '.08em' }}>
           <span /><span>Nhỏ nhất</span><span>Lớn nhất</span>
         </div>
         {(['s6', 's7', 'gut', 'colGap', 'cardGap'] as const).map((k) => {
           const v = design.space[k] as Fluid
           return (
-            <div key={k} style={{ display: 'grid', gridTemplateColumns: '1fr 70px 70px', gap: 8, alignItems: 'center', marginBottom: 6 }}>
+            <div key={k} className="cfg-compact" style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 72px 72px', gap: 8, alignItems: 'center', marginBottom: 6 }}>
               <span style={{ fontFamily: sans, fontSize: 12 }}>{SPACE_NAMES[k]}</span>
               <Num value={v.min} onChange={(n) => put('space', k, { ...v, min: n })} />
               <Num value={v.max} onChange={(n) => put('space', k, { ...v, max: n })} />
@@ -1324,7 +1325,7 @@ export function DesignTab({
         })}
 
         {head('Bo góc', 'radius')}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: '12px 22px' }}>
           <Num label="Bo góc nhỏ" value={design.radius.r1} onChange={(n) => put('radius', 'r1', n)} />
           <Num label="Bo góc lớn" value={design.radius.r2} onChange={(n) => put('radius', 'r2', n)} />
         </div>
