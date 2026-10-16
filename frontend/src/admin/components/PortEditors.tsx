@@ -742,7 +742,7 @@ function ImageField({ label, value, onChange }: { label: string; value: string; 
       setBusy(false)
     }
   }
-  const quiet: CSSProperties = { fontFamily: sans, fontSize: 13, color: ink.soft, background: 'none', border: 'none', padding: 0, cursor: 'pointer', flex: 'none' }
+  const quiet: CSSProperties = { fontFamily: sans, fontSize: 13, color: ink.soft, background: 'none', border: 'none', padding: 0, cursor: 'pointer', flex: 'none', whiteSpace: 'nowrap' }
   return (
     // A div, not Field's label: inside a label a click on the picture would open the file picker.
     <div style={{ marginBottom: 12 }}>
@@ -757,10 +757,10 @@ function ImageField({ label, value, onChange }: { label: string; value: string; 
         >
           {!value && <span style={{ fontFamily: sans, fontSize: 13, color: ink.soft }}>chưa có ảnh</span>}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 7 }}>
+        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px 10px', marginTop: 7 }}>
           <Hover
             as="label"
-            style={{ flex: 1, minWidth: 0, display: 'block', fontFamily: sans, fontSize: 13, color: ink.soft, border: '1px dashed #DAD7C7', padding: '7px 10px', cursor: 'pointer', textAlign: 'center' }}
+            style={{ flex: '1 0 auto', whiteSpace: 'nowrap', display: 'block', fontFamily: sans, fontSize: 13, color: ink.soft, border: '1px dashed #DAD7C7', padding: '7px 10px', cursor: 'pointer', textAlign: 'center' }}
             hoverStyle={{ borderColor: ink.base, color: ink.base }}
           >
             {busy ? 'đang tải…' : value ? 'đổi ảnh' : 'tải ảnh lên'}

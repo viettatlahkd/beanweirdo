@@ -486,7 +486,7 @@ export function ItemList({ label, items, add, empty }: { label: string; items: L
               ) : (
                 <span style={{ width: 20, flex: 'none' }} />
               )}
-              <RowBody open={it.onOpen} style={{ all: 'unset', boxSizing: 'border-box', cursor: it.onOpen ? 'pointer' : 'default', flex: it.control || it.buttons ? '1 1 220px' : 1, minWidth: 0, overflow: 'hidden', display: 'flex', alignItems: 'center', gap: 10, padding: '11px 6px', paddingLeft: 6 + (it.depth ?? 0) * 20, borderRadius: radius }}>
+              <RowBody open={it.onOpen} style={{ all: 'unset', boxSizing: 'border-box', cursor: it.onOpen ? 'pointer' : 'default', flex: it.control || it.buttons ? '1 1 220px' : 1, minWidth: it.control || it.buttons ? 160 : 0, overflow: 'hidden', display: 'flex', alignItems: 'center', gap: 10, padding: '11px 6px', paddingLeft: 6 + (it.depth ?? 0) * 20, borderRadius: radius }}>
                 <span aria-hidden style={{ fontFamily: sans, fontSize: 12.5, color: ink.soft, width: 20, flex: 'none', fontVariantNumeric: 'tabular-nums' }}>
                   {String(i + 1).padStart(2, '0')}
                 </span>

@@ -78,7 +78,6 @@ const grid = (columns: string, marginBottom = 14): CSSProperties => ({
 
 const one = 'minmax(0,1fr)'
 const two = 'minmax(0,1fr) minmax(0,1fr)'
-const three = 'repeat(3,minmax(0,1fr))'
 
 /**
  * Fields are sized by what they hold, not by dividing the row evenly. A colour
@@ -229,12 +228,13 @@ function ImageSlot({
           <div style={{ fontFamily: sans, fontSize: 13, color: ink.soft }}>chưa có ảnh</div>
         </div>
       )}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 7 }}>
+      {/* Wraps when the slot is narrow, so the words never run into each other. */}
+      <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px 10px', marginTop: 7 }}>
         <Hover
           as="label"
           style={{
-            flex: 1,
-            minWidth: 0,
+            flex: '1 0 auto',
+            whiteSpace: 'nowrap',
             display: 'block',
             fontFamily: sans,
             fontSize: 13,
@@ -272,6 +272,7 @@ function ImageSlot({
               padding: 0,
               cursor: 'pointer',
               flex: 'none',
+              whiteSpace: 'nowrap',
             }}
             hoverStyle={{ color: ink.base }}
           >
@@ -290,6 +291,7 @@ function ImageSlot({
             padding: 0,
             cursor: 'pointer',
             flex: 'none',
+            whiteSpace: 'nowrap',
           }}
           hoverStyle={{ color: ink.base }}
         >
@@ -517,6 +519,9 @@ export function Cms() {
                 style={boxed}
               />
             </Field>
+          </div>
+          {/* Paragraphs get the whole width: two of them side by side wrapped every few words (owner, 2026-10-16). */}
+          <div style={grid(one)}>
             <Field label="Đoạn dẫn — cột 1">
               <textarea
                 {...field('lIntro1')}
@@ -556,7 +561,7 @@ export function Cms() {
               <input {...field('notesSubtitle')} style={boxed} />
             </Field>
           </div>
-          <div style={grid(two, 18)}>
+          <div style={grid(one, 18)}>
             <Field label="Đoạn dẫn — góc phải">
               <textarea {...field('notesIntro')} rows={3} style={{ ...area, fontSize: 14 }} />
             </Field>
@@ -585,7 +590,7 @@ export function Cms() {
               />
             </Field>
           </div>
-          <div style={grid(two, 18)}>
+          <div style={grid(one, 18)}>
             <Field label="Đoạn dẫn — dạng danh sách">
               <textarea
                 {...field('blurb')}
@@ -601,7 +606,8 @@ export function Cms() {
               />
             </Field>
           </div>
-          <div style={grid(three, 40)}>
+          {/* As many columns as fit: three slots in a narrow column had their links run into each other. */}
+          <div style={grid('repeat(auto-fill,minmax(200px,1fr))', 40)}>
             {([1, 2, 3] as const).map((slot) => (
               <ImageSlot
                 key={slot}
@@ -692,7 +698,7 @@ export function Cms() {
                     )}
 
                     {shape.designNotes && (
-                      <div style={grid(two)}>
+                      <div style={grid(one)}>
                         <Field label={<>Treatment<Where>hiện ở Design system</Where></>}>
                           <textarea
                             defaultValue={m.treatment}
