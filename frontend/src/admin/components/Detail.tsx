@@ -517,7 +517,8 @@ export function ItemList({ label, items, add, empty }: { label: string; items: L
               </span>
             </li>,
             it.below && (
-              <li key={`${it.id}:below`} style={{ padding: '4px 34px 14px 32px' }}>
+              // Not indented: its fields keep the same two columns as every section around it (owner, 2026-10-16).
+              <li key={`${it.id}:below`} style={{ padding: '4px 0 14px' }}>
                 {it.below}
               </li>
             ),
@@ -539,8 +540,8 @@ export const DETAIL_CSS = `
 .cfg-detail input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]):not(.cfg-line),
 .cfg-detail textarea, .cfg-detail select {
   border: 1px solid ${desk.field} !important; border-radius: ${radius}px !important; background: ${desk.panel} !important;
-  box-shadow: none !important; outline: none; padding: 8px 11px 8px var(--field-pad-left, 11px) !important; box-sizing: border-box;
-  font-family: ${sans}; font-size: 14px !important; color: ${ink.base} !important; max-width: 100%;
+  box-shadow: none !important; outline: none; padding: var(--field-pad-y, 8px) var(--field-pad-x, 11px) var(--field-pad-y, 8px) var(--field-pad-left, var(--field-pad-x, 11px)) !important; box-sizing: border-box;
+  font-family: ${sans}; font-size: var(--field-size, 14px) !important; color: ${ink.base} !important; max-width: 100%;
 }
 .cfg-detail input::placeholder, .cfg-detail textarea::placeholder { color: ${ink.muted}; }
 .cfg-detail input:hover, .cfg-detail textarea:hover, .cfg-detail select:hover { border-color: ${ink.soft} !important; }
@@ -558,6 +559,8 @@ export const DETAIL_CSS = `
 .cfg-detail .cfg-sec-body > div:first-child > ol:first-child { margin-top: -12px !important; }
 /* A swatch sits at the start of a colour field: its text starts after it. */
 .cfg-detail .cfg-hex { --field-pad-left: 31px; }
+/* Tables of numbers (Hiển thị › Portfolio): small boxes keep their digits whole. */
+.cfg-detail .cfg-compact { --field-pad-x: 6px; --field-pad-y: 6px; --field-size: 13px; }
 .cfg-detail .cfg-item:focus-visible, .cfg-detail .cfg-crumb:focus-visible { outline: 2px solid ${ctl.accent}; outline-offset: 2px; }
 .cfg-detail .cfg-item:hover { background: ${ctl.hover}; }
 .cfg-detail .cfg-tip { position: relative; display: inline-flex; color: ${ink.muted}; cursor: help; border-radius: 50%; outline: none; }

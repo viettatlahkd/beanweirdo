@@ -132,7 +132,7 @@ function BlogDesignPanel({ stored, onSave }: { stored: BlogDesign; onSave: (patc
       <div style={{ background: desk.panel, border: `1px solid ${desk.line}`, borderRadius: radius, ...(stacked ? { padding: '0 20px 24px' } : { padding: '0 22px 40px', height: 'calc(100vh - 220px)', overflowY: 'auto', position: 'sticky', top: 0 }) }}>
         {group(
           'Font',
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: '12px 22px' }}>
             {BLOG_FONTS.map((f) => (
               <label key={f.key} style={{ display: 'grid', gap: 5 }}>
                 <span style={label}>{f.title}</span>
@@ -160,7 +160,7 @@ function BlogDesignPanel({ stored, onSave }: { stored: BlogDesign; onSave: (patc
           <div key={g.group}>
             {group(
               g.title,
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(170px,1fr))', gap: '8px 12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(170px,1fr))', gap: '8px 22px' }}>
                 {Object.entries(g.raw).map(([name, def]) => {
                   const key = `${g.group}.${name}`
                   const value = draft[key] ?? def

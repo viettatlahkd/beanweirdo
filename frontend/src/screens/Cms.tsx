@@ -79,13 +79,6 @@ const grid = (columns: string, marginBottom = 14): CSSProperties => ({
 const one = 'minmax(0,1fr)'
 const two = 'minmax(0,1fr) minmax(0,1fr)'
 
-/**
- * Fields are sized by what they hold, not by dividing the row evenly. A colour
- * is seven characters and a layout is one of three words, so both stay narrow
- * and the name takes the slack; a sentence gets its own full-width row.
- */
-const nameRow = 'minmax(0,1fr) 112px 124px 128px'
-const nameRowPlain = 'minmax(0,1fr) 112px'
 
 
 
@@ -636,7 +629,8 @@ export function Cms() {
     const shape = formShapeOf(m)
     return (
       <div>
-                    <div style={grid(shape.concept ? nameRow : nameRowPlain)}>
+                    {/* Two equal columns, as every other section's fields: its Màu starts where Thông tin's does (owner, 2026-10-16). */}
+                    <div style={grid(two)}>
                       <Field label="Tên module">
                         <input
                           defaultValue={m.title}
