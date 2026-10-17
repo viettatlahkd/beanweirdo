@@ -145,4 +145,11 @@ describe('mỗi khối long-form là một khối trên mặt soạn', () => {
     expect(kids).toEqual(['một', 'hai', 'mục', 'ba'])
     expect(markdownToRun(md).map((b) => b.k)).toEqual(['p', 'p', 'li', 'p'])
   })
+
+  it('Shift+Enter trong một mục danh sách vẫn ở trong mục đó, đoạn tách riêng vẫn là đoạn', () => {
+    const li: LongformBlock = { k: 'li', lvl: 1, runs: [{ t: 'GĐ 1+2:\nTiên phong công nghệ', w: '300', s: 'normal' }] }
+    const after = P([{ t: 'Đoạn sau danh sách', w: '300', s: 'normal' }])
+    const { out } = throughLexical(runToMarkdown([li, after]))
+    expect(markdownToRun(out)).toEqual([li, after])
+  })
 })
