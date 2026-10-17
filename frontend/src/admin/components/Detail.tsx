@@ -4,6 +4,7 @@ import { ctl, radius } from '../../design/controls'
 import { Button, ButtonLink, IconButton } from '../../design/Button'
 import { IconExternal, IconGrip, IconInfo, IconMore, IconPlus } from '../../design/icons'
 import type { DropWhere } from '../../lib/treeMove'
+import { Overlay } from './Overlay'
 
 /**
  * The one shape every detail panel of Cấu hình is drawn in (owner, 2026-10-13).
@@ -63,11 +64,13 @@ export type Crumb = { label: string; open?: () => void }
 export function Menu({ actions, label = 'Thao tác', small }: { actions: DetailAction[]; label?: string; small?: boolean }) {
   const [at, setAt] = useState<{ top?: number; bottom?: number; right: number } | null>(null)
   const box = useRef<HTMLDivElement>(null)
+  // The list is drawn on body (Overlay), outside `box`: a press inside either is not "outside".
+  const list = useRef<HTMLDivElement>(null)
   const open = at !== null
   useEffect(() => {
     if (!open) return
     // `mousedown`: a click that closes the menu must not also land on what is under it.
-    const outside = (e: MouseEvent) => !box.current?.contains(e.target as Node) && setAt(null)
+    const outside = (e: MouseEvent) => !box.current?.contains(e.target as Node) && !list.current?.contains(e.target as Node) && setAt(null)
     const escape = (e: KeyboardEvent) => e.key === 'Escape' && setAt(null)
     const away = () => setAt(null)
     document.addEventListener('mousedown', outside)
@@ -95,7 +98,8 @@ export function Menu({ actions, label = 'Thao tác', small }: { actions: DetailA
         <IconMore />
       </IconButton>
       {at && (
-        <div role="menu" className="ab-menu" style={at}>
+        <Overlay>
+        <div ref={list} role="menu" className="ab-menu" style={at}>
           {actions.map((a) => (
             <button
               key={a.label}
@@ -114,6 +118,7 @@ export function Menu({ actions, label = 'Thao tác', small }: { actions: DetailA
             </button>
           ))}
         </div>
+        </Overlay>
       )}
     </div>
   )

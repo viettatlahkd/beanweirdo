@@ -4,6 +4,7 @@ import { IconClose, IconPlus } from '../../design/icons'
 import { radius } from '../../design/controls'
 import { ink, paper, sans, serif } from '../../design/tokens'
 import { Menu, type DetailAction } from './Detail'
+import { Overlay } from './Overlay'
 import { Avatar, AvatarPicker } from './AuthorsPanel'
 import { aboutSign, type PortContent, type Signature } from '../../portfolio/content'
 
@@ -101,6 +102,7 @@ function SignDialog({ sign, onClose, onSave }: { sign: Signature | 'new'; onClos
   const label = { display: 'block', fontFamily: sans, fontSize: 13, color: ink.soft, marginBottom: 6 }
 
   return (
+    <Overlay>
     <div
       onMouseDown={(e) => e.target === e.currentTarget && onClose()}
       style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, background: 'rgba(35, 33, 26, 0.38)' }}
@@ -167,5 +169,6 @@ function SignDialog({ sign, onClose, onSave }: { sign: Signature | 'new'; onClos
         </form>
       </div>
     </div>
+    </Overlay>
   )
 }

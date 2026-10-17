@@ -8,6 +8,7 @@ import { radius } from '../../design/controls'
 import { ink, paper, sans, serif } from '../../design/tokens'
 import { useToast } from '../../design/Toaster'
 import { Menu, type DetailAction } from './Detail'
+import { Overlay } from './Overlay'
 import { useFraming } from './framing'
 import { coverStyle } from '../../lib/imageFocus'
 
@@ -393,6 +394,7 @@ function AuthorDialog({
     ) : null
 
   return (
+    <Overlay>
     <div
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose()
@@ -504,6 +506,7 @@ function AuthorDialog({
         </form>
       </div>
     </div>
+    </Overlay>
   )
 }
 
