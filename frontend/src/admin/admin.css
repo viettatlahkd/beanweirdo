@@ -74,6 +74,11 @@
 .awc-live-code { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: .88em; background: rgba(0,0,0,.06); border-radius: 3px; padding: 1px 4px; }
 .awc-live-del { text-decoration: line-through; }
 .awc-live-link { color: inherit; border-bottom: 1px solid currentColor; }
+/* A long-form heading edited where it stands (2026-10-17): the box takes the heading's own type and sits on the fold arrow's line. */
+:is(h1, h2, h3, h4) > .awc-live, :is(h1, h2, h3, h4) .awc-live { display: inline-block; vertical-align: top; width: calc(100% - 40px); }
+:is(h1, h2, h3, h4) .awc-live-input { font: inherit; letter-spacing: inherit; line-height: inherit; color: inherit; min-height: 0; }
+:is(h1, h2, h3, h4) .awc-live-p { margin: 0; }
+:is(h1, h2, h3, h4) .awc-live-ghost { font: inherit; color: #B5AE99; }
 
 /* ══════════════════════════════════════════════════════════════════════════
    .ab — the back office's controls, style "Bàn phím" (owner, 2026-10-13).
