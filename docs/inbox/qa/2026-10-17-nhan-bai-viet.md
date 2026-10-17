@@ -1,6 +1,6 @@
 # Nhãn bài viết: thông tin đầu bài hai cột, quản lý trong Hiển thị
 
-Nhánh `feature/nhan-bai`, ghép lên `origin/main` sau PR #121 và #122. PR: xem số PR ở dòng dưới.
+Nhánh `feature/nhan-bai`, ghép lên `origin/main` sau PR #121 và #122. PR #123.
 
 ## Thay đổi
 
