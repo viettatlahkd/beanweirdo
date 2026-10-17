@@ -619,7 +619,12 @@ export function Longform({
         </div>
       </div>
 
-      {/* Fold controls, pinned low-right and always reachable. */}
+      </>
+      )}
+
+      {/* Fold controls, pinned low-right and always reachable. Unlike the
+          index above they stay when the app supplies `head`: the editor has
+          them, and the published page must fold the same way (owner, 2026-10-17). */}
       <div
         style={{
           position: 'fixed',
@@ -656,9 +661,6 @@ export function Longform({
           </div>
         </div>
       </div>
-
-      </>
-      )}
 
       {/*
         * B42 — cột chữ. Trên điện thoại bỏ căn giữa và bỏ chỗ chừa cho dải mục
@@ -863,7 +865,7 @@ export function Longform({
                 {b.k === 'li' && (
                   <div style={{ display: 'grid', gridTemplateColumns: '16px minmax(0,1fr)', gap: 11, margin: '0 0 10px', paddingLeft: pad }}>
                     <div style={{ ...bullet(b.lvl, palette.accent), margin: '9px 0 0 5px' }} />
-                    <div style={{ fontSize: 15, lineHeight: 1.66, color: '#2E2A20' }}>
+                    <div style={{ fontSize: 15, lineHeight: 1.66, color: '#2E2A20', whiteSpace: 'pre-line' }}>
                       <Runs runs={b.runs} at={at} />
                     </div>
                   </div>

@@ -35,6 +35,16 @@ describe('những thứ đi trọn một vòng', () => {
     expect(runsToText(list.items[1].runs)).toBe('hai')
   })
 
+  it('dòng sau Shift+Enter trong một mục vẫn ở trong mục đó', () => {
+    // Lexical writes the rest of the item flush-left on the next line; a new paragraph gets a blank line first.
+    const back = markdownToBlocks('- GĐ 1+2:\nNhật - Hàn\n- GĐ 3\n\nĐoạn sau')
+    const list = back[0] as unknown as { type: string; items: { runs: never[] }[] }
+    expect(back.map((b) => b.type)).toEqual(['list', 'paragraph'])
+    expect(list.items.map((it) => runsToText(it.runs))).toEqual(['GĐ 1+2:\nNhật - Hàn', 'GĐ 3'])
+    const again = markdownToBlocks(bodyToMarkdown(back as never).text)
+    expect(again).toEqual(back)
+  })
+
   it('trích dẫn giữ chữ', () => {
     const { back } = roundTrip([{ type: 'quote', text: 'Vị mỏng ở cuối.' }])
     expect(back[0]).toMatchObject({ type: 'quote', text: 'Vị mỏng ở cuối.' })

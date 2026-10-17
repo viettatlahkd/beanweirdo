@@ -101,7 +101,7 @@ function Row({
           <div style={{ ...bullet(depth), margin: depth === 2 ? '10px 0 0 5px' : '9px 0 0 6px' }} />
         )}
         <div style={{ fontSize: depth === 0 ? 15.5 : 15, lineHeight: 1.62 }}>
-          <div>
+          <div style={{ whiteSpace: 'pre-line' }}>
             {render?.renderListLine ? (
               render.renderListLine(runsToText(item.runs), path)
             ) : (

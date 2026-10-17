@@ -29,15 +29,20 @@ Nhánh `fix/xuong-dong-trong-muc`, cắt từ `origin/main`. Chưa có PR.
   `onBackspaceAtStart` / `onDeleteAtEnd` không gộp đoạn vào tiêu đề kề bên (trước đây cả hai nằm chung dải nên không cần).
 - Trình duyệt (bài `50bb98c7-…`): 11 tiêu đề trong khung nhìn vẽ 42/27/20px như bản đăng; "thu gọn" giữ mọi h1/h2, "mở hết" ra đủ.
 
-## Chưa làm — thuộc lane Kiến trúc (`packages/post-renderer`)
+## Lane Kiến trúc (`packages/post-renderer`) — chủ site cho phép sửa (2026-10-17)
 
-- `Longform.tsx`, khối `li`: chữ vẽ thành `<span>` không có `white-space: pre-line`, nên `'\n'` trong mục hiện thành dấu cách trên
-  trang công khai. Cần thêm `whiteSpace: 'pre-line'` vào div chữ của `li`.
-- Đường `elements` (article/report/memo/bitesize): `elements/paste.ts` `markdownToBlocks` (nhánh danh sách, "một dòng sát lề mà
-  không có dấu đầu dòng là đoạn văn mới") có cùng lỗi; `elements/list.tsx` `Row` cũng không vẽ `'\n'`.
-
-- `Longform.tsx`: nút "thu gọn / đang mở hết" và mục lục nổi nằm trong `head === undefined`, trang `/p/` truyền `head` nên
-  trang công khai không có chúng (từ PR #104, `f76b35a`). Trình soạn có, trang đăng không — chủ site báo là không liền mạch.
+- **[ĐỔI HÀNH VI]** `Longform.tsx`: nút "thu gọn / đang mở hết" nay hiện cả khi app truyền `head`, tức trên trang công khai
+  `/p/…` và màn Xem trước. Trước: cả nút gập lẫn mục lục nổi nằm trong `head === undefined` (từ PR #104, `f76b35a`), nên chỉ
+  trình soạn có. Mục lục nổi vẫn ẩn khi có `head` như cũ (trang có dải mục lục riêng). Trình duyệt, `/p/course-menu-kinh-te-chau-a-pt-1`:
+  12 tiêu đề → "thu gọn" còn 10 (h1/h2), thân bài ẩn → "xem tất cả" lại 12; mobile 375px nút nằm góc dưới phải.
+- **[SỬA LỖI]** `Longform.tsx`, khối `li`: div chữ thêm `whiteSpace: 'pre-line'`, `'\n'` trong mục (Shift+Enter) hiện thành
+  xuống dòng thay vì dấu cách.
+- **[SỬA LỖI]** Đường `elements` (article/report/memo/bitesize): `elements/paste.ts` `markdownToBlocks` không còn dừng danh sách ở
+  một dòng sát lề không dấu đầu dòng; dòng ấy, ngay dưới một mục, là phần sau dấu xuống dòng của mục (đọc như CommonMark "lazy
+  continuation"). `pastedToItems` nhận `{ lazy: true }` chỉ từ đường này; dán chữ thường vào một dòng danh sách vẫn mỗi dòng một mục.
+  Đoạn văn sau danh sách luôn cách một dòng trống (Lexical và `bodyToMarkdown` đều vậy) nên vẫn là đoạn.
+  `elements/list.tsx` `Row`: dòng chữ chính thêm `whiteSpace: 'pre-line'`.
+  Test: `elements/write.test.ts` "dòng sau Shift+Enter trong một mục vẫn ở trong mục đó" (đọc, rồi đi một vòng ghi–đọc giữ nguyên).
 
 ## Dữ liệu cũ
 
