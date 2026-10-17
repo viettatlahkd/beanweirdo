@@ -47,7 +47,7 @@ Nhánh `fix/xuong-dong-trong-muc`, cắt từ `origin/main`. PR #122.
 - **[ĐỔI HÀNH VI]** `Longform.tsx` `prepare`: gập theo mọi cấp tiêu đề, không chỉ h1/h2. Trước: chỉ h1 (trừ tên bài) và h2 gập
   được; h3/h4 bị coi như thân bài nên "thu gọn" ẩn chúng. Nay mỗi khối mang `owners` (các tiêu đề bao nó, ngoài vào trong), h1–h4
   đều có nút ▸/▾, gập chỉ ẩn thân bài, **không bao giờ ẩn tiêu đề**; mở một tiêu đề nằm dưới mục đang gập thì mở luôn mục trên.
-  Bài `50bb98c7-…`, trang `/p/…` và trình soạn: "thu gọn" còn đúng 11 tiêu đề (8 h1/h2 + 2 h3 + …), khớp danh sách "Trong bài
+  Bài `50bb98c7-…`, trang `/p/…` và trình soạn: "thu gọn" còn đúng 11 tiêu đề (4 h1 + 5 h2 + 2 h3), khớp danh sách "Trong bài
   này" của trang.
 - **[SỬA LỖI]** `Longform.tsx`, khối `li`: div chữ thêm `whiteSpace: 'pre-line'`, `'\n'` trong mục (Shift+Enter) hiện thành
   xuống dòng thay vì dấu cách.
