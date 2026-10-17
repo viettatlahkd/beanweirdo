@@ -38,6 +38,18 @@ Nhánh `fix/xuong-dong-trong-muc`, cắt từ `origin/main`. PR #122.
   `RAIL_W`); trạng thái nhớ trong `localStorage` `beanweirdo.admin.side`. Điện thoại không có nút (sidebar xếp trên nội dung).
   Trình duyệt: co → tải lại vẫn co → » mở lại.
 
+- **[ĐỔI HÀNH VI]** Dòng để trống (Enter rồi không gõ gì) giữ lại sau khi rời ô, cả trình soạn lẫn trang đăng. Trước: Lexical ghi một
+  đoạn rỗng ra markdown y như không có (`"a\n\nb"` cả hai; `createMarkdownExport` trong `@lexical/markdown`), rồi `markdownToRun`
+  bỏ dòng trống → chữ dưới co lên. Nay đoạn rỗng ghi ra thành một dòng chỉ chứa `EMPTY_LINE` (U+2063, `post-renderer`
+  `elements/runs.ts`), có dòng trống hai bên: `EMPTY_PARAGRAPH` (transformer, chỉ ghi) + `$exportSite` / `$importSite` trong
+  `admin/lib/liveMarkdown.ts`, dùng cho mọi ô `LiveText`. Đọc về: long-form `{ k: 'p', runs: [] }` (`lineToBlock`); khuôn
+  elements `{ type: 'paragraph', text: '' }` (`markdownToBlocks`); article bỏ qua như trước (`articleFlow.ts`); ô tiêu đề bỏ ký tự
+  này. U+2063 không bao giờ nằm trong dữ liệu lưu.
+  Trang đăng: đoạn rỗng vẽ một `<br />` để giữ chiều cao một dòng (`Longform.tsx` khối `p`, `elements/text.tsx` paragraph).
+  Test: `longformMarks.test.ts` "dòng để trống" (qua Lexical thật, đi một vòng; dòng trống sau danh sách không nhập vào mục);
+  `elements/write.test.ts` "đoạn để trống vẫn là một đoạn". Trình duyệt, chặn lệnh ghi: Enter sau "Điều kiện để tăng tốc" rồi
+  bấm ra → lệnh lưu có `p`, `p` rỗng, `li`; dòng trống vẫn còn trên mặt soạn.
+
 ## Lane Kiến trúc (`packages/post-renderer`) — chủ site cho phép sửa (2026-10-17)
 
 - **[ĐỔI HÀNH VI]** `Longform.tsx`: nút "thu gọn / đang mở hết" nay hiện cả khi app truyền `head`, tức trên trang công khai

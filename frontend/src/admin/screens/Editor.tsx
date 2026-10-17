@@ -19,6 +19,7 @@ import {
   flavorGroupMeta,
   normalizeBlocks,
   ElementList,
+  EMPTY_LINE,
   longformTextToRuns,
 } from 'post-renderer'
 import type {
@@ -1783,7 +1784,7 @@ function LongformEditor({
             placeholder="tiêu đề"
             onCommit={(md) => {
               // A heading is one line; clicking in and out must not save.
-              const line = md.replace(/\s*\n+\s*/g, ' ').trim()
+              const line = md.split(EMPTY_LINE).join('').replace(/\s*\n+\s*/g, ' ').trim()
               // `## ` typed at the start sets the level, as it does in the text run;
               // stored as words, the marks showed up on the page as "### …".
               const mark = /^(#{1,4})\s+/.exec(line)

@@ -38,6 +38,7 @@ export {
   allElements,
   getElement,
   bodyToMarkdown,
+  EMPTY_LINE,
   htmlToMarkdown,
   markdownToBlocks,
   Inline,

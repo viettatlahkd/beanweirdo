@@ -11,7 +11,7 @@
  *
  * Cách lưu không đổi: vẫn là `SectionData[]`, `Article.tsx` không phải biết gì.
  */
-import type { SectionData } from 'post-renderer'
+import { EMPTY_LINE, type SectionData } from 'post-renderer'
 import { splitAtLine } from './mdBlocks'
 
 /**
@@ -61,7 +61,8 @@ function markdownToRun(markdown: string): SectionData[] {
       out.push(current)
       continue
     }
-    if (line.trim() === '') continue
+    // Sections keep no empty paragraphs; a line left empty is a gap here.
+    if (line.trim() === '' || line === EMPTY_LINE) continue
     if (!current) {
       current = { h: '', p: line }
       out.push(current)

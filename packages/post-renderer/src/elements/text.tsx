@@ -32,6 +32,9 @@ registerElement<ParagraphAttrs>({
     >
       {render?.renderParagraph ? (
         render.renderParagraph(attributes.text, index)
+      ) : attributes.text === '' ? (
+        // A line left empty keeps a line's height, as it had in the editor.
+        <br />
       ) : (
         <Inline text={attributes.text} accentInk={palette.ink} />
       )}

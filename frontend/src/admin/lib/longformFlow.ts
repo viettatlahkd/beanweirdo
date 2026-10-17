@@ -13,7 +13,7 @@
  * như cũ và cách lưu không đổi một chữ — bài "Lipid: Tổng quan" có 400 khối
  * đang chạy trên trang thật, và đây thuần tuý là cách bày ra để sửa.
  */
-import { longformRunsToText, longformTextToRuns, type LongformBlock } from 'post-renderer'
+import { EMPTY_LINE, longformRunsToText, longformTextToRuns, type LongformBlock } from 'post-renderer'
 import { splitAtLine } from './mdBlocks'
 
 /**
@@ -44,7 +44,7 @@ function blockToMarkdown(b: LongformBlock): string {
   if (b.k === 'h3' || b.k === 'h4') return `### ${text}`
   if (b.k === 'li') return `${STEP.repeat(Math.max(0, (b.lvl ?? 1) - 1))}- ${text}`
   if (b.quote) return `> ${text}`
-  return text
+  return text === '' ? EMPTY_LINE : text
 }
 
 /**
@@ -75,6 +75,8 @@ const ITEM = /^(\s*)-\s+(.*)$/
 const QUOTE = /^>\s?(.*)$/
 
 function lineToBlock(line: string): LongformBlock {
+  // A line the writer left empty is kept as an empty paragraph (owner, 2026-10-17).
+  if (line === EMPTY_LINE) return { k: 'p', runs: [] }
   const heading = HEADING.exec(line)
   if (heading) {
     const k = (['h1', 'h2', 'h3'] as const)[heading[1].length - 1]
@@ -94,8 +96,9 @@ function lineToBlock(line: string): LongformBlock {
 /**
  * Markdown quay về khối.
  *
- * Dòng trống bỏ đi chứ không thành đoạn rỗng: gõ Enter hai lần để lấy khoảng
- * thở là thói quen của người viết, không phải yêu cầu về một khối trống.
+ * Dòng trống giữa hai khối chỉ là chỗ ngăn, bỏ đi. Dòng người viết cố ý để
+ * trống thì đến dưới dạng `EMPTY_LINE` và thành một đoạn rỗng: trước 2026-10-17
+ * nó bị bỏ, chữ bên dưới co lên — chủ site: "sửa lại để free flow".
  */
 export function markdownToRun(markdown: string): LongformBlock[] {
   const out: LongformBlock[] = []
@@ -113,7 +116,7 @@ export function markdownToRun(markdown: string): LongformBlock[] {
      * gets one). That line belongs to the item, as a line break — not a
      * paragraph of its own under the list (owner, 2026-10-17).
      */
-    if (!gap && last?.k === 'li' && block.k === 'p' && !block.quote && line === line.trimStart()) {
+    if (!gap && last?.k === 'li' && block.k === 'p' && !block.quote && line !== EMPTY_LINE && line === line.trimStart()) {
       last.runs = longformTextToRuns(`${longformRunsToText(last.runs)}\n${line}`)
     } else out.push(block)
     gap = false
