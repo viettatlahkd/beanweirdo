@@ -1,6 +1,6 @@
 # Shift+Enter trong mục danh sách (long-form) thành đoạn văn riêng
 
-Nhánh `fix/xuong-dong-trong-muc`, cắt từ `origin/main`. Chưa có PR.
+Nhánh `fix/xuong-dong-trong-muc`, cắt từ `origin/main`. PR #122.
 
 ## Thay đổi
 
