@@ -13,6 +13,12 @@ Nhánh `fix/xuong-dong-trong-muc`, cắt từ `origin/main`. Chưa có PR.
   `'\n'` trong runs. Một khối mới sau danh sách luôn cách một dòng trống (Lexical và `runToMarkdown` đều vậy) nên vẫn là đoạn.
 - Test: `longformMarks.test.ts` thêm một vòng qua Lexical thật: mục có `'\n'` + đoạn sau → giữ nguyên.
 
+- **[ĐỔI HÀNH VI]** Gõ tắt mặc định trong trình soạn: `=>` thành `→` ngay khi gõ `>` (`TYPED` / `TYPED_REPLACEMENTS` trong
+  `admin/lib/liveMarkdown.ts`, một text-match transformer chỉ có `regExp`/`trigger`/`replace`: không có `importRegExp` nên chữ cũ
+  đã lưu không đổi khi mở lại, không có `export` nên `→` ghi ra như chữ thường). Thêm cặp mới: thêm vào `TYPED`.
+  Trình duyệt (bài Report, chặn lệnh ghi): gõ "x=" rồi ">" → "x→". Lệnh dán/chèn cả cụm một lần không đổi (Lexical chỉ chạy
+  gõ tắt khi gõ từng ký tự).
+
 ## Chưa làm — thuộc lane Kiến trúc (`packages/post-renderer`)
 
 - `Longform.tsx`, khối `li`: chữ vẽ thành `<span>` không có `white-space: pre-line`, nên `'\n'` trong mục hiện thành dấu cách trên
