@@ -97,6 +97,9 @@ const CONTENT_LISTS = [
  * margin on the right of every row (owner, 2026-10-15).
  */
 const SIDE_W = 196
+/** The sidebar folded away: a rail just wide enough for the button that brings it back (owner, 2026-10-17). */
+const RAIL_W = 40
+const SIDE_STATES = ['open', 'folded'] as const
 
 /**
  * The back office's one frame: a sidebar holding every place to work
@@ -116,6 +119,9 @@ export function AdminShell({ children }: { children: ReactNode }) {
     if (nav.cmsTab !== 'display') nav.goCms('display')
   }
   const [slot, setSlot] = useState<HTMLDivElement | null>(null)
+  const [sideState, setSideState] = useRememberedTab('beanweirdo.admin.side', SIDE_STATES)
+  // The phone stacks the sidebar above the work, so there is nothing to fold there.
+  const folded = !mobile && sideState === 'folded'
   const tab = nav.cmsTab
   const config = tab === 'pages'
   const openSite = (s: ConfigSite) => {
@@ -157,9 +163,12 @@ export function AdminShell({ children }: { children: ReactNode }) {
         ...(mobile ? {} : { position: 'sticky', top: 0, height: '100vh', overflowY: 'auto' }),
       }}
     >
-      <a href="/" style={{ fontFamily: serif, fontSize: 20, color: SHELL.sideInk, textDecoration: 'none', padding: '2px 10px 16px' }}>
-        bæn. <span style={{ fontFamily: SHELL.font, fontSize: SHELL.size, color: SHELL.sideMuted }}>quản trị</span>
-      </a>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
+        <a href="/" style={{ fontFamily: serif, fontSize: 20, color: SHELL.sideInk, textDecoration: 'none', padding: '2px 10px 16px' }}>
+          bæn. <span style={{ fontFamily: SHELL.font, fontSize: SHELL.size, color: SHELL.sideMuted }}>quản trị</span>
+        </a>
+        {!mobile && <FoldButton folded={false} onClick={() => setSideState('folded')} />}
+      </div>
       <Heading>Biên tập</Heading>
       {CONTENT_LISTS.map((l) => (
         <Item
@@ -222,8 +231,17 @@ export function AdminShell({ children }: { children: ReactNode }) {
 
   return (
     <FrameContext.Provider value={{ site, openSite, display, openDisplay, slot, round }}>
-      <div style={mobile ? undefined : { display: 'grid', gridTemplateColumns: `${SIDE_W}px minmax(0, 1fr)`, minHeight: '100vh' }}>
-        {side}
+      <div style={mobile ? undefined : { display: 'grid', gridTemplateColumns: `${folded ? RAIL_W : SIDE_W}px minmax(0, 1fr)`, minHeight: '100vh' }}>
+        {folded ? (
+          <aside
+            aria-label="Quản trị"
+            style={{ background: SHELL.side, borderRight: `1px solid ${SHELL.sideLine}`, position: 'sticky', top: 0, height: '100vh', padding: '18px 0', display: 'flex', justifyContent: 'center' }}
+          >
+            <FoldButton folded onClick={() => setSideState('open')} />
+          </aside>
+        ) : (
+          side
+        )}
         <main style={{ background: SHELL.main, minWidth: 0 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, padding: '12px 28px', fontFamily: SHELL.font, fontSize: 12.5, color: SHELL.muted }}>
             <span>Quản trị › {where}</span>
@@ -280,6 +298,39 @@ export function Item({
         </span>
       )}
       {children}
+    </button>
+  )
+}
+
+/** Folds the sidebar away, or brings it back. */
+function FoldButton({ folded, onClick }: { folded: boolean; onClick: () => void }) {
+  const [hover, setHover] = useState(false)
+  return (
+    <button
+      type="button"
+      aria-label={folded ? 'Mở thanh quản trị' : 'Thu gọn thanh quản trị'}
+      title={folded ? 'Mở thanh quản trị' : 'Thu gọn thanh quản trị'}
+      aria-expanded={!folded}
+      onClick={onClick}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        all: 'unset',
+        flex: 'none',
+        width: 26,
+        height: 26,
+        display: 'grid',
+        placeItems: 'center',
+        borderRadius: 6,
+        cursor: 'pointer',
+        fontFamily: SHELL.font,
+        fontSize: 15,
+        lineHeight: 1,
+        color: hover ? SHELL.sideInk : SHELL.sideMuted,
+        background: hover ? SHELL.sideHover : 'transparent',
+      }}
+    >
+      {folded ? '»' : '«'}
     </button>
   )
 }
