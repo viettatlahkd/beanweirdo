@@ -16,8 +16,13 @@
 import { longformRunsToText, longformTextToRuns, type LongformBlock } from 'post-renderer'
 import { splitAtLine } from './mdBlocks'
 
-/** Khối nào markdown viết ra rồi đọc lại được mà không mất gì. */
-const FLOWING = new Set(['p', 'h1', 'h2', 'h3', 'h4', 'li'])
+/**
+ * Khối nào gộp vào dải chữ liền. Tiêu đề thì không (chủ site, 2026-10-17):
+ * trong dải, chúng vẽ bằng kiểu chữ của ô soạn, mất nút gập ▸, và gập một
+ * mục thì giấu luôn cả dải — kéo theo những tiêu đề nằm trong dải ấy. Đứng
+ * riêng, trang tự vẽ chúng như trên bài đăng.
+ */
+const FLOWING = new Set(['p', 'li'])
 
 const flowsLongform = (b: LongformBlock | undefined) => b !== undefined && FLOWING.has(b.k)
 

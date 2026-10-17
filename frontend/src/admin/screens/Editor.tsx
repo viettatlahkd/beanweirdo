@@ -1673,13 +1673,14 @@ function LongformEditor({
               }}
               onBackspaceAtStart={() => {
                 const before = run.at[0] - 1
-                if (before < 0) return false
+                // A heading stands on its own now: Backspace under it must not delete it.
+                if (before < 0 || isHeading(blocks[before])) return false
                 write(removeAt(blocks, before, true))
                 return true
               }}
               onDeleteAtEnd={() => {
                 const after = run.at[1] + 1
-                if (after >= blocks.length) return false
+                if (after >= blocks.length || isHeading(blocks[after])) return false
                 write(removeAt(blocks, after, true))
                 return true
               }}
@@ -1774,7 +1775,19 @@ function LongformEditor({
           </div>
         )
       }
-      renderText={(text, i, sub) => (
+      renderText={(text, i, sub) =>
+        // A heading is edited where it stands, in rich text: its italic and bold show as on the page, not as `*` marks.
+        sub === undefined && isHeading(blocks[i]) ? (
+          <LiveText
+            text={text}
+            placeholder="tiêu đề"
+            onCommit={(md) => {
+              // A heading is one line; clicking in and out must not save.
+              const v = md.replace(/\s*\n+\s*/g, ' ').trim()
+              if (v !== text) at(i, (b) => setText(b, v))
+            }}
+          />
+        ) : (
         <EditableField
           value={text}
           multiline
@@ -1788,10 +1801,14 @@ function LongformEditor({
           onCommit={(v) => at(i, (b) => setText(b, v, sub))}
           style={{ font: 'inherit', color: 'inherit', letterSpacing: 'inherit' }}
         />
-      )}
+        )
+      }
     />
   )
 }
+
+/** Long-form headings stand outside the text runs; Backspace/Delete at a run's edge must leave them be. */
+const isHeading = (b: LongformBlock | undefined) => !!b && ['h1', 'h2', 'h3', 'h4'].includes(b.k)
 
 /**
  * Ô sửa chảy theo đúng dòng chữ nó thay thế.
