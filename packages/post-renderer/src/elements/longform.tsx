@@ -13,7 +13,7 @@
  * Hình dạng giữ đúng như `Longform.tsx` vẫn vẽ: công thức có vạch bên trái
  * trên nền trắng, khung ghi chú nằm trên nền cát.
  */
-import { sans } from '../tokens'
+import { layout, sans } from '../tokens'
 import { registerElement, type ElementViewProps } from './registry'
 import { ElementList } from './view'
 
@@ -63,7 +63,8 @@ registerElement<AsideAttrs>({
     isEmptyAside(attributes.items) ? null : (
     <div
       data-testid={testId}
-      style={{ background: '#F3EEE1', padding: '24px 26px 20px', margin: '22px 0 26px' }}
+      // Same measure as the callout and the paragraphs beside it, so the two boxes line up (owner, 2026-10-17).
+      style={{ background: '#F3EEE1', padding: '24px 26px 20px', margin: '22px 0 26px', maxWidth: layout.reading }}
     >
       {/* Khối trong khung là element như mọi chỗ khác — khung chỉ là cái nền. */}
       <ElementList elements={attributes.items} palette={palette} mobile={mobile} />

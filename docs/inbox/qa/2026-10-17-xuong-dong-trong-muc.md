@@ -67,6 +67,27 @@ Nhánh `fix/xuong-dong-trong-muc`, cắt từ `origin/main`. PR #122.
   `longformMarks.test.ts` "tầng của mục danh sách". Bài nào đã bị đổi tầng như vậy thì dữ liệu không tự sửa lại được (không phân
   biệt được tầng 3 thật với tầng 3 do lỗi).
 
+- **[ĐỔI HÀNH VI]** Định dạng khối (tiêu đề, gạch đầu dòng, đánh số) trong "Khung ghi chú" (`aside`), "Khối nhấn" (`callout`) và ô
+  bảng (`table`) — các khối kiểu elements (`type`), cả trong bài long-form. Trước: ô chữ trơn (`EditableField`); "1. …" lưu thành
+  đoạn văn bắt đầu bằng "1.".
+  - Trình soạn (`admin/screens/Editor.tsx`): `AsideFields`, nhánh `callout` của `ReportBlockFields`, ô trong `TableEditor` nay
+    dùng `LiveText`. Khung: `bodyToMarkdown` → markdown → `markdownToBlocks` (khối markdown không đựng được, như ảnh, giữ lại ở
+    sau như trước). Khối nhấn và ô bảng lưu chuỗi markdown (`boxText` bỏ dòng trống thừa ở cuối); chỉ ghi khi khác chữ cũ.
+  - Trang (`post-renderer` `elements/rich.tsx`, mới): `RichText` vẽ chuỗi của khối nhấn và ô bảng — đoạn không có dấu khối vẽ
+    qua `Inline` như trước, nay giữ chỗ xuống dòng (`white-space: pre-line`; trước bị nối thành dấu cách, lệch với trình soạn);
+    đoạn có dấu khối vẽ tiêu đề/danh sách cỡ nhỏ theo cỡ chữ của hộp. Ô bảng trước vẽ chuỗi thô, nay qua `RichText`.
+    Khung ghi chú vốn vẽ bằng `ElementList` nên đã vẽ được danh sách/tiêu đề.
+  - Dữ liệu cũ: mở một khung có đoạn "1. …" rồi rời ô thì khung lưu lại thành danh sách đánh số (đúng như trình soạn hiện ra).
+  Test: `elements/rich.test.tsx`. Trình duyệt, chặn lệnh ghi: khung "04 Thay đổi kì vọng" hiện danh sách số; gõ "- " trong khối
+  nhấn → lưu `…\n\n- thử chấm`; gõ "1. " trong ô bảng → lưu `"01\n\n1. một"`.
+- **[SỬA LỖI]** Bề rộng khung ghi chú ≠ khối nhấn. Trang: khối nhấn có `maxWidth: layout.reading` (760), khung thì không →
+  khung rộng hơn. Nay khung cũng 760 (`elements/longform.tsx`). Trình soạn: khối nhấn 620px, khung không giới hạn → cả hai 760
+  (`.awc-callout`, `.awc-aside`). Đo `/p/course-menu…`: cả hai `left 142, width 760`; trình soạn: cả hai cùng mép, cùng bề rộng.
+- **[SỬA LỖI]** Backspace ở đầu một gạch đầu dòng/dòng số đứng đầu dải chữ (ngay dưới khung/khối nhấn/bảng) xoá luôn khối đứng
+  trước (`onBackspaceAtStart`). Nay trong mục danh sách thì Backspace để Lexical bỏ dấu đầu dòng (`inListItem`, `liveKeys.ts`);
+  Backspace tiếp trên dòng trống thì về khối trên, không xoá (`backOutOfEmptyLine`, như cũ). Test `liveKeys.test.ts`. Trình duyệt:
+  đầu "Có sẵn…" dưới khối nhấn "30-40 năm…" → thành đoạn văn, khối nhấn còn nguyên.
+
 ## Lane Kiến trúc (`packages/post-renderer`) — chủ site cho phép sửa (2026-10-17)
 
 - **[ĐỔI HÀNH VI]** `Longform.tsx`: nút "thu gọn / đang mở hết" nay hiện cả khi app truyền `head`, tức trên trang công khai

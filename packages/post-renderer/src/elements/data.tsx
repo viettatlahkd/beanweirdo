@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 /** Elements that hold figures: pairs, bars and rows. */
 import { ink, paper, sans, serif } from '../tokens'
 import { registerElement, type ElementViewProps } from './registry'
+import { RichText } from './rich'
 
 export type MetricsAttrs = { type: 'metrics'; id?: string; items: { label: string; value: string }[] }
 export type ChartAttrs = { type: 'chart'; id?: string; points: { label: string; heightPct: number }[] }
@@ -207,7 +208,7 @@ registerElement<TableAttrs>({
                       fontVariantNumeric: 'tabular-nums',
                     }}
                   >
-                    {render?.renderTableCell ? render.renderTableCell(cell, index, ri, ci) : cell}
+                    {render?.renderTableCell ? render.renderTableCell(cell, index, ri, ci) : <RichText text={cell} accentInk={palette.ink} />}
                   </div>
                 </td>
               ))}

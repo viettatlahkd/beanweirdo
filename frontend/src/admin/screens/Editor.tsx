@@ -20,6 +20,8 @@ import {
   normalizeBlocks,
   ElementList,
   EMPTY_LINE,
+  bodyToMarkdown,
+  markdownToBlocks,
   longformTextToRuns,
 } from 'post-renderer'
 import type {
@@ -818,7 +820,9 @@ function EditorStyles() {
       .awc-quote{ display: flex; gap: 10px; align-items: flex-start; border-left: 2px solid; padding-left: 12px; margin: 10px 0; max-width: 620px; }
       .awc-quote > span{ font-family: 'Playfair Display', Georgia, serif; font-size: 38px; line-height: .8; }
       .awc-quote > div{ flex: 1; min-width: 0; }
-      .awc-callout{ border-left: 2px solid; padding: 14px 16px; margin: 10px 0; max-width: 620px; }
+      .awc-callout{ border-left: 2px solid; padding: 14px 16px; margin: 10px 0; max-width: 760px; }
+      /* The callout and the aside take the page's reading measure (layout.reading), so they match each other and the page. */
+      .awc-aside{ background: #F3EEE1; padding: 18px 22px 14px; max-width: 760px; }
     `}</style>
   )
 }
@@ -3936,7 +3940,6 @@ function ReportBlockFields({
       <AsideFields
         items={stored.items ?? []}
         onChange={(items) => onChange({ ...stored, items } as unknown as ReportBlock)}
-        palette={palette}
       />
     )
   }
@@ -4036,20 +4039,10 @@ function ReportBlockFields({
             onCommit={(v) => onChange({ ...block, heading: v })}
             style={{ fontSize: 9.5, fontWeight: 500, letterSpacing: '.16em', textTransform: 'uppercase', color: palette.ink }}
           />
-          <EditableField
-            value={block.text}
-            multiline
-            rows={3}
-            placeholder="nội dung khối nhấn"
-            onCommit={(v) => onChange({ ...block, text: v })}
-            onPasteText={onPasteBlocks}
-            onKeyDown={onTextKey}
-            onType={(text) => onSlash(text.startsWith('/') ? text.slice(1) : null)}
-            focusCaret={focusCaret}
-            markdown
-            accentInk={palette.ink}
-            style={{ fontSize: 14.5, lineHeight: 1.55, color: ink.strong }}
-          />
+          {/* Rich text, so headings, bullets and numbers work in here as in the body (owner, 2026-10-17). */}
+          <div className="awc-box-text" style={{ fontSize: 14.5, lineHeight: 1.55, color: ink.strong }}>
+            <LiveText text={block.text} placeholder="nội dung khối nhấn" onCommit={(md) => boxText(md) !== block.text && onChange({ ...block, text: boxText(md) })} />
+          </div>
         </div>
       )
     case 'paragraph':
@@ -4100,48 +4093,38 @@ function ReportBlockFields({
  */
 function AsideFields({
   items,
-  palette,
   onChange,
 }: {
   items: unknown[]
-  palette: Palette
   onChange: (items: unknown[]) => void
 }) {
-  const isText = (x: unknown) => (x as { type?: unknown } | null)?.type === 'paragraph'
-  const text = items
-    .filter(isText)
-    .map((x) => String((x as { text?: unknown }).text ?? ''))
-    .filter((t) => t !== '')
-    .join('\n')
-  const rest = items.filter((x) => !isText(x))
+  /*
+   * The box's blocks as one rich text, the way the body is edited: a heading,
+   * a bullet or a number typed in here is one, not words starting with "1."
+   * (owner, 2026-10-17). Blocks markdown cannot hold (an image) stay, after
+   * the text, as before.
+   */
+  const written = items.filter((x) => bodyToMarkdown([x as never]).lost.length === 0)
+  const rest = items.filter((x) => !written.includes(x))
+  const text = bodyToMarkdown(written as never).text
   return (
-    <div style={{ background: '#F3EEE1', padding: '18px 22px 14px' }}>
-      <EditableField
-        value={text}
-        multiline
-        rows={2}
+    <div className="awc-aside awc-box-text" style={{ fontSize: 14.5, lineHeight: 1.66, color: ink.strong }}>
+      <LiveText
+        text={text}
         placeholder="ghi chú trong khung"
-        markdown
-        accentInk={palette.ink}
-        onCommit={(v) => {
-          /*
-           * Mỗi dòng là một đoạn trong khung. Trước đây phải hai lần Enter mới
-           * ra đoạn mới, mà hai lần Enter ở cuối nay là lệnh thoát khung
-           * (`thingKeyDown`) — một Enter là một dòng, như ngoài dải chữ.
-           */
-          const paragraphs = v
-            .split(/\n+/)
-            .map((t) => t.trim())
-            .filter((t) => t !== '')
-            .map((t) => ({ type: 'paragraph', text: t }))
+        onCommit={(md) => {
+          if (md === text) return
+          const next = md.trim() === '' ? [] : markdownToBlocks(md)
           // Khung không bao giờ rỗng hẳn: vẫn phải có một đoạn để gõ vào.
-          onChange([...(paragraphs.length > 0 ? paragraphs : [{ type: 'paragraph', text: '' }]), ...rest])
+          onChange([...(next.length > 0 ? next : [{ type: 'paragraph', text: '' }]), ...rest])
         }}
-        style={{ fontSize: 14.5, lineHeight: 1.66, color: ink.strong }}
       />
     </div>
   )
 }
+
+/** A box's text as stored: no empty lines left trailing at its end. */
+const boxText = (md: string) => md.split('\n').filter((l, i, all) => !(l === EMPTY_LINE && all.slice(i).every((x) => x === EMPTY_LINE || x === ''))).join('\n').trim()
 
 function MetricsEditor({ items, onChange }: { items: ReportMetric[]; onChange: (items: ReportMetric[]) => void }) {
   function update(i: number, patch: Partial<ReportMetric>) {
@@ -4299,13 +4282,17 @@ function TableEditor({ table, palette, onChange }: { table: ReportTable; palette
                       ✕
                     </button>
                   )}
-                  <EditableField
-                    value={cell}
-                    onCommit={(v) =>
-                      onChange({ ...table, rows: table.rows.map((r, i) => (i === ri ? { cells: r.cells.map((c, ci2) => (ci2 === ci ? v : c)) } : r)) })
-                    }
-                    style={{ fontSize: 14, fontVariantNumeric: 'tabular-nums' }}
-                  />
+                  <div className="awc-box-text" style={{ fontSize: 14, fontVariantNumeric: 'tabular-nums' }}>
+                    <LiveText
+                      text={cell}
+                      placeholder=""
+                      onCommit={(md) => {
+                        const v = boxText(md)
+                        if (v !== cell)
+                          onChange({ ...table, rows: table.rows.map((r, i) => (i === ri ? { cells: r.cells.map((c, ci2) => (ci2 === ci ? v : c)) } : r)) })
+                      }}
+                    />
+                  </div>
                 </td>
               ))}
             </tr>

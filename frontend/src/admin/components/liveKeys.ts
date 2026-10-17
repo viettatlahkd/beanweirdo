@@ -99,6 +99,18 @@ function indentLine(editor: LexicalEditor, event: KeyboardEvent, paragraphs: boo
   return true
 }
 
+/**
+ * The caret is in a bullet or a numbered line. Backspace at its start drops the
+ * mark first (Lexical turns the item into a paragraph); deleting the block above
+ * from there took the box over a stray bullet along with it (owner, 2026-10-17).
+ */
+function inListItem(): boolean {
+  const selection = $getSelection()
+  if (!$isRangeSelection(selection)) return false
+  const node = selection.anchor.getNode()
+  return $isListItemNode(node) || $findMatchingParent(node, $isListItemNode) !== null
+}
+
 /** `Backspace` at the start of an indented line takes it back one level instead of deleting. */
 function outdentLine(editor: LexicalEditor, event: KeyboardEvent | null, paragraphs: boolean): boolean {
   const target = indentTarget(paragraphs)
@@ -324,7 +336,7 @@ export function registerLiveKeys(editor: LexicalEditor, edges: LiveEdges = {}, {
       (event) =>
         outdentLine(editor, event, indentParagraphs) ||
         backOutOfEmptyLine(editor, event) ||
-        edge(atStart, edges.onBackspaceAtStart)(event),
+        (!inListItem() && edge(atStart, edges.onBackspaceAtStart)(event)),
       COMMAND_PRIORITY_LOW,
     ),
     editor.registerCommand(KEY_DELETE_COMMAND, edge(atEnd, edges.onDeleteAtEnd), COMMAND_PRIORITY_LOW),
