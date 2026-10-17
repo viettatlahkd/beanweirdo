@@ -93,10 +93,27 @@ function lineToBlock(line: string): LongformBlock {
  * thở là thói quen của người viết, không phải yêu cầu về một khối trống.
  */
 export function markdownToRun(markdown: string): LongformBlock[] {
-  return markdown
-    .split('\n')
-    .filter((line) => line.trim() !== '')
-    .map(lineToBlock)
+  const out: LongformBlock[] = []
+  let gap = true
+  for (const line of markdown.split('\n')) {
+    if (line.trim() === '') {
+      gap = true
+      continue
+    }
+    const block = lineToBlock(line)
+    const last = out[out.length - 1]
+    /*
+     * Shift+Enter inside a bullet: Lexical writes the rest of the item on the
+     * next line, flush left, with no blank line between (a new block always
+     * gets one). That line belongs to the item, as a line break — not a
+     * paragraph of its own under the list (owner, 2026-10-17).
+     */
+    if (!gap && last?.k === 'li' && block.k === 'p' && !block.quote && line === line.trimStart()) {
+      last.runs = longformTextToRuns(`${longformRunsToText(last.runs)}\n${line}`)
+    } else out.push(block)
+    gap = false
+  }
+  return out
 }
 
 /** Thân bài thành các dải. Bài rỗng vẫn có một dải để gõ vào. */
