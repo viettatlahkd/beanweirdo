@@ -15,7 +15,7 @@
  */
 import type { ListItem } from './list'
 import type { StoredElement } from './read'
-import { textToRuns } from './runs'
+import { EMPTY_LINE, textToRuns } from './runs'
 
 /** `-`, `*`, `+` are Markdown's; the rest are what pasted text actually holds. */
 const BULLET = /^([-*+•‣▪·–—])[ \t]+/
@@ -279,6 +279,13 @@ export function markdownToBlocks(text: string): StoredElement[] {
       }
       const pasted = pastedToItems(chunk.join('\n'), { lazy: true })
       if (pasted) out.push({ type: 'list', ordered: pasted.ordered, items: pasted.items })
+      continue
+    }
+
+    if (trimmed === EMPTY_LINE) {
+      flush()
+      out.push({ type: 'paragraph', text: '' })
+      i++
       continue
     }
 

@@ -3,10 +3,10 @@ import { LinkNode } from '@lexical/link'
 import { ListItemNode, ListNode } from '@lexical/list'
 import { $convertFromMarkdownString, $convertToMarkdownString } from '@lexical/markdown'
 import { HeadingNode, QuoteNode } from '@lexical/rich-text'
-import { $getRoot, $isTextNode, createEditor, type LexicalNode } from 'lexical'
-import { runsToText, textToRuns, type LongformBlock } from 'post-renderer'
+import { $createParagraphNode, $createTextNode, $getRoot, $isTextNode, createEditor, type LexicalNode } from 'lexical'
+import { EMPTY_LINE, runsToText, textToRuns, type LongformBlock } from 'post-renderer'
 import { describe, expect, it } from 'vitest'
-import { SITE_TRANSFORMERS, unescapeSite } from './liveMarkdown'
+import { $exportSite, $importSite, SITE_TRANSFORMERS, unescapeSite } from './liveMarkdown'
 import { markdownToRun, runToMarkdown } from './longformFlow'
 
 /*
@@ -151,5 +151,47 @@ describe('mỗi khối long-form là một khối trên mặt soạn', () => {
     const after = P([{ t: 'Đoạn sau danh sách', w: '300', s: 'normal' }])
     const { out } = throughLexical(runToMarkdown([li, after]))
     expect(markdownToRun(out)).toEqual([li, after])
+  })
+})
+
+describe('dòng để trống', () => {
+  const editor = () =>
+    createEditor({
+      nodes: [HeadingNode, QuoteNode, ListNode, ListItemNode, LinkNode, CodeNode, CodeHighlightNode],
+      onError: (e) => {
+        throw e
+      },
+    })
+  const paragraphs = (ed: ReturnType<typeof editor>) =>
+    ed.getEditorState().read(() => $getRoot().getChildren().map((n) => `${n.getType()}:${n.getTextContent()}`))
+
+  it('Enter rồi không gõ gì thì dòng trống vẫn còn sau khi lưu và mở lại (chủ site, 2026-10-17)', () => {
+    const ed = editor()
+    ed.update(
+      () => {
+        for (const t of ['a', '', '', 'b', '']) {
+          const p = $createParagraphNode()
+          if (t) p.append($createTextNode(t))
+          $getRoot().append(p)
+        }
+      },
+      { discrete: true },
+    )
+    let md = ''
+    ed.getEditorState().read(() => {
+      md = $exportSite()
+    })
+    const blocks = markdownToRun(md)
+    expect(blocks.map((b) => runsToText(b.runs as never))).toEqual(['a', '', '', 'b', ''])
+
+    const back = editor()
+    back.update(() => $importSite(runToMarkdown(blocks)), { discrete: true })
+    expect(paragraphs(back)).toEqual(['paragraph:a', 'paragraph:', 'paragraph:', 'paragraph:b', 'paragraph:'])
+  })
+
+  it('dòng trống ngay sau danh sách không nhập vào mục cuối', () => {
+    const back = editor()
+    back.update(() => $importSite(runToMarkdown(markdownToRun(`- x\n\n${EMPTY_LINE}\n\nb`))), { discrete: true })
+    expect(paragraphs(back)).toEqual(['list:x', 'paragraph:', 'paragraph:b'])
   })
 })

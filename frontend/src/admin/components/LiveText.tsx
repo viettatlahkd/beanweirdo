@@ -17,7 +17,6 @@
 import { CodeHighlightNode, CodeNode } from '@lexical/code'
 import { LinkNode } from '@lexical/link'
 import { ListItemNode, ListNode } from '@lexical/list'
-import { $convertFromMarkdownString, $convertToMarkdownString } from '@lexical/markdown'
 import { LexicalComposer } from '@lexical/react/LexicalComposer'
 import { ContentEditable } from '@lexical/react/LexicalContentEditable'
 import { LexicalErrorBoundary } from '@lexical/react/LexicalErrorBoundary'
@@ -37,7 +36,7 @@ import {
   type LexicalEditor,
 } from 'lexical'
 import { useEffect, useRef } from 'react'
-import { SITE_TRANSFORMERS, unescapeSite } from '../lib/liveMarkdown'
+import { $exportSite, $importSite, SITE_TRANSFORMERS } from '../lib/liveMarkdown'
 import { registerLiveKeys, type LiveEdges } from './liveKeys'
 
 /**
@@ -83,7 +82,7 @@ function CommitOnBlur({ onCommit }: { onCommit: (markdown: string) => void }) {
         () => {
           editor
             .getEditorState()
-            .read(() => onCommit(unescapeSite($convertToMarkdownString(SITE_TRANSFORMERS))))
+            .read(() => onCommit($exportSite()))
           return false
         },
         COMMAND_PRIORITY_LOW,
@@ -114,10 +113,10 @@ function SyncOutside({ text }: { text: string }) {
   useEffect(() => {
     let current = ''
     editor.getEditorState().read(() => {
-      current = unescapeSite($convertToMarkdownString(SITE_TRANSFORMERS))
+      current = $exportSite()
     })
     if (current === text) return
-    editor.update(() => $convertFromMarkdownString(text, SITE_TRANSFORMERS))
+    editor.update(() => $importSite(text))
     /*
      * Chữ đổi từ bên ngoài thì bộ hoàn tác của Lexical phải quên hết.
      *
@@ -175,7 +174,7 @@ export function LiveText({
         onError: (e: Error) => {
           throw e
         },
-        editorState: () => $convertFromMarkdownString(text, SITE_TRANSFORMERS),
+        editorState: () => $importSite(text),
       }}
     >
       <div className="awc-live">
@@ -207,7 +206,7 @@ export function liveMarkdown(input: HTMLElement | null | undefined): string | nu
   if (!editor) return null
   let out = ''
   editor.getEditorState().read(() => {
-    out = unescapeSite($convertToMarkdownString(SITE_TRANSFORMERS))
+    out = $exportSite()
   })
   return out
 }

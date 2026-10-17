@@ -6,7 +6,7 @@
  * này trả lời bằng số, không bằng phỏng đoán.
  */
 import { describe, expect, it } from 'vitest'
-import { bodyToMarkdown, markdownToBlocks, runsToText, textToRuns } from './index'
+import { bodyToMarkdown, EMPTY_LINE, markdownToBlocks, runsToText, textToRuns } from './index'
 
 const roundTrip = (blocks: unknown[]) => {
   const { text, lost } = bodyToMarkdown(blocks as never)
@@ -43,6 +43,16 @@ describe('những thứ đi trọn một vòng', () => {
     expect(list.items.map((it) => runsToText(it.runs))).toEqual(['GĐ 1+2:\nNhật - Hàn', 'GĐ 3'])
     const again = markdownToBlocks(bodyToMarkdown(back as never).text)
     expect(again).toEqual(back)
+  })
+
+  it('đoạn để trống vẫn là một đoạn, đi một vòng không mất', () => {
+    const back = markdownToBlocks(`a\n\n${EMPTY_LINE}\n\nb`)
+    expect(back).toEqual([
+      { type: 'paragraph', text: 'a' },
+      { type: 'paragraph', text: '' },
+      { type: 'paragraph', text: 'b' },
+    ])
+    expect(markdownToBlocks(bodyToMarkdown(back as never).text)).toEqual(back)
   })
 
   it('trích dẫn giữ chữ', () => {

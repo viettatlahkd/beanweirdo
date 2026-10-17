@@ -882,6 +882,8 @@ export function Longform({
                     data-quote={b.quote ? '' : undefined}
                   >
                     <Runs runs={b.runs} at={at} />
+                    {/* A line left empty keeps a line's height, as in the editor. */}
+                    {plain(b.runs) === '' && <br />}
                   </div>
                 )}
 

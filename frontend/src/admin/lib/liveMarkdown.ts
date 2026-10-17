@@ -27,9 +27,14 @@ import {
   STRIKETHROUGH,
   UNORDERED_LIST,
   type TextFormatTransformer,
+  $convertFromMarkdownString,
+  $convertToMarkdownString,
+  type ElementTransformer,
   type TextMatchTransformer,
   type Transformer,
 } from '@lexical/markdown'
+import { $getRoot, $isParagraphNode } from 'lexical'
+import { EMPTY_LINE } from 'post-renderer'
 
 /**
  * Nhấn, hai mức rời nhau, đúng ký hiệu markdown chuẩn.
@@ -96,7 +101,22 @@ const TYPED_REPLACEMENTS: TextMatchTransformer[] = TYPED.map(([from, to]) => ({
   type: 'text-match',
 }))
 
+/**
+ * An empty paragraph written as `EMPTY_LINE` rather than as nothing: Lexical
+ * writes one empty paragraph exactly as it writes none (`"a\n\nb"` both), so
+ * the line was gone before anything downstream saw it. Export only — reading
+ * it back is `$importSite`.
+ */
+const EMPTY_PARAGRAPH: ElementTransformer = {
+  dependencies: [],
+  export: (node) => ($isParagraphNode(node) && node.isEmpty() ? EMPTY_LINE : null),
+  regExp: /(?!)/,
+  replace: () => false,
+  type: 'element',
+}
+
 export const SITE_TRANSFORMERS: Transformer[] = [
+  EMPTY_PARAGRAPH,
   HEADING,
   QUOTE,
   UNORDERED_LIST,
@@ -129,4 +149,35 @@ const ESCAPED = /\\([*_`~\\])/g
  */
 export function unescapeSite(markdown: string): string {
   return markdown.replace(ESCAPED, '$1')
+}
+
+/**
+ * The open editor as the site's markdown. Each empty line stands alone between
+ * blank lines, as every other block does: Lexical sets it off with single
+ * newlines (it counts as an empty paragraph), and read back that way the line
+ * would join the paragraph above it.
+ */
+export function $exportSite(): string {
+  const out: string[] = []
+  let after = false
+  for (const line of unescapeSite($convertToMarkdownString(SITE_TRANSFORMERS)).split('\n')) {
+    if (line === EMPTY_LINE) {
+      if (out.length > 0 && out[out.length - 1] !== '') out.push('')
+      out.push(line)
+      after = true
+      continue
+    }
+    if (after && line !== '') out.push('')
+    after = false
+    out.push(line)
+  }
+  return out.join('\n')
+}
+
+/** The site's markdown into the open editor; an `EMPTY_LINE` comes back as an empty paragraph. */
+export function $importSite(markdown: string): void {
+  $convertFromMarkdownString(markdown, SITE_TRANSFORMERS)
+  // Cleared only now: Lexical drops empty paragraphs at the end of an import.
+  for (const node of $getRoot().getChildren())
+    if ($isParagraphNode(node) && node.getTextContent() === EMPTY_LINE) node.clear()
 }

@@ -21,6 +21,16 @@
 import { markText, protect, restore } from './codeStrike'
 import { parseStars, writeStars } from './stars'
 
+/**
+ * A line left empty on purpose, as markdown writes it.
+ *
+ * Markdown has no empty paragraph: a blank line only separates blocks, so a
+ * line the writer left empty vanished on save and the text below moved up
+ * (owner, 2026-10-17: "free flow"). An invisible separator (U+2063) on a line
+ * of its own stands for it; it never reaches the stored text.
+ */
+export const EMPTY_LINE = '\u2063'
+
 export type Run = {
   t: string
   /**

@@ -10,7 +10,7 @@
  * có ký hiệu nào cả. Hàm này không giả vờ: thứ nào không viết ra được thì nó
  * báo tên ra ở `lost`, để chỗ gọi quyết định thay vì âm thầm nuốt mất.
  */
-import { runsToText, type Run } from './runs'
+import { EMPTY_LINE, runsToText, type Run } from './runs'
 import type { StoredElement } from './read'
 
 export type Written = {
@@ -53,7 +53,7 @@ function lines(block: StoredElement): string[] | null {
   const text = String((block as { text?: string }).text ?? '')
   switch (block.type) {
     case 'paragraph':
-      return [text]
+      return [text === '' ? EMPTY_LINE : text]
     case 'heading':
       return [`${HASHES[Math.min(3, Number((block as { level?: number }).level ?? 1)) - 1]} ${text}`]
     case 'quote': {
