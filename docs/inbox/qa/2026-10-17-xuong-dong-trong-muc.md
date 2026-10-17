@@ -13,10 +13,10 @@ Nhánh `fix/xuong-dong-trong-muc`, cắt từ `origin/main`. PR #122.
   `'\n'` trong runs. Một khối mới sau danh sách luôn cách một dòng trống (Lexical và `runToMarkdown` đều vậy) nên vẫn là đoạn.
 - Test: `longformMarks.test.ts` thêm một vòng qua Lexical thật: mục có `'\n'` + đoạn sau → giữ nguyên.
 
-- **[ĐỔI HÀNH VI]** Gõ tắt mặc định trong trình soạn: `=>` thành `→` ngay khi gõ `>` (`TYPED` / `TYPED_REPLACEMENTS` trong
+- **[ĐỔI HÀNH VI]** Gõ tắt mặc định trong trình soạn: `->` thành `→` ngay khi gõ `>` (`TYPED` / `TYPED_REPLACEMENTS` trong
   `admin/lib/liveMarkdown.ts`, một text-match transformer chỉ có `regExp`/`trigger`/`replace`: không có `importRegExp` nên chữ cũ
   đã lưu không đổi khi mở lại, không có `export` nên `→` ghi ra như chữ thường). Thêm cặp mới: thêm vào `TYPED`.
-  Trình duyệt (bài Report, chặn lệnh ghi): gõ "x=" rồi ">" → "x→". Lệnh dán/chèn cả cụm một lần không đổi (Lexical chỉ chạy
+  Trình duyệt (bài Report, chặn lệnh ghi): gõ "x-" rồi ">" → "x→". Lệnh dán/chèn cả cụm một lần không đổi (Lexical chỉ chạy
   gõ tắt khi gõ từng ký tự).
 
 - **[SỬA LỖI]** Trình soạn long-form: tiêu đề (h1–h4) bị gộp vào dải chữ liền (`FLOWING` trong `admin/lib/longformFlow.ts`
@@ -27,6 +27,7 @@ Nhánh `fix/xuong-dong-trong-muc`, cắt từ `origin/main`. PR #122.
   `admin/screens/Editor.tsx`) dùng `LiveText` để chữ nghiêng hiện nghiêng thay vì dấu `*`; chữ một dòng, chỉ ghi khi khác chữ cũ.
   `admin.css`: ô `LiveText` trong `h1–h4` kế thừa cỡ/kiểu chữ của tiêu đề, đứng cùng dòng với nút gập.
   `onBackspaceAtStart` / `onDeleteAtEnd` không gộp đoạn vào tiêu đề kề bên (trước đây cả hai nằm chung dải nên không cần).
+- Trình duyệt, chặn lệnh ghi: bấm vào tiêu đề rồi bấm ra → không có lệnh ghi; gõ "x-" rồi ">" trong tiêu đề → "x→", hoàn tác về chữ cũ rồi bấm ra → không có lệnh ghi.
 - Trình duyệt (bài `50bb98c7-…`): 11 tiêu đề trong khung nhìn vẽ 42/27/20px như bản đăng; "thu gọn" giữ mọi h1/h2, "mở hết" ra đủ.
 
 ## Lane Kiến trúc (`packages/post-renderer`) — chủ site cho phép sửa (2026-10-17)

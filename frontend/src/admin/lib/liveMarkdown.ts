@@ -80,11 +80,11 @@ const DO_SCORE: TextFormatTransformer = {
  */
 /**
  * Gõ tắt: chuỗi bên trái thành ký tự bên phải ngay khi gõ xong (chủ site,
- * 2026-10-17: `=>` thành `→`). Chỉ chạy lúc gõ: không có `importRegExp` nên
+ * 2026-10-17: `->` thành `→`). Chỉ chạy lúc gõ: không có `importRegExp` nên
  * chữ cũ đã lưu không bị đổi khi mở lại, không có `export` nên ký tự mới ghi
  * ra như mọi chữ thường. Thêm một cặp vào đây là đủ.
  */
-const TYPED: [from: string, to: string][] = [['=>', '→']]
+const TYPED: [from: string, to: string][] = [['->', '→']]
 
 const TYPED_REPLACEMENTS: TextMatchTransformer[] = TYPED.map(([from, to]) => ({
   dependencies: [],
