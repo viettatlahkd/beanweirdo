@@ -10,6 +10,7 @@ import {
 import { getSite } from '../admin/lib/apiClient'
 import { forgetModules } from '../admin/lib/lists'
 import { RoutesPanel } from '../admin/components/RoutesPanel'
+import { PostLabelsPanel } from '../admin/components/PostLabelsPanel'
 import { useAdminFrame } from '../admin/AdminShell'
 import { DISPLAY_LABELS } from '../admin/components/SiteTabs'
 import type { SystemPage } from '../admin/components/PageSettings'
@@ -833,6 +834,7 @@ export function Cms() {
           design={site.design}
           onSaveDesign={(patch) => saveSite({ design: patch })}
           routes={<RoutesPanel stored={site.routes} onSave={(routes) => saveSite({ routes } as SiteOverrides)} />}
+          labels={<PostLabelsPanel stored={site.postHead?.fields} onSave={(fields) => saveSite({ postHead: { fields } })} />}
           blog={
             <>
           <Hover
