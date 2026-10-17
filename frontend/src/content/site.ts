@@ -1,3 +1,4 @@
+import type { StoredPostField } from './postHead'
 /**
  * Site copy — every string on the public screens that the Content-management
  * screen can rewrite.
@@ -121,6 +122,8 @@ export type SiteOverrides = Partial<SiteCopy> & {
   practice?: { title?: string; accent?: string }
   /** The blog's design system: only what the owner changed, keyed `group.name` — see `design/blogDesign.ts`. */
   design?: Record<string, string | null | undefined>
+  /** The properties under a post's title: order, shown or not, label — see `content/postHead.ts`. */
+  postHead?: { fields?: StoredPostField[] }
 }
 
 /**

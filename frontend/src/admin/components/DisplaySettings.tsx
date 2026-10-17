@@ -24,11 +24,14 @@ const HEX = /^#[0-9a-fA-F]{6}$/
 export function DisplaySettings({
   blog,
   routes,
+  labels,
   design,
   onSaveDesign,
 }: {
   blog: ReactNode
   routes: ReactNode
+  /** Hiển thị › Nhãn bài viết: the properties under every post's title. */
+  labels: ReactNode
   design: BlogDesign | undefined
   onSaveDesign: (patch: BlogDesign) => Promise<void>
 }) {
@@ -43,6 +46,8 @@ export function DisplaySettings({
         </>
       ) : site === 'port' ? (
         <PortDesign />
+      ) : site === 'labels' ? (
+        labels
       ) : (
         <div style={{ padding: '26px 28px 130px', maxWidth: 1180 }}>{routes}</div>
       )}
