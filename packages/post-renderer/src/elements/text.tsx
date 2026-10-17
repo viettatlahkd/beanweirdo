@@ -2,6 +2,7 @@
 import { ink, layout, sans, serif } from '../tokens'
 import { registerElement, type ElementViewProps } from './registry'
 import { Inline } from './inline'
+import { RichText } from './rich'
 
 export type ParagraphAttrs = { type: 'paragraph'; id?: string; text: string }
 export type HeadingAttrs = { type: 'heading'; id?: string; text: string; level?: 1 | 2 | 3 }
@@ -153,7 +154,7 @@ registerElement<CalloutAttrs>({
         </div>
       )}
       <div style={{ fontFamily: sans, fontWeight: 300, fontSize: 14.5, lineHeight: 1.55, color: ink.strong }}>
-        <Inline text={attributes.text} accentInk={palette.ink} />
+        <RichText text={attributes.text} accentInk={palette.ink} />
       </div>
     </div>
   ),

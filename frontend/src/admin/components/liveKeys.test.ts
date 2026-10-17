@@ -320,6 +320,22 @@ describe('hai mép của ô soạn', () => {
     expect(ate).toBe(1)
   })
 
+  it('dòng đầu là gạch đầu dòng thì Backspace bỏ dấu, không nuốt khối đứng trước (chủ site, 2026-10-17)', () => {
+    let ate = 0
+    const editor = withEdges({ onBackspaceAtStart: () => (ate++, true) })
+    editor.update(
+      () => {
+        const item = $createListItemNode()
+        $getRoot().clear().append($createListNode('bullet').append(item))
+        item.select(0, 0)
+      },
+      { discrete: true },
+    )
+
+    expect(press(editor, KEY_BACKSPACE_COMMAND, 'Backspace').defaultPrevented).toBe(false)
+    expect(ate).toBe(0)
+  })
+
   it('giữa chữ thì không nuốt gì cả', () => {
     let ate = 0
     const editor = withEdges({ onBackspaceAtStart: () => (ate++, true) })
