@@ -35,9 +35,8 @@ type Prepared = {
   block: LongformBlock
   /** Fold id when this block is itself a foldable heading. */
   selfId: string
-  /** The h1/h2 sections this block sits inside. */
-  ownerH1: string
-  ownerH2: string
+  /** Fold ids of the headings this block sits under, outermost first. */
+  owners: string[]
   /** Index among h1s — 0 is the title. */
   h1Index: number
   /** Blocks since the last h1, for tightening the first h2's top margin. */
@@ -54,38 +53,31 @@ type Prepared = {
 /** Only a long-form with no module behind it — the standalone sample. */
 const LONGFORM_BLUE = '#EAF1F4'
 
+const RANK: Partial<Record<string, number>> = { h1: 0, h2: 1, h3: 2, h4: 3 }
+
 function prepare(input: LongformBlock[]): Prepared[] {
   // Bài trong kho vẫn còn khối `cont` cho tới lần chủ site sửa nó; vẽ thì luôn
   // vẽ từ dạng mới.
   const blocks = normalizeBlocks(input)
   let h1n = 0
-  let curH1 = ''
-  let curH2 = ''
   let sinceH1 = 99
+  /** The open heading at each rank, h1 at 0 … h4 at 3. */
+  const open: string[] = []
 
   return blocks.map((block, i) => {
     const h1Index = block.k === 'h1' ? h1n++ : -1
-    let selfId = ''
-    let ownerH1 = curH1
-    let ownerH2 = curH2
     const since = sinceH1
     sinceH1 = block.k === 'h1' ? 0 : sinceH1 + 1
+    const rank = RANK[block.k]
+    if (rank === undefined) return { key: `${i}`, at: i, block, selfId: '', owners: open.filter(Boolean), h1Index, sinceH1: since }
 
-    // The first h1 is the title — it owns nothing and cannot be folded away.
-    if (block.k === 'h1' && h1Index > 0) {
-      selfId = `a${i}`
-      curH1 = selfId
-      curH2 = ''
-      ownerH1 = ''
-      ownerH2 = ''
-    } else if (block.k === 'h2') {
-      selfId = `b${i}`
-      curH2 = selfId
-      ownerH1 = curH1
-      ownerH2 = ''
-    }
-
-    return { key: `${i}`, at: i, block, selfId, ownerH1, ownerH2, h1Index, sinceH1: since }
+    // A heading closes every section of its rank and below. The first h1 is
+    // the title — it owns nothing and cannot be folded away.
+    open.length = rank
+    const owners = open.filter(Boolean)
+    const selfId = block.k === 'h1' && h1Index === 0 ? '' : `${block.k}-${i}`
+    open[rank] = selfId
+    return { key: `${i}`, at: i, block, selfId, owners, h1Index, sinceH1: since }
   })
 }
 
@@ -441,10 +433,10 @@ export function Longform({
   function toggle(p: Prepared) {
     setFolded((f) => {
       const next = { ...f }
-      // Opening an h2 whose h1 is folded opens the h1 too — otherwise the
-      // click appears to do nothing.
-      if (p.block.k === 'h2' && p.ownerH1 && next[p.ownerH1]) {
-        delete next[p.ownerH1]
+      // Opening a heading whose section above is folded opens that too —
+      // otherwise the click appears to do nothing.
+      if (p.owners.some((o) => next[o])) {
+        for (const o of p.owners) delete next[o]
         delete next[p.selfId]
         return next
       }
@@ -705,11 +697,12 @@ export function Longform({
           )}
           {prepared.map((p, n) => {
             const { block: b, selfId, at } = p
-            const parentFolded = Boolean(p.ownerH1 && folded[p.ownerH1])
-            const hidden = b.k === 'h2' ? false : parentFolded || Boolean(p.ownerH2 && folded[p.ownerH2])
-            if (hidden) return null
+            // Folding hides the words, never a heading: folded, the page reads
+            // as its full outline, every level of it (owner, 2026-10-17).
+            const parentFolded = p.owners.some((o) => folded[o])
+            if (parentFolded && RANK[b.k] === undefined) return null
 
-            const isFolded = Boolean(folded[selfId]) || (b.k === 'h2' && parentFolded)
+            const isFolded = Boolean(folded[selfId]) || parentFolded
             const pad = padOf(b)
             const title = p.h1Index === 0
             // The page's head already carries the title and subtitle.
@@ -803,7 +796,9 @@ export function Longform({
 
                 {b.k === 'h3' && (
                   <h3
+                    onClick={() => toggle(p)}
                     style={{
+                      cursor: 'pointer',
                       fontFamily: serif,
                       fontStyle: 'italic',
                       fontWeight: 400,
@@ -813,13 +808,28 @@ export function Longform({
                       margin: '32px 0 10px',
                     }}
                   >
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        fontFamily: sans,
+                        fontSize: 11,
+                        lineHeight: 1,
+                        verticalAlign: 'middle',
+                        marginRight: 10,
+                        color: isFolded ? palette.mid : '#B5AE99',
+                      }}
+                    >
+                      {isFolded ? '▸' : '▾'}
+                    </span>
                     <Editable text={plain(b.runs)} at={at} />
                   </h3>
                 )}
 
                 {b.k === 'h4' && (
                   <h4
+                    onClick={() => toggle(p)}
                     style={{
+                      cursor: 'pointer',
                       fontFamily: sans,
                       fontWeight: 500,
                       fontSize: 12,
@@ -829,6 +839,19 @@ export function Longform({
                       margin: '32px 0 12px',
                     }}
                   >
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        fontFamily: sans,
+                        fontSize: 10,
+                        lineHeight: 1,
+                        verticalAlign: 'middle',
+                        marginRight: 10,
+                        color: isFolded ? palette.mid : '#B5AE99',
+                      }}
+                    >
+                      {isFolded ? '▸' : '▾'}
+                    </span>
                     <Editable text={plain(b.runs)} at={at} />
                   </h4>
                 )}
