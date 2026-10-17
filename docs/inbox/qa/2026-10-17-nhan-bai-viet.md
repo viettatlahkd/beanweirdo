@@ -1,6 +1,6 @@
 # Nhãn bài viết: thông tin đầu bài hai cột, quản lý trong Hiển thị
 
-Nhánh `feature/nhan-bai`, cắt từ `origin/main` sau PR #120. Chưa có PR. (PR #121 `fix/hang-chen` chưa merge, nhánh này không chứa nó.)
+Nhánh `feature/nhan-bai`, ghép lên `origin/main` sau PR #121 và #122. PR: xem số PR ở dòng dưới.
 
 ## Thay đổi
 
