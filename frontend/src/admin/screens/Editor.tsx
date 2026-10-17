@@ -108,7 +108,8 @@ import { insertLongformThing, runAtIndex, toLongformRuns, writeLongformRun } fro
 import { insertSectionThing, isStoredElement, runAtSection, toSectionRuns, writeSectionRun } from '../lib/articleFlow'
 import { BlockIcon } from '../components/BlockIcon'
 import { LiveText, liveMarkdown, takeBlock } from '../components/LiveText'
-import type { LiveEdges } from '../components/liveKeys'
+import type { LiveEdges, LiveIndent } from '../components/liveKeys'
+import { INDENT_MARK } from '../lib/liveMarkdown'
 import { applyMark, markFor } from '../lib/marks'
 import { useRowDrag } from '../lib/useRowDrag'
 import {
@@ -1654,6 +1655,8 @@ function LongformEditor({
               key={i}
               text={run.text}
               at={run.at[0]}
+              // Long-form stores a paragraph's indent (`ind`), so Shift+Tab may indent one here.
+              indentParagraphs
               menuOpen={menuAt === i}
               onToggleMenu={() => setMenuAt(menuAt === i ? null : i)}
               onCommit={(md) => write(writeLongformRun(blocks, run.at, md))}
@@ -1750,6 +1753,7 @@ function LongformEditor({
           <LiveRun
             text=""
             at={0}
+            indentParagraphs
             menuOpen={menuAt === -1}
             onToggleMenu={() => setMenuAt(menuAt === -1 ? null : -1)}
             onCommit={(md) => write(writeLongformRun(blocks, [0, -1], md))}
@@ -1784,7 +1788,7 @@ function LongformEditor({
             placeholder="tiêu đề"
             onCommit={(md) => {
               // A heading is one line; clicking in and out must not save.
-              const line = md.split(EMPTY_LINE).join('').replace(/\s*\n+\s*/g, ' ').trim()
+              const line = md.split(EMPTY_LINE).join('').split(INDENT_MARK).join('').replace(/\s*\n+\s*/g, ' ').trim()
               // `## ` typed at the start sets the level, as it does in the text run;
               // stored as words, the marks showed up on the page as "### …".
               const mark = /^(#{1,4})\s+/.exec(line)
@@ -1946,6 +1950,7 @@ function LiveRun({
   drop,
   onBackspaceAtStart,
   onDeleteAtEnd,
+  indentParagraphs,
 }: {
   text: string
   /** Chỉ số trong kho của khối đầu dải — để bàn phím tìm được dải này. */
@@ -1963,7 +1968,7 @@ function LiveRun({
   onInsertAt: (lines: number, type: string, markdown: string) => number | void
   /** Nhận khối đang được kéo. Vắng thì dải này không phải chỗ hạ cánh. */
   drop?: { active: boolean; onDrop: (lines: number) => void }
-} & LiveEdges) {
+} & LiveEdges & LiveIndent) {
   const host = useRef<HTMLDivElement>(null)
   /** Dòng con trỏ soạn đang ở, và nó nằm cách đỉnh dải bao nhiêu. */
   const [line, setLine] = useState<{ block: number; line: number; top: number }>({ block: 0, line: 0, top: 0 })
@@ -2186,6 +2191,7 @@ function LiveRun({
         onCommit={onCommit}
         onBackspaceAtStart={onBackspaceAtStart}
         onDeleteAtEnd={onDeleteAtEnd}
+        indentParagraphs={indentParagraphs}
       />
     </div>
   )

@@ -13,7 +13,8 @@
  * như cũ và cách lưu không đổi một chữ — bài "Lipid: Tổng quan" có 400 khối
  * đang chạy trên trang thật, và đây thuần tuý là cách bày ra để sửa.
  */
-import { EMPTY_LINE, longformRunsToText, longformTextToRuns, type LongformBlock } from 'post-renderer'
+import { EMPTY_LINE, indentOf, longformRunsToText, longformTextToRuns, type LongformBlock } from 'post-renderer'
+import { INDENT_MARK } from './liveMarkdown'
 import { splitAtLine } from './mdBlocks'
 
 /**
@@ -32,8 +33,14 @@ type FlowRun =
   /** Một thứ đứng riêng giữa dải chữ — `fig`, `note`, `aside`, `formula`. */
   | { kind: 'thing'; at: number }
 
-/** Hai dấu cách một tầng, đúng cách markdown lồng danh sách. */
-const STEP = '  '
+/**
+ * Bốn dấu cách một tầng — đúng bước Lexical ghi ra khi lồng danh sách.
+ *
+ * Trước 2026-10-17 là hai: Lexical đọc hai dấu cách vẫn ra tầng 2 nhưng ghi
+ * lại bằng bốn, và bốn chia hai thành tầng 3. Mở một dải có mục tầng 2 rồi
+ * rời ô là mục ấy tụt xuống tầng 3.
+ */
+const STEP = '    '
 
 function blockToMarkdown(b: LongformBlock): string {
   const text = longformRunsToText(b.runs)
@@ -44,7 +51,9 @@ function blockToMarkdown(b: LongformBlock): string {
   if (b.k === 'h3' || b.k === 'h4') return `### ${text}`
   if (b.k === 'li') return `${STEP.repeat(Math.max(0, (b.lvl ?? 1) - 1))}- ${text}`
   if (b.quote) return `> ${text}`
-  return text === '' ? EMPTY_LINE : text
+  if (text === '') return EMPTY_LINE
+  // An indented paragraph (`ind`) keeps its steps on the way through the editor.
+  return INDENT_MARK.repeat(indentOf(b)) + text
 }
 
 /**
@@ -90,8 +99,12 @@ function lineToBlock(line: string): LongformBlock {
     const lvl = Math.min(3, Math.floor(item[1].length / STEP.length) + 1)
     return { k: 'li', runs: longformTextToRuns(item[2]), lvl }
   }
+  const marks = MARKS.exec(line)?.[0].length ?? 0
+  if (marks > 0) return { k: 'p', ind: Math.min(3, marks), runs: longformTextToRuns(line.slice(marks)) }
   return { k: 'p', runs: longformTextToRuns(line) }
 }
+
+const MARKS = new RegExp(`^${INDENT_MARK}+`)
 
 /**
  * Markdown quay về khối.
@@ -116,7 +129,7 @@ export function markdownToRun(markdown: string): LongformBlock[] {
      * gets one). That line belongs to the item, as a line break — not a
      * paragraph of its own under the list (owner, 2026-10-17).
      */
-    if (!gap && last?.k === 'li' && block.k === 'p' && !block.quote && line !== EMPTY_LINE && line === line.trimStart()) {
+    if (!gap && last?.k === 'li' && block.k === 'p' && !block.quote && line !== EMPTY_LINE && !block.ind && line === line.trimStart()) {
       last.runs = longformTextToRuns(`${longformRunsToText(last.runs)}\n${line}`)
     } else out.push(block)
     gap = false

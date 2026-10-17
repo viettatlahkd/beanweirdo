@@ -25,7 +25,7 @@ import {
 } from 'lexical'
 import { registerLiveKeys } from './liveKeys'
 
-function makeEditor(): LexicalEditor {
+function makeEditor(indentParagraphs = false): LexicalEditor {
   const editor = createEditor({
     nodes: [HeadingNode, QuoteNode, ListNode, ListItemNode, LinkNode],
     onError: (e: Error) => {
@@ -36,7 +36,7 @@ function makeEditor(): LexicalEditor {
   // thiếu nó thì `INDENT_CONTENT_COMMAND` bắn ra mà không ai nhận.
   registerRichText(editor)
   registerList(editor)
-  registerLiveKeys(editor)
+  registerLiveKeys(editor, {}, { indentParagraphs })
   return editor
 }
 
@@ -68,6 +68,17 @@ function tab(editor: LexicalEditor, shiftKey = false): KeyboardEvent {
   editor.dispatchCommand(KEY_TAB_COMMAND, event)
   flush(editor)
   return event
+}
+
+function backspace(editor: LexicalEditor): KeyboardEvent {
+  const event = new KeyboardEvent('keydown', { key: 'Backspace', cancelable: true })
+  editor.dispatchCommand(KEY_BACKSPACE_COMMAND, event)
+  flush(editor)
+  return event
+}
+
+function text(editor: LexicalEditor): string {
+  return editor.getEditorState().read(() => $getRoot().getTextContent())
 }
 
 function modifier(editor: LexicalEditor, key: string): KeyboardEvent {
@@ -109,15 +120,36 @@ describe('Tab trong danh sách', () => {
     expect(deepest(editor)).toBe(2)
   })
 
-  it('Shift+Tab ở đầu mục lồng thì lùi ra', () => {
+  it('Shift+Tab thụt vào một tầng, kể cả giữa chữ (chủ site, 2026-10-17)', () => {
+    const editor = makeEditor()
+    listWithCaret(editor, 2)
+
+    const event = tab(editor, true)
+
+    expect(event.defaultPrevented).toBe(true)
+    expect(deepest(editor)).toBe(2)
+  })
+
+  it('Shift+Tab không thụt quá ba tầng, và vẫn giữ phím', () => {
     const editor = makeEditor()
     listWithCaret(editor, 0)
-    tab(editor)
+    for (let i = 0; i < 4; i++) tab(editor, true)
+
+    expect(deepest(editor)).toBe(3)
+    expect(tab(editor, true).defaultPrevented).toBe(true)
+  })
+
+  it('Backspace ở đầu mục lồng thì trả về tầng trên, không xoá gì', () => {
+    const editor = makeEditor()
+    listWithCaret(editor, 0)
+    tab(editor, true)
     expect(deepest(editor)).toBe(2)
 
-    tab(editor, true)
+    const event = backspace(editor)
 
+    expect(event.defaultPrevented).toBe(true)
     expect(deepest(editor)).toBe(1)
+    expect(text(editor)).toMatch(/một[\s\S]*hai/)
   })
 
   it('giữa chữ thì trả phím lại, để còn Tab ra khỏi ô', () => {
@@ -301,5 +333,41 @@ describe('hai mép của ô soạn', () => {
 
     expect(press(editor, KEY_BACKSPACE_COMMAND, 'Backspace').defaultPrevented).toBe(false)
     expect(ate).toBe(0)
+  })
+})
+
+describe('lùi lề đoạn văn (long-form)', () => {
+  const paragraphAt = (editor: LexicalEditor, offset: number) =>
+    editor.update(
+      () => {
+        const p = $createParagraphNode().append($createTextNode('đoạn'))
+        $getRoot().clear().append(p)
+        p.getFirstChildOrThrow<ReturnType<typeof $createTextNode>>().select(offset, offset)
+      },
+      { discrete: true },
+    )
+  const indent = (editor: LexicalEditor) =>
+    editor.getEditorState().read(() => ($getRoot().getFirstChildOrThrow() as unknown as { getIndent: () => number }).getIndent())
+
+  it('Shift+Tab lùi vào, Backspace ở đầu dòng trả về', () => {
+    const editor = makeEditor(true)
+    paragraphAt(editor, 2)
+    tab(editor, true)
+    tab(editor, true)
+    expect(indent(editor)).toBe(2)
+
+    paragraphAt(editor, 0)
+    tab(editor, true)
+    expect(indent(editor)).toBe(1)
+    expect(backspace(editor).defaultPrevented).toBe(true)
+    expect(indent(editor)).toBe(0)
+    expect(text(editor)).toBe('đoạn')
+  })
+
+  it('khuôn không lưu được lề đoạn thì Shift+Tab không đụng tới đoạn văn', () => {
+    const editor = makeEditor()
+    paragraphAt(editor, 0)
+    expect(tab(editor, true).defaultPrevented).toBe(false)
+    expect(indent(editor)).toBe(0)
   })
 })

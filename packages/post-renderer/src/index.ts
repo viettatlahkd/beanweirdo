@@ -67,7 +67,7 @@ export type {
 
 export { flatElements } from './memoElements'
 
-export { normalizeBlocks, stepIndent } from './longformBlocks'
+export { indentOf, normalizeBlocks, stepIndent } from './longformBlocks'
 export { runsToText as longformRunsToText, textToRuns as longformTextToRuns } from './longformText'
 
 export { CENTRE, coverStyle, cropStyle, fillStyle, readCrop, readFocus, stripFocus, withCrop, withFocus } from './focus'

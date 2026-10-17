@@ -10,7 +10,7 @@
  * thẳng được: jsdom không dựng `contenteditable` nên đường duy nhất đo được
  * mấy phím này là dựng một editor rồi bắn lệnh vào.
  */
-import { $isListItemNode } from '@lexical/list'
+import { $getListDepth, $isListItemNode, $isListNode, type ListItemNode } from '@lexical/list'
 import { $findMatchingParent, mergeRegister } from '@lexical/utils'
 import {
   $getRoot,
@@ -31,6 +31,7 @@ import {
   KEY_MODIFIER_COMMAND,
   KEY_TAB_COMMAND,
   OUTDENT_CONTENT_COMMAND,
+  type ElementNode,
   type LexicalEditor,
 } from 'lexical'
 import { FLOW_EXIT, fieldBeside, focusField, moveFocus } from '../lib/flowFocus'
@@ -49,6 +50,62 @@ import { FLOW_EXIT, fieldBeside, focusField, moveFocus } from '../lib/flowFocus'
 export type LiveEdges = {
   onBackspaceAtStart?: () => boolean
   onDeleteAtEnd?: () => boolean
+}
+
+/**
+ * Whether a paragraph may be indented. Only long-form stores a paragraph's
+ * indent (`ind`); elsewhere it would show while typing and be gone on save.
+ */
+export type LiveIndent = { indentParagraphs?: boolean }
+
+/** As deep as an indent goes: three paragraph steps (`stepIndent`), three list tiers (`lvl` 1–3). */
+const MAX_PARAGRAPH = 3
+const MAX_LIST = 2
+
+/** The block the caret is in that an indent applies to, with its current level (0 = not indented). */
+function indentTarget(paragraphs: boolean): { block: ElementNode; level: number; max: number } | null {
+  const selection = $getSelection()
+  if (!$isRangeSelection(selection)) return null
+  const node = selection.anchor.getNode()
+  const item = $isListItemNode(node) ? node : $findMatchingParent(node, $isListItemNode)
+  if (item) {
+    const list = item.getParent()
+    return { block: item, level: $isListNode(list) ? $getListDepth(list) - 1 : 0, max: MAX_LIST }
+  }
+  if (!paragraphs) return null
+  const top = node.getTopLevelElement()
+  return $isParagraphNode(top) ? { block: top, level: top.getIndent(), max: MAX_PARAGRAPH } : null
+}
+
+/** The caret stands, collapsed, before the first character of `block`. */
+function atBlockStart(block: ElementNode): boolean {
+  const selection = $getSelection()
+  if (!$isRangeSelection(selection) || !selection.isCollapsed() || selection.anchor.offset !== 0) return false
+  const node = selection.anchor.getNode()
+  const first = (block as ListItemNode).getFirstDescendant()
+  return node.is(block) || (first !== null && node.is(first))
+}
+
+/**
+ * `Shift+Tab` indents the line one level, wherever the caret is in it (owner,
+ * 2026-10-17). At the deepest level the key is still taken, so it does not
+ * jump focus out of the text.
+ */
+function indentLine(editor: LexicalEditor, event: KeyboardEvent, paragraphs: boolean): boolean {
+  const target = indentTarget(paragraphs)
+  if (!target) return false
+  event.preventDefault()
+  if (target.level < target.max) editor.dispatchCommand(INDENT_CONTENT_COMMAND, undefined)
+  return true
+}
+
+/** `Backspace` at the start of an indented line takes it back one level instead of deleting. */
+function outdentLine(editor: LexicalEditor, event: KeyboardEvent | null, paragraphs: boolean): boolean {
+  const target = indentTarget(paragraphs)
+  if (!target || target.level === 0 || !atBlockStart(target.block)) return false
+  event?.preventDefault()
+  editor.dispatchCommand(OUTDENT_CONTENT_COMMAND, undefined)
+  return true
 }
 
 /** Con trỏ đứng ở ngay đầu ô, không bôi đen gì. */
@@ -77,7 +134,8 @@ function atEnd(): boolean {
  * được bằng bàn phím. Ở đầu mục thì `Tab` gần như chắc chắn là ý muốn thụt
  * lề; giữa chữ thì nó là ý muốn đi tiếp sang chỗ khác.
  */
-function onTab(editor: LexicalEditor, event: KeyboardEvent): boolean {
+function onTab(editor: LexicalEditor, event: KeyboardEvent, paragraphs: boolean): boolean {
+  if (event.shiftKey) return indentLine(editor, event, paragraphs)
   const selection = $getSelection()
   if (!$isRangeSelection(selection) || !selection.isCollapsed()) return false
   if (selection.anchor.offset !== 0) return false
@@ -85,7 +143,7 @@ function onTab(editor: LexicalEditor, event: KeyboardEvent): boolean {
   if (!item) return false
 
   event.preventDefault()
-  editor.dispatchCommand(event.shiftKey ? OUTDENT_CONTENT_COMMAND : INDENT_CONTENT_COMMAND, undefined)
+  editor.dispatchCommand(INDENT_CONTENT_COMMAND, undefined)
   return true
 }
 
@@ -251,7 +309,7 @@ function backOutOfEmptyLine(editor: LexicalEditor, event: KeyboardEvent | null):
 }
 
 /** Nối tất cả vào một editor; trả về hàm gỡ, như mọi `register*` của Lexical. */
-export function registerLiveKeys(editor: LexicalEditor, edges: LiveEdges = {}): () => void {
+export function registerLiveKeys(editor: LexicalEditor, edges: LiveEdges = {}, { indentParagraphs = false }: LiveIndent = {}): () => void {
   const edge = (at: () => boolean, take?: () => boolean) => (event: KeyboardEvent | null) => {
     if (!take || !at() || !take()) return false
     event?.preventDefault()
@@ -259,11 +317,14 @@ export function registerLiveKeys(editor: LexicalEditor, edges: LiveEdges = {}): 
   }
 
   return mergeRegister(
-    editor.registerCommand(KEY_TAB_COMMAND, (event) => onTab(editor, event), COMMAND_PRIORITY_LOW),
+    editor.registerCommand(KEY_TAB_COMMAND, (event) => onTab(editor, event, indentParagraphs), COMMAND_PRIORITY_LOW),
     editor.registerCommand(KEY_MODIFIER_COMMAND, onModifier, COMMAND_PRIORITY_LOW),
     editor.registerCommand(
       KEY_BACKSPACE_COMMAND,
-      (event) => backOutOfEmptyLine(editor, event) || edge(atStart, edges.onBackspaceAtStart)(event),
+      (event) =>
+        outdentLine(editor, event, indentParagraphs) ||
+        backOutOfEmptyLine(editor, event) ||
+        edge(atStart, edges.onBackspaceAtStart)(event),
       COMMAND_PRIORITY_LOW,
     ),
     editor.registerCommand(KEY_DELETE_COMMAND, edge(atEnd, edges.onDeleteAtEnd), COMMAND_PRIORITY_LOW),
