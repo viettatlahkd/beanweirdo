@@ -64,8 +64,20 @@ function depths(lines: Line[]): Map<number, number> {
  * Pasted text as list items, or `null` when there is nothing a list can do
  * better than the field itself — one plain line is just typing.
  */
-function pastedToItems(text: string): PastedList | null {
-  const lines = text.replace(/\r\n?/g, '\n').split('\n').map(read).filter((l): l is Line => l !== null)
+function pastedToItems(text: string, opts: { lazy?: boolean } = {}): PastedList | null {
+  const all = text.replace(/\r\n?/g, '\n').split('\n').map(read).filter((l): l is Line => l !== null)
+  /*
+   * `lazy`: an unmarked flush-left line right under an item is the rest of
+   * that item after a line break (Shift+Enter), as CommonMark reads it — not
+   * an item of its own. Only for a whole list written as markdown; a bare
+   * paste of plain lines is still one item per line.
+   */
+  const lines: Line[] = []
+  for (const line of all) {
+    const last = lines[lines.length - 1]
+    if (opts.lazy && last && !line.marked && line.indent === 0) last.text = `${last.text}\n${line.text}`
+    else lines.push({ ...line })
+  }
   if (lines.length === 0) return null
   if (lines.length === 1 && !lines[0].marked) return null
 
@@ -257,15 +269,15 @@ export function markdownToBlocks(text: string): StoredElement[] {
       flush()
       const chunk: string[] = []
       // Một dòng thụt lề đi theo danh sách là mục con của nó; một dòng sát lề
-      // mà không có dấu đầu dòng là đoạn văn mới, và danh sách dừng ở đó.
+      // mà không có dấu đầu dòng, ngay dưới một mục, là phần sau dấu xuống
+      // dòng của mục ấy (Shift+Enter). Đoạn văn mới luôn cách một dòng trống.
       while (i < lines.length) {
         const next = lines[i]
         if (next.trim() === '') break
-        if (!startsList(next.trim()) && next === next.trimStart()) break
         chunk.push(next)
         i++
       }
-      const pasted = pastedToItems(chunk.join('\n'))
+      const pasted = pastedToItems(chunk.join('\n'), { lazy: true })
       if (pasted) out.push({ type: 'list', ordered: pasted.ordered, items: pasted.items })
       continue
     }
