@@ -195,3 +195,52 @@ describe('dòng để trống', () => {
     expect(paragraphs(back)).toEqual(['list:x', 'paragraph:', 'paragraph:b'])
   })
 })
+
+describe('đoạn lùi lề', () => {
+  it('đi qua mặt soạn mà vẫn giữ bậc lùi', () => {
+    const blocks: LongformBlock[] = [
+      { k: 'p', runs: textToRuns('gốc') as never },
+      { k: 'p', ind: 2, runs: textToRuns('lùi hai bậc') as never },
+    ]
+    const ed = createEditor({
+      nodes: [HeadingNode, QuoteNode, ListNode, ListItemNode, LinkNode, CodeNode, CodeHighlightNode],
+      onError: (e) => {
+        throw e
+      },
+    })
+    ed.update(() => $importSite(runToMarkdown(blocks)), { discrete: true })
+    let md = ''
+    let indents: number[] = []
+    ed.getEditorState().read(() => {
+      indents = $getRoot().getChildren().map((n) => (n as unknown as { getIndent: () => number }).getIndent())
+      md = $exportSite()
+    })
+    expect(indents).toEqual([0, 2])
+    expect(markdownToRun(md).map((b) => [b.ind ?? 0, runsToText(b.runs as never)])).toEqual([
+      [0, 'gốc'],
+      [2, 'lùi hai bậc'],
+    ])
+  })
+})
+
+describe('tầng của mục danh sách', () => {
+  it('mở rồi rời ô không đổi tầng (Lexical lồng bằng bốn dấu cách)', () => {
+    const blocks: LongformBlock[] = [
+      { k: 'li', lvl: 1, runs: textToRuns('một') as never },
+      { k: 'li', lvl: 2, runs: textToRuns('hai') as never },
+      { k: 'li', lvl: 3, runs: textToRuns('ba') as never },
+    ]
+    const ed = createEditor({
+      nodes: [HeadingNode, QuoteNode, ListNode, ListItemNode, LinkNode, CodeNode, CodeHighlightNode],
+      onError: (e) => {
+        throw e
+      },
+    })
+    ed.update(() => $importSite(runToMarkdown(blocks)), { discrete: true })
+    let md = ''
+    ed.getEditorState().read(() => {
+      md = $exportSite()
+    })
+    expect(markdownToRun(md).map((b) => b.lvl)).toEqual([1, 2, 3])
+  })
+})

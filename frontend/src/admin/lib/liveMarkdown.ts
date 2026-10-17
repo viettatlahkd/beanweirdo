@@ -33,7 +33,7 @@ import {
   type TextMatchTransformer,
   type Transformer,
 } from '@lexical/markdown'
-import { $getRoot, $isParagraphNode } from 'lexical'
+import { $getRoot, $isParagraphNode, $isTextNode } from 'lexical'
 import { EMPTY_LINE } from 'post-renderer'
 
 /**
@@ -102,21 +102,37 @@ const TYPED_REPLACEMENTS: TextMatchTransformer[] = TYPED.map(([from, to]) => ({
 }))
 
 /**
- * An empty paragraph written as `EMPTY_LINE` rather than as nothing: Lexical
- * writes one empty paragraph exactly as it writes none (`"a\n\nb"` both), so
- * the line was gone before anything downstream saw it. Export only — reading
- * it back is `$importSite`.
+ * One step of a paragraph's indent, at the head of its line. Markdown has no
+ * indented paragraph (four spaces make code), so the step is an invisible
+ * character (U+2062) that only this editor and long-form read; it never
+ * reaches the stored text.
  */
-const EMPTY_PARAGRAPH: ElementTransformer = {
+export const INDENT_MARK = '\u2062'
+
+/**
+ * Paragraphs Lexical's own export loses.
+ *
+ * - Empty: written as `EMPTY_LINE` rather than as nothing. Lexical writes one
+ *   empty paragraph exactly as it writes none (`"a\n\nb"` both), so the line
+ *   was gone before anything downstream saw it.
+ * - Indented (`Shift+Tab`): led by one `INDENT_MARK` a step.
+ *
+ * Export only — reading both back is `$importSite`.
+ */
+const SITE_PARAGRAPH: ElementTransformer = {
   dependencies: [],
-  export: (node) => ($isParagraphNode(node) && node.isEmpty() ? EMPTY_LINE : null),
+  export: (node, children) => {
+    if (!$isParagraphNode(node)) return null
+    if (node.isEmpty()) return EMPTY_LINE
+    return node.getIndent() > 0 ? INDENT_MARK.repeat(node.getIndent()) + children(node) : null
+  },
   regExp: /(?!)/,
   replace: () => false,
   type: 'element',
 }
 
 export const SITE_TRANSFORMERS: Transformer[] = [
-  EMPTY_PARAGRAPH,
+  SITE_PARAGRAPH,
   HEADING,
   QUOTE,
   UNORDERED_LIST,
@@ -174,10 +190,24 @@ export function $exportSite(): string {
   return out.join('\n')
 }
 
-/** The site's markdown into the open editor; an `EMPTY_LINE` comes back as an empty paragraph. */
+/** The site's markdown into the open editor: `EMPTY_LINE` as an empty paragraph, `INDENT_MARK`s as its indent. */
 export function $importSite(markdown: string): void {
   $convertFromMarkdownString(markdown, SITE_TRANSFORMERS)
-  // Cleared only now: Lexical drops empty paragraphs at the end of an import.
-  for (const node of $getRoot().getChildren())
-    if ($isParagraphNode(node) && node.getTextContent() === EMPTY_LINE) node.clear()
+  for (const node of $getRoot().getChildren()) {
+    if (!$isParagraphNode(node)) continue
+    // Cleared only now: Lexical drops empty paragraphs at the end of an import.
+    if (node.getTextContent() === EMPTY_LINE) {
+      node.clear()
+      continue
+    }
+    const first = node.getFirstDescendant()
+    const marks = $isTextNode(first) ? (MARKS.exec(first.getTextContent())?.[0].length ?? 0) : 0
+    if (marks === 0 || !$isTextNode(first)) continue
+    const rest = first.getTextContent().slice(marks)
+    if (rest === '') first.remove()
+    else first.setTextContent(rest)
+    node.setIndent(Math.min(3, marks))
+  }
 }
+
+const MARKS = new RegExp(`^${INDENT_MARK}+`)

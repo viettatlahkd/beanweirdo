@@ -37,7 +37,7 @@ import {
 } from 'lexical'
 import { useEffect, useRef } from 'react'
 import { $exportSite, $importSite, SITE_TRANSFORMERS } from '../lib/liveMarkdown'
-import { registerLiveKeys, type LiveEdges } from './liveKeys'
+import { registerLiveKeys, type LiveEdges, type LiveIndent } from './liveKeys'
 
 /**
  * Tên lớp cho từng loại, để CSS của trang vẽ chúng.
@@ -137,7 +137,7 @@ function SyncOutside({ text }: { text: string }) {
  * Hai hàm ở mép đi qua một `ref` chứ không vào mảng phụ thuộc: chỗ gọi dựng
  * chúng lại mỗi lần vẽ, và đăng ký lại lệnh sau mỗi phím thì con trỏ nhảy.
  */
-function LiveKeys({ edges }: { edges: LiveEdges }) {
+function LiveKeys({ edges, indentParagraphs }: { edges: LiveEdges } & LiveIndent) {
   const [editor] = useLexicalComposerContext()
   const latest = useRef(edges)
   latest.current = edges
@@ -146,8 +146,8 @@ function LiveKeys({ edges }: { edges: LiveEdges }) {
       registerLiveKeys(editor, {
         onBackspaceAtStart: () => latest.current.onBackspaceAtStart?.() ?? false,
         onDeleteAtEnd: () => latest.current.onDeleteAtEnd?.() ?? false,
-      }),
-    [editor],
+      }, { indentParagraphs }),
+    [editor, indentParagraphs],
   )
   return null
 }
@@ -158,11 +158,12 @@ export function LiveText({
   onCommit,
   onBackspaceAtStart,
   onDeleteAtEnd,
+  indentParagraphs,
 }: {
   text: string
   placeholder?: string
   onCommit: (markdown: string) => void
-} & LiveEdges) {
+} & LiveEdges & LiveIndent) {
   return (
     <LexicalComposer
       initialConfig={{
@@ -189,7 +190,7 @@ export function LiveText({
         <ListPlugin />
         <HistoryPlugin />
         <SyncOutside text={text} />
-        <LiveKeys edges={{ onBackspaceAtStart, onDeleteAtEnd }} />
+        <LiveKeys edges={{ onBackspaceAtStart, onDeleteAtEnd }} indentParagraphs={indentParagraphs} />
         <CommitOnBlur onCommit={onCommit} />
       </div>
     </LexicalComposer>

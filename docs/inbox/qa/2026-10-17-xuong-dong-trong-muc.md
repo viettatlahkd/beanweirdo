@@ -50,6 +50,23 @@ Nhánh `fix/xuong-dong-trong-muc`, cắt từ `origin/main`. PR #122.
   `elements/write.test.ts` "đoạn để trống vẫn là một đoạn". Trình duyệt, chặn lệnh ghi: Enter sau "Điều kiện để tăng tốc" rồi
   bấm ra → lệnh lưu có `p`, `p` rỗng, `li`; dòng trống vẫn còn trên mặt soạn.
 
+- **[ĐỔI HÀNH VI]** Phím lùi lề (`admin/components/liveKeys.ts`). Trước: `Tab` ở đầu mục danh sách thụt vào, `Shift+Tab` lùi ra;
+  đoạn văn không lùi lề được trên mặt soạn. Nay:
+  - `Shift+Tab` thụt vào một bậc ở bất cứ đâu trong dòng (`indentLine`): mục danh sách tới tầng 3, đoạn văn tới bậc 3 (`ind`,
+    chỉ long-form — `LiveIndent.indentParagraphs`, bật ở hai `LiveRun` của `LongformEditor`). Ở bậc cuối phím vẫn bị giữ lại.
+  - `Backspace` ở đầu một dòng đang thụt trả về một bậc, không xoá gì (`outdentLine`); giữa chữ vẫn là xoá chữ.
+  - `Tab` ở đầu mục danh sách vẫn thụt vào như cũ.
+  Lề đoạn văn đi qua markdown bằng `INDENT_MARK` (U+2062, mỗi bậc một ký tự, đầu dòng — `SITE_PARAGRAPH` / `$importSite` trong
+  `admin/lib/liveMarkdown.ts`; `lineToBlock` / `blockToMarkdown` trong `longformFlow.ts`). Trước đó đoạn có `ind` mở ra sửa là mất
+  `ind` khi rời ô (`blockToMarkdown` không ghi nó). Mặt soạn lùi 26px một bậc như trang (`--lexical-indent-base-value`, `admin.css`).
+  Test: `liveKeys.test.ts` (Shift+Tab, trần ba tầng, Backspace trả về; đoạn văn chỉ khi bật), `longformMarks.test.ts` "đoạn lùi lề".
+  Trình duyệt, chặn lệnh ghi: Shift+Tab hai lần → đoạn lùi 52px; Backspace giữa chữ xoá chữ; Backspace đầu dòng 52 → 26 → 0px, chữ
+  giữ nguyên; lưu ra `p` `ind: 1`, mục `li` `lvl: 2`.
+- **[SỬA LỖI]** `longformFlow.ts` `STEP` hai → bốn dấu cách. Lexical ghi mỗi tầng danh sách bằng bốn dấu cách, `lineToBlock` chia
+  hai → mục tầng 2 thành tầng 3; mở một dải có mục tầng 2 rồi rời ô là mục ấy tụt xuống tầng 3 (có từ trước PR này). Test
+  `longformMarks.test.ts` "tầng của mục danh sách". Bài nào đã bị đổi tầng như vậy thì dữ liệu không tự sửa lại được (không phân
+  biệt được tầng 3 thật với tầng 3 do lỗi).
+
 ## Lane Kiến trúc (`packages/post-renderer`) — chủ site cho phép sửa (2026-10-17)
 
 - **[ĐỔI HÀNH VI]** `Longform.tsx`: nút "thu gọn / đang mở hết" nay hiện cả khi app truyền `head`, tức trên trang công khai

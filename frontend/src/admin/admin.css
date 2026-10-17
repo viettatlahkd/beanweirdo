@@ -42,6 +42,8 @@
 .awc-live { position: relative; }
 .awc-live-input {
   outline: none;
+  /* A paragraph's indent step, as long-form draws it (26px, \`padOf\`); Lexical's default is 40px. */
+  --lexical-indent-base-value: 26px;
   font-family: 'Be Vietnam Pro', system-ui, sans-serif;
   font-weight: 300;
   font-size: 15.5px;
