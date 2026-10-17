@@ -27,6 +27,10 @@ Nhánh `fix/xuong-dong-trong-muc`, cắt từ `origin/main`. PR #122.
   `admin/screens/Editor.tsx`) dùng `LiveText` để chữ nghiêng hiện nghiêng thay vì dấu `*`; chữ một dòng, chỉ ghi khi khác chữ cũ.
   `admin.css`: ô `LiveText` trong `h1–h4` kế thừa cỡ/kiểu chữ của tiêu đề, đứng cùng dòng với nút gập.
   `onBackspaceAtStart` / `onDeleteAtEnd` không gộp đoạn vào tiêu đề kề bên (trước đây cả hai nằm chung dải nên không cần).
+- **[SỬA LỖI]** Ô tiêu đề (`LiveText`) đọc chữ như markdown, nên gõ `### ` ở đầu thành dấu `#` lưu vào chữ: bản nháp bài
+  `50bb98c7-…` (2026-10-17 08:28 UTC, phiên của chủ site) có khối h3 thứ 81 lưu `"### Đánh giá tổng quan theo  các tiêu chí…"`.
+  Sửa: `#`…`####` + dấu cách ở đầu tiêu đề đặt cấp h1–h4 và bị bỏ khỏi chữ. Mở rồi bấm ra khỏi tiêu đề đang lưu sai sẽ ghi lại
+  bản sạch. Trình duyệt, chặn lệnh ghi: gõ `### ` ở đầu một h2 → khối thành `h3`, chữ không có `#`; gõ `###` giữa câu → giữ là chữ.
 - Trình duyệt, chặn lệnh ghi: bấm vào tiêu đề rồi bấm ra → không có lệnh ghi; gõ "x-" rồi ">" trong tiêu đề → "x→", hoàn tác về chữ cũ rồi bấm ra → không có lệnh ghi.
 - Trình duyệt (bài `50bb98c7-…`): 11 tiêu đề trong khung nhìn vẽ 42/27/20px như bản đăng; "thu gọn" giữ mọi h1/h2, "mở hết" ra đủ.
 

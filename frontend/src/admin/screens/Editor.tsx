@@ -1783,8 +1783,13 @@ function LongformEditor({
             placeholder="tiêu đề"
             onCommit={(md) => {
               // A heading is one line; clicking in and out must not save.
-              const v = md.replace(/\s*\n+\s*/g, ' ').trim()
-              if (v !== text) at(i, (b) => setText(b, v))
+              const line = md.replace(/\s*\n+\s*/g, ' ').trim()
+              // `## ` typed at the start sets the level, as it does in the text run;
+              // stored as words, the marks showed up on the page as "### …".
+              const mark = /^(#{1,4})\s+/.exec(line)
+              const v = mark ? line.slice(mark[0].length) : line
+              const k = mark ? (['h1', 'h2', 'h3', 'h4'] as const)[mark[1].length - 1] : blocks[i].k
+              if (v !== text || k !== blocks[i].k) at(i, (b) => ({ ...setText(b, v), k }))
             }}
           />
         ) : (
