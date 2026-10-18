@@ -80,6 +80,12 @@
 :is(h1, h2, h3, h4) > .awc-live, :is(h1, h2, h3, h4) .awc-live { display: inline-block; vertical-align: top; width: calc(100% - 40px); }
 :is(h1, h2, h3, h4) .awc-live-input { font: inherit; letter-spacing: inherit; line-height: inherit; color: inherit; min-height: 0; }
 :is(h1, h2, h3, h4) .awc-live-p { margin: 0; }
+/* Text in a box (callout, aside, table cell) takes the box's size, and its lists sit close, as the page draws them (\`RichText\`). */
+.awc-box-text .awc-live-input { font-size: inherit; line-height: inherit; color: inherit; }
+.awc-box-text .awc-live-p { margin: 0 0 6px; }
+.awc-box-text .awc-live-p:last-child { margin-bottom: 0; }
+.awc-box-text .awc-live-ul, .awc-box-text .awc-live-ol { margin: 0 0 6px; padding-left: 18px; }
+.awc-box-text .awc-live-li { margin: 0 0 3px; }
 :is(h1, h2, h3, h4) .awc-live-ghost { font: inherit; color: #B5AE99; }
 
 /* ══════════════════════════════════════════════════════════════════════════

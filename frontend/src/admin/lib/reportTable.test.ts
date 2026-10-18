@@ -1,6 +1,6 @@
 import type { ReportTable } from 'post-renderer'
 import { describe, expect, it } from 'vitest'
-import { addColumn, addRow, freeColumnName, removeColumn, removeRow, resizeColumn, widthsOf } from './reportTable'
+import { addColumn, addRow, freeColumnName, mergeCells, removeColumn, removeRow, resizeColumn, splitCell, widthsOf } from './reportTable'
 
 const table = (): ReportTable => ({
   columns: ['Mốc', 'Thời gian', 'Nhiệt'],
@@ -73,5 +73,52 @@ describe('naming a new column', () => {
   it('skips a name already in use, so two headings are never the same', () => {
     expect(freeColumnName(['Mốc', 'Thời gian'])).toBe('Cột 3')
     expect(freeColumnName(['Cột 3', 'Cột 4'])).toBe('Cột 5')
+  })
+})
+
+describe('gộp ô (chủ site, 2026-10-17)', () => {
+  const grid = (): ReportTable => ({
+    columns: ['A', 'B', 'C'],
+    rows: [{ cells: ['a1', 'b1', 'c1'] }, { cells: ['a2', '', 'c2'] }, { cells: ['a3', 'b3', 'c3'] }],
+  })
+
+  it('gộp một vùng: ô gốc nhận hết chữ, theo thứ tự đọc; các ô bị phủ để trống', () => {
+    const t = mergeCells(grid(), { row: 1, col: 1 }, { row: 0, col: 0 })
+    expect(t.merges).toEqual([{ row: 0, col: 0, rows: 2, cols: 2 }])
+    expect(t.rows[0].cells).toEqual(['a1\n\nb1\n\na2', '', 'c1'])
+    expect(t.rows[1].cells).toEqual(['', '', 'c2'])
+  })
+
+  it('vùng chạm vào một ô đã gộp thì nuốt trọn ô ấy, không bao giờ chồng nhau', () => {
+    const once = mergeCells(grid(), { row: 0, col: 0 }, { row: 1, col: 0 })
+    const twice = mergeCells(once, { row: 1, col: 0 }, { row: 1, col: 2 })
+    expect(twice.merges).toEqual([{ row: 0, col: 0, rows: 2, cols: 3 }])
+  })
+
+  it('một ô thì không gộp gì', () => {
+    expect(mergeCells(grid(), { row: 1, col: 1 }, { row: 1, col: 1 })).toEqual(grid())
+  })
+
+  it('tách ô: bỏ vùng gộp, chữ ở lại ô gốc', () => {
+    const t = splitCell(mergeCells(grid(), { row: 0, col: 0 }, { row: 0, col: 1 }), 0, 0)
+    expect(t.merges).toBeUndefined()
+    expect(t.rows[0].cells).toEqual(['a1\n\nb1', '', 'c1'])
+  })
+
+  it('xoá hàng đầu của vùng gộp: vùng ngắn lại, chữ chuyển xuống hàng thay chỗ', () => {
+    const t = removeRow(mergeCells(grid(), { row: 0, col: 1 }, { row: 2, col: 1 }), 0)
+    expect(t.merges).toEqual([{ row: 0, col: 1, rows: 2, cols: 1 }])
+    expect(t.rows[0].cells[1]).toBe('b1\n\nb3')
+  })
+
+  it('xoá cột trong vùng gộp: vùng hẹp lại; còn một ô thì thôi gộp', () => {
+    const t = removeColumn(mergeCells(grid(), { row: 0, col: 1 }, { row: 0, col: 2 }), 2)
+    expect(t.merges).toBeUndefined()
+    expect(t.columns).toEqual(['A', 'B'])
+  })
+
+  it('thêm hàng, thêm cột giữ nguyên vùng gộp', () => {
+    const t = addColumn(addRow(mergeCells(grid(), { row: 0, col: 0 }, { row: 1, col: 1 })), 'D')
+    expect(t.merges).toEqual([{ row: 0, col: 0, rows: 2, cols: 2 }])
   })
 })

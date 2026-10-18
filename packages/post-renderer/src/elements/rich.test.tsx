@@ -26,3 +26,27 @@ describe('RichText — đoạn chữ thường bên cạnh danh sách', () => {
     expect(html(`${para}\n\n- chấm`)).toContain(renderToStaticMarkup(<Inline text={para} accentInk="#000" />))
   })
 })
+
+describe('bảng có ô gộp (chủ site, 2026-10-17)', () => {
+  it('ô gốc trải rowSpan/colSpan, ô bị phủ không vẽ', async () => {
+    const { ElementList } = await import('./index')
+    const { paletteFrom } = await import('../palette')
+    const out = renderToStaticMarkup(
+      <ElementList
+        palette={paletteFrom('#3E7A4E')}
+        elements={[
+          {
+            type: 'table',
+            table: {
+              columns: ['A', 'B'],
+              rows: [{ cells: ['gộp', 'x'] }, { cells: ['', 'y'] }],
+              merges: [{ row: 0, col: 0, rows: 2, cols: 1 }],
+            },
+          },
+        ]}
+      />,
+    )
+    expect(out).toContain('rowSpan="2"'.toLowerCase())
+    expect((out.match(/<td/g) ?? []).length).toBe(3)
+  })
+})
