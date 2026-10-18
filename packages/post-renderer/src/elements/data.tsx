@@ -9,7 +9,24 @@ export type ChartAttrs = { type: 'chart'; id?: string; points: { label: string; 
 export type TableAttrs = {
   type: 'table'
   id?: string
-  table: { columns: string[]; rows: { cells: string[] }[]; widths?: number[] }
+  table: { columns: string[]; rows: { cells: string[] }[]; widths?: number[]; merges?: TableMerge[] }
+}
+
+/**
+ * Body cells joined into one (owner, 2026-10-17): the cell at `row`/`col`
+ * spans `rows` × `cols`, and holds the words; the cells it covers stay in
+ * `rows` (empty) so every row keeps one cell per column.
+ */
+export type TableMerge = { row: number; col: number; rows: number; cols: number }
+
+/** Where each body cell stands: the anchor of a merge (with its span), covered by one, or on its own. */
+export function mergeMap(table: TableAttrs['table']): Map<string, { rows: number; cols: number } | 'covered'> {
+  const out = new Map<string, { rows: number; cols: number } | 'covered'>()
+  for (const m of table.merges ?? []) {
+    for (let r = m.row; r < m.row + m.rows; r++)
+      for (let c = m.col; c < m.col + m.cols; c++) out.set(`${r}:${c}`, r === m.row && c === m.col ? { rows: m.rows, cols: m.cols } : 'covered')
+  }
+  return out
 }
 
 registerElement<MetricsAttrs>({
@@ -160,7 +177,9 @@ registerElement<TableAttrs>({
     table: { type: 'object', note: '{ columns[], rows[{cells[]}], widths?[] } — widths tính bằng phần trăm' },
   },
   blank: () => ({ type: 'table', table: { columns: ['Cột 1'], rows: [{ cells: [''] }] } }),
-  View: ({ attributes, palette, index, testId, render, mobile }: ElementViewProps<TableAttrs>) => (
+  View: ({ attributes, palette, index, testId, render, mobile }: ElementViewProps<TableAttrs>) => {
+    const merges = mergeMap(attributes.table)
+    return (
     <TableScroll testId={testId} mobile={mobile}>
       <table
         style={{
@@ -195,8 +214,16 @@ registerElement<TableAttrs>({
         <tbody>
           {attributes.table.rows.map((row, ri) => (
             <tr key={ri}>
-              {row.cells.map((cell, ci) => (
-                <td key={ci} style={{ padding: 0, borderBottom: `1px solid ${paper.rule}`, verticalAlign: 'top' }}>
+              {row.cells.map((cell, ci) => {
+                const span = merges.get(`${ri}:${ci}`)
+                if (span === 'covered') return null
+                return (
+                <td
+                  key={ci}
+                  rowSpan={span?.rows}
+                  colSpan={span?.cols}
+                  style={{ padding: 0, borderBottom: `1px solid ${paper.rule}`, verticalAlign: 'top' }}
+                >
                   <div
                     style={{
                       fontWeight: 300,
@@ -211,11 +238,13 @@ registerElement<TableAttrs>({
                     {render?.renderTableCell ? render.renderTableCell(cell, index, ri, ci) : <RichText text={cell} accentInk={palette.ink} />}
                   </div>
                 </td>
-              ))}
+                )
+              })}
             </tr>
           ))}
         </tbody>
       </table>
     </TableScroll>
-  ),
+    )
+  },
 })

@@ -22,6 +22,7 @@ import {
   EMPTY_LINE,
   bodyToMarkdown,
   markdownToBlocks,
+  mergeMap,
   longformTextToRuns,
 } from 'post-renderer'
 import type {
@@ -66,9 +67,11 @@ import {
   addColumn,
   addRow,
   freeColumnName,
+  mergeCells,
   removeColumn,
   removeRow,
   resizeColumn,
+  splitCell,
   widthsOf,
 } from '../lib/reportTable'
 import {
@@ -810,6 +813,8 @@ function EditorStyles() {
       .awc-col-split::after{ content: ''; position: absolute; left: 5px; top: 4px; bottom: 4px; width: 1px; background: transparent; }
       .awc-col-split:hover::after{ background: #8C8674; }
       .awc-table-adds{ display: flex; gap: 12px; }
+      .awc-table-editor td.awc-cell-picked{ background: rgba(62,122,78,.10); }
+      .awc-table-editor td.awc-cell-picked .awc-live-input{ user-select: none; }
       .awc-image-drop{ cursor: pointer; }
       .awc-heading-row{ display: flex; align-items: flex-start; gap: 10px; }
       .awc-heading-row > :first-child{ flex: 1; min-width: 0; }
@@ -4108,7 +4113,8 @@ function AsideFields({
   const rest = items.filter((x) => !written.includes(x))
   const text = bodyToMarkdown(written as never).text
   return (
-    <div className="awc-aside awc-box-text" style={{ fontSize: 14.5, lineHeight: 1.66, color: ink.strong }}>
+    // Plain body size inside: the page draws an aside's blocks as full elements (`ElementList`), not the callout's small text.
+    <div className="awc-aside">
       <LiveText
         text={text}
         placeholder="ghi chú trong khung"
@@ -4203,10 +4209,24 @@ function ChartEditor({ points, accent, onChange }: { points: ReportChartPoint[];
  * never the widths a reader saw. They sit outside it now, and the boundaries
  * between headings can be dragged.
  */
+/** A body cell of a table, by row and column. */
+type Cell = { row: number; col: number }
+
 function TableEditor({ table, palette, onChange }: { table: ReportTable; palette: Palette; onChange: (table: ReportTable) => void }) {
   const el = useRef<HTMLTableElement>(null)
   const drag = useRef<{ x: number; table: ReportTable } | null>(null)
   const widths = widthsOf(table)
+  const merges = mergeMap(table)
+  /** The cell being typed in, and the area picked to merge — by dragging across cells or Shift+click. */
+  const [here, setHere] = useState<Cell | null>(null)
+  const [pick, setPick] = useState<{ a: Cell; b: Cell } | null>(null)
+  const pressed = useRef<Cell | null>(null)
+  const picked = (ri: number, ci: number) =>
+    !!pick &&
+    ri >= Math.min(pick.a.row, pick.b.row) && ri <= Math.max(pick.a.row, pick.b.row) &&
+    ci >= Math.min(pick.a.col, pick.b.col) && ci <= Math.max(pick.a.col, pick.b.col)
+  const many = !!pick && (pick.a.row !== pick.b.row || pick.a.col !== pick.b.col)
+  const merged = here && typeof merges.get(`${here.row}:${here.col}`) === 'object' ? here : null
 
   return (
     <div className="awc-table-wrap">
@@ -4220,10 +4240,13 @@ function TableEditor({ table, palette, onChange }: { table: ReportTable; palette
           <tr>
             {table.columns.map((c, ci) => (
               <th key={ci}>
+                {/* Several lines when the name is long, as the page wraps it — one line hid the rest. */}
                 <EditableField
                   value={c}
+                  multiline
+                  rows={1}
                   placeholder="tên cột"
-                  onCommit={(v) => onChange({ ...table, columns: table.columns.map((col, i) => (i === ci ? v : col)) })}
+                  onCommit={(v) => onChange({ ...table, columns: table.columns.map((col, i) => (i === ci ? v.replace(/\s*\n+\s*/g, ' ') : col)) })}
                   style={{ fontSize: 9.5, letterSpacing: '.16em', textTransform: 'uppercase', color: palette.ink }}
                 />
                 {table.columns.length > 1 && (
@@ -4270,9 +4293,39 @@ function TableEditor({ table, palette, onChange }: { table: ReportTable; palette
         <tbody>
           {table.rows.map((row, ri) => (
             <tr key={ri}>
-              {row.cells.map((cell, ci) => (
-                <td key={ci}>
-                  {ci === 0 && table.rows.length > 1 && (
+              {row.cells.map((cell, ci) => {
+                const span = merges.get(`${ri}:${ci}`)
+                if (span === 'covered') return null
+                // The row's delete sits in its first cell drawn — the first may be covered by a merge from above.
+                const first = row.cells.findIndex((_, k) => merges.get(`${ri}:${k}`) !== 'covered')
+                return (
+                <td
+                  key={ci}
+                  rowSpan={typeof span === 'object' ? span.rows : undefined}
+                  colSpan={typeof span === 'object' ? span.cols : undefined}
+                  className={picked(ri, ci) && many ? 'awc-cell-picked' : undefined}
+                  onFocusCapture={() => setHere({ row: ri, col: ci })}
+                  onMouseDown={(e) => {
+                    if (e.shiftKey && here) {
+                      e.preventDefault()
+                      setPick({ a: here, b: { row: ri, col: ci } })
+                      return
+                    }
+                    pressed.current = { row: ri, col: ci }
+                    setPick(null)
+                  }}
+                  onMouseEnter={(e) => {
+                    const from = pressed.current
+                    if (!from || e.buttons !== 1 || (from.row === ri && from.col === ci)) return
+                    // Dragging across cells picks an area instead of selecting words.
+                    window.getSelection()?.removeAllRanges()
+                    setPick({ a: from, b: { row: ri, col: ci } })
+                  }}
+                  onMouseUp={() => {
+                    pressed.current = null
+                  }}
+                >
+                  {ci === first && table.rows.length > 1 && (
                     <button
                       type="button"
                       className="awc-row-x"
@@ -4294,7 +4347,8 @@ function TableEditor({ table, palette, onChange }: { table: ReportTable; palette
                     />
                   </div>
                 </td>
-              ))}
+                )
+              })}
             </tr>
           ))}
         </tbody>
@@ -4306,6 +4360,23 @@ function TableEditor({ table, palette, onChange }: { table: ReportTable; palette
         <button type="button" className="awc-mini-add" onClick={() => onChange(addRow(table))}>
           + hàng
         </button>
+        {many && pick && (
+          <button
+            type="button"
+            className="awc-mini-add"
+            onClick={() => {
+              onChange(mergeCells(table, pick.a, pick.b))
+              setPick(null)
+            }}
+          >
+            gộp ô
+          </button>
+        )}
+        {!many && merged && (
+          <button type="button" className="awc-mini-add" onClick={() => onChange(splitCell(table, merged.row, merged.col))}>
+            tách ô
+          </button>
+        )}
       </div>
     </div>
   )
